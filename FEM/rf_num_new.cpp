@@ -173,7 +173,7 @@ bool NUMRead(string file_base_name)
 	num_file.seekg(0L,ios::beg);
 	//========================================================================
 	// Keyword loop
-	cout << "NUMRead" << endl;
+	cout << "NUMRead" << "\n";
 	while (!num_file.eof())
 	{
 		num_file.getline(line,MAX_ZEILE);
@@ -570,7 +570,7 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 			line >> ele_supg_method >> ele_supg_method_length >>
 			ele_supg_method_diffusivity;
 			line.clear();
-			cout << "->SUPG method is selected." << endl;
+			cout << "->SUPG method is selected." << "\n";
 			continue;
 		}
 		// subkeyword found
@@ -603,7 +603,7 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 			line >> fct_prelimiter_type; //0: just cancel, 1: minmod, 2: superbee
 			line >> fct_const_alpha; //-1: off, [0.0,1.0] 0: Upwind, 1: Galerkin
 			line.clear();
-			cout << "->FEM_FCT method is selected." << endl;
+			cout << "->FEM_FCT method is selected." << "\n";
 			continue;
 		}
 
@@ -680,30 +680,30 @@ void NUMWrite(string base_file_name)
 void CNumerics::Write(fstream* num_file)
 {
 	//KEYWORD
-	*num_file << "#NUMERICS" << endl;
+	*num_file << "#NUMERICS" << "\n";
 	//--------------------------------------------------------------------
 	/*OK
-	   *num_file << " $METHOD" << endl;
-	   *num_file << method_name << endl;
+	   *num_file << " $METHOD" << "\n";
+	   *num_file << method_name << "\n";
 	   if(method_name.find("LAGRANGE")!=string::npos){
 	   *num_file << lag_quality << " " << lag_max_steps << " " << lag_local_eps << " ";
 	   *num_file << lag_time_weighting << " " << lag_min_weight << " ";
 	   *num_file << lag_use_matrix << " " << lag_vel_method;
-	   *num_file << endl;
+	   *num_file << "\n";
 	   }
 	 */
 	//--------------------------------------------------------------------
-	*num_file << " $PCS_TYPE" << endl;
-	*num_file << "  " << pcs_type_name << endl;
+	*num_file << " $PCS_TYPE" << "\n";
+	*num_file << "  " << pcs_type_name << "\n";
 	//--------------------------------------------------------------------
-	*num_file << " $NON_LINEAR_SOLVER" << endl;
+	*num_file << " $NON_LINEAR_SOLVER" << "\n";
 	*num_file << "  " << nls_method_name;
 	*num_file << " "  << nls_error_tolerance;
 	*num_file << " "  << nls_max_iterations;
 	*num_file << " "  << nls_relaxation;
-	*num_file << endl;
+	*num_file << "\n";
 	//--------------------------------------------------------------------
-	*num_file << " $LINEAR_SOLVER" << endl;
+	*num_file << " $LINEAR_SOLVER" << "\n";
 	*num_file << "  " << ls_method;
 	*num_file << " "  << ls_error_method;
 	*num_file << " "  << ls_error_tolerance;
@@ -711,19 +711,19 @@ void CNumerics::Write(fstream* num_file)
 	*num_file << " "  << ls_theta;
 	*num_file << " "  << ls_precond;
 	*num_file << " "  << ls_storage_method;
-	*num_file << endl;
+	*num_file << "\n";
 	//--------------------------------------------------------------------
-	*num_file << " $ELE_GAUSS_POINTS" << endl;
+	*num_file << " $ELE_GAUSS_POINTS" << "\n";
 	*num_file << "  " << ele_gauss_points;
-	*num_file << endl;
+	*num_file << "\n";
 	//--------------------------------------------------------------------
-	*num_file << " $ELE_MASS_LUMPING" << endl;
+	*num_file << " $ELE_MASS_LUMPING" << "\n";
 	*num_file << "  " << ele_mass_lumping;
-	*num_file << endl;
+	*num_file << "\n";
 	//--------------------------------------------------------------------
-	*num_file << " $ELE_UPWINDING" << endl;
+	*num_file << " $ELE_UPWINDING" << "\n";
 	*num_file << "  " << ele_upwinding;
-	*num_file << endl;
+	*num_file << "\n";
 	//--------------------------------------------------------------------
 }
 
@@ -1151,7 +1151,7 @@ void SetLinearSolverType(LINEAR_SOLVER* ls,CNumerics* m_num)
 		break;
 	default:
 		cout << "***ERROR in SetLinearSolverType(): Specified linear solver type (" <<
-		m_num->ls_method << ") is not supported. " << endl;
+		m_num->ls_method << ") is not supported. " << "\n";
 		exit(1);
 	}
 }
@@ -1413,7 +1413,7 @@ double GetNumericalTimeCollocation(char* name)
 	if(m_pcs)
 		return m_pcs->m_num->ls_theta;
 	else
-		cout << "Fatal error in GetNumericalTimeCollocation: No valid PCS" << endl;
+		cout << "Fatal error in GetNumericalTimeCollocation: No valid PCS" << "\n";
 	//OK return np_array[GetNumericsIndex(name)].time_collocation;
 	return 1.0;
 }

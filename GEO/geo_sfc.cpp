@@ -170,7 +170,7 @@ void Surface::output(FILE* geo_file, int &p_index, int &l_index,
 			if(!CGLn->m_point1 && !CGLn->m_point2)
 			{
 				std::cout << "Error in Surface::output: no line points" <<
-				std::endl;
+				"\n";
 				FilePrintString(geo_file,
 				                "Error in Surface::output: no line points");
 				return;
@@ -1129,7 +1129,7 @@ std::ios::pos_type Surface::Read(std::ifstream* gli_file)
 					//type = m_polyline->data_type; //MB Please set surface type with surface type, not polyline type
 				else
 					cout << "Warning in Surface::Read, polyline not found: "
-					     << line_string << endl;
+					     << line_string << "\n";
 			}
 	}
 	return position;
@@ -1267,7 +1267,7 @@ void Surface::WriteTIN(const std::string &file_path)
 		<< TIN->Triangles[i]->z[1] << delimiter \
 		<< TIN->Triangles[i]->x[2] << delimiter \
 		<< TIN->Triangles[i]->y[2] << delimiter \
-		<< TIN->Triangles[i]->z[2] << endl;
+		<< TIN->Triangles[i]->z[2] << "\n";
 	//tin_file.close();
 }
 
@@ -1369,28 +1369,28 @@ void Surface::WriteTINTecplot(const std::string &file_path)
 		if (!tin_file.good())
 			return;
 		tin_file.seekg(0L,ios::beg);
-		tin_file << "VARIABLES = X,Y,Z" << endl;
+		tin_file << "VARIABLES = X,Y,Z" << "\n";
 		long no_triangles = (long)TIN->Triangles.size();
 		long no_nodes = 3 * no_triangles;
 		tin_file << "ZONE T = " << TIN->name << delimiter \
 		         << "N = " << no_nodes << delimiter \
 		         << "E = " << no_triangles << delimiter \
-		         << "F = FEPOINT" << delimiter << "ET = TRIANGLE" << endl;
+		         << "F = FEPOINT" << delimiter << "ET = TRIANGLE" << "\n";
 		for(i = 0; i < no_triangles; i++)
 		{
 			tin_file \
 			<< TIN->Triangles[i]->x[0] << " " << TIN->Triangles[i]->y[0] << " " <<
-			TIN->Triangles[i]->z[0] << endl;
+			TIN->Triangles[i]->z[0] << "\n";
 			tin_file \
 			<< TIN->Triangles[i]->x[1] << " " << TIN->Triangles[i]->y[1] << " " <<
-			TIN->Triangles[i]->z[1] << endl;
+			TIN->Triangles[i]->z[1] << "\n";
 			tin_file \
 			<< TIN->Triangles[i]->x[2] << " " << TIN->Triangles[i]->y[2] << " " <<
-			TIN->Triangles[i]->z[2] << endl;
+			TIN->Triangles[i]->z[2] << "\n";
 		}
 		for(i = 0; i < no_triangles; i++)
 			tin_file \
-			<< 3 * i + 1 << " " << 3 * i + 2 << " " << 3 * i + 3 << endl;
+			<< 3 * i + 1 << " " << 3 * i + 2 << " " << 3 * i + 3 << "\n";
 	}
 }
 
@@ -1558,7 +1558,7 @@ void Surface::WriteTecplot(fstream* tec_file)
 	vector<CTriangle*>triangle_vector;
 	//----------------------------------------------------------------------
 	// Write header
-	*tec_file << "VARIABLES = X,Y,Z" << endl;
+	*tec_file << "VARIABLES = X,Y,Z" << "\n";
 
 	switch(type)
 	{
@@ -1581,7 +1581,7 @@ void Surface::WriteTecplot(fstream* tec_file)
 	*tec_file << "ZONE T = " << name << ", " \
 	          << "N = " << no_nodes << ", " \
 	          << "E = " << no_elements << ", " \
-	          << "F = FEPOINT" << ", " << "ET = TRIANGLE" << endl;
+	          << "F = FEPOINT" << ", " << "ET = TRIANGLE" << "\n";
 	//----------------------------------------------------------------------
 	// Write data
 	if(m_polyline1)
@@ -1591,7 +1591,7 @@ void Surface::WriteTecplot(fstream* tec_file)
 			m_polyline1->point_vector[i]->y << " " <<
 			m_polyline1->point_vector[i]->z <<
 			" " \
-			<< endl;
+			<< "\n";
 
 	if(m_polyline2)
 		for(i = 0; i < no_points; i++)
@@ -1600,14 +1600,14 @@ void Surface::WriteTecplot(fstream* tec_file)
 			m_polyline2->point_vector[i]->y << " " <<
 			m_polyline2->point_vector[i]->z <<
 			" " \
-			<< endl;
+			<< "\n";
 
 	for(i = 0; i < no_points - 1; i++)
 		*tec_file \
-		<< i + 1 << " " << i + 1 + 1 << " " << no_points + i + 1 << endl;
+		<< i + 1 << " " << i + 1 + 1 << " " << no_points + i + 1 << "\n";
 	for(i = 0; i < no_points - 1; i++)
 		*tec_file \
-		<< no_points + i + 1 << " " << no_points + i + 1 + 1 << " " << i + 1 + 1 << endl;
+		<< no_points + i + 1 << " " << no_points + i + 1 + 1 << " " << i + 1 + 1 << "\n";
 }
 
 /**************************************************************************

@@ -373,16 +373,16 @@ void Linear_EQS::Write(std::ostream &os)
 {
 	A->Write(os);
 	//
-	os << " b ( RHS): " << endl;
+	os << " b ( RHS): " << "\n";
 	os.width(10);
 	os.precision(6);
 	//
 	for(long i = 0; i < size_A; i++)
-		os << setw(10) << i << " " << setw(15) << b[i] << endl;
+		os << setw(10) << i << " " << setw(15) << b[i] << "\n";
 
-	os << " x : " << endl;
+	os << " x : " << "\n";
 	for(long i = 0; i < size_A; i++)
-		os << setw(10) << i << " " << setw(15) << x[i] << endl;
+		os << setw(10) << i << " " << setw(15) << x[i] << "\n";
 }
 /**************************************************************************
    Task: Linear equation::Write
@@ -395,7 +395,7 @@ void Linear_EQS::WriteRHS(ostream &os)
 	os.precision(6);
 	//
 	for(long i = 0; i < A->Dim(); i++)
-		os << setw(15) << b[i] << endl;
+		os << setw(15) << b[i] << "\n";
 }
 //**************************************************************************
 /*!
@@ -425,7 +425,7 @@ void Linear_EQS::WriteX(ostream &os)
 	os.precision(6);
 	//
 	for(long i = 0; i < A->Dim(); i++)
-		os << setw(15) << x[i] << endl;
+		os << setw(15) << x[i] << "\n";
 }
 
 /**************************************************************************
@@ -527,10 +527,10 @@ int Linear_EQS::Solver(CNumerics* num)
 	if(m_num->ls_method == 805)           // Then, PARDISO parallel direct solver
 	{
 #ifdef MKL                               // PCH 10.03.2009: Requires the system platform where Math Kernel Library is properly configured.
-		//cout << "---------------------------------------------------" << endl;
+		//cout << "---------------------------------------------------" << "\n";
 		//omp_set_num_threads (1);
 		cout << "->Start calling PARDISO with " << omp_get_max_threads() << " threads" <<
-		endl;
+		"\n";
 		int i, iter, ierr;
 		// Assembling the matrix
 		// Establishing CRS type matrix from GeoSys Matrix data storage type
@@ -714,15 +714,15 @@ int Linear_EQS::Solver(CNumerics* num)
 		free(ptr);
 		free(index);
 		//		MKL_FreeBuffers();
-		cout << "->Finished PARDISO computation" << endl;
+		cout << "->Finished PARDISO computation" << "\n";
 #endif
 	}
 	else                                  // LIS parallel solver
 	{
 		std::cout <<
 		"------------------------------------------------------------------" <<
-		std::endl;
-		std::cout << "*** LIS solver computation" << std::endl;
+		"\n";
+		std::cout << "*** LIS solver computation" << "\n";
 		int i, iter, ierr, size;
 		// Fix for the fluid_momentum Dof
 		size = A->Size() * A->Dof();
@@ -757,14 +757,14 @@ int Linear_EQS::Solver(CNumerics* num)
 		ierr = lis_matrix_assemble(AA);
 
 //		{
-//			std::cout << "print some lines of matrix: " << std::endl;
+//			std::cout << "print some lines of matrix: " << "\n";
 //			for (size_t r(0); r < 5; r++) {
 //					const unsigned row_end(A->ptr[r+1]);
 //					std::cout << r << ": " << std::flush;
 //					for (unsigned j(A->ptr[r]); j< row_end; j++) {
 //							std::cout << value[A->col_idx[j]] << " ";
 //					}
-//					std::cout << std::endl;
+//					std::cout << "\n";
 //			}
 //
 //
@@ -796,7 +796,7 @@ int Linear_EQS::Solver(CNumerics* num)
 //			delete [] jA;
 //			delete [] iA;
 //			os.close();
-//			std::cout << "done" << std::endl;
+//			std::cout << "done" << "\n";
 //		}
 
 		// Assemble the vector, b, x
@@ -839,7 +839,7 @@ int Linear_EQS::Solver(CNumerics* num)
 		lis_solver_destroy(solver);
 		std::cout <<
 		"------------------------------------------------------------------" <<
-		std::endl;
+		"\n";
 	}
 
 	return -1;                            // This right now is meaningless.
@@ -2056,8 +2056,8 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 	Dum.precision(15);
 	Dum.setf(ios::scientific);
 
-	Dum << "Time step: " << aktueller_zeitschritt << endl;
-	Dum << "Norm b inner  " << dom->Dot_Interior(b, b) << endl;
+	Dum << "Time step: " << aktueller_zeitschritt << "\n";
+	Dum << "Norm b inner  " << dom->Dot_Interior(b, b) << "\n";
 	//  if(A->Dof()==1)
 	//  Dum.close();
 #endif
@@ -2090,29 +2090,29 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 	//TEST
 	//if(A->Dof()>1)
 	{
-		Dum << " |r_0|= " << Norm(r0) << endl;
-		Dum << " |b_0|= " << bNorm << endl;
-		Dum << " x  " << endl;
+		Dum << " |r_0|= " << Norm(r0) << "\n";
+		Dum << " |b_0|= " << bNorm << "\n";
+		Dum << " x  " << "\n";
 		for(i = 0; i < n; i++)
-			Dum << xg[i] << endl;
+			Dum << xg[i] << "\n";
 		/*
-		   Dum<<" b  "<<endl;
+		   Dum<<" b  "<<"\n";
 		   for(i=0; i<size; i++)
-		   Dum<<b[i]<<endl;
-		   Dum<<"inter: r  Ax  "<<endl;
+		   Dum<<b[i]<<"\n";
+		   Dum<<"inter: r  Ax  "<<"\n";
 		   for(i=0; i<size; i++)
-		   Dum<<r0[i]<<endl;
-		   Dum<<"border: r  Ax  "<<endl;
+		   Dum<<r0[i]<<"\n";
+		   Dum<<"border: r  Ax  "<<"\n";
 		   for(i=0; i<size_b; i++)
-		   Dum<<r0_b[i]<<endl;
+		   Dum<<r0_b[i]<<"\n";
 
-		   Dum<<"inter: x  "<<endl;
+		   Dum<<"inter: x  "<<"\n";
 		   for(i=0; i<size; i++)
-		   Dum<<x[i]<<endl;
+		   Dum<<x[i]<<"\n";
 
-		   Dum<<"border: x  "<<endl;
+		   Dum<<"border: x  "<<"\n";
 		   for(i=0; i<size_b; i++)
-		   Dum<<x_b[i]<<endl;
+		   Dum<<x_b[i]<<"\n";
 		 */
 	}
 #endif
@@ -2135,7 +2135,7 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 	   //TEST
 	   //if(A->Dof()>1)
 	   {
-	    Dum<<" bNorm  "<<bNorm <<"  Norm(r) "<<  Norm(r) <<endl;
+	    Dum<<" bNorm  "<<bNorm <<"  Norm(r) "<<  Norm(r) <<"\n";
 
 	   }
 	 */
@@ -2150,7 +2150,7 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 #ifdef  TEST_MPI
 		//TEST
 		//  if(A->Dof()>1)
-		Dum << " rho_1  " << rho_1 << endl;
+		Dum << " rho_1  " << rho_1 << "\n";
 #endif
 
 		if (iter == 1)
@@ -2177,11 +2177,11 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 		{
 			//TEST
 			Dum << "  alpha  " << alpha << " dot(r0, v) " <<
-			dot(r0, v) << " dot(r0, r) " << dot(r0, r)  << endl;
+			dot(r0, v) << " dot(r0, r) " << dot(r0, r)  << "\n";
 
-			Dum << "\n r0, r,  v   " << endl;
+			Dum << "\n r0, r,  v   " << "\n";
 			//  for(i=0; i<size_t; i++)
-			//   Dum<<r0[i]<<"       "<<r[i]<<"       "<<v[i]<<endl;
+			//   Dum<<r0[i]<<"       "<<r[i]<<"       "<<v[i]<<"\n";
 		}
 #endif
 
@@ -2202,9 +2202,9 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 		   if(A->Dof()>1)
 		   {
 		   //TEST
-		   Dum<<"\n  norm_v/bNorm  "<<error <<endl;
+		   Dum<<"\n  norm_v/bNorm  "<<error <<"\n";
 		   for(i=0; i<size_t; i++)
-		   Dum<<s[i]<<endl;
+		   Dum<<s[i]<<"\n";
 		   exit(0);
 		   }
 		 */
@@ -2221,7 +2221,7 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 		//TEST
 		//TEST
 		//  if(A->Dof()>1)
-		Dum << "  tt  " << tt << endl;
+		Dum << "  tt  " << tt << "\n";
 #endif
 
 		if(tt > DBL_MIN)
@@ -2243,7 +2243,7 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 		//TEST
 		// if(A->Dof()>1)
 		{
-			Dum << " sqrt(dot(r,r))  " << norm_v  << endl;
+			Dum << " sqrt(dot(r,r))  " << norm_v  << "\n";
 			// exit(0);
 		}
 #endif
@@ -2272,9 +2272,9 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 #ifdef  TEST_MPI
 	// if(A->Dof()>1)
 	{
-		Dum << " x " << endl;
+		Dum << " x " << "\n";
 		for(i = 0; i < n; i++)
-			Dum << xg[i] << endl;
+			Dum << xg[i] << "\n";
 		Dum.close();
 		// exit(0);
 	}
@@ -2363,7 +2363,7 @@ int Linear_EQS::BiCG(double* xg, const long n)
 	Dum.precision(15);
 	Dum.setf(ios::scientific);
 
-	Dum << " Norm(r) " << Norm(r) << " bNorm " << bNorm << endl;
+	Dum << " Norm(r) " << Norm(r) << " bNorm " << bNorm << "\n";
 #endif
 
 	//
@@ -2374,7 +2374,7 @@ int Linear_EQS::BiCG(double* xg, const long n)
 		rho1 = dot(z, rt);
 
 #ifdef CG_test
-		Dum << " rho1 " << rho1 << endl;
+		Dum << " rho1 " << rho1 << "\n";
 #endif
 
 		//
@@ -2404,7 +2404,7 @@ int Linear_EQS::BiCG(double* xg, const long n)
 		alpha = rho1 / dot(pt,q);
 
 #ifdef CG_test
-		Dum << " alpha " << alpha << endl;
+		Dum << " alpha " << alpha << "\n";
 #endif
 
 		for(i = 0; i < size; i++)
@@ -2419,7 +2419,7 @@ int Linear_EQS::BiCG(double* xg, const long n)
 			break;
 
 #ifdef CG_test
-		Dum << " error = Norm(r)/bNorm " << error << endl;
+		Dum << " error = Norm(r)/bNorm " << error << "\n";
 #endif
 
 		//

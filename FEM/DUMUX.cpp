@@ -33,7 +33,7 @@ CReadTextfiles_DuMux::~CReadTextfiles_DuMux(void)
 using std::string;
 using std::vector;
 using std::cout;
-using std::endl;
+//using std::endl;
 
 /*-------------------------------------------------------------------------
    GeoSys - Function: SplitStrings
@@ -81,7 +81,7 @@ bool CReadTextfiles_DuMux::Read_Text(string Filename)
 	if (in_file == 0)
 	{
 		error = true;
-		cout << "The file " << Filename.data() << " can not be opened!" << endl;
+		cout << "The file " << Filename.data() << " can not be opened!" << "\n";
 	}
 	else
 	{
@@ -97,9 +97,9 @@ bool CReadTextfiles_DuMux::Read_Text(string Filename)
 			{
 				cout <<
 				" Error - increase MAX_ZEILEN in order to read ECLIPSE data file "
-				     << endl;
+				     << "\n";
 				cout << " Or shorten the line in " << Filename.data() << ": " <<
-				tempstring << " to " << MAX_ZEILEN << " characters " << endl;
+				tempstring << " to " << MAX_ZEILEN << " characters " << "\n";
 				exit(0);
 			}
 			if (tempstring.compare("#STOP") != 0)
@@ -133,7 +133,7 @@ bool CReadTextfiles_DuMux::Read_SeparatedText(string Filename, string delimiter)
 	if (in_file == 0)
 	{
 		error = true;
-		cout << "The file " << Filename.data() << " can not be opened!" << endl;
+		cout << "The file " << Filename.data() << " can not be opened!" << "\n";
 		system("Pause");
 	}
 	else
@@ -165,7 +165,7 @@ bool CReadTextfiles_DuMux::Read_SeparatedText(string Filename, string delimiter)
 						error = true;
 						cout <<
 						"The number of columns in the textfile is not constant!"
-						     << endl;
+						     << "\n";
 						system("Pause");
 					}
 					else
@@ -209,7 +209,7 @@ void CWriteTextfiles_DuMux::Write_Text(string Filename, vector<string> Text)
 		if (i == int(Text.size()) - 1)
 			textfile << Text[i].data();
 		else
-			textfile << Text[i].data() << endl;
+			textfile << Text[i].data() << "\n";
 	}
 	textfile.close();
 }
@@ -401,7 +401,7 @@ int CDUMUXData::WriteInputForDuMux(CRFProcess* m_pcs, string Folder, long Timest
 				timestep_length = m_pcs->Tim->time_step_length;
 			else
 			{
-				cout << "This time unit was not considered yet" << endl;
+				cout << "This time unit was not considered yet" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -479,7 +479,7 @@ int CDUMUXData::WriteInputForDuMux(CRFProcess* m_pcs, string Folder, long Timest
 			        *
 			        (this->Molweight_CO2 /
 			         1000) / this->NodeData[i]->getPhaseDensity()[0];
-			//cout << i << " X_CO2 " << value << " C_CO2 " << pcs_vector[this->ProcessIndex_CO2inLiquid]->GetNodeValue(i, indexConcentration_DIC) << " Dichte " <<  this->NodeData[i]->phase_density[0] << " X_CO2_alt " << this->NodeData[i]->CO2inLiquid << endl;
+			//cout << i << " X_CO2 " << value << " C_CO2 " << pcs_vector[this->ProcessIndex_CO2inLiquid]->GetNodeValue(i, indexConcentration_DIC) << " Dichte " <<  this->NodeData[i]->phase_density[0] << " X_CO2_alt " << this->NodeData[i]->CO2inLiquid << "\n";
 			temp.str("");
 			temp.clear();
 			temp << value;
@@ -675,7 +675,7 @@ int CDUMUXData::WriteInputForDuMux(CRFProcess* m_pcs, string Folder, long Timest
 	}
 	std::ofstream aus (aus_file.data(), std::ios::out);
 	for (unsigned int i = 0; i < vec_string.size(); i++)
-		aus << vec_string[i] << endl;
+		aus << vec_string[i] << "\n";
 	aus.close();
 
 	return 1;
@@ -719,7 +719,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 	Error = TextFile->Read_SeparatedText(Filename," ");
 	if (Error == true)
 	{
-		cout << "The program is canceled" << endl;
+		cout << "The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -734,7 +734,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 		{
 			cout <<
 			"The header of the DUMUX result file does not fit to the definition!" <<
-			endl;
+			"\n";
 			system("Pause");
 			exit(0);
 		}
@@ -752,7 +752,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 		{
 			cout <<
 			"The header of the DUMUX result file does not fit to the definition!" <<
-			endl;
+			"\n";
 			system("Pause");
 			exit(0);
 		}
@@ -766,7 +766,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 		if (int(this->NodeData.size()) != TextFile->NumberOfRows)
 		{
 			cout << "The number of nodes is not equal between OGS and DUMUX! " <<
-			this->NodeData.size() << ", " << TextFile->NumberOfRows << endl;
+			this->NodeData.size() << ", " << TextFile->NumberOfRows << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -782,7 +782,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 			        (*(this->NodeData[i]))[2]))
 			{
 				cout <<
-				"The node coordinates are not equal between OGS and DUMUX!" << endl;
+				"The node coordinates are not equal between OGS and DUMUX!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -826,7 +826,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 		this->NodeData[i]->setCO2InLiquid (atof(
 		                                           TextFile->Data_separated[i][column].data(
 		                                                   )) * Multiplier);
-		//cout << i << " " << this->NodeData[i]->CO2inLiquid << endl;
+		//cout << i << " " << this->NodeData[i]->CO2inLiquid << "\n";
 		column += 1;
 		// TF commented out since we want to use the improved PointDuMux class
 //		this->NodeData[i]->NaClinLiquid = atof(TextFile->Data_separated[i][column].data()) * Multiplier;
@@ -855,7 +855,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                    Time: " << time << " seconds." << endl;
+	cout << "                    Time: " << time << " seconds." << "\n";
 
 	//--------------------------------------------------------------------------------------------
 	//Test output
@@ -1012,7 +1012,7 @@ void CDUMUXData::ReadDuMuxData(CRFProcess* m_pcs, string Filename, long Timestep
 	}
 	std::ofstream aus (aus_file.data(),std::ios::out);
 	for (unsigned int i = 0; i < vec_string.size(); i++)
-		aus << vec_string[i] << endl;
+		aus << vec_string[i] << "\n";
 	aus.close();
 }
 
@@ -1139,7 +1139,7 @@ void CDUMUXData::WriteDataToGeoSys(CRFProcess* m_pcs)
 	{
 		cout <<
 		"In the model exists dissolved gas but there is no dissolved C in water defined. Please ad the mass transport for immobile C(4) or CO2_w!"
-		     << endl;
+		     << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1157,19 +1157,19 @@ void CDUMUXData::WriteDataToGeoSys(CRFProcess* m_pcs)
 //		value = this->NodeData[i]->CO2inLiquid * this->NodeData[i]->phase_density[0] / (this->Molweight_CO2 * 1e-3);
 		value = pnt_dumux->getCO2InLiquid() * pnt_dumux->getPhaseDensity()[0] /
 		        (this->Molweight_CO2 * 1e-3);
-		//cout << " c_CO2 " << value << " Dichte " <<  this->NodeData[i]->phase_density[0] << endl;
+		//cout << " c_CO2 " << value << " Dichte " <<  this->NodeData[i]->phase_density[0] << "\n";
 		pcs_vector[this->ProcessIndex_CO2inLiquid]->SetNodeValue(i,
 		                                                         indexConcentration,
 		                                                         value);
-		//cout << "Node: " << i << " Druck: " << m_pcs->GetNodeValue(i, index_pressure2) << " RS: " << this->NodeData[i]->Gas_dissolved << " Dichte: " << this->SurfaceCO2Density << " C(4): " << value << endl;
+		//cout << "Node: " << i << " Druck: " << m_pcs->GetNodeValue(i, index_pressure2) << " RS: " << this->NodeData[i]->Gas_dissolved << " Dichte: " << this->SurfaceCO2Density << " C(4): " << value << "\n";
 		if (value < 0)
 		{
 			// TF commented out since we want to use the improved PointDuMux class
-//			cout << "Node: " << i << " Druck: " << this->NodeData[i]->phase_pressure[1] << " X_CO2: " << this->NodeData[i]->CO2inLiquid << " Dichte: " << this->NodeData[i]->phase_density[0] << " C(4): " << value << endl;
+//			cout << "Node: " << i << " Druck: " << this->NodeData[i]->phase_pressure[1] << " X_CO2: " << this->NodeData[i]->CO2inLiquid << " Dichte: " << this->NodeData[i]->phase_density[0] << " C(4): " << value << "\n";
 			cout << "Node: " << i << " Druck: " << pnt_dumux->getPhasePressure()[1] <<
 			" X_CO2: " << this->NodeData[i]->getCO2InLiquid() << " Dichte: " <<
-			pnt_dumux->getPhaseDensity()[0] << " C(4): " << value << endl;
-			cout << "  Fehler in Berechnung von DIC: " << value << endl;
+			pnt_dumux->getPhaseDensity()[0] << " C(4): " << value << "\n";
+			cout << "  Fehler in Berechnung von DIC: " << value << "\n";
 		}
 	}
 	// Loop over all elements to calculate gauss point velocities from node values
@@ -1218,7 +1218,7 @@ void CDUMUXData::WriteDataToGeoSys(CRFProcess* m_pcs)
 			//i_ind[2] = m_pcs_fm->GetNodeValueIndex("VELOCITY_Z2")+1; // get index of velocity
 		}
 		if((i_ind[0] < 0) || (i_ind[1] < 0) || (i_ind[2] < 0))
-			cout << " Error - wrong index in Cal_GP_Velocity_FM " << endl;
+			cout << " Error - wrong index in Cal_GP_Velocity_FM " << "\n";
 
 		//Test Output
 		//vector <string> vec_string;
@@ -1265,7 +1265,7 @@ void CDUMUXData::WriteDataToGeoSys(CRFProcess* m_pcs)
 		//	ofstream aus;
 		//	aus.open(aus_file.data(),ios::out);
 		//	for (int i = 0; i < vec_string.size(); i++) {
-		//		aus << vec_string[i] << endl;
+		//		aus << vec_string[i] << "\n";
 		//	}
 		//	aus.close();
 		//}
@@ -1290,7 +1290,7 @@ void CDUMUXData::ExecuteDuMux(CRFProcess* m_pcs, string folder)
 
 	if (CheckIfFileExists(DuMuxExe) == false)
 	{
-		cout << "The DuMux executable could not be found! (" << DuMuxExe << ")" << endl;
+		cout << "The DuMux executable could not be found! (" << DuMuxExe << ")" << "\n";
 		//system("Pause");
 		exit(0);
 	}
@@ -1301,7 +1301,7 @@ void CDUMUXData::ExecuteDuMux(CRFProcess* m_pcs, string folder)
 		{
 			tempstring = DuMuxExe + " " + folder + "DuMux.dgf" + " " + folder +
 			             "dataForDumux.dat";
-			cout << tempstring << endl;
+			cout << tempstring << "\n";
 			if (system(tempstring.c_str()))
 			{
 				DisplayMsgLn("Warnung: DuMux doesn't run properly!!! ");
@@ -1362,7 +1362,7 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 	{
 		cout <<
 		"There are problems with writing input data for DuMux! The run is terminated." <<
-		endl;
+		"\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1374,7 +1374,7 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 		position = int(Filename.find_last_of("/"));
 	folder = Filename.substr(0, position + 1);
 
-	cout << "      Delete old result files " << endl;
+	cout << "      Delete old result files " << "\n";
 
 	if (ReadPrecalculatedFiles == false)
 	{
@@ -1411,14 +1411,14 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 		{
 			cout <<
 			"Warning: The DuMux simulator model path is not part of the GeoSys model path!!!"
-			     << endl;
-			cout << root_folder << endl;
-			cout << geosys_folder << endl;
+			     << "\n";
+			cout << root_folder << "\n";
+			cout << geosys_folder << "\n";
 			system("Pause");
 		}
 	}
 
-	cout << "      RunDuMux() called " << endl;
+	cout << "      RunDuMux() called " << "\n";
 
 	//Execute DuMux, try several times in case of problems finding the license server
 	start_execute = clock();
@@ -1440,7 +1440,7 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 	if (ReadPrecalculatedFiles == false)
 	{
 		do {
-			cout << number_loops + 1 << ". trial" << endl;
+			cout << number_loops + 1 << ". trial" << "\n";
 			ExecuteDuMux(m_pcs, folder);
 			//check if DuMux has run properly
 			number_loops += 1;
@@ -1452,14 +1452,14 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 
 	finish_execute = clock();
 	time = (double(finish_execute) - double(start_execute)) / CLOCKS_PER_SEC;
-	cout << endl;
-	cout << "  Timestep: " << Timestep << endl;
-	cout << "        RunDUMUX() called                   Time: " << time << " seconds." << endl;
+	cout << "\n";
+	cout << "  Timestep: " << Timestep << "\n";
+	cout << "        RunDUMUX() called                   Time: " << time << " seconds." << "\n";
 
 	if (number_loops > maximum_loops)
 	{
 		cout << "The DuMux execution does not work after " << number_loops << " trials!" <<
-		endl;
+		"\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1477,7 +1477,7 @@ int CDUMUXData::RunDuMux(long Timestep, CRFProcess* m_pcs)
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
 
-	cout << "        Time for this timestep: " << time << " seconds." << endl;
+	cout << "        Time for this timestep: " << time << " seconds." << "\n";
 
 	return 1;
 }

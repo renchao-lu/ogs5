@@ -157,7 +157,7 @@ void SparseMatrixDOK::operator=(const SparseMatrixDOK& m)
 #ifdef gDEBUG
 	if(nrows!=m.Rows()||ncols!=m.Cols())
 	{
-		cout<<"\n The sizes of the two matrices are not matched"<<endl;
+		cout<<"\n The sizes of the two matrices are not matched"<<"\n";
 		abort();
 	}
 #endif
@@ -187,7 +187,7 @@ void SparseMatrixDOK::operator+=(const SparseMatrixDOK& m)
 #ifdef gDEBUG
 	if(nrows!=m.Rows())
 	{
-		cout<<"\n The sizes of the two matrices are not matched"<<endl;
+		cout<<"\n The sizes of the two matrices are not matched"<<"\n";
 		abort();
 	}
 #endif
@@ -224,7 +224,7 @@ void SparseMatrixDOK::operator-=(const SparseMatrixDOK& m)
 #ifdef gDEBUG
 	if(nrows!=m.Rows()) //Assertion, will be removed
 	{
-		cout<<"\n The sizes of the two matrices are not matched"<<endl;
+		cout<<"\n The sizes of the two matrices are not matched"<<"\n";
 		abort();
 	}
 #endif
@@ -254,7 +254,7 @@ double& SparseMatrixDOK::operator()(size_t i, size_t j)
 #ifdef gDEBUG
 	if(i>=nrows||j>=nrows)
 	{
-		cout<<"\n Index exceeds the size of the matrix"<<endl;
+		cout<<"\n Index exceeds the size of the matrix"<<"\n";
 		abort();
 	}
 #endif
@@ -267,7 +267,7 @@ double& SparseMatrixDOK::operator()(size_t i) //const
 #ifdef gDEBUG
 	if(i>=size)
 	{
-		cout<<"\n Index exceeds the size of the matrix"<<endl;
+		cout<<"\n Index exceeds the size of the matrix"<<"\n";
 		abort();
 	}
 #endif
@@ -280,7 +280,7 @@ void SparseMatrixDOK::LimitSize(size_t nRows, size_t nCols)
 #ifdef gDEBUG
 	if(nRows>nrows0||nCols>ncols0)
 	{
-		cout<<"\n Given size exceeds the original size of the matrix"<<endl;
+		cout<<"\n Given size exceeds the original size of the matrix"<<"\n";
 		abort();
 	}
 #endif
@@ -325,7 +325,7 @@ void SparseMatrixDOK::Diagonize(size_t idiag, const double b_given, double *b)
 	if (!this->is_constructed) {
 		std::cout
 				<< "-> Constructing colmun info in SparseMatrixDOK::Diagonize()"
-				<< std::endl;
+				<< "\n";
 		const size_t n_rows = this->mat_row.size();
 		for (size_t i = 0; i < n_rows; i++) {
 			col_t &i_mat = this->mat_row[i];
@@ -386,7 +386,7 @@ void SparseMatrixDOK::multiVec(double *vec_s, double *vec_r)
 	(void) vec_r; // unused
 	std::cout
 			<< "***ERROR: SparseMatrixDOK::multiVec() is not implemented yet."
-			<< std::endl;
+			<< "\n";
 }
 
 void SparseMatrixDOK::Write(std::ostream &os, int format)
@@ -401,7 +401,7 @@ void SparseMatrixDOK::Write(std::ostream &os, int format)
 
 	//
 	if (format == 0) {
-		os << "*** Non-zero entries of matrix:  " << std::endl;
+		os << "*** Non-zero entries of matrix:  " << "\n";
 		//os.width(25);
 		//os.precision(10);
 
@@ -418,7 +418,7 @@ void SparseMatrixDOK::Write(std::ostream &os, int format)
 #endif
 				os << std::setw(10) << i + 1 << " " << std::setw(10)
 						<< (*jj).first + 1 << " " << std::setw(15)
-						<< (*jj).second << std::endl;
+						<< (*jj).second << "\n";
 			}
 		}
 
@@ -426,7 +426,7 @@ void SparseMatrixDOK::Write(std::ostream &os, int format)
 		//
 	} //
 	else if (format == 1) {
-		os << Dim() << std::endl;
+		os << Dim() << "\n";
 		os.setf(std::ios::scientific);
 		//os.width(25);
 		os.precision(10);
@@ -441,7 +441,7 @@ void SparseMatrixDOK::Write(std::ostream &os, int format)
 				os << v << " ";
 			}
 
-			os << std::endl;
+			os << "\n";
 		} //
 	}
 }
@@ -461,13 +461,13 @@ bool SparseMatrixDOK::IsSymmetry()
 				//if (jj->second != jj2->second) {
 				if (fabs(diff) > ZERO_TOLERANCE) {
 					std::cout << "->unsymmetry: " << i << " - " << jj->first
-							<< std::endl;
+							<< "\n";
 					return false;
 				}
 				//} else if (jj->second!=0.0) {
 			} else {
 				std::cout << "->unsymmetry: " << i << " - " << jj->first
-						<< std::endl;
+						<< "\n";
 				return false;
 			}
 		}
@@ -481,10 +481,10 @@ void SparseMatrixDOK::ConstructSortedColumnID()
 {
 	if (this->set_col_id.size()>0)
 	{
-		cout << "->SparseMatrixDOK::ConstructSortedColumnID() - Already sorted" << endl;
+		cout << "->SparseMatrixDOK::ConstructSortedColumnID() - Already sorted" << "\n";
 		return;
 	}
-	cout << "->SparseMatrixDOK::ConstructSortedColumnID()" << endl;
+	cout << "->SparseMatrixDOK::ConstructSortedColumnID()" << "\n";
 
 	// Construct list of sorted col id
 	const size_t n_row = this->mat_row.size();

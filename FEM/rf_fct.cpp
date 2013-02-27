@@ -212,7 +212,7 @@ std::ios::pos_type CFunction::Read(std::ifstream* fct_file)
 			{
 				std::cout <<
 				"FCT function: Error! The number of data does not correspond to the specified matrix size"
-				          << std::endl;
+				          << "\n";
 				break;
 			}
 			line_stream.clear();
@@ -268,33 +268,33 @@ void CFunction::Write(std::fstream* fct_file)
 	// CHECK
 	//--------------------------------------------------------------------
 	//KEYWORD
-	*fct_file << "#FUNCTION" << std::endl;
+	*fct_file << "#FUNCTION" << "\n";
 	//--------------------------------------------------------------------
 	// TYPE
-	*fct_file << " $TYPE" << std:: endl;
+	*fct_file << " $TYPE" << std:: "\n";
 	*fct_file << "  ";
-	*fct_file << type_name << std::endl;
+	*fct_file << type_name << "\n";
 	//--------------------------------------------------------------------
 	// GEO_TYPE
-	*fct_file << " $GEO_TYPE" << std::endl;
+	*fct_file << " $GEO_TYPE" << "\n";
 	*fct_file << "  ";
-	*fct_file << geo_type_name << " " << geo_name << std::endl;
+	*fct_file << geo_type_name << " " << geo_name << "\n";
 	//--------------------------------------------------------------------
 	// DATA
-	*fct_file << " $VARIABLES" << std::endl;
+	*fct_file << " $VARIABLES" << "\n";
 	*fct_file << " ";
 	for(i = 0; i < variable_names_vector_size; i++)
 		*fct_file << " " << variable_names_vector[i];
-	*fct_file << std::endl;
+	*fct_file << "\n";
 	//--------------------------------------------------------------------
 	// DATA
-	*fct_file << " $DATA" << std::endl;
+	*fct_file << " $DATA" << "\n";
 	for(i = 0; i < variable_data_vector_size; i++)
 	{
 		*fct_file << " ";
 		for(j = 0; j < variable_names_vector_size; j++)
 			*fct_file << " " << variable_data_vector[i][j];
-		*fct_file << std::endl;
+		*fct_file << "\n";
 	}
 	//--------------------------------------------------------------------
 }
@@ -323,7 +323,7 @@ void FCTRead(std::string base_file_name)
 	fct_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// keyword loop
-	std::cout << "FCTRead" << std::endl;
+	std::cout << "FCTRead" << "\n";
 	while (!fct_file.eof())
 	{
 		fct_file.getline(line,MAX_ZEILE);
@@ -362,7 +362,7 @@ void FCTWrite(std::string file_base_name)
 	if (!fct_file.good())
 		return;
 	fct_file << "GeoSys-FCT: Functions ------------------------------------------------" <<
-	std::endl;
+	"\n";
 	//========================================================================
 	// FCT vect list
 	int no_fct = (int)fct_vector.size();
@@ -406,7 +406,7 @@ void FCTReadTIMData(std::string file_name_base)
 	double time;
 	double value;
 	//----------------------------------------------------------------------
-	std::cout << "Read FCT properties from " << file_name_base << std::endl;
+	std::cout << "Read FCT properties from " << file_name_base << "\n";
 	//----------------------------------------------------------------------
 	// File handling
 	//OK4105

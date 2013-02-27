@@ -119,7 +119,7 @@ SurfaceGrid::SurfaceGrid(Surface const*const sfc) :
 		k_min = k_max = static_cast<size_t>((pnt[2]-_min_pnt[2]) * _inverse_step_sizes[2]);
 
 		if (i_min >= _n_steps[0] || j_min >= _n_steps[1] || k_min >= _n_steps[2]) {
-			std::cout << "error computing indices " << std::endl;
+			std::cout << "error computing indices " << "\n";
 		}
 
 		for (size_t m(1); m<3; m++) {
@@ -129,7 +129,7 @@ SurfaceGrid::SurfaceGrid(Surface const*const sfc) :
 			const size_t k (static_cast<size_t>((pnt[2]-_min_pnt[2]) * _inverse_step_sizes[2]));
 
 			if (i >= _n_steps[0] || j >= _n_steps[1] || k >= _n_steps[2]) {
-				std::cout << "error computing indices " << std::endl;
+				std::cout << "error computing indices " << "\n";
 			}
 
 			if (i < i_min) i_min = i;

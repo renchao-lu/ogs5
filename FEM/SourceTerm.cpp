@@ -31,7 +31,7 @@ SourceTerm::SourceTerm(const CSourceTerm &st, const std::string &geometry_name)
 		std::cout << "Error in SourceTerm() - Unknown Process Distribution Type \"" <<
 		FiniteElement::convertDisTypeToString(st.getProcessDistributionType()) <<
 		"\"..." <<
-		std::endl;
+		"\n";
 }
 
 // Legacy function (only required for ascii st-files): reads values for 'direct' source terms
@@ -41,7 +41,7 @@ void SourceTerm::getDirectNodeValues(const std::string &filename,
 	std::ifstream in(filename.c_str());
 	if (!in.is_open())
 	{
-		std::cout << "Error in getNodeValues() - Could not find file for direct node values..." << std::endl;
+		std::cout << "Error in getNodeValues() - Could not find file for direct node values..." << "\n";
 		return;
 	}
 

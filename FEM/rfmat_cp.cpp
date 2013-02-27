@@ -120,7 +120,7 @@ bool CPRead(std::string file_base_name)
 
 	//========================================================================
 	cp_vec.clear();
-	cout << "CPRead" << endl;
+	cout << "CPRead" << "\n";
 	// Schleife ueber alle Phasen bzw. Komponenten
 	while (!cp_file.eof())
 	{
@@ -265,7 +265,7 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
 			{
 				cout <<
 				"Error! Corresponding fluid phase not found!!! Terminate program..."
-				     << endl;
+				     << "\n";
 				exit(0);
 			}
 		}
@@ -363,13 +363,13 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
 						else
 							cout <<
 							"Warning: Missing diffusion model values for component "
-							     << this->compname << endl;
+							     << this->compname << "\n";
 						if((diffusion_model == 1) && (j == 0))
 							if((diffusion_model_values[j] < 0.0) ||
 							   (diffusion_model_values[j] > 100000.0))
 								cout <<
 								"Warning: Funny diffusion model values specified"
-								     << endl;
+								     << "\n";
 					} //end for(j...)
 
 				//		diffusion_model_values = read_help;
@@ -565,9 +565,9 @@ void CPWrite(std::string base_file_name,int flag)
 	if(flag == 1)
 		rfe_file.seekp(0L,ios::end);  // go to end
 	//========================================================================
-	rfe_file << endl <<
+	rfe_file << "\n" <<
 	"; CompProperties ----------------------------------------------------------------- " <<
-	endl;
+	"\n";
 	// Output all components
 	length = (int) cp_vec.size();
 	for(i = 0; i < length; i++)
@@ -575,7 +575,7 @@ void CPWrite(std::string base_file_name,int flag)
 		m_kr = cp_vec[i];
 		m_kr->Write(&rfe_file);
 	}
-	rfe_file << endl << "#STOP " << endl;
+	rfe_file << "\n" << "#STOP " << "\n";
 	rfe_file.close();
 	//  delete rfe_file;
 }
@@ -591,63 +591,63 @@ void CompProperties::Write(ofstream* rfe_file)
 	int i;
 
 	// Write Keyword
-	*rfe_file << "#COMPONENT_PROPERTIES" << endl;
+	*rfe_file << "#COMPONENT_PROPERTIES" << "\n";
 	// Name of component
-	*rfe_file << "$NAME" << endl << compname << endl;
+	*rfe_file << "$NAME" << "\n" << compname << "\n";
 	// mobile or not?
-	*rfe_file << "$MOBILE" << endl << mobil << endl;
+	*rfe_file << "$MOBILE" << "\n" << mobil << "\n";
 	// TRANSPORT_PHASE
-	*rfe_file << "$TRANSPORT_PHASE" << endl << transport_phase << endl;
+	*rfe_file << "$TRANSPORT_PHASE" << "\n" << transport_phase << "\n";
 	// FLUID_PHASE
-	*rfe_file << "$FLUID_PHASE" << endl << transport_phase << endl;
+	*rfe_file << "$FLUID_PHASE" << "\n" << transport_phase << "\n";
 	// Diffusion
 	if(diffusion_model > -1 )
 	{
-		*rfe_file << "$DIFFUSION" << endl;
+		*rfe_file << "$DIFFUSION" << "\n";
 		*rfe_file << diffusion_model << "  ";
 		for(i = 0; i < count_of_diffusion_model_values; i++)
 			*rfe_file << diffusion_model_values[i] << " ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 	// DECAY
 	if(decay_model > -1)
 	{
-		*rfe_file << "$DECAY" << endl;
+		*rfe_file << "$DECAY" << "\n";
 		*rfe_file << decay_model << "  ";
 		for(i = 0; i < count_of_decay_model_values; i++)
 			*rfe_file << decay_model_values[i] << " ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 	//Isotherm
 	if(isotherm_model > -1)
 	{
-		*rfe_file << "$ISOTHERM" << endl;
+		*rfe_file << "$ISOTHERM" << "\n";
 		*rfe_file << isotherm_model << "  ";
 		for(i = 0; i < count_of_isotherm_model_values; i++)
 			*rfe_file << isotherm_model_values[i] << " ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 	//NAPL Dissolution CB140708
 	if(molar_density > 0)
 	{
-		*rfe_file << "$MOLAR_DENSITY" << endl;
+		*rfe_file << "$MOLAR_DENSITY" << "\n";
 		*rfe_file << molar_density << "  ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 	if(molar_weight > 0)
 	{
-		*rfe_file << "$MOLAR_WEIGHT" << endl;
+		*rfe_file << "$MOLAR_WEIGHT" << "\n";
 		*rfe_file << molar_weight << "  ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 	if(max_solubility > 0)
 	{
-		*rfe_file << "$MAXIMUM_AQUEOUS_SOLUBILITY" << endl;
+		*rfe_file << "$MAXIMUM_AQUEOUS_SOLUBILITY" << "\n";
 		*rfe_file << max_solubility << "  ";
-		*rfe_file << endl;
+		*rfe_file << "\n";
 	}
 
-	*rfe_file << endl;
+	*rfe_file << "\n";
 }
 
 /*************************************************************************
@@ -767,7 +767,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 		/* not implemented anymore because we use arithmetric mean */
 		cout <<
 		"diffusion law no. 8 Not implemented anymore, please use law 9 in the *.mcp-file"
-		     << endl;
+		     << "\n";
 		break;
 
 		//     if (count_of_diffusion_model_values < 2)
@@ -814,14 +814,14 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
 			Dm = k[0] * pow(dummy,k[1]); //node based diffusion coefficient
 			
 			diffusion_average += 1.0 / Dm;
-			//	cout << "debug: " << Dm << " porosity: " << GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 0) << endl;
+			//	cout << "debug: " << Dm << " porosity: " << GetNodePorosityValue_MT(m_Elem->GetNodeIndex ( i ), 0) << "\n";
 		}
 		Dm =  count_nodes / diffusion_average; // This is now harmonic mean of node diffusion coefficients
 		// end calculation of diffusion coefficient
 		saturation = PCSGetEleMeanNodeSecondary_2(index, m_pcs->flow_pcs_type,"SATURATION1", 1); // this line accounts for element saturatuions for all flow types....of course we have a problem if we have saturation ne 1 and not Richards flow
 		if (saturation <= 1.0e-20) saturation=1.0e-20; // set to an arbitrary small number to avoid divsion by zero...
 		Dm = Dm / (porosity*saturation);       //correct for multiplication with element porosities & saturations -> Pore diffusion coefficient
-		//			cout << " CalcDiffusionCoefficientCP: De: " << Dm*porosity*saturation << " saturation " << saturation << " porosity " << endl;
+		//			cout << " CalcDiffusionCoefficientCP: De: " << Dm*porosity*saturation << " saturation " << saturation << " porosity " << "\n";
 
 		return Dm;
 	}

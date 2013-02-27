@@ -788,7 +788,7 @@ void CFiniteElementStd::SetMaterial(int phase)
 	   if(PCSGet("LIQUID_FLOW")){
 	    FluidProp = MFPGet("LIQUID");
 	    if(!FluidProp)
-	      cout << "Warning: LIQUID was not found in fluid properties." << endl;
+	      cout << "Warning: LIQUID was not found in fluid properties." << "\n";
 	   }
 	 */
 	if(mfp_vector.size() > 0)
@@ -1410,7 +1410,7 @@ double CFiniteElementStd::CalCoefMass()
 	switch(PcsType)
 	{
 	default:
-		std::cout << "Fatal error in CalCoefMass: No valid PCS type" << std::endl;
+		std::cout << "Fatal error in CalCoefMass: No valid PCS type" << "\n";
 		break;
 	case L:                               // Liquid flow
 		// Is this really needed?
@@ -1716,7 +1716,7 @@ double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 		T = interpolate(NodalValC1);
 
 		val = poro * (Sw) * FluidProp->drhodP(0, P,T) / FluidProp->Density();
-		//		cout << FluidProp->fluid_name << " Pressure: " << P << " Temp: " << ": drhodP: " << FluidProp->drhodP(P,T) << " density: " << FluidProp->Density() << endl;
+		//		cout << FluidProp->fluid_name << " Pressure: " << P << " Temp: " << ": drhodP: " << FluidProp->drhodP(P,T) << " density: " << FluidProp->Density() << "\n";
 		break;
 	case 1:                               // Snw in the wetting equation
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
@@ -1761,7 +1761,7 @@ double CFiniteElementStd::CalCoefStorage()
 	switch(PcsType)
 	{
 	default:
-		std::cout << "Fatal error in CalCoefStorage: No valid PCS type" << std::endl;
+		std::cout << "Fatal error in CalCoefStorage: No valid PCS type" << "\n";
 		break;
 	case L:                               // Liquid flow
 		break;
@@ -1830,7 +1830,7 @@ double CFiniteElementStd::CalCoefContent()
 	switch(PcsType)
 	{
 	default:
-		std::cout << "Fatal error in CalCoefContent: No valid PCS type" << std::endl;
+		std::cout << "Fatal error in CalCoefContent: No valid PCS type" << "\n";
 		break;
 	case L:                               // Liquid flow
 		break;
@@ -1871,7 +1871,7 @@ double CFiniteElementStd::CalCoefContent()
 			nodeval1 = 1.0 - nodeval1;
 		}                         // SB, BG
 		dS = porval1 * nodeval1 - porval0 * nodeval0; // 1/dt accounted for in assemble function
-		//		if(Index == 195) cout << val << "Sat_old = " << nodeval0 << ", Sa_new: "<< nodeval1<< ", dS: " << dS << endl;
+		//		if(Index == 195) cout << val << "Sat_old = " << nodeval0 << ", Sa_new: "<< nodeval1<< ", dS: " << dS << "\n";
 		val = dS;
 		break;
 	}
@@ -1933,7 +1933,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 			Matrix local_tensor(dim,dim);
 			Matrix temp_tensor(dim,dim);
             if (MeshElement->transform_tensor==NULL) {
-                std::cout << "***Error: Geometric dimension in MMP is not consistent with element." << std::endl;
+                std::cout << "***Error: Geometric dimension in MMP is not consistent with element." << "\n";
                 exit(0);
             }
 			Matrix t_transform_tensor(*MeshElement->transform_tensor);
@@ -1942,14 +1942,14 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 			for (size_t i = 0; i < ele_dim; i++)
 				for (size_t j = 0; j < ele_dim; j++)
 					local_tensor(i,j) = tensor[j + i * ele_dim];
-			//cout << "K':" << endl; local_tensor.Write();
+			//cout << "K':" << "\n"; local_tensor.Write();
 			local_tensor.multi(t_transform_tensor, temp_tensor);
 			for (size_t i = 0; i < dim; i++)
 				for (size_t j = 0; j < dim; j++)
 					for (size_t k = 0; k < dim; k++)
 						global_tensor(i, j) += (*MeshElement->transform_tensor)(i, k)
 										* temp_tensor(k,j);
-			//cout << "K:" << endl; global_tensor.Write();
+			//cout << "K:" << "\n"; global_tensor.Write();
 			for(size_t i = 0; i < dim; i++)
 				for(size_t j = 0; j < dim; j++)
 					tensor[dim * i + j] = global_tensor(i,j);
@@ -2005,7 +2005,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
                for (size_t i=0; i<ele_dim; i++)
                   for (size_t j=0; j<ele_dim; j++)
                      local_tensor(i,j) = tensor[j+i*ele_dim];
-               //cout << "K':" << endl; local_tensor.Write();
+               //cout << "K':" << "\n"; local_tensor.Write();
                local_tensor.multi(t_transform_tensor, temp_tensor);
                for (size_t i=0; i<dim; i++)
                {
@@ -2013,7 +2013,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
                      for (size_t k=0; k<dim; k++)
                         global_tensor(i,j)+=(*MeshElement->transform_tensor)(i,k)*temp_tensor(k,j);
                }
-               //cout << "K:" << endl; global_tensor.Write();
+               //cout << "K:" << "\n"; global_tensor.Write();
 			   if(MediaProp->unconfined_flow_group == 2) // 3D unconfined GW JOD, 5.3.07
 				{
 					double * pressureHead;
@@ -2807,7 +2807,7 @@ int CFiniteElementStd::UpwindElement(int option, int phase)
 			}
 			else
 			{
-				std::cout << "Phase number is wrong in UpwindElement." << std::endl;
+				std::cout << "Phase number is wrong in UpwindElement." << "\n";
 				abort();
 			}
 
@@ -2821,8 +2821,8 @@ int CFiniteElementStd::UpwindElement(int option, int phase)
 
 	if(WhichNodeInTheElement == -1)
 	{
-		std::cout << "UpwindElement is failed. Impossible node index!!!" << std::endl;
-		std::cout << "Pmin = " << Pmin << std::endl;
+		std::cout << "UpwindElement is failed. Impossible node index!!!" << "\n";
+		std::cout << "Pmin = " << Pmin << "\n";
 		abort();
 	}
 	return WhichNodeInTheElement;
@@ -2971,7 +2971,7 @@ void CFiniteElementStd::UpwindUnitCoord(int p, int point, int ind)
 	//test
 	for(i = 0; i < ele_dim; i++)
 		cout << unit[i] << " ";
-	cout << endl;
+	cout << "\n";
 
 	double ur, us, ut;
 
@@ -3150,7 +3150,7 @@ void CFiniteElementStd::UpwindUnitCoord(int p, int point, int ind)
 	//test
 	for(i = 0; i < ele_dim; i++)
 		cout << unit[i] << " ";
-	cout << endl;
+	cout << "\n";
 #endif
 }
 
@@ -3174,7 +3174,7 @@ double CFiniteElementStd::CalCoefAdvection()
 	switch(PcsType)
 	{
 	default:
-		cout << "Fatal error in CalCoefAdvection: No valid PCS type" << std::endl;
+		cout << "Fatal error in CalCoefAdvection: No valid PCS type" << "\n";
 		break;
 	case L:                               // Liquid flow
 		break;
@@ -3368,7 +3368,7 @@ void CFiniteElementStd::CalcMass()
 
 		// Material
 		mat_fac = CalCoefMass();
-		// if(Index < 0) cout << "mat_fac in CalCoeffMass: " << mat_fac << endl;
+		// if(Index < 0) cout << "mat_fac in CalCoeffMass: " << mat_fac << "\n";
 		// GEO factor
 		mat_fac *= fkt;
 		// Calculate mass matrix
@@ -3542,7 +3542,7 @@ void CFiniteElementStd::CalcSUPGWeightingFunction(double* vel, int ip, double &t
 	{
 		cout <<
 		"***Warning in CFiniteElementStd::CalcSUPGWeightingFunction(): SUPG option is not selected"
-		     << endl;
+		     << "\n";
 		return;
 	}
 
@@ -3603,7 +3603,7 @@ double CFiniteElementStd::CalcSUPGEffectiveElemenetLength(double* vel)
 		{
 			cout <<
 			"***Error: ele_supg_method_length <3> has not been supported yet." <<
-			endl;
+			"\n";
 		}
 		break;
 		default:                  //0 or any invalid number: max edge length
@@ -3722,7 +3722,7 @@ void CFiniteElementStd::UpwindAlphaMass(double* alpha)
 	//test
 	for(i = 0; i < ele_dim; i++)
 		cout << alpha[i] << " ";
-	cout << endl;
+	cout << "\n";
 
 	switch(eletyp)
 	{
@@ -3824,7 +3824,7 @@ void CFiniteElementStd::UpwindAlphaMass(double* alpha)
 	//test
 	for(i = 0; i < ele_dim; i++)
 		cout << alpha[i] << " ";
-	cout << endl;
+	cout << "\n";
 #endif
 }
 
@@ -4350,7 +4350,7 @@ void CFiniteElementStd::CalcStorage()
 				(*Storage)(i,j) += fkt * shapefct[i] * shapefct[j];
 	}
 	//TEST OUTPUT
-	//  if(Index == 195){cout << "Storage Matrix: " << endl; Storage->Write(); }
+	//  if(Index == 195){cout << "Storage Matrix: " << "\n"; Storage->Write(); }
 }
 
 /***************************************************************************
@@ -4490,7 +4490,7 @@ void CFiniteElementStd::CalcLaplace()
 							 (*Laplace)(i+in*nnodes,j+jn*nnodes) += fkt * dshapefct[k*nnodes+i] \
 							 * mat[dim*k+l] * dshapefct[l*nnodes+j];
 							 if(Index < 10) {cout << " i, j, k, l, nnodes, dim: " << i << ", " << j << ", " << k << ", " << l << ", " << nnodes << ", " << dim << ". fkt, dshapefct[k*nnodes+i], mat[dim*k+l], dshapefct[l*nnodes+j]: ";
-							 cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << endl;}
+							 cout << fkt << ", " << dshapefct[k*nnodes+i] << ", " << mat[dim*k+l] << ", " << dshapefct[l*nnodes+j] << "\n";}
 							 */
 						}
 					// j: nodes
@@ -4783,7 +4783,7 @@ void CFiniteElementStd::CalcAdvection()
 		}
 	}
 	//TEST OUTPUT
-	//cout << "Advection Matrix: " << endl; Advection->Write();
+	//cout << "Advection Matrix: " << "\n"; Advection->Write();
 }
 
 /***************************************************************************
@@ -5057,7 +5057,7 @@ void CFiniteElementStd::CalcStrainCoupling(int phase)
 	/// Ouput the matrix, 07.2011. WW
 	if(pcs->matrix_file)
 	{
-		(*pcs->matrix_file) << "---Strain couping matrix: " << endl;
+		(*pcs->matrix_file) << "---Strain couping matrix: " << "\n";
 		StrainCoupling->Write(*pcs->matrix_file);
 	}
 }
@@ -5679,12 +5679,12 @@ void CFiniteElementStd::Cal_Velocity()
 	//
 	if(pcs->Write_Matrix)
 	{
-		(*pcs->matrix_file) << "### Element: " << Index << endl;
-		(*pcs->matrix_file) << "---Velocity of water " << endl;
+		(*pcs->matrix_file) << "### Element: " << Index << "\n";
+		(*pcs->matrix_file) << "---Velocity of water " << "\n";
 		gp_ele->Velocity.Write(*pcs->matrix_file);
 		if(gp_ele->Velocity_g.Size() > 0)
 		{
-			(*pcs->matrix_file) << "---Velocity of gas " << endl;
+			(*pcs->matrix_file) << "---Velocity of gas " << "\n";
 			gp_ele->Velocity_g.Write(*pcs->matrix_file);
 		}
 	}
@@ -5757,7 +5757,7 @@ void CFiniteElementStd::Cal_GP_Velocity_FM(int* i_ind)
 		   //	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g[i_dim] << "  ";
 		   //	  cout << "vel_diff: " ;
 		   //	  for(i_dim=0;i_dim<dim;i_dim++) cout << vel_g_old[i_dim]-vel_g[i_dim] << "  ";
-		     cout << endl;
+		     cout << "\n";
 		     }
 		 */
 	}                                     // end gauss point loop
@@ -5873,7 +5873,7 @@ string CFiniteElementStd::Cal_GP_Velocity_DuMux(int* i_ind, CRFProcess* m_pcs, i
 					{
 						cout <<
 						"The program is canceled because there is a phase used which is not considered yet!"
-						     << endl;
+						     << "\n";
 						system("Pause");
 						exit(0);
 					}
@@ -6069,17 +6069,17 @@ void CFiniteElementStd::Cal_Velocity_2()
 				                              j] * vel_g[j] / time_unit_factor;
 	}
 	//
-	//   cout << gp << " " << vel[0] << " " << vel[1] << " " << vel[2] << endl; //Test
+	//   cout << gp << " " << vel[0] << " " << vel[1] << " " << vel[2] << "\n"; //Test
 	//} // for (gp = 0;...
 	//
 	if(pcs->Write_Matrix)
 	{
-		(*pcs->matrix_file) << "### Element: " << Index << endl;
-		(*pcs->matrix_file) << "---Velocity of water " << endl;
+		(*pcs->matrix_file) << "### Element: " << Index << "\n";
+		(*pcs->matrix_file) << "---Velocity of water " << "\n";
 		gp_ele->Velocity.Write(*pcs->matrix_file);
 		if(gp_ele->Velocity_g.Size() > 0)
 		{
-			(*pcs->matrix_file) << "---Velocity of gas " << endl;
+			(*pcs->matrix_file) << "---Velocity of gas " << "\n";
 			gp_ele->Velocity_g.Write(*pcs->matrix_file);
 		}
 	}
@@ -6135,8 +6135,8 @@ double CFiniteElementStd::Get_Element_Velocity(int Index, CRFProcess* m_pcs, int
 		//		velocity[i_dim] += gp_ele->Velocity_g(i_dim, gp);
 		//}
 	}
-	//cout << endl;
-	//cout << gp_ele->Velocity(dimension, 0) << " " << gp_ele->Velocity(dimension, 1) << " " << gp_ele->Velocity(dimension, 2) << " " << gp_ele->Velocity(dimension, 3) << " " << gp_ele->Velocity(dimension, 4) << " " << gp_ele->Velocity(dimension, 5) << " " << gp_ele->Velocity(dimension, 6) << " " << gp_ele->Velocity(dimension, 7) << " " << gp_ele->Velocity(dimension, 8) << " " << gp_ele->Velocity(dimension, 9) << " " << gp_ele->Velocity(dimension, 10) << " " << gp_ele->Velocity(dimension,11) << " " << gp_ele->Velocity(dimension, 12) << " " << gp_ele->Velocity(dimension, 13) << " " << gp_ele->Velocity(dimension, 14) << endl;
+	//cout << "\n";
+	//cout << gp_ele->Velocity(dimension, 0) << " " << gp_ele->Velocity(dimension, 1) << " " << gp_ele->Velocity(dimension, 2) << " " << gp_ele->Velocity(dimension, 3) << " " << gp_ele->Velocity(dimension, 4) << " " << gp_ele->Velocity(dimension, 5) << " " << gp_ele->Velocity(dimension, 6) << " " << gp_ele->Velocity(dimension, 7) << " " << gp_ele->Velocity(dimension, 8) << " " << gp_ele->Velocity(dimension, 9) << " " << gp_ele->Velocity(dimension, 10) << " " << gp_ele->Velocity(dimension,11) << " " << gp_ele->Velocity(dimension, 12) << " " << gp_ele->Velocity(dimension, 13) << " " << gp_ele->Velocity(dimension, 14) << "\n";
 
 	// Calculate average element velocity
 	velocity[dimension] /= nGaussPoints;
@@ -6220,7 +6220,7 @@ string CFiniteElementStd::Cal_GP_Velocity_ECLIPSE(string tempstring,
 				{
 					cout <<
 					"The program is canceled because there is a phase used which is not considered yet!"
-					     << endl;
+					     << "\n";
 					system("Pause");
 					exit(0);
 				}
@@ -6841,9 +6841,9 @@ void CFiniteElementStd::add2GlobalMatrixII(int block_cols)
 
 	if(pcs->matrix_file)
 	{
-		(*pcs->matrix_file) << "Stiffness: " << endl;
+		(*pcs->matrix_file) << "Stiffness: " << "\n";
 		StiffMatrix->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
+		(*pcs->matrix_file) << "\n";
 	}
 }
 /**************************************************************************
@@ -7016,7 +7016,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 	else
 	{
 		if(Index < 1)
-			cout << "        Skipping calculation of element matrices " << endl;
+			cout << "        Skipping calculation of element matrices " << "\n";
 		// Get Element Matrices
 		EleMat = pcs->Ele_Matrices[Index];
 		Mass = EleMat->GetMass_notsym();
@@ -7128,27 +7128,27 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 	//Debug output
 	/*
 	   if(Index < 10){
-	   cout << " Element Number " << Index << endl;
-	   cout << " Mass matrix" << endl;
+	   cout << " Element Number " << Index << "\n";
+	   cout << " Mass matrix" << "\n";
 	   Mass->Write();
-	   cout << " Advection matrix" << endl;
+	   cout << " Advection matrix" << "\n";
 	   Advection->Write();
-	   cout << " Dispersion matrix" << endl;
+	   cout << " Dispersion matrix" << "\n";
 	   Laplace->Write();
-	   cout << " Storage matrix" << endl;
+	   cout << " Storage matrix" << "\n";
 	   Storage->Write();
-	   cout << " Content matrix" << endl;
+	   cout << " Content matrix" << "\n";
 	   Content->Write();
-	   cout << " Left matrix" << endl;
+	   cout << " Left matrix" << "\n";
 	   StiffMatrix->Write();
-	   cout << " Right matrix" << endl;
+	   cout << " Right matrix" << "\n";
 	   AuxMatrix1->Write();
-	   cout << "RHS: " << endl ;
-	   for (i=0;i<nnodes; i++) cout << "| " << NodalVal[i] << " |" << endl;
-	   cout << " initial concentrations" << endl;
-	   for (i=0;i<nnodes; i++) cout << "| " << NodalVal1[i] << " |" << endl;
-	   //	cout << " RHS vector: " << endl;
-	   //	for (i=0;i<nnodes; i++) cout << "| " <<  (double)(*RHS)(i+LocalShift) << " |" << endl;
+	   cout << "RHS: " << "\n" ;
+	   for (i=0;i<nnodes; i++) cout << "| " << NodalVal[i] << " |" << "\n";
+	   cout << " initial concentrations" << "\n";
+	   for (i=0;i<nnodes; i++) cout << "| " << NodalVal1[i] << " |" << "\n";
+	   //	cout << " RHS vector: " << "\n";
+	   //	for (i=0;i<nnodes; i++) cout << "| " <<  (double)(*RHS)(i+LocalShift) << " |" << "\n";
 	   }
 	 */
 }
@@ -7730,7 +7730,7 @@ void CFiniteElementStd::Assembly()
 
 	// If output matrices and vectors. 07.2011. WW
 	if(pcs->Write_Matrix)
-		(*pcs->matrix_file) << "### Element: " << Index << endl;
+		(*pcs->matrix_file) << "### Element: " << Index << "\n";
 
 	//======================================================================
 	switch(PcsType)
@@ -7879,7 +7879,7 @@ void CFiniteElementStd::Assembly()
 		break;
 	//....................................................................
 	default:
-		cout << "Fatal error: No valid PCS type" << endl;
+		cout << "Fatal error: No valid PCS type" << "\n";
 		break;
 	}
 
@@ -7888,22 +7888,22 @@ void CFiniteElementStd::Assembly()
 	// Output matrices
 	if(pcs->Write_Matrix)
 	{
-		(*pcs->matrix_file) << "---Mass matrix: " << endl;
+		(*pcs->matrix_file) << "---Mass matrix: " << "\n";
 		if(Mass)
 			Mass->Write(*pcs->matrix_file);
 		else if(Mass2)
 			Mass2->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << "---Laplacian matrix: " << endl;
+		(*pcs->matrix_file) << "---Laplacian matrix: " << "\n";
 		Laplace->Write(*pcs->matrix_file);
 		if(Advection)
 		{
 			//CMCD
-			(*pcs->matrix_file) << "---Advective matrix: " << endl;
+			(*pcs->matrix_file) << "---Advective matrix: " << "\n";
 			Advection->Write(*pcs->matrix_file);
 		}
-		(*pcs->matrix_file) << "---RHS: " << endl;
+		(*pcs->matrix_file) << "---RHS: " << "\n";
 		RHS->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
+		(*pcs->matrix_file) << "\n";
 	}
 }
 
@@ -7973,17 +7973,17 @@ void CFiniteElementStd::Assembly(int option, int dimension)
 	{
 		for (i = 0; i < nnodes; i++)
 			(*RHS)(i) = NodalVal[i];
-		(*pcs->matrix_file) << "### Element: " << Index << endl;
-		(*pcs->matrix_file) << "---Mass matrix: " << endl;
+		(*pcs->matrix_file) << "### Element: " << Index << "\n";
+		(*pcs->matrix_file) << "---Mass matrix: " << "\n";
 		Mass->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << "---Laplacian matrix: " << endl;
+		(*pcs->matrix_file) << "---Laplacian matrix: " << "\n";
 		Laplace->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << "---RHS: " << endl;
+		(*pcs->matrix_file) << "---RHS: " << "\n";
 		RHS->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
-		(*pcs->matrix_file) << "Stiffness: " << endl;
+		(*pcs->matrix_file) << "\n";
+		(*pcs->matrix_file) << "Stiffness: " << "\n";
 		StiffMatrix->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
+		(*pcs->matrix_file) << "\n";
 	}
 }
 /**************************************************************************
@@ -10061,36 +10061,36 @@ void CFiniteElementStd::PrintTheSetOfElementMatrices(std::string mark)
 	// Output matrices
 	if(pcs->Write_Matrix)
 	{
-		(*pcs->matrix_file) << "### Mark: " << mark << endl;
+		(*pcs->matrix_file) << "### Mark: " << mark << "\n";
 
-		(*pcs->matrix_file) << "### Element: " << Index << endl;
-		(*pcs->matrix_file) << "---Mass matrix: " << endl;
+		(*pcs->matrix_file) << "### Element: " << Index << "\n";
+		(*pcs->matrix_file) << "---Mass matrix: " << "\n";
 		if(Mass)
 			Mass->Write(*pcs->matrix_file);
 		else if(Mass2)
 			Mass2->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << "---Laplacian matrix: " << endl;
+		(*pcs->matrix_file) << "---Laplacian matrix: " << "\n";
 		Laplace->Write(*pcs->matrix_file);
 
-		(*pcs->matrix_file) << "---AuxMatrix1 matrix: " << endl;
+		(*pcs->matrix_file) << "---AuxMatrix1 matrix: " << "\n";
 		AuxMatrix1->Write(*pcs->matrix_file); // PCH for debug
 		if(Advection)
 		{
 			//CMCD
-			(*pcs->matrix_file) << "---Advective matrix: " << endl;
+			(*pcs->matrix_file) << "---Advective matrix: " << "\n";
 			Advection->Write(*pcs->matrix_file);
 		}
 		if(StrainCoupling)
 		{
-			(*pcs->matrix_file) << "---Strain couping matrix: " << endl;
+			(*pcs->matrix_file) << "---Strain couping matrix: " << "\n";
 			StrainCoupling->Write(*pcs->matrix_file);
 		}
-		(*pcs->matrix_file) << "---RHS: " << endl;
+		(*pcs->matrix_file) << "---RHS: " << "\n";
 		RHS->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
-		(*pcs->matrix_file) << "Stiffness: " << endl;
+		(*pcs->matrix_file) << "\n";
+		(*pcs->matrix_file) << "Stiffness: " << "\n";
 		StiffMatrix->Write(*pcs->matrix_file);
-		(*pcs->matrix_file) << endl;
+		(*pcs->matrix_file) << "\n";
 	}
 }
 }                                                 // end namespace

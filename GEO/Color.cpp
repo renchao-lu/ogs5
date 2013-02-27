@@ -27,7 +27,7 @@ int readColorLookupTable(std::map<std::string, Color*> &colors, const std::strin
 
 	if (!in.is_open())
 	{
-		std::cout << "Color::readLookupTable() - Could not open file..."  << std::endl;
+		std::cout << "Color::readLookupTable() - Could not open file..."  << "\n";
 		return 0;
 	}
 
@@ -60,7 +60,7 @@ const Color* getColor(const std::string &id, std::map<std::string, Color*> &colo
 	     ++it)
 		if (id.compare(it->first) == 0)
 			return it->second;
-	std::cout << "Key \"" << id << "\" not found in color lookup table..." << std::endl;
+	std::cout << "Key \"" << id << "\" not found in color lookup table..." << "\n";
 	Color* c = getRandomColor();
 	colors.insert(std::pair<std::string, Color*>(id, c));
 	return c;

@@ -1836,7 +1836,7 @@ double zbrent(double TT, double PP, int fluid, const double tol)
 	fa = dpressure(TT,PP,fluid,x1);
 	fb = dpressure(TT,PP,fluid,x2);
 
-	if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) //cout << "Error in zbrent, fluid " << fluid << " T: " << TT << " P: " << PP << " b: " << b << endl;
+	if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) //cout << "Error in zbrent, fluid " << fluid << " T: " << TT << " P: " << PP << " b: " << b << "\n";
 		cout << ".";
 	fc = fb;
 	for (int iter = 0; iter < ITMAX; iter++)
@@ -3221,7 +3221,7 @@ void CFluidProperties::therm_prop (string caption)
 		// Limits sums in FHE-derivations
 	}
 
-	default: cout << "Error in eos.cpp: no fluid name specified!" << endl;
+	default: cout << "Error in eos.cpp: no fluid name specified!" << "\n";
 		break;
 	}
 }
@@ -3298,7 +3298,7 @@ inline double W3( double x)
 			case 3: return 12.1308 - 0.0099489 * T - 3042.09583 / T;
 			default: return 1;
 			}
-		cout << " This text should not be printed, something is wrong!" << endl;
+		cout << " This text should not be printed, something is wrong!" << "\n";
 		return 0;
 	}
 
@@ -3331,7 +3331,7 @@ inline double W3( double x)
 				// case 3: return 12.1308 -0.0099489*T - 3042.09583/T; aus F90
 			}
 		}
-		cout << " This text should not be printed, something is wrong!" << endl;
+		cout << " This text should not be printed, something is wrong!" << "\n";
 		return 0;
 	}
 
@@ -3492,7 +3492,7 @@ double bip (int number, int fluid_a, int fluid_b, int i, int j, int k, double T)
 		default:
 			return 1;
 		}
-	cout << " This text should not be printed, something is wrong!" << endl;
+	cout << " This text should not be printed, something is wrong!" << "\n";
 	return 0;
 }
 
@@ -3708,7 +3708,7 @@ double DuansMixingRule(double T, double P, double x, int fluid1, int fluid2, boo
 	//			dev_1=dev;
 	//		} }else
 	//		{
-	//			//cout << " loop 1 left after " << n << " circles "<< endl;
+	//			//cout << " loop 1 left after " << n << " circles "<< "\n";
 	//			break;
 	//		}
 	//}*/
@@ -3738,11 +3738,11 @@ double DuansMixingRule(double T, double P, double x, int fluid1, int fluid2, boo
 				V2 = V;
 				dev_2 = dev;
 			} else
-			//cout << " loop 2 left after " << n << " circles "<< endl;
+			//cout << " loop 2 left after " << n << " circles "<< "\n";
 			break;
 			//goto l400;
 		} else
-		//cout << " loop 2 left after " << n << " circles "<< endl;
+		//cout << " loop 2 left after " << n << " circles "<< "\n";
 		break;
 	}
 
@@ -3761,7 +3761,7 @@ double DuansMixingRule(double T, double P, double x, int fluid1, int fluid2, boo
 			dev = DuanMixCompressibility(T, P, V, w);
 
 			if (fabs(dev) < 1.0e-5)
-			//cout << " returning after " << n << " iterations " << endl;
+			//cout << " returning after " << n << " iterations " << "\n";
 			return w.M / V * 1000;
 
 			if ((dev_1 * dev) > 0.0)
@@ -3769,13 +3769,13 @@ double DuansMixingRule(double T, double P, double x, int fluid1, int fluid2, boo
 			else if (dev_2 * dev > 0.0) V2 = V;
 			n++;
 			if (n > 1000) {
-				cout << " max it reached " << endl;
+				cout << " max it reached " << "\n";
 				return -1; // Max it
 			}
 		}
 	}
 
-	cout << "This should not happen. Call NB at TUD!" << endl;
+	cout << "This should not happen. Call NB at TUD!" << "\n";
 	return -1;
 }
 

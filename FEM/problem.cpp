@@ -223,7 +223,7 @@ Problem::Problem (char* filename) :
 		}
 		else // something is wrong and we stop execution
 		{
-		              cout << " GEMS: Error in Init_Nodes..check input " << endl;
+		              cout << " GEMS: Error in Init_Nodes..check input " << "\n";
 #ifdef USE_MPI_GEMS
             MPI_Finalize();                       //make sure MPI exits
 #endif
@@ -233,7 +233,7 @@ Problem::Problem (char* filename) :
 	}
 	else // something is wrong and we stop execution
 	{
-	 		              cout << " GEMS: Error in Init_RUN..check input " << endl;
+	 		              cout << " GEMS: Error in Init_RUN..check input " << "\n";
 #ifdef USE_MPI_GEMS
             MPI_Finalize();                       //make sure MPI exits
 #endif
@@ -485,7 +485,7 @@ Problem::~Problem()
 	delete m_vec_BRNS;
 #endif
 
-	std::cout << "\n^O^: Your simulation is terminated normally ^O^ " << std::endl;
+	std::cout << "\n^O^: Your simulation is terminated normally ^O^ " << "\n";
 }
 
 /*-------------------------------------------------------------------------
@@ -638,7 +638,7 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 		active_processes[5] = &Problem::PTC_Flow;
 		return 5;
 	}
-	std::cout << "Error: no process is specified. " << std::endl;
+	std::cout << "Error: no process is specified. " << "\n";
 	return -1;
 }
 
@@ -747,8 +747,8 @@ void Problem::SetActiveProcesses()
  ***************************************************************************/
 void Problem::PCSCreate()
 {
-	std::cout << "---------------------------------------------" << std::endl;
-	std::cout << "Create PCS processes" << std::endl;
+	std::cout << "---------------------------------------------" << "\n";
+	std::cout << "Create PCS processes" << "\n";
 
 	size_t no_processes = pcs_vector.size();
 	//OK_MOD if(pcs_deformation>0) Init_Linear_Elements();
@@ -764,9 +764,9 @@ void Problem::PCSCreate()
 
 	for (size_t i = 0; i < no_processes; i++)
 	{
-		std::cout << "............................................." << std::endl;
+		std::cout << "............................................." << "\n";
 		FiniteElement::ProcessType pcs_type (pcs_vector[i]->getProcessType());
-		std::cout << "Create: " << FiniteElement::convertProcessTypeToString (pcs_type) << std::endl;
+		std::cout << "Create: " << FiniteElement::convertProcessTypeToString (pcs_type) << "\n";
 		//		if (!pcs_vector[i]->pcs_type_name.compare("MASS_TRANSPORT")) {
 		//YS   // TF
 		if (pcs_type != FiniteElement::MASS_TRANSPORT && pcs_type != FiniteElement::FLUID_MOMENTUM
@@ -776,7 +776,7 @@ void Problem::PCSCreate()
 			std::cout << " pcs_component_number " <<
 			pcs_vector[i]->pcs_component_number;
 		}
-		std::cout << std::endl;
+		std::cout << "\n";
 		pcs_vector[i]->Create();
 	}
 
@@ -810,7 +810,7 @@ void Problem::PCSRestart()
 
 	if (ok == 0)
 	{
-		std::cout << "RFR: no restart data" << std::endl;
+		std::cout << "RFR: no restart data" << "\n";
 		return;
 	}
 
@@ -949,9 +949,9 @@ void Problem::Euler_TimeDiscretize()
 #endif
 		std::cout << "\n\n#############################################################\n";
 		std::cout << "Time step: " << aktueller_zeitschritt << "|  Time: " <<
-		current_time << "|  Time step size: " << dt << std::endl;
+		current_time << "|  Time step size: " << dt << "\n";
 		if(dt_rec > dt){
-			std::cout << "This time step size was modified to match a critical time!" << std::endl;
+			std::cout << "This time step size was modified to match a critical time!" << "\n";
 		}
 #if defined(USE_MPI)
 		}
@@ -1030,17 +1030,17 @@ void Problem::Euler_TimeDiscretize()
     for(i=0; i<(int)active_process_index.size(); i++) // JT2012
     {
 		m_tim = total_processes[active_process_index[i]]->Tim;
-		std::cout << "\nFor process: " << convertProcessTypeToString(total_processes[active_process_index[i]]->getProcessType()) << std::endl;
+		std::cout << "\nFor process: " << convertProcessTypeToString(total_processes[active_process_index[i]]->getProcessType()) << "\n";
 		if(m_tim->time_control_name == "NONE"){
-			std::cout << "No time control for this process." << std::endl;
+			std::cout << "No time control for this process." << "\n";
 		}
 		else{
-			std::cout << "Accepted time steps:                " << m_tim->accepted_step_count << std::endl;
-			std::cout << "Rejected time steps:                " << m_tim->rejected_step_count << std::endl;
+			std::cout << "Accepted time steps:                " << m_tim->accepted_step_count << "\n";
+			std::cout << "Rejected time steps:                " << m_tim->rejected_step_count << "\n";
 		}
 		if(total_processes[active_process_index[i]]->m_num->nls_max_iterations > 1){
-			std::cout << "Number of non-converged iterations: " << total_processes[active_process_index[i]]->num_notsatisfied << std::endl;
-			std::cout << "Number of stagnated iterations:     " << total_processes[active_process_index[i]]->num_diverged << std::endl;
+			std::cout << "Number of non-converged iterations: " << total_processes[active_process_index[i]]->num_notsatisfied << "\n";
+			std::cout << "Number of stagnated iterations:     " << total_processes[active_process_index[i]]->num_diverged << "\n";
 		}
     }
     std::cout<<"\n----------------------------------------------------\n";
@@ -1186,8 +1186,8 @@ bool Problem::CouplingLoop()
 						max_outer_error = MMax(max_outer_error,max_inner_error);
 					 //
 					 std::cout << "\n======================================================\n";
-					 std::cout << "Inner coupling loop " << inner_index+1 << "/" << inner_max << " complete."<<std::endl;
-					 std::cout << "Max coupling error (relative to tolerance): " << max_inner_error << std::endl;
+					 std::cout << "Inner coupling loop " << inner_index+1 << "/" << inner_max << " complete."<<"\n";
+					 std::cout << "Max coupling error (relative to tolerance): " << max_inner_error << "\n";
 					 std::cout << "======================================================\n";
 					 //
 					 // Coupling convergence criteria (use loop minimum from a_pcs because this is where the coupled process was called)
@@ -1219,18 +1219,18 @@ bool Problem::CouplingLoop()
 			if(!accept) break;
 		}
 		if(!accept){
-			std::cout << std::endl;
+			std::cout << "\n";
 			break;
 		}
 		//
 	    if(cpl_overall_max_iterations > 1){
 			std::cout << "\n======================================================\n";
-			std::cout << "Outer coupling loop " << outer_index+1 << "/" << cpl_overall_max_iterations << " complete."<<std::endl;
-			std::cout << "Max coupling error (relative to tolerance): " << max_outer_error << std::endl;
+			std::cout << "Outer coupling loop " << outer_index+1 << "/" << cpl_overall_max_iterations << " complete."<<"\n";
+			std::cout << "Max coupling error (relative to tolerance): " << max_outer_error << "\n";
 			std::cout << "======================================================\n";
 	    }
 	    else{
-			std::cout << std::endl;
+			std::cout << "\n";
 	    }
 		// Coupling convergence criteria
 		if(max_outer_error <= 1.0 && outer_index+2 > cpl_overall_min_iterations) // JT: error is relative to the tolerance.
@@ -1396,7 +1396,7 @@ inline double Problem::LiquidFlow()
 		// call ECLIPSE interface
 		success = m_pcs->EclipseData->RunEclipse(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)
-			std::cout << "Error running Eclipse!" << std::endl;
+			std::cout << "Error running Eclipse!" << "\n";
 		if(m_pcs->tim_type_name.compare("STEADY") == 0)
 			m_pcs->selected = false;
 	}
@@ -1408,7 +1408,7 @@ inline double Problem::LiquidFlow()
 		// call DUMUX interface
 		success = m_pcs->DuMuxData->RunDuMux(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)
-			std::cout << "Error running DuMux!" << std::endl;
+			std::cout << "Error running DuMux!" << "\n";
 	}
 
 	return error;
@@ -1531,7 +1531,7 @@ inline double Problem::MultiPhaseFlow()
 	{
 		if (m_pcs->Tim->step_current == 1)
 		{
-			std::cout << " The Viscosity is not calculated yet!!!" << std::endl;
+			std::cout << " The Viscosity is not calculated yet!!!" << "\n";
 			m_pcs->CalculateFluidDensitiesAndViscositiesAtNodes(m_pcs);
 		}
 		else
@@ -1557,7 +1557,7 @@ inline double Problem::MultiPhaseFlow()
 		success = m_pcs->EclipseData->RunEclipse(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)
 		{
-			std::cout << "Error running Eclipse!" << std::endl;
+			std::cout << "Error running Eclipse!" << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -1569,7 +1569,7 @@ inline double Problem::MultiPhaseFlow()
 		// call DUMUX interface
 		success = m_pcs->DuMuxData->RunDuMux(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)
-			std::cout << "Error running DuMux!" << std::endl;
+			std::cout << "Error running DuMux!" << "\n";
 	}
 	//CO2-Phase_Transition BG, NB
 	if ((m_pcs->Phase_Transition_Model == 1) && ((m_pcs->simulator.compare("GEOSYS") == 0)))
@@ -1584,8 +1584,8 @@ inline double Problem::MultiPhaseFlow()
 			{
 				std::cout <<
 				"If the Phase_Transition_Model is used the density model and the viscosity model should be 18!"
-				     << std::endl;
-				std::cout << "The run is terminated now ..." << std::endl;
+				     << "\n";
+				std::cout << "The run is terminated now ..." << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -1594,8 +1594,8 @@ inline double Problem::MultiPhaseFlow()
 			{
 				std::cout <<
 				"If the Phase_Transition_Model is used the density model and the viscosity model should be 18!"
-				     << std::endl;
-				std::cout << "The run is terminated now ..." << std::endl;
+				     << "\n";
+				std::cout << "The run is terminated now ..." << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -1723,7 +1723,7 @@ void Problem::TestOutputDuMux(CRFProcess* m_pcs)
 		mass_CO2_gas = mass_CO2_gas + node_volume * saturation_CO2 * density_CO2;
 		mass_CO2_water = mass_CO2_water + node_volume * saturation_water *
 		                 concentration_CO2_water * m_pcs->DuMuxData->Molweight_CO2 * 0.001;
-		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << endl;
+		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << "\n";
 	}
 	mass_CO2 = mass_CO2_gas + mass_CO2_water;
 	//calculating time
@@ -1987,7 +1987,7 @@ void Problem::TestOutputEclipse(CRFProcess* m_pcs)
 		mass_CO2_water = mass_CO2_water + node_volume * saturation_water *
 		                 concentration_CO2_water * m_pcs->EclipseData->Molweight_CO2 *
 		                 0.001;
-		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << endl;
+		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << "\n";
 	}
 	mass_CO2 = mass_CO2_gas + mass_CO2_water;
 	//calculating time
@@ -2275,7 +2275,7 @@ void Problem::OutputMassOfGasInModel(CRFProcess* m_pcs)
 			double dens_arg[3];
 			dens_arg[0] = p2;
 			density_Gas = mfp_vector[1]->Density(dens_arg);
-			//cout << "Knoten: " << i << " Dichte: " << density_Gas << " P2: " << p2 << endl;
+			//cout << "Knoten: " << i << " Dichte: " << density_Gas << " P2: " << p2 << "\n";
 		}
 
 		for (int j = 0; j < int(m_node->getConnectedElementIDs().size()); j++)
@@ -2317,7 +2317,7 @@ void Problem::OutputMassOfGasInModel(CRFProcess* m_pcs)
 			mass_Gas_water = 0;
 
 		mass_Gas_gas = mass_Gas_gas + node_volume * saturation_Gas * density_Gas;
-		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << endl;
+		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_CO2: " << density_CO2 << " node_volume: " << node_volume << "\n";
 	}
 	mass_Gas = mass_Gas_gas + mass_Gas_water;
 	//calculating time
@@ -2493,7 +2493,7 @@ void Problem::OutputMassOfComponentInModel(std::vector<CRFProcess*> flow_pcs, CR
 			m_mat_mp = mmp_vector[group];
 			porosity = m_mat_mp->Porosity(m_ele->GetIndex(), 1); // CB Now provides also heterogeneous porosity, model 11
 			node_volume = node_volume +  porosity * m_ele->GetVolume() * m_ele->GetFluxArea() / m_ele->GetNodesNumber(false);
-			//cout << m_ele->GetNodesNumber(false) << " " << endl;
+			//cout << m_ele->GetNodesNumber(false) << " " << "\n";
 		}
 
 		TotalVolume += node_volume;
@@ -2508,7 +2508,7 @@ void Problem::OutputMassOfComponentInModel(std::vector<CRFProcess*> flow_pcs, CR
 		ComponentConcentration = transport_pcs->GetNodeValue(i, indexComponentConcentration);
 
 		ComponentMass = ComponentMass + node_volume * saturation_water * ComponentConcentration;
-		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_water: " << density_water << " node_volume: " << node_volume  << " Concentration: " << ComponentConcentration << endl;
+		//cout << " Node: " << i << " saturation: " << saturation_water << " Density_water: " << density_water << " node_volume: " << node_volume  << " Concentration: " << ComponentConcentration << "\n";
 	}
 
 	//calculating source term
@@ -2673,13 +2673,13 @@ inline double Problem::GroundWaterFlow()
 	// Calculate secondary variables
 	// NOD values
 	conducted = true;                     //WW
-	//std::cout << "      Calculation of secondary NOD values" << std::endl;
+	//std::cout << "      Calculation of secondary NOD values" << "\n";
 	if(m_pcs->TimeStepAccept())
 	{
 #ifdef RESET_4410
 		PCSCalcSecondaryVariables(); // PCS member function
 #endif
-		//std::cout << "      Calculation of secondary GP values" << std::endl;
+		//std::cout << "      Calculation of secondary GP values" << "\n";
 		m_pcs->CalIntegrationPointValue(); //WW
 		m_pcs->cal_integration_point_value = true; //WW Do not extropolate Gauss velocity
 
@@ -2700,7 +2700,7 @@ inline double Problem::GroundWaterFlow()
 #ifndef NEW_EQS                                //WW. 07.11.2008
 	if(m_pcs->tim_type_name.compare("STEADY") == 0) //CMCD 05/2006
 	{
-		//std::cout << "      Calculation of secondary ELE values" << std::endl;
+		//std::cout << "      Calculation of secondary ELE values" << "\n";
 		m_pcs->AssembleParabolicEquationRHSVector(); //WW LOPCalcNODResultants();
 		m_pcs->CalcELEVelocities();
 		m_pcs->selected = false;
@@ -3024,57 +3024,57 @@ inline double Problem::RandomWalker()
 		if(m_pcs->num_type_name.compare("HETERO") == 0)
 		{
 			rw_pcs->RWPTMode = 1; // Set it for heterogeneous media
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HOMO_ADVECTION") == 0)
 		{
 			rw_pcs->RWPTMode = 2;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HETERO_ADVECTION") == 0)
 		{
 			rw_pcs->RWPTMode = 3;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HOMO_DISPERSION") == 0)
 		{
 			rw_pcs->RWPTMode = 4;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HETERO_DISPERSION") == 0)
 		{
 			rw_pcs->RWPTMode = 5;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HETERO_FDM") == 0)
 		{
 			rw_pcs->RWPTMode = 1; // Set it for heterogeneous media
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HOMO_ADVECTION_FDM") == 0)
 		{
 			rw_pcs->RWPTMode = 2;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HETERO_ADVECTION_FDM") == 0)
 		{
 			rw_pcs->RWPTMode = 3;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HOMO_DISPERSION_FDM") == 0)
 		{
 			rw_pcs->RWPTMode = 4;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else if(m_pcs->num_type_name.compare("HETERO_DISPERSION_FDM") == 0)
 		{
 			rw_pcs->RWPTMode = 5;
-			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << std::endl;
+			std::cout << "RWPT is on " << m_pcs->num_type_name << " mode." << "\n";
 		}
 		else                      // HOMO Advection + Dispersion
 		{
 			rw_pcs->RWPTMode = 0;
-			std::cout << "RWPT is on HOMO_ADVECTION_DISPERSION mode." << std::endl;
+			std::cout << "RWPT is on HOMO_ADVECTION_DISPERSION mode." << "\n";
 		}
 
 		if(m_pcs->num_type_name.find("FDM") != std::string::npos)
@@ -3172,7 +3172,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 	{
 		//--------------------------------------------------------------------
 		// Create local RICHARDS process
-		std::cout << "    Create local RICHARDS process" << std::endl;
+		std::cout << "    Create local RICHARDS process" << "\n";
 		m_pcs_local = new CRFProcess();
 		m_pcs_local->isRSM = true; //WW
 
@@ -3260,10 +3260,10 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 			m_pcs_global->SetNodeValue(i,idxS - 1,value);
 		}
 	//======================================================================
-	std::cout << "\n      ================================================" << std::endl;
+	std::cout << "\n      ================================================" << "\n";
 	std::cout << "    ->Process " << loop_process_number << ": "
-	          << "REGIONAL_" << convertProcessTypeToString (m_pcs_global->getProcessType()) << std::endl;
-	std::cout << "      ================================================" << std::endl;
+	          << "REGIONAL_" << convertProcessTypeToString (m_pcs_global->getProcessType()) << "\n";
+	std::cout << "      ================================================" << "\n";
 	int no_richards_problems = (int)(m_pcs_global->m_msh->ele_vector.size() / no_local_elements);
 
 	//--- For couping with ground flow process. WW
@@ -3284,9 +3284,9 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 	for(i = 0; i < no_richards_problems; i++)
 	//for(i=0;i<2;i++)
 	{
-		if(i>0) std::cout << "      ================================================" << std::endl;
-		std::cout << "      ->Column number: " << i << std::endl;
-		std::cout << "      ================================================" << std::endl;
+		if(i>0) std::cout << "      ================================================" << "\n";
+		std::cout << "      ->Column number: " << i << "\n";
+		std::cout << "      ================================================" << "\n";
 		m_pcs_local = pcs_vector[(int)pcs_vector.size() - 1];
 		m_pcs_local->pcs_number = i;
 		m_msh_local = fem_msh_vector[(int)fem_msh_vector.size() - 1];
@@ -3412,7 +3412,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 	num_parallel_blocks = no_richards_problems / size;
 
 #ifdef TRACE
-	std::cout << "Num parallel blocks: " << num_parallel_blocks << std::endl;
+	std::cout << "Num parallel blocks: " << num_parallel_blocks << "\n";
 #endif
 
 	for(i = 0; i < num_parallel_blocks + 1; i++)
@@ -3482,7 +3482,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 			// m_ele_of = m_msh_of->GetElement(m_pnt_sf);
 			//....................................................................
 #ifdef TRACE
-			std::cout << "Executing local process." << std::endl;
+			std::cout << "Executing local process." << "\n";
 #endif
 			m_pcs_local->ExecuteNonLinear(loop_process_number);
 		}                         // End of parallel block
@@ -3596,7 +3596,7 @@ void Problem::LOPCalcELEResultants()
 		m_pcs = pcs_vector[p];
 		if (!m_pcs->selected)     //OK4108
 			continue;
-		//cout << "LOPCalcELEResultants: " << m_pcs->pcs_type_name << endl;
+		//cout << "LOPCalcELEResultants: " << m_pcs->pcs_type_name << "\n";
 		// TF
 		std::string pcs_type_name (convertProcessTypeToString(m_pcs->getProcessType()));
 		//		switch (m_pcs->pcs_type_name[0]) {
@@ -3741,7 +3741,7 @@ void Problem::PCSCalcSecondaryVariables()
 				break;
 			default:
 				//std::cout << "PCSCalcSecondaryVariables - nothing to do" <<
-				//std::endl;
+				//"\n";
 				break;
 			}
 		}                         //If

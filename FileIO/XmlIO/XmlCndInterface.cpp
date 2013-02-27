@@ -24,7 +24,7 @@ int XmlCndInterface::readFile(std::vector<FEMCondition*> &conditions, const QStr
 	QFile* file = new QFile(fileName);
 	if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 	{
-		std::cout << "XMLInterface::readFEMCondFile() - Can't open xml-file." << std::endl;
+		std::cout << "XMLInterface::readFEMCondFile() - Can't open xml-file." << "\n";
 		delete file;
 		return 0;
 	}
@@ -39,7 +39,7 @@ int XmlCndInterface::readFile(std::vector<FEMCondition*> &conditions, const QStr
 	QDomElement docElement = doc.documentElement(); //root element, used for identifying file-type
 	if (docElement.nodeName().compare("OpenGeoSysCond"))
 	{
-		std::cout << "XMLInterface::readFEMCondFile() - Unexpected XML root." << std::endl;
+		std::cout << "XMLInterface::readFEMCondFile() - Unexpected XML root." << "\n";
 		delete file;
 		return 0;
 	}
@@ -61,7 +61,7 @@ int XmlCndInterface::readFile(std::vector<FEMCondition*> &conditions, const QStr
 	else
 	{
 		std::cout << "XMLInterface::readFEMCondFile() - No FEM Conditions found..." <<
-		std::endl;
+		"\n";
 		return 0;
 	}
 
@@ -148,7 +148,7 @@ void XmlCndInterface::readConditions( const QDomNode &listRoot,
 								}
 							}
 							else
-								std::cout << "Error in XmlCndInterface::readConditions() - Distribution type not supported." << std::endl;
+								std::cout << "Error in XmlCndInterface::readConditions() - Distribution type not supported." << "\n";
 							c->setDisValues(disNodes, disValues);
 						}
 					}
@@ -158,7 +158,7 @@ void XmlCndInterface::readConditions( const QDomNode &listRoot,
 		}
 		else
 		{
-			std::cout << "Error loading FEM Conditions: No geometry \"" << geometry_name << "\" found." << std::endl;
+			std::cout << "Error loading FEM Conditions: No geometry \"" << geometry_name << "\" found." << "\n";
 		}
 		cond = cond.nextSiblingElement();
 	}
@@ -208,7 +208,7 @@ int XmlCndInterface::write(std::ostream& stream)
 			}
 			else
 			{
-				std::cout << "Error in XmlCndInterface::writeFile() - Unspecified FEMConditions found ... Abort writing." << std::endl;
+				std::cout << "Error in XmlCndInterface::writeFile() - Unspecified FEMConditions found ... Abort writing." << "\n";
 				return 0;
 			}
 			this->writeCondition(doc, listTag, conditions[i], condText, QString::fromStdString(_exportName));
@@ -226,7 +226,7 @@ void XmlCndInterface::writeCondition( QDomDocument doc, QDomElement &listTag, co
 
 	if ((geometryName.length()>0) && (geoName.compare(geometryName) != 0))
 	{
-		std::cout << "Geometry name not matching, skipping condition \"" << cond->getGeoName() << "\"..." << std::endl;
+		std::cout << "Geometry name not matching, skipping condition \"" << cond->getGeoName() << "\"..." << "\n";
 		return;
 	}
 
@@ -293,7 +293,7 @@ void XmlCndInterface::writeCondition( QDomDocument doc, QDomElement &listTag, co
 	}
 	else
 	{
-		std::cout << "Error in XmlCndInterface::writeCondition() - Inconsistent length of distribution value array." << std::endl;
+		std::cout << "Error in XmlCndInterface::writeCondition() - Inconsistent length of distribution value array." << "\n";
 		ss << "-9999";
 	}
 	std::string dv  = ss.str();

@@ -26,7 +26,7 @@ public:
 		QFile* file = new QFile(fileName);
 		if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 		{
-			std::cout << "XmlLutReader::readFromFile() - Can't open xml-file." << std::endl;
+			std::cout << "XmlLutReader::readFromFile() - Can't open xml-file." << "\n";
 			delete file;
 			return NULL;
 		}
@@ -36,7 +36,7 @@ public:
 		QDomElement docElement = doc.documentElement();
 		if (docElement.nodeName().compare("ColorMap"))
 		{
-			std::cout << "XmlLutReader::readFromFile() - Unexpected XML root." << std::endl;
+			std::cout << "XmlLutReader::readFromFile() - Unexpected XML root." << "\n";
 			delete file;
 			return NULL;
 		}

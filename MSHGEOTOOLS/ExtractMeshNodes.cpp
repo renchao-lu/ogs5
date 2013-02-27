@@ -44,13 +44,13 @@ void ExtractMeshNodes::writeMeshNodeIDs (std::ostream& os,
 		}
 	// write data
 	for (size_t k(0); k < node_indices.size(); k++)
-		os << node_indices[k] << std::endl;
+		os << node_indices[k] << "\n";
 
 	for (size_t k(0); k < node_indices.size(); k++)
 	{
 		double const* const coords (msh_nodes[node_indices[k]]->getData());
 		gli_out << k + _gli_pnt_offset << " " << coords[0] << " " <<  coords[1] << " " <<
-		coords[2] << std::endl;
+		coords[2] << "\n";
 	}
 	_gli_pnt_offset += node_indices.size();
 }
@@ -83,10 +83,10 @@ void ExtractMeshNodes::writeTopSurfaceMeshNodeIDs (std::ostream& os,
 		const GEOLIB::PointWithID& p0 (nodes_as_points[k - 1]);
 		const GEOLIB::PointWithID& p1 (nodes_as_points[k]);
 		if (fabs (p0[0] - p1[0]) > eps || fabs (p0[1] - p1[1]) > eps)
-			os << p0.getID() << std::endl;
+			os << p0.getID() << "\n";
 	}
 	// write last point
-	os << nodes_as_points[nodes_as_points.size() - 1].getID() << std::endl;
+	os << nodes_as_points[nodes_as_points.size() - 1].getID() << "\n";
 
 	size_t n_nodes (0);
 	gli_out.precision (14);
@@ -97,14 +97,14 @@ void ExtractMeshNodes::writeTopSurfaceMeshNodeIDs (std::ostream& os,
 		if (fabs (p0[0] - p1[0]) > eps || fabs (p0[1] - p1[1]) > eps)
 		{
 			gli_out << n_nodes + _gli_pnt_offset << " " << std::scientific << p0 <<
-			" $NAME " << p0.getID() << std::endl;
+			" $NAME " << p0.getID() << "\n";
 			n_nodes++;
 		}
 	}
 	// write last point
 	gli_out << n_nodes + _gli_pnt_offset << " " << std::scientific <<
 	nodes_as_points[nodes_as_points.size() - 1] << " $NAME " <<
-	nodes_as_points[nodes_as_points.size() - 1].getID() << std::endl;
+	nodes_as_points[nodes_as_points.size() - 1].getID() << "\n";
 	n_nodes++;
 	_gli_pnt_offset += n_nodes;
 }
@@ -280,7 +280,7 @@ void ExtractMeshNodes::getProjectedPolylineFromPolyline(GEOLIB::Polyline const& 
 			ply_out->addPoint(pnt_ids_of_mesh_nodes[k]);
 		}
 	} else {
-		std::cout << "[ExtractMeshNodes::getProjectedPolylineFromPolyline] did not find any mesh nodes" << std::endl;
+		std::cout << "[ExtractMeshNodes::getProjectedPolylineFromPolyline] did not find any mesh nodes" << "\n";
 	}
 }
 
@@ -340,7 +340,7 @@ void ExtractMeshNodes::writeMesh2DNodeIDAndArea (std::ostream& os,
 	// write ids and areas
 	for (size_t k(0); k < n_nodes; k++)
 		if (areas[k] > std::numeric_limits<double>::epsilon())
-			os << node_ids[k] << " " << areas[k] << std::endl;
+			os << node_ids[k] << " " << areas[k] << "\n";
 
 	n_nodes = 0;
 	gli_out.precision (14);
@@ -349,7 +349,7 @@ void ExtractMeshNodes::writeMesh2DNodeIDAndArea (std::ostream& os,
 		double const* const pnt (msh_nodes[*it]->getData());
 		gli_out << n_nodes + _gli_pnt_offset << " " << std::scientific
 		        << pnt[0] << " " << pnt[1] << " " << pnt[2] << " $NAME " << *it <<
-		std::endl;
+		"\n";
 		n_nodes++;
 	}
 	_gli_pnt_offset += n_nodes;
@@ -422,7 +422,7 @@ void ExtractMeshNodes::writeMesh2DNodeIDAndArea (std::ostream& os,
 	// write ids and areas
 	for (size_t k(0); k < n_nodes; k++)
 		if (areas[k] > std::numeric_limits<double>::epsilon())
-			os << node_ids[k] << " " << areas[k] << std::endl;
+			os << node_ids[k] << " " << areas[k] << "\n";
 
 	n_nodes = 0;
 	gli_out.precision (14);
@@ -431,7 +431,7 @@ void ExtractMeshNodes::writeMesh2DNodeIDAndArea (std::ostream& os,
 		double const* const pnt (msh_nodes[*it]->getData());
 		gli_out << n_nodes + _gli_pnt_offset << " " << std::scientific
 		        << pnt[0] << " " << pnt[1] << " " << pnt[2] << " $NAME " << *it <<
-		std::endl;
+		"\n";
 		n_nodes++;
 	}
 	_gli_pnt_offset += n_nodes;
@@ -442,13 +442,13 @@ void ExtractMeshNodes::writeNearestMeshNodeToPoint (std::ostream& os,
                                                     GEOLIB::Point const & pnt)
 {
 	size_t node_id (_msh->GetNODOnPNT (&pnt));
-	os << node_id << std::endl;
+	os << node_id << "\n";
 
 	double const* const coords ((_msh->getNodeVector()[node_id])->getData());
 
 	gli_out.precision (14);
 	gli_out << _gli_pnt_offset << " " << std::scientific
-	        << coords[0] << " " << coords[1] << " " << coords[2] << std::endl;
+	        << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
 
 	_gli_pnt_offset++;
 }

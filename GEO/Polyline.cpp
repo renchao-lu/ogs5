@@ -38,7 +38,7 @@ void Polyline::write(std::ostream &os) const
 {
 	size_t size(_ply_pnt_ids.size());
 	for (size_t k(0); k < size; k++)
-		os << *(_ply_pnts[_ply_pnt_ids[k]]) << std::endl;
+		os << *(_ply_pnts[_ply_pnt_ids[k]]) << "\n";
 }
 
 void Polyline::addPoint(size_t pnt_id)
@@ -250,7 +250,7 @@ Polyline* Polyline::constructPolylineFromSegments(const std::vector<Polyline*> &
 				std::cout
 				<<
 				"Error in Polyline::contructPolylineFromSegments() - Line segments use different point vectors..."
-				<< std::endl;
+				<< "\n";
 		}
 
 		if (!ply_found)
@@ -258,7 +258,7 @@ Polyline* Polyline::constructPolylineFromSegments(const std::vector<Polyline*> &
 			std::cout
 			<<
 			"Error in Polyline::contructPolylineFromSegments() - Not all segments are connected..."
-			<< std::endl;
+			<< "\n";
 			new_ply = NULL;
 			break;
 		}
@@ -288,7 +288,7 @@ Polyline* Polyline::closePolyline(const Polyline& ply)
 	}
 	std::cout <<
 	"Error in Polyline::closePolyline() - Input polyline needs to be composed of at least three points..."
-	          << std::endl;
+	          << "\n";
 	return NULL;
 }
 
@@ -328,7 +328,7 @@ bool containsEdge (const Polyline& ply, size_t id0, size_t id1)
 {
 	if (id0 == id1)
 	{
-		std::cerr << "no valid edge id0 == id1 == " << id0 << std::endl;
+		std::cerr << "no valid edge id0 == id1 == " << id0 << "\n";
 		return false;
 	}
 	if (id0 > id1)

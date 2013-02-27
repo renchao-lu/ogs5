@@ -31,7 +31,7 @@ void GMSHAdaptiveMeshDensity::init(std::vector<GEOLIB::Point const*> const& pnts
 {
 	// *** QuadTree - determining bounding box
 #ifndef NDEBUG
-	std::cout << "[GMSHAdaptiveMeshDensity::init]" << std::endl;
+	std::cout << "[GMSHAdaptiveMeshDensity::init]" << "\n";
 	std::cout << "\tcomputing axis aligned bounding box (2D) for quadtree ... " << std::flush;
 #endif
 	GEOLIB::Point min(pnts[0]->getData()), max(pnts[0]->getData());
@@ -45,7 +45,7 @@ void GMSHAdaptiveMeshDensity::init(std::vector<GEOLIB::Point const*> const& pnts
 	min[2] = 0.0;
 	max[2] = 0.0;
 #ifndef NDEBUG
-	std::cout << "ok" << std::endl;
+	std::cout << "ok" << "\n";
 #endif
 
 	// *** QuadTree - create object
@@ -54,7 +54,7 @@ void GMSHAdaptiveMeshDensity::init(std::vector<GEOLIB::Point const*> const& pnts
 #endif
 	_quad_tree = new GEOLIB::QuadTree<GEOLIB::Point> (min, max, _max_pnts_per_leaf);
 #ifndef NDEBUG
-	std::cout << "ok" << std::endl;
+	std::cout << "ok" << "\n";
 #endif
 
 	// *** QuadTree - insert points
@@ -72,7 +72,7 @@ void GMSHAdaptiveMeshDensity::addPoints(std::vector<GEOLIB::Point const*> const&
 	for (size_t k(0); k < n_pnts; k++)
 		_quad_tree->addPoint(pnts[k]);
 #ifndef NDEBUG
-	std::cout << "ok" << std::endl;
+	std::cout << "ok" << "\n";
 #endif
 	_quad_tree->balance();
 }

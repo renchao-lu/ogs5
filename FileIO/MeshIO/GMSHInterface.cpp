@@ -55,7 +55,7 @@ bool GMSHInterface::isGMSHMeshFile(const std::string& fname)
 	std::ifstream input(fname.c_str());
 
 	if (!input) {
-		std::cerr << "GMSHInterface::isGMSHMeshFile could not open file " << fname << std::endl;
+		std::cerr << "GMSHInterface::isGMSHMeshFile could not open file " << fname << "\n";
 		return false;
 	}
 
@@ -66,7 +66,7 @@ bool GMSHInterface::isGMSHMeshFile(const std::string& fname)
 		std::string version;
 		getline(input, version);
 		getline(input, version);
-		std::cerr << "found GMSH mesh file version: " << version << std::endl;
+		std::cerr << "found GMSH mesh file version: " << version << "\n";
 		input.close();
 		return true;
 	}
@@ -149,7 +149,7 @@ int GMSHInterface::write(std::ostream& out)
 #ifdef BUILD_TIMESTAMP
 	out << BUILD_TIMESTAMP;
 #endif
-	out << std::endl << std::endl;
+	out << "\n" << "\n";
 
 	writeGMSHInputFile(out);
 	return 1;
@@ -165,7 +165,7 @@ void GMSHInterface::writeGMSHInputFile(std::ostream& out)
 	_geo_objs.mergeGeometries(_selected_geometries, _gmsh_geo_name);
 	std::vector<GEOLIB::Point*> * merged_pnts(const_cast<std::vector<GEOLIB::Point*> *>(_geo_objs.getPointVec(_gmsh_geo_name)));
 	if (! merged_pnts) {
-		std::cerr << "[GMSHInterface::writeGMSHInputFile] did not found any points" << std::endl;
+		std::cerr << "[GMSHInterface::writeGMSHInputFile] did not found any points" << "\n";
 		return;
 	} else {
 		const size_t n_pnts(merged_pnts->size());
@@ -175,7 +175,7 @@ void GMSHInterface::writeGMSHInputFile(std::ostream& out)
 	}
 	std::vector<GEOLIB::Polyline*> const* merged_plys(_geo_objs.getPolylineVec(_gmsh_geo_name));
 #ifndef NDEBUG
-	std::cerr << "ok" << std::endl;
+	std::cerr << "ok" << "\n";
 #endif
 
 	// *** compute topological hierarchy of polygons
@@ -187,10 +187,10 @@ void GMSHInterface::writeGMSHInputFile(std::ostream& out)
 			}
 		}
 		std::cout << "[GMSHInterface::writeGMSHInputFile] compute topological hierarchy - detected "
-						<< _polygon_tree_list.size() << " polygons" << std::endl;
+						<< _polygon_tree_list.size() << " polygons" << "\n";
 		GEOLIB::createPolygonTrees<FileIO::GMSHPolygonTree>(_polygon_tree_list);
 		std::cout << "[GMSHInterface::writeGMSHInputFile] compute topological hierarchy - calculated "
-								<< _polygon_tree_list.size() << " polygon trees" << std::endl;
+								<< _polygon_tree_list.size() << " polygon trees" << "\n";
 	} else {
 		return;
 	}
@@ -264,7 +264,7 @@ void GMSHInterface::writePoints(std::ostream& out) const
 	const size_t n_gmsh_pnts(_gmsh_pnts.size());
 	for (size_t k(0); k<n_gmsh_pnts; k++) {
 		if (_gmsh_pnts[k]) {
-			out << *(_gmsh_pnts[k]) << std::endl;
+			out << *(_gmsh_pnts[k]) << "\n";
 		}
 	}
 }

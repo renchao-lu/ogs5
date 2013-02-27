@@ -71,7 +71,7 @@ void CNodeValue::Write(std::ostream& os) const
 	   os<< node_parameterE <<deli;
 	   os<< conditional <<deli;
 	 */
-	os << std::endl;
+	os << "\n";
 }
 
 /**************************************************************************

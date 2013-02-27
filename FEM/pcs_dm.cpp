@@ -176,7 +176,7 @@ void CRFProcessDeformation::Initialization()
 
 	if(!msp_vector.size())
 	{
-		std::cout << "***ERROR: MSP data not found!" << std::endl;
+		std::cout << "***ERROR: MSP data not found!" << "\n";
 		return;
 	}
 	InitialMBuffer();
@@ -215,7 +215,7 @@ void CRFProcessDeformation::InitialMBuffer()
 {
 	if(!msp_vector.size())
 	{
-		cout << "No .msp file.   " << endl;
+		cout << "No .msp file.   " << "\n";
 		abort();
 	}
 
@@ -266,9 +266,9 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 	if(myrank == 1)
 	{
 #endif
-		std::cout<<"\n      ================================================" << std::endl;
-	    std::cout << "    ->Process " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << std::endl;
-	    std::cout << "      ================================================" << std::endl;
+		std::cout<<"\n      ================================================" << "\n";
+	    std::cout << "    ->Process " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << "\n";
+	    std::cout << "      ================================================" << "\n";
 #if defined(USE_MPI)
 }
 #endif
@@ -410,7 +410,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 	   number_of_load_steps=(int)(LoadAmplifier*MaxLoadRatio);
 	   if(number_of_load_steps>=MaxLoadsteps) number_of_load_steps=MaxLoadsteps;
 	   }
-	   cout<<"\n***Load ratio: "<< MaxLoadRatio<<endl;
+	   cout<<"\n***Load ratio: "<< MaxLoadRatio<<"\n";
 
 	   }
 	   }
@@ -481,8 +481,8 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 			{
 #endif
 			//Screan printing:
-            std::cout <<"      Starting loading step "<< l << "/" << number_of_load_steps <<".  Load factor: " << LoadFactor << std::endl;
-			std::cout <<"      ------------------------------------------------"<<std::endl;
+            std::cout <<"      Starting loading step "<< l << "/" << number_of_load_steps <<".  Load factor: " << LoadFactor << "\n";
+			std::cout <<"      ------------------------------------------------"<<"\n";
 #ifdef USE_MPI
 		}
 #endif
@@ -517,7 +517,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 			        pWin->SendMessage(WM_SETMESSAGESTRING,0,(LPARAM)(LPCSTR)m_str);
 			   #endif
 			 */
-			std::cout << "      Assembling equation system..." << std::endl;
+			std::cout << "      Assembling equation system..." << "\n";
 #ifdef USE_MPI                        //WW
 			clock_t cpu_time = 0; //WW
 			cpu_time = -clock();
@@ -547,7 +547,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 			//
 #endif
 
-			std::cout << "      Calling linear solver..." << std::endl;
+			std::cout << "      Calling linear solver..." << "\n";
 			/// Linear solver
 #ifdef NEW_EQS                        //WW
 			//
@@ -638,13 +638,13 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 				{
 #endif
 				//Screan printing:
-				std::cout<<"      -->End of Newton-Raphson iteration: "<<ite_steps<<"/"<< MaxIteration <<std::endl;
+				std::cout<<"      -->End of Newton-Raphson iteration: "<<ite_steps<<"/"<< MaxIteration <<"\n";
                 cout.width(8);
                 cout.precision(2);
                 cout.setf(ios::scientific);
-                cout<<"         NR-Error"<<"  "<<"RHS Norm 0"<<"  "<<"RHS Norm  "<<"  "<<"Unknowns Norm"<<"  "<<"Damping"<<endl;
-                cout<<"         "<<Error<<"  "<<InitialNorm<<"  "<<Norm<<"   "<<NormU<<"   "<<"   "<<damping<<endl;
-                std::cout <<"      ------------------------------------------------"<<std::endl;
+                cout<<"         NR-Error"<<"  "<<"RHS Norm 0"<<"  "<<"RHS Norm  "<<"  "<<"Unknowns Norm"<<"  "<<"Damping"<<"\n";
+                cout<<"         "<<Error<<"  "<<InitialNorm<<"  "<<Norm<<"   "<<NormU<<"   "<<"   "<<damping<<"\n";
+                std::cout <<"      ------------------------------------------------"<<"\n";
 #ifdef USE_MPI
 			}
 #endif
@@ -677,7 +677,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 	// Load step
 	//
 	// For coupling control
-	std::cout <<"      Deformation process converged." << std::endl;
+	std::cout <<"      Deformation process converged." << "\n";
 	Error = 0.0;
 	if(type / 10 != 4)                    // Partitioned scheme
 	{
@@ -701,8 +701,8 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 	if(myrank == 0)
 	{
 #endif
-    std::cout <<"      CPU time elapsed in deformation: " << (double)dm_time / CLOCKS_PER_SEC<<"s"<<std::endl;
-    std::cout <<"      ------------------------------------------------"<<std::endl;
+    std::cout <<"      CPU time elapsed in deformation: " << (double)dm_time / CLOCKS_PER_SEC<<"s"<<"\n";
+    std::cout <<"      ------------------------------------------------"<<"\n";
 #ifdef USE_MPI
 }
 #endif
@@ -1090,7 +1090,7 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	{
 		GravityForce = true;
 		cout << "\n ***Excavation simulation: 1. Establish initial stress profile..." <<
-		endl;
+		"\n";
 		counter = 0;
 		Execute(0);
 	}
@@ -1099,7 +1099,7 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	//
 	Extropolation_GaussValue();
 	//
-	cout << "\n ***Excavation simulation: 2. Excavating..." << endl;
+	cout << "\n ***Excavation simulation: 2. Excavating..." << "\n";
 	counter = 0;
 	InitializeNewtonSteps(true);
 	GravityForce = false;
@@ -1729,7 +1729,7 @@ double CRFProcessDeformation::CaclMaxiumLoadRatio(void)
 				default:
 					std::cerr <<
 					"CRFProcessDeformation::CaclMaxiumLoadRatio MshElemType not handled"
-					          << std::endl;
+					          << "\n";
 				}
 				fem_dm->computeJacobian(2);
 				fem_dm->ComputeGradShapefct(2);
@@ -2195,7 +2195,7 @@ long CRFProcessDeformation::MarkBifurcatedNeighbor(const int PathIndex)
 		if(ele_value_dm[nb]->Localized)
 		{
 			//TEST OUT
-			//cout <<" element on track  " <<nb<<endl;
+			//cout <<" element on track  " <<nb<<"\n";
 
 			adjacent = false;
 			numf1 = elem1->GetFacesNumber();
@@ -2735,7 +2735,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
 	{
 		cout
 		<< "No element specified for excavation. Please check data in .st file "
-		<< endl;
+		<< "\n";
 		abort();
 	}
 	// 2. Compute the released node loading
@@ -2977,7 +2977,7 @@ bool CRFProcessDeformation::CalcBC_or_SecondaryVariable_Dynamics(bool BC)
 		{
 			cout <<
 			"No such primary variable found in CalcBC_or_SecondaryVariable_Dynamics."
-			     << endl;
+			     << "\n";
 			abort();
 		}
 		bc_msh_node = m_bc_node->geo_node_number;

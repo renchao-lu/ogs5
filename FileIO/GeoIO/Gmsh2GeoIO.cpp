@@ -22,7 +22,7 @@ void Gmsh2GeoIO::loadMeshAsGeometry (std::string & fname, GEOLIB::GEOObjects* ge
 	std::ifstream ins (fname.c_str());
 	if (!ins)
 	{
-		std::cout << "could not open file " << fname << std::endl;
+		std::cout << "could not open file " << fname << "\n";
 		return;
 	}
 

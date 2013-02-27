@@ -54,7 +54,7 @@ bool Polygon::initialise ()
 		return true;
 	} else {
 		std::cerr << "ERROR in Polygon::initialise() - base polyline is not closed" <<
-		std::endl;
+		"\n";
 		return false;
 	}
 }
@@ -338,7 +338,7 @@ void Polygon::splitPolygonAtIntersection (std::list<Polygon*>::iterator polygon_
 			{
 				std::cerr <<
 				"ERROR in Polygon::splitPolygonAtIntersection polygon0" <<
-				std::endl;
+				"\n";
 				exit (1);
 			}
 
@@ -352,7 +352,7 @@ void Polygon::splitPolygonAtIntersection (std::list<Polygon*>::iterator polygon_
 			{
 				std::cerr <<
 				"ERROR in Polygon::splitPolygonAtIntersection polygon1" <<
-				std::endl;
+				"\n";
 				exit (1);
 			}
 
@@ -496,7 +496,7 @@ bool operator==(Polygon const& lhs, Polygon const& rhs)
 	} else {
 		// opposite direction with start point of first polygon at arbitrary position
 		// *** ATTENTION
-		std::cerr << "operator==(Polygon const& lhs, Polygon const& rhs) - not tested case (implementation is probably buggy) - please contact thomas.fischer@ufz.de mentioning the problem" << std::endl;
+		std::cerr << "operator==(Polygon const& lhs, Polygon const& rhs) - not tested case (implementation is probably buggy) - please contact thomas.fischer@ufz.de mentioning the problem" << "\n";
 		// in second polygon
 		if (lhs.getPointID(1) == rhs.getPointID(k-1)) {
 			size_t j(k-2);

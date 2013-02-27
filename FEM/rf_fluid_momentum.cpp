@@ -103,10 +103,10 @@ double CFluidMomentum::Execute(int loop_process_number)
 	Create();
 
 	//JT: Printout message. Give zero error to coupling scheme.
-	std::cout << "\n      ================================================" << std::endl;
-	std::cout << "    ->Process " << loop_process_number << ": " << "FLUID_MOMENTUM" << std::endl;
-    std::cout << "      ================================================" << std::endl;
-	cout << "      Solving for nodal velocity..." << endl;
+	std::cout << "\n      ================================================" << "\n";
+	std::cout << "    ->Process " << loop_process_number << ": " << "FLUID_MOMENTUM" << "\n";
+    std::cout << "      ================================================" << "\n";
+	cout << "      Solving for nodal velocity..." << "\n";
 	cpl_max_relative_error = pcs_error;
 
 	for(int i = 0; i < no_processes; ++i)
@@ -225,7 +225,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			x = new double[size];
 #if defined(LIS)
 			m_pcs->EQSSolver(x); // an option added to tell FLUID_MOMENTUM for sparse matrix system.
-			cout << "Solver passed in FLUID_MOMENTUM." << endl;
+			cout << "Solver passed in FLUID_MOMENTUM." << "\n";
 #endif
 #else
 			ExecuteLinearSolver(m_pcs->eqs);
@@ -362,7 +362,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			                    m_pcs->SetElementValue(i, m_pcs->GetElementValueIndex("VELOCITY2_Z")+1, vz);
 			               break;
 			            default:
-			               cout << "Error in VELCalcElementVelocity: invalid phase number" << endl;
+			               cout << "Error in VELCalcElementVelocity: invalid phase number" << "\n";
 			         }
 			 */
 		}
@@ -394,7 +394,7 @@ void CFluidMomentum::Create()
 			m_num = m_num_tmp;
 	}
 	if(!m_num)
-		cout << "Warning in CRFProcess::Create() - no numerical properties" << endl;
+		cout << "Warning in CRFProcess::Create() - no numerical properties" << "\n";
 }
 
 /**************************************************************************

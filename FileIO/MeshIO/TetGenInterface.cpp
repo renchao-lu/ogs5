@@ -50,11 +50,11 @@ void TetGenInterface::writeTetGenNodes(std::string const& nodes_fname, MeshLib::
 			}
 		}
 		const size_t n_nodes(mesh->GetNodesNumber(false));
-		out << n_nodes+4*n_prisms << " 3 0 0" << std::endl;
+		out << n_nodes+4*n_prisms << " 3 0 0" << "\n";
 		std::vector<MeshLib::CNode*> const& nodes(mesh->getNodeVector());
 		for (size_t k(0); k<n_nodes; k++) {
 			double const*const node(nodes[k]->getData());
-			out << k << " " << node[0] << " " << node[1] << " " << node[2] << std::endl;
+			out << k << " " << node[0] << " " << node[1] << " " << node[2] << "\n";
 		}
 		// write additional nodes for prisms
 		std::vector<size_t> idxs;
@@ -82,15 +82,15 @@ void TetGenInterface::writeTetGenNodes(std::string const& nodes_fname, MeshLib::
 				// center of third rectangle surface
 				const double center2[3] = {(n0[0]+n2[0]+n3[0]+n5[0])/4, (n0[1]+n2[1]+n3[1]+n5[1])/4, (n0[2]+n2[2]+n3[2]+n5[2])/4};
 
-				out << idx++ << " " << centroid[0] << " " << centroid[1] << " " << centroid[2] << std::endl;
-				out << idx++ << " " << center0[0] << " " << center0[1] << " " << center0[2] << std::endl;
-				out << idx++ << " " << center1[0] << " " << center1[1] << " " << center1[2] << std::endl;
-				out << idx++ << " " << center2[0] << " " << center2[1] << " " << center2[2] << std::endl;
+				out << idx++ << " " << centroid[0] << " " << centroid[1] << " " << centroid[2] << "\n";
+				out << idx++ << " " << center0[0] << " " << center0[1] << " " << center0[2] << "\n";
+				out << idx++ << " " << center1[0] << " " << center1[1] << " " << center1[2] << "\n";
+				out << idx++ << " " << center2[0] << " " << center2[1] << " " << center2[2] << "\n";
 			}
 		}
 		out.close();
 	} else {
-		std::cout << "cold not open file for writing nodes" << std::endl;
+		std::cout << "cold not open file for writing nodes" << "\n";
 	}
 }
 
@@ -114,7 +114,7 @@ void TetGenInterface::writeTetGenElements(std::string const& ele_fname, MeshLib:
 				n_hexs++;
 				break;
 			default:
-				std::cout << "count elements - element type not yet supported" << std::endl;
+				std::cout << "count elements - element type not yet supported" << "\n";
 			} // end case
 		} // end for
 
@@ -122,57 +122,57 @@ void TetGenInterface::writeTetGenElements(std::string const& ele_fname, MeshLib:
 		const size_t nodes_offset(mesh->GetNodesNumber(false));
 		size_t cnt_prisms(0);
 		std::vector<size_t> idxs; // node indices
-		out << n_tetrahedras << " 4 0 0" << std::endl;
+		out << n_tetrahedras << " 4 0 0" << "\n";
 		for (size_t k(0), cnt(0); k<n_elements; k++) {
 			elements[k]->getNodeIndices(idxs);
 			switch (elements[k]->GetElementType()) {
 			case MshElemType::PRISM:
 			{
-				out << cnt++ << " " << idxs[0] << " " << idxs[1] << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[3] << " " << idxs[5] << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << std::endl;
+				out << cnt++ << " " << idxs[0] << " " << idxs[1] << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[3] << " " << idxs[5] << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << "\n";
 				//
-				out << cnt++ << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4 << std::endl;
+				out << cnt++ << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4+1 << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4 << "\n";
 				//
-				out << cnt++ << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4 << std::endl;
+				out << cnt++ << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[1] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[4] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4+2 << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4 << "\n";
 				//
-				out << cnt++ << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4 << std::endl;
-				out << cnt++ << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4 << std::endl;
+				out << cnt++ << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[2] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[5] << " " << nodes_offset+cnt_prisms*4 << "\n";
+				out << cnt++ << " " << idxs[0] << " " << nodes_offset+cnt_prisms*4+3 << " " << idxs[3] << " " << nodes_offset+cnt_prisms*4 << "\n";
 
 				cnt_prisms++;
 
 				break;
 			}
 			case MshElemType::TETRAHEDRON:
-				out << cnt++ << " " << idxs[0] << " " << idxs[1] << " " << idxs[2] << " " << idxs[3] << std::endl;
+				out << cnt++ << " " << idxs[0] << " " << idxs[1] << " " << idxs[2] << " " << idxs[3] << "\n";
 				break;
 			case MshElemType::HEXAHEDRON:
-				std::cout << "element type HEXAHEDRON not yet supported" << std::endl;
+				std::cout << "element type HEXAHEDRON not yet supported" << "\n";
 				break;
 			case MshElemType::PYRAMID:
-				std::cout << "element type PYRAMID not yet supported" << std::endl;
+				std::cout << "element type PYRAMID not yet supported" << "\n";
 				break;
 			case MshElemType::LINE:
-				std::cout << "element type LINE not yet supported" << std::endl;
+				std::cout << "element type LINE not yet supported" << "\n";
 				break;
 			case MshElemType::QUAD:
-				std::cout << "element type QUAD not yet supported" << std::endl;
+				std::cout << "element type QUAD not yet supported" << "\n";
 				break;
 			default:
-				std::cout << "element type not yet supported" << std::endl;
+				std::cout << "element type not yet supported" << "\n";
 			} // end case
 			idxs.clear();
 		} // end for
 		out.close();
 	} else {
-		std::cout << "cold not open file for writing elements" << std::endl;
+		std::cout << "cold not open file for writing elements" << "\n";
 	}
 }
 
@@ -186,10 +186,10 @@ MeshLib::CFEMesh* TetGenInterface::readTetGenMesh (std::string const& nodes_fnam
 	{
 		if (!ins_nodes)
 			std::cout << "TetGenInterface::readTetGenMesh failed to open " <<
-			nodes_fname << std::endl;
+			nodes_fname << "\n";
 		if (!ins_ele)
 			std::cout << "TetGenInterface::readTetGenMesh failed to open " <<
-			ele_fname << std::endl;
+			ele_fname << "\n";
 		return NULL;
 	}
 
@@ -263,7 +263,7 @@ bool TetGenInterface::parseNodesFileHeader(std::string &line,
 	{
 		std::cout <<
 		"TetGenInterface::parseNodesFileHeader could not correct read TetGen mesh header - number of nodes"
-		          << std::endl;
+		          << "\n";
 		return false;
 	}
 	// dimension
@@ -316,7 +316,7 @@ bool TetGenInterface::parseNodes(std::ifstream& ins, size_t n_nodes, size_t dim)
 				else
 				{
 					std::cout << "error reading id of node " << k <<
-					" in TetGenInterface::parseNodes" << std::endl;
+					" in TetGenInterface::parseNodes" << "\n";
 					return false;
 				}
 				// read coordinates
@@ -336,7 +336,7 @@ bool TetGenInterface::parseNodes(std::ifstream& ins, size_t n_nodes, size_t dim)
 						std::cout << "error reading coordinate " << i <<
 						" of node " << k <<
 						" in TetGenInterface::parseNodes" <<
-						std::endl;
+						"\n";
 						return false;
 					}
 				}
@@ -352,7 +352,7 @@ bool TetGenInterface::parseNodes(std::ifstream& ins, size_t n_nodes, size_t dim)
 		else
 		{
 			std::cout << "error reading node " << k <<
-			" in TetGenInterface::parseNodes" << std::endl;
+			" in TetGenInterface::parseNodes" << "\n";
 			return false;
 		}
 	}
@@ -409,7 +409,7 @@ bool TetGenInterface::parseElementsFileHeader(std::string &line,
 	{
 		std::cout <<
 		"TetGenInterface::parseElementsFileHeader could not correct read TetGen mesh header - number of tetrahedras"
-		          << std::endl;
+		          << "\n";
 		return false;
 	}
 	// nodes per tet - either 4 or 10
@@ -455,7 +455,7 @@ bool TetGenInterface::parseElements(std::ifstream& ins, size_t n_tets, size_t n_
 				else
 				{
 					std::cout << "error reading id of tetrahedra " << k <<
-					" in TetGenInterface::parseElements" << std::endl;
+					" in TetGenInterface::parseElements" << "\n";
 					return false;
 				}
 				// read node ids
@@ -476,7 +476,7 @@ bool TetGenInterface::parseElements(std::ifstream& ins, size_t n_tets, size_t n_
 						std::cout << "error reading node " << i <<
 						" of tetrahedra " << k <<
 						" in TetGenInterface::parseElements" <<
-						std::endl;
+						"\n";
 						return false;
 					}
 				}
@@ -511,7 +511,7 @@ bool TetGenInterface::parseElements(std::ifstream& ins, size_t n_tets, size_t n_
 					else
 					{
 						std::cout << "error reading region attribute of tetrahedra " << k
-										<< " in TetGenInterface::parseElements" << std::endl;
+										<< " in TetGenInterface::parseElements" << "\n";
 						return false;
 					}
 				}
@@ -519,7 +519,7 @@ bool TetGenInterface::parseElements(std::ifstream& ins, size_t n_tets, size_t n_
 		}
 		else
 		{
-			std::cout << "error reading node " << k << " in TetGenInterface::parseElements" << std::endl;
+			std::cout << "error reading node " << k << " in TetGenInterface::parseElements" << "\n";
 			return false;
 		}
 	}

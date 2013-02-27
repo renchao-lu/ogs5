@@ -32,7 +32,7 @@ public:
 	int readFile(const QString &fileName)
 	{
 		Q_UNUSED(fileName)
-		std::cout << "There is currently no implementation for XmlCndInterface::readFile(const QString&)." << std::endl;
+		std::cout << "There is currently no implementation for XmlCndInterface::readFile(const QString&)." << "\n";
 		return 0;
 	}
 

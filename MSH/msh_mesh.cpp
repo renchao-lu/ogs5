@@ -174,7 +174,7 @@ CFEMesh::CFEMesh(CFEMesh const& old_mesh) :
 	this->setNumberOfMeshLayers(old_mesh.getNumberOfMeshLayers());
 	this->ConstructGrid();
 
-	std::cout << "done." << std::endl;
+	std::cout << "done." << "\n";
 }
 
 /**************************************************************************
@@ -318,7 +318,7 @@ void CFEMesh::computeSearchLength(double c)
 	const size_t n(edge_vector.size());
 
 	if (n==0) {
-		std::cerr << "[CFEMesh::computeSearchLength] no edges found for computing _search_length, setting _search_lenght to " << 1e-3 << std::endl;
+		std::cerr << "[CFEMesh::computeSearchLength] no edges found for computing _search_length, setting _search_lenght to " << 1e-3 << "\n";
 		_search_length = 1e-3;
 		return;
 	}
@@ -341,7 +341,7 @@ void CFEMesh::computeSearchLength(double c)
 	_search_length = mu - c * s;
 #ifndef NDEBUG
 	if (c < 2) {
-		std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", the average value is: " << mu << ", standard deviation is: " << s << std::endl;
+		std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", the average value is: " << mu << ", standard deviation is: " << s << "\n";
 	}
 #endif
 }
@@ -745,7 +745,7 @@ void CFEMesh::ConstructGrid()
 			break;
 		default:
 			std::cerr << "CFEMesh::ConstructGrid MshElemType not handled"
-			          << std::endl;
+			          << "\n";
 		}
 		// Compute volume meanwhile
 		elem->ComputeVolume();
@@ -873,7 +873,7 @@ void CFEMesh::ConstructGrid()
 	Neighbors0.resize(0);
 	e_edgeNodes0.resize(0);
 	e_edgeNodes.resize(0);
-	std::cout << " done." << std::endl;
+	std::cout << " done." << "\n";
 
 	computeSearchLength();
 	computeMinEdgeLength();
@@ -1312,43 +1312,43 @@ void CFEMesh::RenumberNodesForGlobalAssembly()
    long i;
    //--------------------------------------------------------------------
    //KEYWORD
-   *fem_msh_file << "#FEM_MSH" << std::endl;
+   *fem_msh_file << "#FEM_MSH" << "\n";
    //--------------------------------------------------------------------
    // PCS
-   *fem_msh_file << " $PCS_TYPE" << std::endl;
+   *fem_msh_file << " $PCS_TYPE" << "\n";
    *fem_msh_file << "  ";
-   *fem_msh_file << pcs_name << std::endl;
+   *fem_msh_file << pcs_name << "\n";
    //--------------------------------------------------------------------
    // MAT
    if (geo_name.size() > 0)
    {
-   *fem_msh_file << " $GEO_TYPE" << std::endl;
+   *fem_msh_file << " $GEO_TYPE" << "\n";
    *fem_msh_file << "  ";
    //OK10_4310
-   *fem_msh_file << geo_type_name << " " << geo_name << std::endl;
+   *fem_msh_file << geo_type_name << " " << geo_name << "\n";
    }
    //--------------------------------------------------------------------
    // NODES
-   *fem_msh_file << " $NODES" << std::endl;
+   *fem_msh_file << " $NODES" << "\n";
    *fem_msh_file << "  ";
    //WW
-   *fem_msh_file << GetNodesNumber(false) << std::endl;
+   *fem_msh_file << GetNodesNumber(false) << "\n";
    for (i = 0; i < (long) nod_vector.size(); i++)
    nod_vector[i]->Write(*fem_msh_file);     //WW
    //--------------------------------------------------------------------
    // ELEMENTS
-   *fem_msh_file << " $ELEMENTS" << std::endl;
+   *fem_msh_file << " $ELEMENTS" << "\n";
    *fem_msh_file << "  ";
-   *fem_msh_file << (long) ele_vector.size() << std::endl;
+   *fem_msh_file << (long) ele_vector.size() << "\n";
    for (i = 0; i < (long) ele_vector.size(); i++)
    {
    ele_vector[i]->SetIndex(i);              //20.01.06 WW/TK
    ele_vector[i]->WriteIndex(*fem_msh_file);//WW
    }
    //--------------------------------------------------------------------
-   *fem_msh_file << " $LAYER" << std::endl;
+   *fem_msh_file << " $LAYER" << "\n";
    *fem_msh_file << "  ";
-   *fem_msh_file << _n_msh_layer << std::endl;
+   *fem_msh_file << _n_msh_layer << "\n";
    //--------------------------------------------------------------------
    if (append_stop)
    *fem_msh_file << "#STOP";
@@ -1387,14 +1387,14 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 //		std::cout << "pnt: "<< *pnt << " mesh grid node " << nod_vector[node_idx]->GetIndex() << ": "
 //			<< data0[0] << " " << data0[1] << " " << data0[2] <<
 //			", mesh grid node (old algorithm) " << nod_vector[number]->GetIndex() << ": "
-//			<< data1[0] << " " << data1[1] << " " << data1[2] << std::endl;
-//		std::cout << "bbx: " << _mesh_grid->getMinPoint() << " x " << _mesh_grid->getMaxPoint() << std::endl;
+//			<< data1[0] << " " << data1[1] << " " << data1[2] << "\n";
+//		std::cout << "bbx: " << _mesh_grid->getMinPoint() << " x " << _mesh_grid->getMaxPoint() << "\n";
 //		size_t coords[3];
 //		_mesh_grid->getGridCoords(pnt->getData(), coords);
-//		std::cout << "grid coords: " << coords[0] << " " << coords[1] << " " << coords[2] << std::endl;
+//		std::cout << "grid coords: " << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
 //		double llf[3], urb[3];
 //		_mesh_grid->getGridCornerPoints(pnt->getData(), llf, urb);
-//		std::cout << "local bbx: " << llf[0] << " " << llf[1] << " " << llf[2] << " x " << urb[0] << " " << urb[1] << " " << urb[2] << std::endl;
+//		std::cout << "local bbx: " << llf[0] << " " << llf[1] << " " << llf[2] << " x " << urb[0] << " " << urb[1] << " " << urb[2] << "\n";
 //	}
 //
 //	return number;
@@ -1472,7 +1472,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
 				ply_name = "unknown-ply";
 			}
 			std::cout << "[DEBUG-INFO] access " << msh_nod_vector.size()
-			          << " buffered nodes for polyline " << ply_name << std::endl;
+			          << " buffered nodes for polyline " << ply_name << "\n";
 #endif
 			return;
 		}
@@ -1501,12 +1501,12 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
 		ply_name = "unknown-ply";
 	}
 	std::cout << "[DEBUG-INFO] computed " << n_valid_nodes << " nodes for polyline "
-	         << ply_name << " - " << NodesInUsage() << std::endl;
+	         << ply_name << " - " << NodesInUsage() << "\n";
 
 //	std::string fname ("MeshNodeIDsAlongPolyline"+ply_name+".txt");
 //	std::ofstream os (fname.c_str());
 //	for (size_t k(0); k < n_valid_nodes; k++)
-//		os << node_ids[k] << std::endl;
+//		os << node_ids[k] << "\n";
 //	os.close();
 #endif
 }
@@ -1616,7 +1616,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 	const_cast<GEOLIB::Surface*>(sfc)->initSurfaceGrid();
 #ifdef TIME_MEASUREMENT
 	end = clock();
-	std::cout << "done, took " << (end-begin)/(double)(CLOCKS_PER_SEC) << " s" << std::endl;
+	std::cout << "done, took " << (end-begin)/(double)(CLOCKS_PER_SEC) << " s" << "\n";
 
 	std::cout << "[CFEMesh::GetNODOnSFC] search with new algorithm ... " << std::flush;
 	begin = clock();
@@ -1633,7 +1633,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 
 #ifdef TIME_MEASUREMENT
 	end = clock();
-	std::cout << "done, took " << (end-begin)/(double)(CLOCKS_PER_SEC) << " s, " << msh_nod_vector.size() << "nodes found" << std::endl;
+	std::cout << "done, took " << (end-begin)/(double)(CLOCKS_PER_SEC) << " s, " << msh_nod_vector.size() << "nodes found" << "\n";
 #endif
 }
 
@@ -2359,7 +2359,7 @@ void CFEMesh::GetNODOnPLY_XY(CGLPolyline* m_ply, std::vector<long>&msh_nod_vecto
 			mult_eps *= 2.;
 	} /* Ende Schleife Wiederholungen */
 	if (mult_eps > 1.)
-		std::cout << "!!! Epsilon increased in sources!" << std::endl;
+		std::cout << "!!! Epsilon increased in sources!" << "\n";
 	/* Schleife ueber alle Knoten; sortieren nach Reihenfolge auf dem Abschnitt (zyklisches Vertauschen, sehr lahm)*/
 	do
 	{
@@ -2973,7 +2973,7 @@ void CFEMesh::ConnectedNodes(bool quadratic) const
 		cout << (int)nod->connected_nodes.size() << ": ";
 		for(m = 0; m < (int)nod->connected_nodes.size(); m++)
 			cout << nod->connected_nodes[m] << " ";
-		cout << endl;
+		cout << "\n";
 	}
 #endif
 }
@@ -3665,7 +3665,7 @@ inline void CFEMesh::ReadShapeFile(std::string const & fname)
 	std::ifstream ins(fname.c_str());
 	if(!ins.good())
 	{
-		std::cout << "Can not find file " << std::endl;
+		std::cout << "Can not find file " << "\n";
 		return;
 	}
 
@@ -3927,9 +3927,9 @@ void CFEMesh::MarkInterface_mHM_Hydro_3D()
 		node = nod_vector[i];
 		if(!node_mark[i])
 			continue;
-		ofile_asci << node->GetIndex() << " " << node->Z() << endl;
+		ofile_asci << node->GetIndex() << " " << node->Z() << "\n";
 	}
-	ofile_asci << "#STOP" << endl;
+	ofile_asci << "#STOP" << "\n";
 #endif
 }
 
@@ -3954,7 +3954,7 @@ void CFEMesh::mHM2NeumannBC()
 	std::ifstream ins(fname.c_str());
 	if(!ins.good())
 	{
-		std::cout << "Can not open file " << fname << std::endl;
+		std::cout << "Can not open file " << fname << "\n";
 		return;
 	}
 
@@ -3996,14 +3996,14 @@ void CFEMesh::mHM2NeumannBC()
 		//sprintf(stro, "%f",step);
 		// ofname = stro;
 		ofname = FilePath + key + ".bin";
-		infil << step << " " << key + ".bin" << std::endl;
+		infil << step << " " << key + ".bin" << "\n";
 
 		key = FilePath + key;
 		Precipitation2NeumannBC(key, ofname, ratio);
 
 		step += 1.0;
 	}
-	infil << "#STOP" << std::endl;
+	infil << "#STOP" << "\n";
 	infil.close();
 }
 
@@ -4067,9 +4067,9 @@ void CFEMesh::TopSurfaceIntegration()
 			continue;
 		nx = node->GetIndex();
 
-		ofile_asci << nx << " " << val[i] << std::endl;
+		ofile_asci << nx << " " << val[i] << "\n";
 	}
-	ofile_asci << "#STOP " << std::endl;
+	ofile_asci << "#STOP " << "\n";
 
 	ofile_asci.close();
 	delete fem;
@@ -4113,12 +4113,12 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 		// To do
 	}
 
-	gs_out << "#FEM_MSH\n$PCS_TYPE\nOVERLAND_FLOW\n$NODES" << endl;
-	gs_out << (long)nod_vector.size() << endl;
+	gs_out << "#FEM_MSH\n$PCS_TYPE\nOVERLAND_FLOW\n$NODES" << "\n";
+	gs_out << (long)nod_vector.size() << "\n";
 	for(i = 0; i < (long)nod_vector.size(); i++)
 		nod_vector[i]->Write(gs_out);
-	gs_out << "$ELEMENTS" << endl;
-	gs_out << (long)ele_vector.size() << endl;
+	gs_out << "$ELEMENTS" << "\n";
+	gs_out << (long)ele_vector.size() << "\n";
 	mat_num = 0;
 	for(i = 0; i < (long)ele_vector.size(); i++)
 	{
@@ -4132,8 +4132,8 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 
 	gs_out <<
 	"#FEM_MSH\n$PCS_TYPE\n RICHARDS_FLOW\n$GEO_TYPE\nPOLYLINE REGIONAL\n$GEO_NAME\nREGIONAL"
-	       << endl;
-	gs_out << "$NODES\n" << (nlayers + 1) * (long)nod_vector.size() << endl;
+	       << "\n";
+	gs_out << "$NODES\n" << (nlayers + 1) * (long)nod_vector.size() << "\n";
 	double seg = thickness / (double)nlayers;
 	double depth;
 	long l, size_nodes_msh_t;
@@ -4146,10 +4146,10 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 			gs_out << k + i * (nlayers + 1) << deli
 			       << a_node->X() << deli
 			       << a_node->Y() << deli
-			       << a_node->Z() - depth << deli << endl;
+			       << a_node->Z() - depth << deli << "\n";
 		}
-	gs_out << "$ELEMENTS" << endl;
-	gs_out << size_nodes_msh_t * nlayers << endl;
+	gs_out << "$ELEMENTS" << "\n";
+	gs_out << size_nodes_msh_t * nlayers << "\n";
 	l = 0;
 	int mat_index;
 	for(i = 0; i < size_nodes_msh_t; i++)
@@ -4160,23 +4160,23 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 		{
 			l = k + (nlayers + 1) * i;
 			gs_out << k + nlayers * i << deli << mat_index << deli << "line" << deli;
-			gs_out << l << deli << l + 1 << endl;
+			gs_out << l << deli << l + 1 << "\n";
 			mat_index++;
 		}
 	}
-	gs_out << "$LAYER\n" << nlayers << endl;
+	gs_out << "$LAYER\n" << nlayers << "\n";
 	//
-	gs_out << "$BORDERS" << endl;
-	gs_out << "SECTOR_GROUND\n" << size_nodes_msh_t << endl;
+	gs_out << "$BORDERS" << "\n";
+	gs_out << "SECTOR_GROUND\n" << size_nodes_msh_t << "\n";
 	for(i = 0; i < size_nodes_msh_t; i++)
 	{
 		k = nlayers;
-		gs_out << k + i * (nlayers + 1) << deli << endl;
+		gs_out << k + i * (nlayers + 1) << deli << "\n";
 	}
 
 	mat_num += nlayers;
-	gs_out << "#FEM_MSH\n$PCS_TYPE\nGROUNDWATER_FLOW\n$NODES" << endl;
-	gs_out << (long)nod_vector.size() << endl;
+	gs_out << "#FEM_MSH\n$PCS_TYPE\nGROUNDWATER_FLOW\n$NODES" << "\n";
+	gs_out << (long)nod_vector.size() << "\n";
 	for(i = 0; i < (long)nod_vector.size(); i++)
 	{
 		a_node = nod_vector[i];
@@ -4184,20 +4184,20 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 		a_node->Write(gs_out);
 		a_node->SetZ(a_node->Z() + thickness);
 	}
-	gs_out << "$ELEMENTS" << endl;
-	gs_out << (long)ele_vector.size() << endl;
+	gs_out << "$ELEMENTS" << "\n";
+	gs_out << (long)ele_vector.size() << "\n";
 	for(i = 0; i < (long)ele_vector.size(); i++)
 	{
 		an_ele = ele_vector[i];
 		an_ele->SetPatchIndex(an_ele->GetPatchIndex() + mat_num);
 		an_ele->WriteGSmsh(gs_out);
 	}
-	gs_out << "$BORDERS" << endl;
-	gs_out << "SECTOR_SOIL\n" << (long)nod_vector.size() << endl;
+	gs_out << "$BORDERS" << "\n";
+	gs_out << "SECTOR_SOIL\n" << (long)nod_vector.size() << "\n";
 	for(i = 0; i < (long)nod_vector.size(); i++)
-		gs_out << i << deli << endl;
+		gs_out << i << deli << "\n";
 
-	gs_out << "#STOP" << endl;
+	gs_out << "#STOP" << "\n";
 	gs_out.close();
 }
 #endif

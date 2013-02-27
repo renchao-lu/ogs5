@@ -690,8 +690,8 @@ int FctCurves(char* data, int found, FILE* f)
 //	{
 //		//DisplayMsgLn(" ERROR opening file with heterogeneous fields!");
 //		//DisplayMsgLn(" File does not exist.");
-//		cout << " FctReadHeterogeneousFields" << endl;
-//		cout << " Cannot find " << name_file << endl;
+//		cout << " FctReadHeterogeneousFields" << "\n";
+//		cout << " Cannot find " << name_file << "\n";
 //		exit(1);
 //	}
 //	//------------------------------------------------------------------------
@@ -709,7 +709,7 @@ int FctCurves(char* data, int found, FILE* f)
 //		in.clear();
 //		m_msh = FEMGet(line_string);
 //		if(!m_msh)
-//			cout << "FctReadHeterogeneousFields: no MSH data" << endl;
+//			cout << "FctReadHeterogeneousFields: no MSH data" << "\n";
 //	}
 //	//------------------------------------------------------------------------
 //	// Read Interpolation option
@@ -900,27 +900,27 @@ int FctCurves(char* data, int found, FILE* f)
 //		// Header
 //		sprintf(outname,"%s%i",name_file,1);
 //		out.open(outname);
-//		out << "$MSH_TYPE" << endl;
-//		out << "  GROUNDWATER_FLOW" << endl; //ToDo as variable
-//		//out << "$LAYER" << endl;
-//		//out << "  " << layer << endl;
-//		out << "$INTERPOLATION" << endl;
-//		out << "  GEOMETRIC_MEAN" << endl; //ToDo as variable
+//		out << "$MSH_TYPE" << "\n";
+//		out << "  GROUNDWATER_FLOW" << "\n"; //ToDo as variable
+//		//out << "$LAYER" << "\n";
+//		//out << "  " << layer << "\n";
+//		out << "$INTERPOLATION" << "\n";
+//		out << "  GEOMETRIC_MEAN" << "\n"; //ToDo as variable
 //		/* Field name */
-//		out << nof << endl;
+//		out << nof << "\n";
 //		for(i = 0; i < nof; i++)
 //			out << get_hetfields_name(hf,i) << ' ';
-//		out << endl;
+//		out << "\n";
 //		/* conversion factor is one in this case */
 //		for(i = 0; i < nof; i++)
 //			out << 1.0 << ' ';
-//		out << endl;
+//		out << "\n";
 //		// default values
 //		for(i = 0; i < nof; i++)
 //			out << defaultvalues[i] << ' ';
-//		out << endl;
-//		//out << NumberOfElements << ' ' << 1 << endl;
-//		out << NumberOfElementsPerLayer << ' ' << 1 << endl;
+//		out << "\n";
+//		//out << NumberOfElements << ' ' << 1 << "\n";
+//		out << NumberOfElementsPerLayer << ' ' << 1 << "\n";
 //
 //		out.setf(ios::scientific);
 //		out.precision(5);
@@ -932,7 +932,7 @@ int FctCurves(char* data, int found, FILE* f)
 //			m_ele = m_msh->ele_vector[i];
 //			for(j = 0; j < nof; j++)
 //				out << m_ele->mat_vector(material_properties_index) << ' ';
-//			out << endl;
+//			out << "\n";
 //		}
 //		out.close();
 //	}                                     /* end if (method == 0) */

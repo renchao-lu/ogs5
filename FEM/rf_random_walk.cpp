@@ -1005,7 +1005,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 					x = new double[size];
 #if defined(LIS)
 					m_pcs->EQSSolver(x); // an option added to tell FLUID_MOMENTUM for sparse matrix system.
-					cout << "Solver passed in FLUID_MOMENTUM." << endl;
+					cout << "Solver passed in FLUID_MOMENTUM." << "\n";
 #endif
 #else
 					m_pcs->ExecuteLinearSolver(m_pcs->eqs);
@@ -2588,7 +2588,7 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 			   }
 			   else
 			   {
-			   cout<< "Only Identity 0 and 1 are covered. There are more than 2 identities detected" << endl;
+			   cout<< "Only Identity 0 and 1 are covered. There are more than 2 identities detected" << "\n";
 			   abort();
 			   }
 
@@ -5318,38 +5318,38 @@ void DATWriteParticleFile(int current_time_step)
 	vtk_file.seekg(0L,ios::beg);
 
 	// Write Header
-	vtk_file << "# vtk DataFile Version 3.6.2" << endl;
+	vtk_file << "# vtk DataFile Version 3.6.2" << "\n";
 	vtk_file << "Particle file: OpenGeoSys->Paraview. Current time (s) = " <<
-	RW->CurrentTime  << endl;
-	vtk_file << "ASCII"  << endl;
-	vtk_file << endl;
-	vtk_file << "DATASET POLYDATA"  << endl; //KR vtk_file << "DATASET PARTICLES"  << endl;
-	vtk_file << "POINTS " << RW->numOfParticles << " double" << endl;
+	RW->CurrentTime  << "\n";
+	vtk_file << "ASCII"  << "\n";
+	vtk_file << "\n";
+	vtk_file << "DATASET POLYDATA"  << "\n"; //KR vtk_file << "DATASET PARTICLES"  << "\n";
+	vtk_file << "POINTS " << RW->numOfParticles << " double" << "\n";
 
 	// Write particle locations
 	for(int i = 0; i < np; ++i)
 		vtk_file << RW->X[i].Now.x << " " << RW->X[i].Now.y << " " << RW->X[i].Now.z <<
-		endl;
+		"\n";
 
 	// KR add "vertices" block to create a correct VTK file
-	vtk_file << "VERTICES " << np <<  " " << (2 * np) << endl;
+	vtk_file << "VERTICES " << np <<  " " << (2 * np) << "\n";
 	for(int i = 0; i < np; ++i)
-		vtk_file << 1 << " " << i << endl;
+		vtk_file << 1 << " " << i << "\n";
 
 	// Write particle identities
-	vtk_file << endl;
-	vtk_file << "POINT_DATA " << RW->numOfParticles << endl;
-	vtk_file << "SCALARS identity float 1" << endl;
-	vtk_file << "LOOKUP_TABLE default" << endl;
+	vtk_file << "\n";
+	vtk_file << "POINT_DATA " << RW->numOfParticles << "\n";
+	vtk_file << "SCALARS identity float 1" << "\n";
+	vtk_file << "LOOKUP_TABLE default" << "\n";
 	for(int i = 0; i < np; ++i)
-		vtk_file << RW->X[i].Now.identity << endl;
+		vtk_file << RW->X[i].Now.identity << "\n";
 
 	// Write particle vectors
 	/*
-	   vtk_file << endl;
-	   vtk_file << "VECTORS velocity float" << endl;
+	   vtk_file << "\n";
+	   vtk_file << "VECTORS velocity float" << "\n";
 	   for(i=0; i<np; ++i)
-	   vtk_file << RW->X[i].Now.Vx << " " << RW->X[i].Now.Vy << " " << RW->X[i].Now.Vz << endl;
+	   vtk_file << RW->X[i].Now.Vx << " " << RW->X[i].Now.Vy << " " << RW->X[i].Now.Vz << "\n";
 	 */
 	// Let's close it, now
 	vtk_file.close();

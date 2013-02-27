@@ -29,7 +29,7 @@ PointVec::PointVec (const std::string& name, std::vector<Point*>* points,
 
 	if (number_of_all_input_pnts - _data_vec->size() > 0)
 		std::cerr << "WARNING: there are " << number_of_all_input_pnts -
-		_data_vec->size() << " double points" << std::endl;
+		_data_vec->size() << " double points" << "\n";
 }
 
 PointVec::~PointVec ()
@@ -50,7 +50,7 @@ void PointVec::push_back (Point* pnt, std::string const*const name)
 
 	std::map<std::string,size_t>::const_iterator it (_name_id_map->find (*name));
 	if (it != _name_id_map->end()) {
-		std::cerr << "ERROR: PointVec::push_back (): two points with the same name" << std::endl;
+		std::cerr << "ERROR: PointVec::push_back (): two points with the same name" << "\n";
 		return;
 	}
 

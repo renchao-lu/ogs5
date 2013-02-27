@@ -1787,10 +1787,10 @@ int M5Inc(long i, long j, double aij_inc)
    for (j = 0; j < dim1; j++)
    {
    if(fabs(MXGet(i,j))>MKleinsteZahl)
-   os<<i<<"  "<<j<<"  "<<MXGet(i,j)<<endl;
+   os<<i<<"  "<<j<<"  "<<MXGet(i,j)<<"\n";
    }
    if(fabs(b[i])>MKleinsteZahl)
-   os<<i<<"  "<<dim1+1<<"  "<<b[i]<<endl;   // os<<endl;
+   os<<i<<"  "<<dim1+1<<"  "<<b[i]<<"\n";   // os<<"\n";
    }
    }
  */
@@ -1901,11 +1901,11 @@ void* M5CreateMatrix(long param1, long param2, long param3)
 	   cout<<ii<<"  "<< col_ind[count1]<<"    ";
 	   count1++;
 	   }
-	   cout<<endl;
+	   cout<<"\n";
 	   }
 
 	   //TEST WW OUT
-	   cout<<"----------------------------"<<endl;
+	   cout<<"----------------------------"<<"\n";
 
 	 */
 
@@ -1933,7 +1933,7 @@ void* M5CreateMatrix(long param1, long param2, long param3)
 			count1++;
 		}
 	//TEST WW
-	//          cout<<endl;
+	//          cout<<"\n";
 	////////////////////
 	return (void*) w;
 }

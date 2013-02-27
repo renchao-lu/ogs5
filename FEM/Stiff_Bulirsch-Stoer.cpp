@@ -87,7 +87,7 @@ double* dvector(long nl, long nh)
 	v = (double*)malloc((size_t) ((nh - nl + 1 + NR_END) * sizeof(double)));
 	if (!v)                               //CB
 	{
-		std::cout <<  "allocation failure in dvector()" << std::endl;
+		std::cout <<  "allocation failure in dvector()" << "\n";
 		nrerror("allocation failure in dvector()");
 	}
 	return v - nl + NR_END;
@@ -105,7 +105,7 @@ int* ivector(long nl, long nh)
 	v = (int*)malloc((size_t) ((nh - nl + 1 + NR_END) * sizeof(int)));
 	if (!v)                               //CB
 	{
-		std::cout <<  "allocation failure in ivector()" << std::endl;
+		std::cout <<  "allocation failure in ivector()" << "\n";
 		nrerror("allocation failure in ivector()");
 	}
 	return v - nl + NR_END;
@@ -125,7 +125,7 @@ double** dmatrix(long nrl, long nrh, long ncl, long nch)
 	m = (double**) malloc((size_t)((nrow + NR_END) * sizeof(double*)));
 	if (!m)                               //CB
 	{
-		std::cout <<  "allocation failure 1 in matrix()" << std::endl;
+		std::cout <<  "allocation failure 1 in matrix()" << "\n";
 		nrerror("allocation failure 1 in matrix()");
 	}
 	m += NR_END;
@@ -135,7 +135,7 @@ double** dmatrix(long nrl, long nrh, long ncl, long nch)
 	m[nrl] = (double*) malloc((size_t)((nrow * ncol + NR_END) * sizeof(double)));
 	if (!m[nrl])                          //CB
 	{
-		std::cout <<  "allocation failure 2 in matrix()" << std::endl;
+		std::cout <<  "allocation failure 2 in matrix()" << "\n";
 		nrerror("allocation failure 2 in matrix()");
 	}
 	m[nrl] += NR_END;
@@ -219,7 +219,7 @@ void ludcmp(double** a, int n, int* indx, double* d)
 				big = temp;
 		if (big == 0.0)           //CB
 		{
-			std::cout << "Singular matrix in routine ludcmp" << std::endl;
+			std::cout << "Singular matrix in routine ludcmp" << "\n";
 			nrerror("Singular matrix in routine ludcmp");
 		}
 		vv[i] = 1.0 / big;
@@ -518,7 +518,7 @@ void stifbs(double y[], double dydx[], int nv, double* xx, double htry, double e
 			xnew = (*xx) + h;
 			if (xnew == (*xx)) //CB
 			{
-				std::cout << "step size underflow in stifbs" << std::endl;
+				std::cout << "step size underflow in stifbs" << "\n";
 				nrerror("step size underflow in stifbs");
 			}
 			simpr(ysav,dydx,dfdx,dfdy,nv,*xx,h,nseq[k],yseq,derivs,node);
@@ -565,7 +565,7 @@ void stifbs(double y[], double dydx[], int nv, double* xx, double htry, double e
 				}
 			}
 		}
-		//		if (exitflag) std::cout << " Exitflag > 0 in stifbs of biodegradation" << std::endl;
+		//		if (exitflag) std::cout << " Exitflag > 0 in stifbs of biodegradation" << "\n";
 		if (exitflag)
 			break;
 
@@ -700,13 +700,13 @@ void odeint(double ystart[], int nvar, double x1, double x2, double eps, double 
 		}
 		if (fabs(hnext) <= hmin)  //CB
 		{
-			std::cout << "Step size too small in odeint" << std::endl;
+			std::cout << "Step size too small in odeint" << "\n";
 			nrerror("Step size too small in odeint");
 		}
 		h = hnext;
 	}
 	//CB
-	std::cout << "Too many steps in routine odeint" << std::endl;
+	std::cout << "Too many steps in routine odeint" << "\n";
 	nrerror("Too many steps in routine odeint");
 }
 

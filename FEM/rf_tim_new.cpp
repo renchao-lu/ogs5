@@ -393,8 +393,8 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 				}
 				else if(time_control_name.find("DYNAMIC_COURANT") != std::string::npos) // JT2012
 				{
-					std::cout<<"Josh apologizes (especially to Marc), but promises DYNAMIC_COURANT will be merged into the next release."<<std::endl;
-					std::cout<<"emoticon:: sad face"<<std::endl;
+					std::cout<<"Josh apologizes (especially to Marc), but promises DYNAMIC_COURANT will be merged into the next release."<<"\n";
+					std::cout<<"emoticon:: sad face"<<"\n";
 					exit(1);
 					//
 					// DYNAMIC TIME STEP SERIES
@@ -542,7 +542,7 @@ bool TIMRead(std::string file_base_name)
 	tim_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// Keyword loop
-	std::cout << "TIMRead" << std::endl;
+	std::cout << "TIMRead" << "\n";
 	while (!tim_file.eof())
 	{
 		tim_file.getline(line,MAX_ZEILE);
@@ -563,10 +563,10 @@ bool TIMRead(std::string file_base_name)
 				m_tim->tim_discrete = new std::fstream(
 				        m_file_name.c_str(),std::ios::trunc | std::ios::out);
 				std::fstream* tim_dis =  m_tim->tim_discrete;
-				*tim_dis << " No. Time  Tim-Disc  Iter" << std::endl;
+				*tim_dis << " No. Time  Tim-Disc  Iter" << "\n";
 				if (!m_tim->tim_discrete->good())
 					std::cout <<
-					"Warning : Time-Discrete files are not found" << std::endl;
+					"Warning : Time-Discrete files are not found" << "\n";
 			}
 			//----------------------------------------------------------------------
 			time_vector.push_back(m_tim);
@@ -622,52 +622,52 @@ void CTimeDiscretization::Write(std::fstream* tim_file)
 	int i;
 	//--------------------------------------------------------------------
 	// KEYWORD
-	*tim_file << "#TIME_STEPPING" << std::endl;
+	*tim_file << "#TIME_STEPPING" << "\n";
 	//--------------------------------------------------------------------
 	// PCS_TYPE
-	*tim_file << " $PCS_TYPE" << std::endl;
-	*tim_file << "  " << pcs_type_name << std::endl;
+	*tim_file << " $PCS_TYPE" << "\n";
+	*tim_file << "  " << pcs_type_name << "\n";
 	//--------------------------------------------------------------------
-	*tim_file << " $TIME_START" << std::endl;
-	*tim_file << "  " << time_start << std::endl;
+	*tim_file << " $TIME_START" << "\n";
+	*tim_file << "  " << time_start << "\n";
 	//--------------------------------------------------------------------
-	*tim_file << " $TIME_END" << std::endl;
-	*tim_file << "  " << time_end << std::endl;
+	*tim_file << " $TIME_END" << "\n";
+	*tim_file << "  " << time_end << "\n";
 	//--------------------------------------------------------------------
 	if(time_control_name.size() == 0)
 	{
-		*tim_file << " $TIME_STEPS" << std::endl;
+		*tim_file << " $TIME_STEPS" << "\n";
 		for(i = 0; i < (int)time_step_vector.size(); i++)
-			*tim_file << "  " << 1 << " " << time_step_vector[i] << std::endl;
+			*tim_file << "  " << 1 << " " << time_step_vector[i] << "\n";
 	}
 	//--------------------------------------------------------------------
 	if(time_control_name.size() > 0)
 	{
-		*tim_file << " $TIME_CONTROL" << std::endl;
+		*tim_file << " $TIME_CONTROL" << "\n";
 		if(time_control_name == "COURANT_MANIPULATE")
 		{
-			*tim_file << "  " << time_control_name << std::endl;
-			*tim_file << "   " << time_control_manipulate << std::endl;
+			*tim_file << "  " << time_control_name << "\n";
+			*tim_file << "   " << time_control_manipulate << "\n";
 		}
 		if(time_control_name == "PI_AUTO_STEP_SIZE")
 		{
-			*tim_file << "  " << time_control_name << std::endl;
+			*tim_file << "  " << time_control_name << "\n";
 			*tim_file << "   " << PI_tsize_ctrl_type << " " << relative_error << " " <<
-			absolute_error << " " << this_stepsize << std::endl;
+			absolute_error << " " << this_stepsize << "\n";
 		}
 		if(time_control_name == "STEP_SIZE_RESTRICTION")
 		{
-			*tim_file << "  " << time_control_name << std::endl;
-			*tim_file << "   " << h_min << " " << h_max << std::endl;
+			*tim_file << "  " << time_control_name << "\n";
+			*tim_file << "   " << h_min << " " << h_max << "\n";
 		}
 		if(time_control_name == "NEUMANN")
-			*tim_file << "  " << time_control_name << std::endl;
+			*tim_file << "  " << time_control_name << "\n";
 		if(time_control_name == "ERROR_CONTROL_ADAPTIVE")
-			*tim_file << "  " << time_control_name << std::endl;
+			*tim_file << "  " << time_control_name << "\n";
 		if(time_control_name == "SELF_ADAPTIVE")
 		{
-			*tim_file << "  MAX_TIME_STEP " << max_time_step << std::endl;
-			*tim_file << "  MIM_TIME_STEP " << min_time_step << std::endl;
+			*tim_file << "  MAX_TIME_STEP " << max_time_step << "\n";
+			*tim_file << "  MIM_TIME_STEP " << min_time_step << "\n";
 		}
 	}
 	//--------------------------------------------------------------------
@@ -969,22 +969,22 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 			if (time_step_length < MKleinsteZahl)
 			{
 				std::cout << "Warning : Time Control Step Wrong, dt = 0.0 " <<
-				std::endl;
+				"\n";
 				time_step_length = 1.e-6;
 			}
-			std::cout << "Neumann Time Step: " << time_step_length << std::endl;
+			std::cout << "Neumann Time Step: " << time_step_length << "\n";
 			time_step_length_neumann = 1.e10;
 			time_step_length = MMin(time_step_length, max_time_step);
 			if (Write_tim_discrete)
 				*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
 				              << "   " << time_step_length << "  " <<
 				m_pcs->iter_lin
-				              << std::endl;
+				              << "\n";
 			break;
 		}
 		default:
 			std::cout << "CTimeDiscretization::FirstTimeStepEstimate default case" <<
-			std::endl;
+			"\n";
 		}
 	}
 	return time_step_length;
@@ -1106,11 +1106,11 @@ double CTimeDiscretization::DynamicVariableTimeControl(void)
 	suggested_time_step_change = time_step_length*(1.0 / error - 1.0);
 	suggested_time_step = suggested_time_step_change + time_step_length;
 	//
-	std::cout << "Dynamic Variable suggested time step:  " << suggested_time_step << std::endl;
+	std::cout << "Dynamic Variable suggested time step:  " << suggested_time_step << "\n";
 	if(num_variables>1){
 		for(ii=0; ii<num_variables; ii++){
 			edof = time_step_length + time_step_length*(1.0 / dof_error[ii] - 1.0);
-			std::cout << "--> For DOF #:  " << ii << "  suggested time step is: " << edof << std::endl;
+			std::cout << "--> For DOF #:  " << ii << "  suggested time step is: " << edof << "\n";
 		}
 	}
 	//
@@ -1180,16 +1180,16 @@ double CTimeDiscretization::NeumannTimeControl(void)
 			time_step_length = time_step_length_neumann;
 			break;
 		default:
-			std::cout << "Fatal error: No valid PCS type" << std::endl;
+			std::cout << "Fatal error: No valid PCS type" << "\n";
 			break;
 		}
 	}
 
-	std::cout << "Neumann Time Step: " << time_step_length << std::endl;
+	std::cout << "Neumann Time Step: " << time_step_length << "\n";
 	time_step_length_neumann = 1.e10;
 	if (Write_tim_discrete)
 		*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
-		              << "   " << time_step_length << "  " << m_pcs->iter_lin << std::endl;
+		              << "   " << time_step_length << "  " << m_pcs->iter_lin << "\n";
 	return time_step_length;
 }
 
@@ -1211,12 +1211,12 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 	// First calculate maximum time step according to Neumann and Courant criteria
 #ifdef GEM_REACT
 	my_max_time_step = MMin(max_time_step,MaxTimeStep());
-	std::cout << "Self_Adaptive Time Step: max time step " << my_max_time_step << std::endl;
+	std::cout << "Self_Adaptive Time Step: max time step " << my_max_time_step << "\n";
 #else
 // kg44 This does not work in this way with multiple mass tranport processes!
 	if ( repeat )
 	{
-		std::cout << "   TIM step is repeated" << std::endl;
+		std::cout << "   TIM step is repeated" << "\n";
 		m_pcs = PCSGet ( pcs_type_name );
 		m_pcs->PrimaryVariableReload();
 	}
@@ -1234,7 +1234,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 			switch (m_pcs->getProcessType()) // TF
 			{
 			default:
-				std::cout << "Fatal error: No valid PCS type" << std::endl;
+				std::cout << "Fatal error: No valid PCS type" << "\n";
 				break;
 			//			case 'R': // Richards
 			case FiniteElement::RICHARDS_FLOW: // TF
@@ -1246,7 +1246,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 					"Self adaptive time step: to many iterations for Richards_flow "
 					          << m_pcs->iter_lin << " " <<
 					time_adapt_tim_vector[1] <<
-					std::endl;
+					"\n";
 //					time_step_length = time_step_length *
 //					                   time_adapt_coe_vector[
 //					        time_adapt_tim_vector.size() - 1];
@@ -1268,7 +1268,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 					imflag = 0;
 					std::cout <<
 					"Self adaptive time step: to many iterations for Groundwater/LIQUID flow"
-					          << std::endl;
+					          << "\n";
 				}
 				if (((imflag == 1) && (m_pcs->iter_lin <= time_adapt_tim_vector[0])))
 					imflag = 2;
@@ -1283,7 +1283,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 					"Self adaptive time step: to many iterations for Transport "
 					          << m_pcs->iter_lin << " " <<
 					time_adapt_tim_vector[1] <<
-					std::endl;
+					"\n";
 				}
 				if ( ((imflag == 1) &&
 				      ( m_pcs->iter_lin  <= time_adapt_tim_vector[0] ) ))
@@ -1307,10 +1307,10 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 
 	std::cout << "Self_Adaptive time step size: " << " imflag " << imflag << " dr " <<
 	time_step_length << " max iterations: " << iterdum << " number of evaluated processes: " <<
-	iprocs << std::endl;
+	iprocs << "\n";
 	if ( Write_tim_discrete )
 		*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit << "   " <<
-		time_step_length << "  " << m_pcs->iter_lin << std::endl;
+		time_step_length << "  " << m_pcs->iter_lin << "\n";
 	//}
 	return time_step_length;
 }
@@ -1369,7 +1369,7 @@ double CTimeDiscretization::CheckCourant(void)
 		}
 	}
 	std::cout << "Courant time step control, critical element = " << critical_element_no <<
-	" Recomended time step " << recommended_time_step << std::endl;
+	" Recomended time step " << recommended_time_step << "\n";
 	return recommended_time_step;
 }
 
@@ -1417,15 +1417,15 @@ double CTimeDiscretization::AdaptiveFirstTimeStepEstimate(void)
 			if (time_step_length < MKleinsteZahl)
 			{
 				std::cout << "Warning : Time Control Step Wrong, dt = 0.0 " <<
-				std::endl;
+				"\n";
 				time_step_length = 1.0e-8;
 			}
-			std::cout << "Error Control Time Step: " << time_step_length << std::endl;
+			std::cout << "Error Control Time Step: " << time_step_length << "\n";
 			if (Write_tim_discrete)
 				*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
 				              << "   " << time_step_length << "  " <<
 				m_pcs->iter_lin
-				              << std::endl;
+				              << "\n";
 			break;
 		}
 		//		case 'M': // kg44 mass transport
@@ -1463,7 +1463,7 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
 		switch (m_pcs->getProcessType()) // TF
 		{
 		default:
-			std::cout << "Fatal error: No valid PCS type" << std::endl;
+			std::cout << "Fatal error: No valid PCS type" << "\n";
 			break;
 		//		case 'R': // Richards, accepted and refused time step
 		case FiniteElement::RICHARDS_FLOW:       // accepted and refused time step
@@ -1477,12 +1477,12 @@ double CTimeDiscretization::ErrorControlAdaptiveTimeControl(void)
 				                                 m_pcs->m_num->nls_error_tolerance[0]
 				                                 / nonlinear_iteration_error), rmax);
 			std::cout << "Error_Self_Adaptive Time Step: " << time_step_length
-			          << std::endl;
+			          << "\n";
 			if (Write_tim_discrete)
 				*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
 				              << "   " << time_step_length << "  " <<
 				m_pcs->iter_lin
-				              << std::endl;
+				              << "\n";
 		}
 	}
 	return time_step_length;
@@ -1722,7 +1722,7 @@ double CTimeDiscretization::MaxTimeStep()
 		m_mat_mp = mmp_vector[group];
 
 		melem =  this_pcs->m_msh->ele_vector[i];
-		//		cout << m_mat_mp->Porosity(i,theta) << " " << melem->representative_length << endl;
+		//		cout << m_mat_mp->Porosity(i,theta) << " " << melem->representative_length << "\n";
 		// KG44 attention DM needs to be multiplied with porosity!
 		Dm = m_mat_mp->Porosity(i,theta) * m_cp->CalcDiffusionCoefficientCP(i,
 		                                                                    theta,
@@ -1731,10 +1731,10 @@ double CTimeDiscretization::MaxTimeStep()
 
 		dummy = ( 0.5 * (melem->representative_length * melem->representative_length)) / Dm;
 		max_diff_time_step = std::min(max_diff_time_step, dummy);
-		//	std::cout << "Neumann criteria: " << max_diff_time_step << " i " << i << std::endl;
+		//	std::cout << "Neumann criteria: " << max_diff_time_step << " i " << i << "\n";
 	}
 
-	std::cout << " Diffusive Time Step " << max_diff_time_step  << std::endl;
+	std::cout << " Diffusive Time Step " << max_diff_time_step  << "\n";
 
 	return std::min(max_diff_time_step, max_adv_time_step);
 }

@@ -165,7 +165,7 @@ bool MMPRead(std::string base_file_name)
 	std::ifstream mp_file (mp_file_name.data(),std::ios::in);
 	if (!mp_file.good())
 	{
-		std::cout << "! Error in MMPRead: No material data !" << std::endl;
+		std::cout << "! Error in MMPRead: No material data !" << "\n";
 		return false;
 	}
 	mp_file.seekg(0L,std::ios::beg);
@@ -178,7 +178,7 @@ bool MMPRead(std::string base_file_name)
 		if(line_string.find("#STOP") != string::npos)
 		{
 			std::cout << "done, read " << mmp_vector.size() << " medium properties" <<
-			std::endl;
+			"\n";
 			return true;
 		}
 		//----------------------------------------------------------------------
@@ -464,7 +464,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 					std::cout
 					<<
 					"Maximal number of solid phases is now limited to be 15!!!"
-					<< std::endl;
+					<< "\n";
 				for (int i = 0; i < m + 1; i++)
 					// molar volume [l/mol]
 					in >> porosity_model_values[i + 1];
@@ -497,7 +497,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 #endif
 			default:
 				std::cerr << "Error in MMPRead: no valid porosity model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -517,7 +517,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid vol_mat_model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -537,7 +537,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid vol_bio_model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -573,7 +573,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				if(geo_dimension == 0)
 					std::cout <<
 					"Error in CMediumProperties::Read: no geometric dimension"
-					          << std::endl;
+					          << "\n";
 				if(geo_dimension == 2)
 				{
 					in >> tortuosity_model_values[0];
@@ -592,7 +592,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				if(geo_dimension == 0)
 					std::cout <<
 					"Error in CMediumProperties::Read: no geometric dimension"
-					          << std::endl;
+					          << "\n";
 				if(geo_dimension == 2)
 				{
 					in >> tortuosity_model_values[0];
@@ -619,7 +619,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid tortuosity tensor type" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -663,7 +663,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid flow linearity model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -737,7 +737,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				pcs_name_vector.push_back("PRESSURE1");
 				break;
 			default:
-				cout << "Error in MMPRead: no valid storativity model" << endl;
+				cout << "Error in MMPRead: no valid storativity model" << "\n";
 				break;
 			case 7:       //RW/WW
 				in >> storage_model_values[0]; //Biot's alpha
@@ -774,7 +774,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid conductivity model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -814,7 +814,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				if(geo_dimension == 0)
 					std::cout <<
 					"Error in CMediumProperties::Read: no geometric dimension"
-					          << std::endl;
+					          << "\n";
 				if(geo_dimension == 2)
 				{
 					in >> permeability_tensor[0];
@@ -832,7 +832,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				if(geo_dimension == 0)
 					std::cout <<
 					"Error in CMediumProperties::Read: no geometric dimension"
-					          << std::endl;
+					          << "\n";
 				if(geo_dimension == 2)
 				{
 					in >> permeability_tensor[0];
@@ -859,7 +859,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout <<
-				"Error in MMPRead: no valid permeability tensor type" << std::endl;
+				"Error in MMPRead: no valid permeability tensor type" << "\n";
 				break;
 			}
 			in.clear();
@@ -892,7 +892,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid permeability model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -923,7 +923,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				cout << "Error in MMPRead: no valid permeability strain model" <<
-				endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -1009,7 +1009,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid permeability model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -1270,7 +1270,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 
 			default:
 				std::cout << "Error in MMPRead: no valid permeability model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -1294,7 +1294,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid permeability model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -1370,7 +1370,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			default:
 				std::cout << "Error in MMPRead: no valid permeability model" <<
-				std::endl;
+				"\n";
 				break;
 			}
 			in.clear();
@@ -1515,12 +1515,12 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				in >> lgpn;
 				if(lgpn > 0 )
 					cout << "      Limiting Grid Peclet Numbers to " << lgpn <<
-					endl;
+					"\n";
 				break;
 			default:
 				std::cout <<
 				"Error in CMediumProperties::Read: no valid mass dispersion model"
-				          << std::endl;
+				          << "\n";
 				break;
 			}
 			in.clear();
@@ -1547,7 +1547,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			default:
 				std::cout <<
 				"Error in CMediumProperties::Read: no valid heat dispersion model"
-				          << std::endl;
+				          << "\n";
 				break;
 			}
 			in.clear();
@@ -1656,7 +1656,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			if (!mmp_file.good())
 				std::cout <<
 				"Fatal error in MMPRead: no PERMEABILITY_DISTRIBUTION file" <<
-				std::endl;
+				"\n";
 			mmp_file.close();
 			permeability_model = 2;
 			in.clear();
@@ -1701,7 +1701,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			if (!mmp_file.good())
 				std::cout <<
 				"Fatal error in MMPRead: no POROSITY_DISTRIBUTION file" <<
-				std::endl;
+				"\n";
 			mmp_file.close();
 			porosity_model = 11;
 			in.clear();
@@ -1768,54 +1768,54 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//NAME
 	if(name.length() > 0)
 	{
-		*mmp_file << " $NAME" << endl;
+		*mmp_file << " $NAME" << "\n";
 		*mmp_file << "  ";
-		*mmp_file << name << endl;
+		*mmp_file << name << "\n";
 	}
 	//--------------------------------------------------------------------
 	//GEO_TYPE
 //	if(geo_type_name.compare("DOMAIN") == 0) //OK
 	if(_geo_type == GEOLIB::GEODOMAIN) // OK / TF
 	{
-		*mmp_file << " $GEO_TYPE" << endl;
-		*mmp_file << "  DOMAIN" << endl;
+		*mmp_file << " $GEO_TYPE" << "\n";
+		*mmp_file << "  DOMAIN" << "\n";
 	}
 	else if((int)geo_name_vector.size() > 0) //OK
 	{
-		*mmp_file << " $GEO_TYPE" << endl;
+		*mmp_file << " $GEO_TYPE" << "\n";
 		for(int i = 0; i < (int)geo_name_vector.size(); i++)
 		{
 			*mmp_file << "  ";
 //			*mmp_file << geo_type_name;
 			*mmp_file << GEOLIB::convertGeoTypeToString(_geo_type);
 			*mmp_file << " ";
-			*mmp_file << geo_name_vector[i] << endl;
+			*mmp_file << geo_name_vector[i] << "\n";
 		}
 	}
 	//--------------------------------------------------------------------
 	//DIMENSION
-	*mmp_file << " $GEOMETRY_DIMENSION" << endl;
+	*mmp_file << " $GEOMETRY_DIMENSION" << "\n";
 	*mmp_file << "  ";
-	*mmp_file << geo_dimension << endl;
-	*mmp_file << " $GEOMETRY_AREA" << endl;
+	*mmp_file << geo_dimension << "\n";
+	*mmp_file << " $GEOMETRY_AREA" << "\n";
 	*mmp_file << "  ";
-	*mmp_file << geo_area << endl;
+	*mmp_file << geo_area << "\n";
 	//--------------------------------------------------------------------
 	//PROPERTIES
 	//....................................................................
 	//POROSITY
 	if(porosity_model > -1)
 	{
-		*mmp_file << " $POROSITY" << endl;
+		*mmp_file << " $POROSITY" << "\n";
 		*mmp_file << "  ";
 		*mmp_file << porosity_model << " ";
 		switch (porosity_model)
 		{
 		case 1:
-			*mmp_file << porosity_model_values[0] << endl;
+			*mmp_file << porosity_model_values[0] << "\n";
 			break;
 		case 11:                  //MB ToDo
-			*mmp_file << porosity_file << endl; //MB
+			*mmp_file << porosity_file << "\n"; //MB
 			break;
 		}
 	}
@@ -1823,13 +1823,13 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//TORTUOSITY //OK4104
 	if(tortuosity_model > -1)
 	{
-		*mmp_file << " $TORTUOSITY" << endl;
+		*mmp_file << " $TORTUOSITY" << "\n";
 		*mmp_file << "  ";
 		*mmp_file << tortuosity_model << " ";
 		switch (tortuosity_model)
 		{
 		case 1:
-			*mmp_file << tortuosity_model_values[0] << endl;
+			*mmp_file << tortuosity_model_values[0] << "\n";
 			break;
 		}
 	}
@@ -1837,7 +1837,7 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//CONDUCTIVITY //MB ToDo
 	if(conductivity_model > -1)
 	{
-		*mmp_file << " $CONDUCTIVITY_MODEL" << endl;
+		*mmp_file << " $CONDUCTIVITY_MODEL" << "\n";
 		*mmp_file << "  ";
 		*mmp_file << conductivity_model << " ";
 		switch (conductivity_model)
@@ -1846,18 +1846,18 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 			*mmp_file << conductivity;
 			break;
 		}
-		*mmp_file << endl;
+		*mmp_file << "\n";
 	}
 	//....................................................................
 	//STORAGE
 	if(storage_model > -1)
 	{
-		*mmp_file << " $STORAGE" << endl;
+		*mmp_file << " $STORAGE" << "\n";
 		switch (storage_model)
 		{
 		case 1:
 			*mmp_file << "  " << storage_model << " " << storage_model_values[0] <<
-			endl;
+			"\n";
 			break;
 		}
 	}
@@ -1865,14 +1865,14 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//PERMEABILITY_TENSOR
 	if(permeability_tensor_type > -1)
 	{
-		*mmp_file << " $PERMEABILITY_TENSOR" << endl;
+		*mmp_file << " $PERMEABILITY_TENSOR" << "\n";
 		switch (permeability_tensor_type)
 		{
 		case 0:
-			*mmp_file << "  " << "ISOTROPIC" << " " << permeability_tensor[0] << endl;
+			*mmp_file << "  " << "ISOTROPIC" << " " << permeability_tensor[0] << "\n";
 			break;
 		case 3:                   //MB for heterogeneous fields //OK
-			*mmp_file << "  " << "FILE" << " " << permeability_file << endl;
+			*mmp_file << "  " << "FILE" << " " << permeability_file << "\n";
 			break;
 		}
 	}
@@ -1880,14 +1880,14 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//PERMEABILITY_DISTRIBUTION
 	if(permeability_model == 2)
 	{
-		*mmp_file << " $PERMEABILITY_DISTRIBUTION" << endl;
-		*mmp_file << "  " << permeability_file << endl;
+		*mmp_file << " $PERMEABILITY_DISTRIBUTION" << "\n";
+		*mmp_file << "  " << permeability_file << "\n";
 	}
 	//....................................................................
 	//PERMEABILITY
 	if(permeability_saturation_model[0] > -1)
 	{
-		*mmp_file << " $PERMEABILITY_SATURATION" << endl;
+		*mmp_file << " $PERMEABILITY_SATURATION" << "\n";
 		for(int i = 0; i < (int)mfp_vector.size(); i++)
 		{
 			*mmp_file << "  ";
@@ -1895,12 +1895,12 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 			switch (permeability_saturation_model[0])
 			{
 			case 0:
-				*mmp_file << (int)perm_saturation_value[0] << endl;
+				*mmp_file << (int)perm_saturation_value[0] << "\n";
 				break;
 			case 4:       //VG
 				*mmp_file << perm_saturation_value[0] << " ";
 				*mmp_file << 1.0-perm_saturation_value[0] << " ";
-				*mmp_file << perm_saturation_value[0] << endl;
+				*mmp_file << perm_saturation_value[0] << "\n";
 				break;
 			}
 		}
@@ -1909,21 +1909,21 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//CAPILLARY PRESSURE
 	if(capillary_pressure_model > -1)
 	{
-		*mmp_file << " $CAPILLARY_PRESSURE" << endl;
+		*mmp_file << " $CAPILLARY_PRESSURE" << "\n";
 		*mmp_file << "  ";
 		*mmp_file << capillary_pressure_model << " ";
 		switch (capillary_pressure_model)
 		{
 		case 0:
-			*mmp_file << (int)capillary_pressure_values[0] << endl;
+			*mmp_file << (int)capillary_pressure_values[0] << "\n";
 			break;
 		case 4:                   //VG
-			*mmp_file << capillary_pressure_values[0] << endl;
+			*mmp_file << capillary_pressure_values[0] << "\n";
 			break;
 		case 9:                   // HydroSphere
 			*mmp_file << capillary_pressure_values[0] << " ";
-			*mmp_file << capillary_pressure_values[1] << endl;
-			*mmp_file << capillary_pressure_values[2] << endl;
+			*mmp_file << capillary_pressure_values[1] << "\n";
+			*mmp_file << capillary_pressure_values[2] << "\n";
 			break;
 		}
 	}
@@ -1931,13 +1931,13 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//HEAT DISPERSION
 	if(heat_dispersion_model > -1)
 	{
-		*mmp_file << " $HEAT_DISPERSION" << endl;
+		*mmp_file << " $HEAT_DISPERSION" << "\n";
 		switch (heat_dispersion_model)
 		{
 		case 1:
 			//CMCD permeability
 			*mmp_file << "  " << heat_dispersion_model << " " <<
-			heat_dispersion_longitudinal << " " << heat_dispersion_transverse << endl;
+			heat_dispersion_longitudinal << " " << heat_dispersion_transverse << "\n";
 			break;
 		}
 	}
@@ -1945,13 +1945,13 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//MASS DISPERSION
 	if(mass_dispersion_model > -1)
 	{
-		*mmp_file << " $MASS_DISPERSION" << endl;
+		*mmp_file << " $MASS_DISPERSION" << "\n";
 		switch(mass_dispersion_model)
 		{
 		case 1:
 			//CMCD permeability
 			*mmp_file << "  " << mass_dispersion_model << " " <<
-			mass_dispersion_longitudinal << " " << mass_dispersion_transverse << endl;
+			mass_dispersion_longitudinal << " " << mass_dispersion_transverse << "\n";
 			break;
 		}
 	}
@@ -2022,16 +2022,16 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 	}
 	long no_elements = j - 1;
 	//--------------------------------------------------------------------
-	mat_file << "VARIABLES = X,Y,Z,MAT" << std::endl;
+	mat_file << "VARIABLES = X,Y,Z,MAT" << "\n";
 	const size_t no_nodes (_mesh->nod_vector.size());
 	mat_file << "ZONE T = " << name << ", " \
 	         << "N = " << no_nodes << ", " \
 	         << "E = " << no_elements << ", " \
-	         << "F = FEPOINT" << ", " << "ET = BRICK" << std::endl;
+	         << "F = FEPOINT" << ", " << "ET = BRICK" << "\n";
 	for(size_t i = 0; i < no_nodes; i++)
 	{
 		double const* const pnt (_mesh->nod_vector[i]->getData());
-		mat_file << pnt[0] << " " << pnt[1] << " " << pnt[2] << " " << number << std::endl;
+		mat_file << pnt[0] << " " << pnt[1] << " " << pnt[2] << " " << number << "\n";
 	}
 	j = 0;
 	for(size_t i = 0; i < _mesh->ele_vector.size(); i++)
@@ -2045,7 +2045,7 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 				mat_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[1] + 1 << " " << m_ele->getNodeIndices()[0] +
-				1 << std::endl;
+				1 << "\n";
 				j++;
 				element_type = "ET = QUADRILATERAL";
 				break;
@@ -2053,7 +2053,7 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 				mat_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << std::endl;
+				1 << "\n";
 				j++;
 				element_type = "ET = QUADRILATERAL";
 				break;
@@ -2064,14 +2064,14 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 				1 << " " \
 				<< m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] + 1 <<
 				" " << m_ele->getNodeIndices()[6] + 1 << " " << m_ele->getNodeIndices()[7] +
-				1 << std::endl;
+				1 << "\n";
 				j++;
 				element_type = "ET = BRICK";
 				break;
 			case MshElemType::TRIANGLE:
 				mat_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << endl;
+				" " << m_ele->getNodeIndices()[2] + 1 << "\n";
 				j++;
 				element_type = "ET = TRIANGLE";
 				break;
@@ -2079,7 +2079,7 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 				mat_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << std::endl;
+				1 << "\n";
 				j++;
 				element_type = "ET = TETRAHEDRON";
 				break;
@@ -2090,14 +2090,14 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 				1 << " " \
 				<< m_ele->getNodeIndices()[3] + 1 << " " << m_ele->getNodeIndices()[3] + 1 <<
 				" " << m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] +
-				1 << std::endl;
+				1 << "\n";
 				j++;
 				element_type = "ET = BRICK";
 				break;
 			default:
 				std::cerr <<
 				"CMediumProperties::WriteTecplot MshElemType not handled" <<
-				std::endl;
+				"\n";
 			}
 		}
 	}
@@ -2490,7 +2490,7 @@ double CMediumProperties::HeatCapacity(long number, double theta,
 	default:
 		std::cout
 		<< "Error in CMediumProperties::HeatCapacity: no valid material model"
-		<< std::endl;
+		<< "\n";
 		break;
 		//....................................................................
 	}
@@ -2894,13 +2894,13 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	double velocity[3] = {0.,0.,0.};
 	gp_ele->getIPvalue_vec_phase(ip, tr_phase, velocity); //gp velocities // SB
 	vg = MBtrgVec(velocity,3);
-	//  if(index < 10) cout <<" Velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<endl;
+	//  if(index < 10) cout <<" Velocity in MassDispersionTensorNew(): "<<velocity[0]<<", "<<velocity[1]<<", "<<velocity[2]<<", "<<vg<<"\n";
 	// test bubble velocity
 	if(m_cp->bubble_velocity_model == 1)
 	{
 		if(index < 0)
 			cout << " Velocity in MassDispersionTensorNew(): " << velocity[0] <<
-			", " << velocity[1] << ", " << velocity[2] << ", " << vg << endl;
+			", " << velocity[1] << ", " << velocity[2] << ", " << vg << "\n";
 		velocity[0] = m_cp->bubble_velocity[0];
 		velocity[1] = m_cp->bubble_velocity[1];
 		velocity[2] = m_cp->bubble_velocity[2];
@@ -2908,7 +2908,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 		if(index == 100)
 			std::cout << " Bubble velocity in MassDispersionTensorNew(): " <<
 			velocity[0] << ", " << velocity[1] << ", " << velocity[2] << ", " << vg <<
-			std::endl;
+			"\n";
 	}
 	// end bubble velocity
 	//Dl in local coordinates
@@ -2924,7 +2924,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 			l_char = sqrt(m_ele->GetVolume());
 		if(eleType == 4)
 			l_char = sqrt(m_ele->GetVolume());
-		// cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << endl;
+		// cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << "\n";
 		set = 0;
 		if(alpha_l < l_char / lgpn)
 		{
@@ -2937,10 +2937,10 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 			alpha_t = l_char / lgpn;
 		}
 
-		//cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << endl;
+		//cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << "\n";
 		if((set > 0) & (aktueller_zeitschritt == 1) & (component < 1) & (ip < 1))
 			std::cout << "element " << index << " " << l_char << " " << alpha_l <<
-			" " << alpha_t <<  std::endl;
+			" " << alpha_t <<  "\n";
 	}
 	//----------------------------------------------------------------------
 
@@ -3680,7 +3680,7 @@ double CMediumProperties::Porosity(long number,double theta)
 				{
 					cout <<
 					"Porosity: error getting porosity for model 15. porosity: "
-					     << porosity << " at node " << number << endl;
+					     << porosity << " at node " << number << "\n";
 					porosity = porosity_model_values[0];
 				}
 			}
@@ -3705,13 +3705,13 @@ double CMediumProperties::Porosity(long number,double theta)
 					porosity = pcs_temp->GetElementValue(number, idx);
 					if (porosity < 1.e-6)
 						cout << "error for porosity1 " << porosity <<
-						" node " << number << endl;
+						" node " << number << "\n";
 				}
 			}
 		break;
 #endif
 	default:
-		cout << "Unknown porosity model!" << endl;
+		cout << "Unknown porosity model!" << "\n";
 		break;
 	}
 	return porosity;
@@ -3851,7 +3851,7 @@ double CMediumProperties::Porosity(CElement* assem)
 				if (porosity < 1.e-6 || porosity > 1.0)
 				{
 					std:: cout << " error getting porosity model 15 " <<
-					porosity << " node " << number << endl;
+					porosity << " node " << number << "\n";
 					porosity = porosity_model_values[0];
 				}
 			}
@@ -5124,7 +5124,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 		cout <<
 		"Warning in CMediumProperties::SetDistributedELEProperties: no MMP property data"
 		     <<
-		endl;
+		"\n";
 		return;
 	}
 	mmp_property_file.clear();
@@ -5133,7 +5133,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 	line_string = GetLineFromFile1(&mmp_property_file);
 	if(!(line_string.find("#MEDIUM_PROPERTIES_DISTRIBUTED") != string::npos))
 	{
-		cout << "Keyword #MEDIUM_PROPERTIES_DISTRIBUTED not found" << endl;
+		cout << "Keyword #MEDIUM_PROPERTIES_DISTRIBUTED not found" << "\n";
 		return;
 	}
 	//----------------------------------------------------------------------
@@ -5146,7 +5146,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 		{
 			cout <<
 			"Error in CMediumProperties::SetDistributedELEProperties - no enough data sets"
-			     << endl;
+			     << "\n";
 			return;
 		}
 		//....................................................................
@@ -5159,7 +5159,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 			{
 				cout <<
 				"CMediumProperties::SetDistributedELEProperties: no MSH data" <<
-				endl;
+				"\n";
 				return;
 			}
 			continue;
@@ -5169,7 +5169,7 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 		{
 			element_area = false;
 			mmp_property_file >> mmp_property_name;
-			cout << mmp_property_name << endl;
+			cout << mmp_property_name << "\n";
 			_mesh->mat_names_vector.push_back(mmp_property_name);
 			if (mmp_property_name == "GEOMETRY_AREA")
 				element_area = true;
@@ -5280,13 +5280,13 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 					{
 						cout <<
 						"Error in CMediumProperties::SetDistributedELEProperties - not enough data sets"
-						     << endl;
+						     << "\n";
 						return;
 					}
 				}
 				break;
 			default:
-				cout << " Unknown interpolation option for the values!" << endl;
+				cout << " Unknown interpolation option for the values!" << "\n";
 				break;
 			}
 			continue;
@@ -5358,23 +5358,23 @@ void CMediumProperties::SetDistributedELEProperties(string file_name)
 		{
 			cout <<
 			"Warning in CMediumProperties::WriteDistributedELEProperties: no MMP property data file to write to"
-			     << endl;
+			     << "\n";
 			return;
 		}
-		mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << endl;
-		mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
-		//mmp_property_file_out << "$MSH_TYPE" << endl << "  " << mmp_property_mesh << endl;
-		//mmp_property_file_out << "$MMP_TYPE" << endl << "  " << "PERMEABILITY" << endl;
-		mmp_property_file_out << "$MMP_TYPE" << endl << "  " <<
-		_mesh->mat_names_vector[k] << endl;
-		mmp_property_file_out << "$DIS_TYPE" << endl << "  " << "ELEMENT" << endl;
-		mmp_property_file_out << "$DATA" << endl;
+		mmp_property_file_out << "#MEDIUM_PROPERTIES_DISTRIBUTED" << "\n";
+		mmp_property_file_out << "$MSH_TYPE" << "\n" << "  " << mmp_property_mesh << "\n";
+		//mmp_property_file_out << "$MSH_TYPE" << "\n" << "  " << mmp_property_mesh << "\n";
+		//mmp_property_file_out << "$MMP_TYPE" << "\n" << "  " << "PERMEABILITY" << "\n";
+		mmp_property_file_out << "$MMP_TYPE" << "\n" << "  " <<
+		_mesh->mat_names_vector[k] << "\n";
+		mmp_property_file_out << "$DIS_TYPE" << "\n" << "  " << "ELEMENT" << "\n";
+		mmp_property_file_out << "$DATA" << "\n";
 		for(i = 0; i < (long)_mesh->ele_vector.size(); i++)
 		{
 			m_ele_geo = _mesh->ele_vector[i];
-			mmp_property_file_out << i << "  " << m_ele_geo->mat_vector(k) << endl;
+			mmp_property_file_out << i << "  " << m_ele_geo->mat_vector(k) << "\n";
 		}
-		mmp_property_file_out << "#STOP" << endl;
+		mmp_property_file_out << "#STOP" << "\n";
 		mmp_property_file_out.close();
 		//----------------------------------------------------------------------
 	}
@@ -5443,7 +5443,7 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 			std::cerr
 			<<
 			"CMediumProperties::WriteTecplotDistributedProperties MshElemType not handled"
-			<< std::endl;
+			<< "\n";
 		}
 	}
 	//--------------------------------------------------------------------
@@ -5451,11 +5451,11 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 	mat_file << "VARIABLES = X,Y,Z";
 	for (j = 0; j < (int) _mesh->mat_names_vector.size(); j++)
 		mat_file << "," << _mesh->mat_names_vector[j];
-	mat_file << endl;
+	mat_file << "\n";
 	mat_file << "ZONE T = " << name << ", " << "N = "
 	         << (long) _mesh->nod_vector.size() << ", " << "E = "
 	         << (long) _mesh->ele_vector.size() << ", " << "F = FEPOINT" << ", "
-	         << "ET = " << element_type << endl;
+	         << "ET = " << element_type << "\n";
 	//--------------------------------------------------------------------
 	// Nodes
 	for (i = 0; i < (long) _mesh->nod_vector.size(); i++)
@@ -5474,7 +5474,7 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 			m_mat_prop_nod /= (int) m_nod->getConnectedElementIDs().size();
 			mat_file << " " << m_mat_prop_nod;
 		}
-		mat_file << endl;
+		mat_file << "\n";
 	}
 	//--------------------------------------------------------------------
 	// Elements
@@ -5488,14 +5488,14 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 			mat_file << m_ele->getNodeIndices()[0] + 1 << " "
 			         << m_ele->getNodeIndices()[1] + 1 << " "
 			         << m_ele->getNodeIndices()[1] + 1 << " "
-			         << m_ele->getNodeIndices()[0] + 1 << endl;
+			         << m_ele->getNodeIndices()[0] + 1 << "\n";
 			element_type = "QUADRILATERAL";
 			break;
 		case MshElemType::QUAD:
 			mat_file << m_ele->getNodeIndices()[0] + 1 << " "
 			         << m_ele->getNodeIndices()[1] + 1 << " "
 			         << m_ele->getNodeIndices()[2] + 1 << " "
-			         << m_ele->getNodeIndices()[3] + 1 << endl;
+			         << m_ele->getNodeIndices()[3] + 1 << "\n";
 			element_type = "QUADRILATERAL";
 			break;
 		case MshElemType::HEXAHEDRON:
@@ -5506,20 +5506,20 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 			         << m_ele->getNodeIndices()[4] + 1 << " "
 			         << m_ele->getNodeIndices()[5] + 1 << " "
 			         << m_ele->getNodeIndices()[6] + 1 << " "
-			         << m_ele->getNodeIndices()[7] + 1 << endl;
+			         << m_ele->getNodeIndices()[7] + 1 << "\n";
 			element_type = "BRICK";
 			break;
 		case MshElemType::TRIANGLE:
 			mat_file << m_ele->getNodeIndices()[0] + 1 << " "
 			         << m_ele->getNodeIndices()[1] + 1 << " "
-			         << m_ele->getNodeIndices()[2] + 1 << endl;
+			         << m_ele->getNodeIndices()[2] + 1 << "\n";
 			element_type = "TRIANGLE";
 			break;
 		case MshElemType::TETRAHEDRON:
 			mat_file << m_ele->getNodeIndices()[0] + 1 << " "
 			         << m_ele->getNodeIndices()[1] + 1 << " "
 			         << m_ele->getNodeIndices()[2] + 1 << " "
-			         << m_ele->getNodeIndices()[3] + 1 << endl;
+			         << m_ele->getNodeIndices()[3] + 1 << "\n";
 			element_type = "TETRAHEDRON";
 			break;
 		case MshElemType::PRISM:
@@ -5530,14 +5530,14 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 			         << m_ele->getNodeIndices()[3] + 1 << " "
 			         << m_ele->getNodeIndices()[3] + 1 << " "
 			         << m_ele->getNodeIndices()[4] + 1 << " "
-			         << m_ele->getNodeIndices()[5] + 1 << endl;
+			         << m_ele->getNodeIndices()[5] + 1 << "\n";
 			element_type = "BRICK";
 			break;
 		default:
 			std::cerr
 			<<
 			"CMediumProperties::WriteTecplotDistributedProperties MshElemType not handled"
-			<< std::endl;
+			<< "\n";
 		}
 	}
 }
@@ -5692,7 +5692,7 @@ void CMediumPropertiesGroup::Set(CRFProcess* m_pcs)
 	//----------------------------------------------------------------------
 	// Tests //
 	if(!m_msh)
-		cout << "Warning in CSourceTermGroup::Set - no MSH data" << endl;
+		cout << "Warning in CSourceTermGroup::Set - no MSH data" << "\n";
 	//return;
 	//----------------------------------------------------------------------
 	long no_mmp = (long)mmp_vector.size();

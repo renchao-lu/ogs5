@@ -422,7 +422,7 @@ void GEOWriteVolumes2TecplotV1(std::string file_base_name)
 			return;
 		vol_file.seekg(0L,std::ios::beg);
 		//--------------------------------------------------------------------
-		vol_file << "VARIABLES = X,Y,Z" << std::endl;
+		vol_file << "VARIABLES = X,Y,Z" << "\n";
 		//--------------------------------------------------------------------
 		p_vol_sfc = m_volume->surface_vector.begin(); //CC
 		while(p_vol_sfc != m_volume->surface_vector.end()) //CC
@@ -437,26 +437,26 @@ void GEOWriteVolumes2TecplotV1(std::string file_base_name)
 				         << "N = " << no_nodes << delimiter \
 				         << "E = " << no_triangles << delimiter \
 				         << "F = FEPOINT" << delimiter << "ET = TRIANGLE" <<
-				std::endl;
+				"\n";
 				for(i = 0; i < no_triangles; i++)
 				{
 					vol_file \
 					<< m_surface->TIN->Triangles[i]->x[0] << " " <<
 					m_surface->TIN->Triangles[i]->y[0] << " " <<
-					m_surface->TIN->Triangles[i]->z[0] << std::endl;
+					m_surface->TIN->Triangles[i]->z[0] << "\n";
 					vol_file \
 					<< m_surface->TIN->Triangles[i]->x[1] << " " <<
 					m_surface->TIN->Triangles[i]->y[1] << " " <<
-					m_surface->TIN->Triangles[i]->z[1] << std::endl;
+					m_surface->TIN->Triangles[i]->z[1] << "\n";
 					vol_file \
 					<< m_surface->TIN->Triangles[i]->x[2] << " " <<
 					m_surface->TIN->Triangles[i]->y[2] << " " <<
-					m_surface->TIN->Triangles[i]->z[2] << std::endl;
+					m_surface->TIN->Triangles[i]->z[2] << "\n";
 				}
 				for(i = 0; i < no_triangles; i++)
 					vol_file \
 					<< 3 * i + 1 << " " << 3 * i + 2 << " " << 3 * i + 3 <<
-					std::endl;
+					"\n";
 			}
 			++p_vol_sfc;
 		}
@@ -473,7 +473,7 @@ void GEOWriteVolumes2TecplotV1(std::string file_base_name)
 			vol_file << "ZONE T = " << m_surface->TIN->name << delimiter \
 			         << "N = " << 2 * no_nodes << delimiter \
 			         << "E = " << no_elements << delimiter \
-			         << "F = FEPOINT" << delimiter << "ET = QUADRILATERAL" << std::endl;
+			         << "F = FEPOINT" << delimiter << "ET = QUADRILATERAL" << "\n";
 			//++p_vol_sfc;
 			break;
 		}
@@ -489,13 +489,13 @@ void GEOWriteVolumes2TecplotV1(std::string file_base_name)
 				vol_file \
 				<< m_surface->polygon_point_vector[i]->x << " " <<
 				m_surface->polygon_point_vector[i]->y << " " <<
-				m_surface->polygon_point_vector[i]->z << std::endl;
+				m_surface->polygon_point_vector[i]->z << "\n";
 			//++p_vol_sfc;
 			for(i = 0; i < no_nodes; i++)
 				vol_file \
 				<< m_surface->polygon_point_vector[i]->x << " " <<
 				m_surface->polygon_point_vector[i]->y << " " <<
-				m_surface->polygon_point_vector[i]->z - 1000. << std::endl;
+				m_surface->polygon_point_vector[i]->z - 1000. << "\n";
 			break;
 		}
 		//--------------------------------------------------------------------
@@ -510,7 +510,7 @@ void GEOWriteVolumes2TecplotV1(std::string file_base_name)
 			for(i = 0; i < no_elements; i++)
 				vol_file \
 				<< i + 1 << " " << i + 2 << " " << i + no_nodes + 2 << " " << i +
-				no_nodes + 1 << std::endl;
+				no_nodes + 1 << "\n";
 			//++ps;
 			break;
 		}

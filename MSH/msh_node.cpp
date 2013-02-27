@@ -129,7 +129,7 @@ void CNode::Write(std::ostream& osm) const
 
 	if(patch_area > 0.0)
 		osm << "$AREA" << deli << patch_area;
-	osm << std::endl;
+	osm << "\n";
 }
 /**************************************************************************
    MSHLib-Method:

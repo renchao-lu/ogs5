@@ -129,8 +129,8 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				{
 					std::cout <<
 					"No multi-phase flow coupled. The thermal elatic model can only be used in H2 coupled proccess."
-					          << std::endl;
-					std::cout << "Quit the simulation now!" << std::endl;
+					          << "\n";
+					std::cout << "Quit the simulation now!" << "\n";
 					abort();
 				}
 			}
@@ -291,7 +291,7 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				if(thermal_conductivity_tensor_dim == 0)
 					std::cout <<
 					"Error in CSolidProperties::Read: no tensor dimension"
-					          << std::endl;
+					          << "\n";
 				if(thermal_conductivity_tensor_dim == 2)
 				{
 					in_sd >> thermal_conductivity_tensor[0];
@@ -310,7 +310,7 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				if(thermal_conductivity_tensor_dim == 0)
 					std::cout <<
 					"Error in CSolidProperties::Read: no tensor dimension"
-					          << std::endl;
+					          << "\n";
 				if(thermal_conductivity_tensor_dim == 2)
 				{
 					in_sd >> thermal_conductivity_tensor[0];
@@ -334,7 +334,7 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			default:
 				cout <<
 				"Error in CSolidProperties::Read: no valid thermal conductivity tensor type"
-				     << endl;
+				     << "\n";
 				break;
 			}
 			in_sd.clear();
@@ -1095,7 +1095,7 @@ void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int
 	default:                              //Normal case
 		cout <<
 		"***Error in CSolidProperties::HeatConductivityTensor(): conductivity mode is not supported "
-		     << endl;
+		     << "\n";
 		//base_thermal_conductivity = Heat_Conductivity();
 	}
 
@@ -1105,7 +1105,7 @@ void CSolidProperties::HeatConductivityTensor(const int dim, double* tensor, int
 	if (thermal_conductivity_tensor_type > 0 && dim != thermal_conductivity_tensor_dim)
 		cout <<
 		"***Error in CSolidProperties::HeatConductivityTensor(): problem dimension and the given tensor dimension are not same."
-		     << endl;
+		     << "\n";
 	//reset
 	for(i = 0; i < 9; i++)
 		tensor[i] = 0.0;
@@ -2180,9 +2180,9 @@ int CSolidProperties::DirectStressIntegrationDPwithTension(const int GPiGPj,
 				{
 					TryStress[i] = (*ele_val->Stress)(i, GPiGPj);
 					devS[i] = TryStress[i] + dstrs[i];
-					//  cout<<devS[i]<<endl;
+					//  cout<<devS[i]<<"\n";
 				}
-				// cout<<"sigmaB_End"<<endl;
+				// cout<<"sigmaB_End"<<"\n";
 
 				I1 = DeviatoricStress(devS);
 
@@ -2221,9 +2221,9 @@ int CSolidProperties::DirectStressIntegrationDPwithTension(const int GPiGPj,
 				{
 					dTempStr[i] /= tmpvalue;
 					TryStress[i] += dstrs[i];
-					// cout<<dTempStr[i]<<"||"<<TryStress[i]<<endl;
+					// cout<<dTempStr[i]<<"||"<<TryStress[i]<<"\n";
 				}
-				//  cout<<"delta sigmaP__SigmaB__End"<<endl;
+				//  cout<<"delta sigmaP__SigmaB__End"<<"\n";
 
 				double dI1;
 				I1 = DeviatoricStress(TryStress);
@@ -2290,7 +2290,7 @@ int CSolidProperties::DirectStressIntegrationDPwithTension(const int GPiGPj,
 					else
 						TryStress[i] = tmpStr[i];
 					//test
-					//cout<<TryStress[i]<<endl;
+					//cout<<TryStress[i]<<"\n";
 				}
 				failurestate = 3; //corner
 
@@ -2305,7 +2305,7 @@ int CSolidProperties::DirectStressIntegrationDPwithTension(const int GPiGPj,
 						TmpStress0[i] = (*ele_val->Stress)(i, GPiGPj);
 						dTempStr[i] = dstrs[i];
 						dTempStr2[i] = TmpStress0[i] + dstrs[i]; //stress0+dstrs
-						//  cout<<devS[i]<<endl;
+						//  cout<<devS[i]<<"\n";
 					}
 					I1 = DeviatoricStress(TmpStress0);
 					dI1 = DeviatoricStress(dTempStr);
@@ -2694,7 +2694,7 @@ int CSolidProperties::DirectStressIntegrationMOHR(const int GPiGPj, const Elemen
 	   double tmpresult[6]={0.};
 	   TransMatrixA_T->multi(prin_str, tmpresult);
 	   for(i=0; i<Size; i++)
-	    cout<<tmpresult[i]<<endl;
+	    cout<<tmpresult[i]<<"\n";
 	 */                                                                                                                                                     /////////
 
 	shearsurf = Ntheta * prin_str[0] - prin_str[2] - csn;
@@ -6471,14 +6471,14 @@ void CSolidProperties::Write(std::fstream* msp_file)
 {
 	//----------------------------------------------------------------------
 	// KEYWORD
-	*msp_file << "#SOLID_PROPERTIES" << std::endl;
+	*msp_file << "#SOLID_PROPERTIES" << "\n";
 	//-----------------------------------------------------------------------
 	//NAME
 	if(name.length() > 0)
 	{
-		*msp_file << " $NAME" << std::endl;
+		*msp_file << " $NAME" << "\n";
 		*msp_file << "  ";
-		*msp_file << name << std::endl;
+		*msp_file << name << "\n";
 	}
 	//-----------------------------------------------------------------------
 	// GEO_TYPE
@@ -6487,40 +6487,40 @@ void CSolidProperties::Write(std::fstream* msp_file)
 	//-----------------------------------------------------------------------
 	// PROPERTIES
 	//.......................................................................
-	*msp_file << " $DENSITY" << std::endl;
+	*msp_file << " $DENSITY" << "\n";
 	*msp_file << "  " << Density_mode;
 	if(data_Density)                      //OK410
-		*msp_file << " " << (*data_Density)(0) << std::endl;
+		*msp_file << " " << (*data_Density)(0) << "\n";
 	else
-		*msp_file << " Warning: no density data" << std::endl;
+		*msp_file << " Warning: no density data" << "\n";
 	//.......................................................................
 	// Elasticity properties
-	*msp_file << " $ELASTICITY" << std::endl;
+	*msp_file << " $ELASTICITY" << "\n";
 	if(Poisson_Ratio())                   //OK410
-		*msp_file << "  POISSION " << Poisson_Ratio() << std::endl;
-	*msp_file << "  YOUNGS_MODULUS" << std::endl;
+		*msp_file << "  POISSION " << Poisson_Ratio() << "\n";
+	*msp_file << "  YOUNGS_MODULUS" << "\n";
 	*msp_file << "  " << Youngs_mode;
 	if(data_Youngs)                       //OK410
-		*msp_file << " " << (*data_Youngs)(0) << std::endl;
+		*msp_file << " " << (*data_Youngs)(0) << "\n";
 	//.......................................................................
 	// Thermal properties
-	*msp_file << " $THERMAL" << std::endl;
+	*msp_file << " $THERMAL" << "\n";
 	if(ThermalExpansion >= 0)
 	{
-		*msp_file << "  EXPANSION" << std::endl;
-		*msp_file << "  " << ThermalExpansion << std::endl;
+		*msp_file << "  EXPANSION" << "\n";
+		*msp_file << "  " << ThermalExpansion << "\n";
 	}
 	if(Capacity_mode > 0)
 	{
-		*msp_file << "  CAPACITY" << std::endl;
+		*msp_file << "  CAPACITY" << "\n";
 		*msp_file << "  " << Capacity_mode;
-		*msp_file << " " << (*data_Capacity)(0) << std::endl;
+		*msp_file << " " << (*data_Capacity)(0) << "\n";
 	}
 	if(this->Conductivity_mode > 0)       //OK410
 	{
-		*msp_file << "  CONDUCTIVITY" << std::endl;
+		*msp_file << "  CONDUCTIVITY" << "\n";
 		*msp_file << "  " << Conductivity_mode;
-		*msp_file << " " << (*data_Conductivity)(0) << std::endl;
+		*msp_file << " " << (*data_Conductivity)(0) << "\n";
 	}
 	//-----------------------------------------------------------------------
 }
@@ -6600,7 +6600,7 @@ bool MSPRead(std::string file_base_name)
 	msp_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// Keyword loop
-	std::cout << "MSPRead" << std::endl;
+	std::cout << "MSPRead" << "\n";
 	while (!msp_file.eof())
 	{
 		msp_file.getline(line,MAX_ZEILE);
@@ -6789,7 +6789,7 @@ void MSPWrite(std::string base_file_name)
 	if (!msp_file.good())
 		return;
 	//----------------------------------------------------------------------
-	msp_file << "GeoSys-MSP: Material Solid Properties -------------" << std::endl;
+	msp_file << "GeoSys-MSP: Material Solid Properties -------------" << "\n";
 	//----------------------------------------------------------------------
 	for(int i = 0; i < (int)msp_vector.size(); i++)
 	{

@@ -82,7 +82,7 @@ bool CReadTextfiles_ECL::Read_Text(std::string Filename)
 	if (in_file == 0)
 	{
 		error = true;
-		cout << "The file " << Filename.data() << " can not be opened!" << endl;
+		cout << "The file " << Filename.data() << " can not be opened!" << "\n";
 	}
 	else
 	{
@@ -98,9 +98,9 @@ bool CReadTextfiles_ECL::Read_Text(std::string Filename)
 			{
 				cout <<
 				" Error - increase MAX_ZEILEN in order to read ECLIPSE data file "
-				     << endl;
+				     << "\n";
 				cout << " Or shorten the line in " << Filename.data() << ": " <<
-				tempstring << " to " << MAX_ZEILEN << " characters " << endl;
+				tempstring << " to " << MAX_ZEILEN << " characters " << "\n";
 				exit(0);
 			}
 			if (tempstring.compare("#STOP") != 0)
@@ -141,7 +141,7 @@ void CWriteTextfiles_ECL::Write_Text(std::string Filename, vector<std::string> T
 		if (i == int(Text.size()) - 1)
 			textfile << Text[i].data();
 		else
-			textfile << Text[i].data() << endl;
+			textfile << Text[i].data() << "\n";
 		//file.write(Text[i]);
 	}
 	textfile.close();
@@ -411,7 +411,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 
 	if (error == true)
 	{
-		cout << "The program is canceled" << endl;
+		cout << "The program is canceled" << "\n";
 		//system("Pause");
 		exit(0);
 	}
@@ -419,7 +419,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 	//Read in the Grid
 	for (long i = 0; i < TextFile->NumberOfRows - 1; i++)
 	{
-		//cout << TextFile->Data[i] << endl;
+		//cout << TextFile->Data[i] << "\n";
 		tempstring = TextFile->Data[i].substr(2,8);
 
 		//Check if the grid is radial or not
@@ -433,7 +433,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 			{
 				cout <<
 				"The phrase below the keyword RADIAL does not contain TRUE or FALSE! The program is aborted!"
-				     << endl;
+				     << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -448,11 +448,11 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 			in.clear();
 			// SB und KB
 
-			//cout << m_eclipseblock->column << endl;
+			//cout << m_eclipseblock->column << "\n";
 
 			//this->SplitStrings(TextFile->Daten[i+1]," ");
 			//if (this->SplittedString.size()<=4) {
-			//	cout << endl << "The grid output format (GRIDFILE) for Eclipse should be set to 2 0 instead of 1 1! The run is terminated now!" << endl;
+			//	cout << "\n" << "The grid output format (GRIDFILE) for Eclipse should be set to 2 0 instead of 1 1! The run is terminated now!" << "\n";
 			//	system("Pause");
 			//	exit(0);
 			//}
@@ -494,7 +494,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 					else
 						cout <<
 						"Error in the file structure of the grid file!" <<
-						endl;
+						"\n";
 				}
 				//Reads the corner points; order of the points (x1<x2, y1<y2, z1<z2):
 				//	0..x1, y1, z2; 1..x2, y1, z2; 2..x1, y2, z2; 3..x2, y2, z2
@@ -544,7 +544,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 				//m_eclipseblock->CalcBarycentre(); // For block to node interpolation
 				//m_eclipseblock->CalculateFaceCentres();
 
-				//cout << m_eclipseblock->x_coordinates[0] << " " << m_eclipseblock->x_coordinates[1] << " " << m_eclipseblock->x_coordinates[2] << endl;
+				//cout << m_eclipseblock->x_coordinates[0] << " " << m_eclipseblock->x_coordinates[1] << " " << m_eclipseblock->x_coordinates[2] << "\n";
 				// adds 1 dataset of typ eclblocks to vec_eclblocks
 				this->eclgrid.push_back(m_eclipseblock);
 			}
@@ -566,7 +566,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 				radius = this->eclgrid[i]->x_coordinates[j];
 				this->eclgrid[i]->x_coordinates[j] = sin(alpha) * radius;
 				this->eclgrid[i]->y_coordinates[j] = cos(alpha) * radius;
-				//cout << " radius: " << radius << " x: " << this->eclgrid[i]->x_coordinates[j] << " y: " << this->eclgrid[i]->y_coordinates[j] << endl;
+				//cout << " radius: " << radius << " x: " << this->eclgrid[i]->x_coordinates[j] << " y: " << this->eclgrid[i]->y_coordinates[j] << "\n";
 			}
 		//this->eclgrid[i]->CalcBarycentre();
 		double sum = 0;
@@ -584,7 +584,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 				{
 					cout <<
 					"The Radialmodell is not perpendicular to the positive I axis (East direction)!!"
-					     << endl;
+					     << "\n";
 					cout.flush();
 					exit(0);
 				}
@@ -597,7 +597,7 @@ void CECLIPSEData::ReadEclipseGrid(std::string Filename)
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                     Time: " << time << " seconds." << endl;
+	cout << "                     Time: " << time << " seconds." << "\n";
 }
 /*-------------------------------------------------------------------------
    GeoSys - Function: DetermineNeighbourElements
@@ -654,9 +654,9 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 				//if (atoi(this->SplittedString[0].data()) == i) {#
 				if (Element == i)
 				{
-					//cout << i << ": " << atof(this->SplittedString[1].data()) << " " << this->eclgrid[i]->x_barycentre << " " << atof(this->SplittedString[2].data()) << " " << this->eclgrid[i]->y_barycentre << " " << atof(this->SplittedString[3].data()) << " " << this->eclgrid[i]->z_barycentre << endl;
-					//cout << i << ": " << X << " " << this->eclgrid[i]->x_barycentre << " " << Y << " " << this->eclgrid[i]->y_barycentre << " " << Z << " " << this->eclgrid[i]->z_barycentre << endl;
-					//cout << epsilon << " " << abs(X - this->eclgrid[i]->x_barycentre) << " " << abs(Y - this->eclgrid[i]->y_barycentre) << " " << abs(Z - this->eclgrid[i]->z_barycentre) << endl;
+					//cout << i << ": " << atof(this->SplittedString[1].data()) << " " << this->eclgrid[i]->x_barycentre << " " << atof(this->SplittedString[2].data()) << " " << this->eclgrid[i]->y_barycentre << " " << atof(this->SplittedString[3].data()) << " " << this->eclgrid[i]->z_barycentre << "\n";
+					//cout << i << ": " << X << " " << this->eclgrid[i]->x_barycentre << " " << Y << " " << this->eclgrid[i]->y_barycentre << " " << Z << " " << this->eclgrid[i]->z_barycentre << "\n";
+					//cout << epsilon << " " << abs(X - this->eclgrid[i]->x_barycentre) << " " << abs(Y - this->eclgrid[i]->y_barycentre) << " " << abs(Z - this->eclgrid[i]->z_barycentre) << "\n";
 					//if ((abs(atof(this->SplittedString[1].data()) - this->eclgrid[i]->x_barycentre) < epsilon) && (abs(atof(this->SplittedString[2].data()) - this->eclgrid[i]->y_barycentre) < epsilon) && (abs(atof(this->SplittedString[3].data()) - this->eclgrid[i]->z_barycentre) < epsilon)) {
 					if ((abs(X - this->eclgrid[i]->x_barycentre) < epsilon) &&
 					    (abs(Y - this->eclgrid[i]->y_barycentre) < epsilon) &&
@@ -678,7 +678,7 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 			Error_NeighbourFile = true;
 
 		//if (Error_NeighbourFile == true) {
-		//	cout << "The program is canceled because the *.neighbours file is not correct!" << endl;
+		//	cout << "The program is canceled because the *.neighbours file is not correct!" << "\n";
 		//	system("Pause");
 		//	exit(0);
 		//}
@@ -688,7 +688,7 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 
 	if ((error == true) || (Error_NeighbourFile == true))
 	{
-		cout << "           Create new *.neighbours file." << endl;
+		cout << "           Create new *.neighbours file." << "\n";
 		//Set neighbourElements to -1
 		for (unsigned long i = 0; i < this->eclgrid.size(); i++)
 			for (unsigned int j = 0; j < this->eclgrid[i]->NeighbourElement.size(); j++)
@@ -706,7 +706,7 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 				{
 					param = static_cast<double>(100 * (j + i * this->eclgrid.size()) /
 					        (this->eclgrid.size() * this->eclgrid.size()));
-					cout << "              " << Round(param, 3) << " %" << endl;
+					cout << "              " << Round(param, 3) << " %" << "\n";
 				}
 				if (this->eclgrid[i]->layer == this->eclgrid[j]->layer)
 				{
@@ -777,7 +777,7 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 					}
 			}
 		//check
-		//cout << this->eclgrid[i]->index << ": " << this->eclgrid[i]->NeighbourElement[0] << " " << this->eclgrid[i]->NeighbourElement[1] << " " << this->eclgrid[i]->NeighbourElement[2] << " " << this->eclgrid[i]->NeighbourElement[3] << " " << this->eclgrid[i]->NeighbourElement[4] << " " << this->eclgrid[i]->NeighbourElement[5] << endl;
+		//cout << this->eclgrid[i]->index << ": " << this->eclgrid[i]->NeighbourElement[0] << " " << this->eclgrid[i]->NeighbourElement[1] << " " << this->eclgrid[i]->NeighbourElement[2] << " " << this->eclgrid[i]->NeighbourElement[3] << " " << this->eclgrid[i]->NeighbourElement[4] << " " << this->eclgrid[i]->NeighbourElement[5] << "\n";
 
 		//data output
 		vector <string> vec_string;
@@ -819,7 +819,7 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 		ofstream aus;
 		aus.open(Filename.data(),ios::out);
 		for (unsigned int i = 0; i < vec_string.size(); i++)
-			aus << vec_string[i] << endl;
+			aus << vec_string[i] << "\n";
 		aus.close();
 	}
 
@@ -847,13 +847,13 @@ void CECLIPSEData::DetermineNeighbourElements(string Projectname)
 	//		this->eclgrid[i]->NeighbourElement[5] = this->eclgrid[i]->index + (this->columns*this->rows);
 	//	}
 	//	//check
-	//	//cout << this->eclgrid[i]->index << ": " << this->eclgrid[i]->NeighbourElement[0] << " " << this->eclgrid[i]->NeighbourElement[1] << " " << this->eclgrid[i]->NeighbourElement[2] << " " << this->eclgrid[i]->NeighbourElement[3] << " " << this->eclgrid[i]->NeighbourElement[4] << " " << this->eclgrid[i]->NeighbourElement[5] << endl;
+	//	//cout << this->eclgrid[i]->index << ": " << this->eclgrid[i]->NeighbourElement[0] << " " << this->eclgrid[i]->NeighbourElement[1] << " " << this->eclgrid[i]->NeighbourElement[2] << " " << this->eclgrid[i]->NeighbourElement[3] << " " << this->eclgrid[i]->NeighbourElement[4] << " " << this->eclgrid[i]->NeighbourElement[5] << "\n";
 	//}
-	//cout << "i" << endl;
+	//cout << "i" << "\n";
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "          Time: " << time << " seconds." << endl;
+	cout << "          Time: " << time << " seconds." << "\n";
 }
 /*-------------------------------------------------------------------------
    GeoSys - Function: ReadDataFromInputFile
@@ -882,7 +882,7 @@ int CECLIPSEData::ReadDataFromInputFile(std::string Filename)
 	if (error == true)
 	{
 		cout << "The file: " << Filename <<
-		"could not been read! The program is canceled" << endl;
+		"could not been read! The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -916,7 +916,7 @@ int CECLIPSEData::ReadDataFromInputFile(std::string Filename)
 					{
 						cout <<
 						"The surface density of CO2 seems not to be correct: "
-						     << density << endl;
+						     << density << "\n";
 						return 0;
 					}
 					else
@@ -994,7 +994,7 @@ void CECLIPSEData::ReadWellData(std::string Filename_Wells)
 	ifstream in(Filename_Wells.data(),ios::in);
 
 	if (!in)
-		std::cout << "File not found." << std::endl;
+		std::cout << "File not found." << "\n";
 	//WW	error = true;
 	else
 		while (!in.eof())
@@ -1003,7 +1003,7 @@ void CECLIPSEData::ReadWellData(std::string Filename_Wells)
 			position = in.tellg();
 			tempstring = Line;
 			if (tempstring.find("#STOP") != std::string::npos)
-				std::cout << "ok" << std::endl;
+				std::cout << "ok" << "\n";
 
 			//if(tempstring.size() < 1) break;
 			//if(tempstring.find(hash)!=string::npos) {
@@ -1041,7 +1041,7 @@ void CECLIPSEData::ReadWellData(std::string Filename_Wells)
 					in >> tempvalue_rate;
 					ecl_single_well->rate.push_back(tempvalue_rate);
 					//if ((double(ecl_single_well->time.begin())) != "0"){
-					//	cout << "Warning: first item of time in timecurve is not 0!" << endl;
+					//	cout << "Warning: first item of time in timecurve is not 0!" << "\n";
 					//	break;
 					//}
 					in.clear();
@@ -1081,7 +1081,7 @@ void CECLIPSEData::ReadWellData(std::string Filename_Wells)
 		}
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "          Time: " << time << " seconds." << endl;
+	cout << "          Time: " << time << " seconds." << "\n";
 }
 
 /*-------------------------------------------------------------------------
@@ -1115,7 +1115,7 @@ bool CECLIPSEData::ReadPositionBoundaryCondition(std::string Filename)
 	if (error == true)
 	{
 		cout << "The file: " << Filename <<
-		"could not been read! The program is canceled" << endl;
+		"could not been read! The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1144,7 +1144,7 @@ bool CECLIPSEData::ReadPositionBoundaryCondition(std::string Filename)
 					{
 						cout <<
 						"There were more than 200 bc found in the Eclipse model. Please make sure that the definitions at the keyword AQUANCON are correct!"
-						     << endl;
+						     << "\n";
 						return false;
 					}
 					i1 = atoi(SplittedString[1].data());
@@ -1240,7 +1240,7 @@ bool CECLIPSEData::ReadBoundaryData(int index_boundary, vector <string> Data)
 			SplitBoundaryData[1] = Data[i].substr(26,20);
 			SplitBoundaryData[2] = Data[i].substr(49,20);
 
-			//cout << SplitBoundaryData.size() << endl;
+			//cout << SplitBoundaryData.size() << "\n";
 
 			//for (unsigned int j = 0; j < this->SplittedString.size(); j++){
 			for (unsigned int j = 0; j < 3; j++)
@@ -1347,14 +1347,14 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 	Error = TextFile->Read_Text(Filename);
 	if (Error == true)
 	{
-		cout << "The program is canceled" << endl;
+		cout << "The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
 	for (long j = 0; j < TextFile->NumberOfRows; j++)
 	{
 		//if (j==565 || j ==1384) {
-		//	cout << TextFile->Daten[j] << endl;
+		//	cout << TextFile->Daten[j] << "\n";
 		//}
 		double Multiplier = 1;
 		if (TextFile->Data[j].length() > 0 && TextFile->Data[j].substr(1,1) == "'")
@@ -1382,7 +1382,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 						{
 							cout <<
 							"Error while reading boundary data." <<
-							endl;
+							"\n";
 							system("Pause");
 							exit(0);
 						}
@@ -1464,7 +1464,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 										        .data())
 										          *
 										          Multiplier; //schreibt die Zeile aus Dataline mit allen m und dem Keyword k in das double Data rein
-										//cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][k] << endl;
+										//cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][k] << "\n";
 									}
 								}
 								else
@@ -1474,7 +1474,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 									SplitStrings(
 									        TextFile->Data[l],
 									        delimiter);
-									//cout << TextFile->Daten[l] << endl;
+									//cout << TextFile->Daten[l] << "\n";
 									for (unsigned int m = 0;
 									     m <
 									     SplittedString.size();
@@ -1483,7 +1483,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 										rowindex =
 										        rowindex +
 										        1;
-										//cout << rowindex-1 << " " << k << " " << " " << this->eclgrid[rowindex-1]->x_barycentre <<  " " << this->eclgrid[rowindex-1]->y_barycentre  << " " << this->eclgrid[rowindex-1]->z_barycentre  << " " << atof(SplittedString[m].data()) << endl;
+										//cout << rowindex-1 << " " << k << " " << " " << this->eclgrid[rowindex-1]->x_barycentre <<  " " << this->eclgrid[rowindex-1]->y_barycentre  << " " << this->eclgrid[rowindex-1]->z_barycentre  << " " << atof(SplittedString[m].data()) << "\n";
 										this->Data[rowindex
 										           - 1][k]
 										        = atof(
@@ -1491,7 +1491,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 										        [m].
 										        data()) *
 										          Multiplier;
-										//cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][k] << endl;
+										//cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][k] << "\n";
 									}
 								}
 							}
@@ -1501,7 +1501,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 						else
 						{
 							// there are inactive cells
-							//cout << "Error while reading the data file. The number of data points doesn't fit to the grid." << endl;
+							//cout << "Error while reading the data file. The number of data points doesn't fit to the grid." << "\n";
 							temprows = int(ceil(tempNumber / 4.0));
 							//Read data for identified variable
 							long rowindex = 0;
@@ -1530,7 +1530,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 									//string delimiter=" ";
 									//SplittedString.clear();
 									//SplitStrings(TextFile->Daten[l], delimiter);
-									//cout << TextFile->Daten[l] << endl;
+									//cout << TextFile->Daten[l] << "\n";
 									for (unsigned int m = 0;
 									     m < 4; m++)
 									{
@@ -1571,7 +1571,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 											cout <<
 											"1 data point couldn't be allocated to a grid point"
 											     <<
-											endl;
+											"\n";
 									}
 								}
 								else
@@ -1581,7 +1581,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 									SplitStrings(
 									        TextFile->Data[l],
 									        delimiter);
-									//cout << TextFile->Daten[l] << endl;
+									//cout << TextFile->Daten[l] << "\n";
 									for (unsigned int m = 0;
 									     m <
 									     SplittedString.size();
@@ -1590,7 +1590,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 										rowindex =
 										        rowindex +
 										        1;
-										//cout << rowindex-1 << " " << timestep << " " << k << " " << " " << this->eclgrid[rowindex-1]->x_barycentre <<  " " << this->eclgrid[rowindex-1]->y_barycentre  << " " << this->eclgrid[rowindex-1]->z_barycentre  << " " << atof(SplittedString[m].data()) << endl;
+										//cout << rowindex-1 << " " << timestep << " " << k << " " << " " << this->eclgrid[rowindex-1]->x_barycentre <<  " " << this->eclgrid[rowindex-1]->y_barycentre  << " " << this->eclgrid[rowindex-1]->z_barycentre  << " " << atof(SplittedString[m].data()) << "\n";
 										this->Data[rowindex
 										           - 1][k]
 										        = atof(
@@ -1598,7 +1598,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 										        [m].
 										        data()) *
 										          Multiplier;
-										//	cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][timestep][k] << endl;
+										//	cout << "Element: " << rowindex << " Variable: " << this->Variables[k] << " Value: " << this->Data[rowindex-1][timestep][k] << "\n";
 									}
 								}
 							}
@@ -1660,10 +1660,10 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 			}
 			if ((this->Phases[0] == "WATER") && (this->Phases[1] == "GAS"))
 			{
-				cout << endl;
+				cout << "\n";
 				cout <<
 				"GAS-WATER System can not be considered with ECLIPSE E100 and GeoSys"
-				     << endl;
+				     << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -1687,10 +1687,10 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 		}
 		if (int(this->Phases.size()) == 3)
 		{
-			cout << endl;
+			cout << "\n";
 			cout <<
 			"Currently not more than 2 phases are considered for reading eclipse pressure"
-			     << endl;
+			     << "\n";
 			cout <<
 			"Three phases are only valid if a water saturation exists only at the boundaries of the model domain!!";
 			//system("Pause");
@@ -1789,14 +1789,14 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 				this->Data[i][index_aim] = 1 - this->Data[i][index_source1] -
 				                           this->Data[i][index_source2];
 			//cout << "Element: " << i << " RS: " << this->Data[i][this->GetVariableIndex("RS")] << " SWAT: " << this->Data[i][index_swat];
-			//cout  << " SOIL: " << this->Data[i][index_soil] << " SGAS: " << this->Data[i][index_sgas] << endl;
+			//cout  << " SOIL: " << this->Data[i][index_soil] << " SGAS: " << this->Data[i][index_sgas] << "\n";
 		}
 
 		if (this->Phases.size() > 3)
 		{
 			cout <<
 			"Currently not more than 3 phases are considered for reading eclipse data"
-			     << endl;
+			     << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -1804,7 +1804,7 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 	//--------------------------------------------------------------------------------------------
 	// output of vertical flow data
 	//for (unsigned long i = 0; i < this->elements; i++) {
-	//	cout << "Q(k) " << this->Data[i][0][2] << endl;
+	//	cout << "Q(k) " << this->Data[i][0][2] << "\n";
 	//}
 	//cout << "Fertig";
 
@@ -1843,13 +1843,13 @@ void CECLIPSEData::ReadEclipseData(std::string Filename, long Timestep)
 	//ofstream aus;
 	//aus.open(aus_file.data(),ios::out);
 	//for (unsigned int i = 0; i < vec_string.size(); i++) {
-	//	aus << vec_string[i] << endl;
+	//	aus << vec_string[i] << "\n";
 	//}
 	//aus.close();
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                    Time: " << time << " seconds." << endl;
+	cout << "                    Time: " << time << " seconds." << "\n";
 }
 
 /*-------------------------------------------------------------------------
@@ -1882,7 +1882,7 @@ void CECLIPSEData::CalculateRSfromMassFraction_E300()
 	{
 		cout <<
 		"Not all variables are existing in the eclipse output files that are necessary to write data back to e300!"
-		     << endl;
+		     << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1903,7 +1903,7 @@ void CECLIPSEData::CalculateRSfromMassFraction_E300()
 	}
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                    Time: " << time << " seconds." << endl;
+	cout << "                    Time: " << time << " seconds." << "\n";
 }
 
 /*-------------------------------------------------------------------------
@@ -1928,7 +1928,7 @@ bool CECLIPSEData::ReplaceASectionInFile(std::string Filename,
 	Error = TextFile->Read_Text(Filename);
 	if (Error == true)
 	{
-		cout << "The program is canceled" << endl;
+		cout << "The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -1960,7 +1960,7 @@ bool CECLIPSEData::ReplaceASectionInFile(std::string Filename,
 			{
 				cout <<
 				"Replacing a Section in the Eclipse input file is not possible because the section length doesn't fit!"
-				     << endl;
+				     << "\n";
 				success = false;
 				return success;
 			}
@@ -1998,7 +1998,7 @@ bool CECLIPSEData::ReplaceWellRate(std::string Filename, std::string Keyword_wel
 	Error = TextFile->Read_Text(Filename);
 	if (Error == true)
 	{
-		cout << "The program is canceled" << endl;
+		cout << "The program is canceled" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -2086,7 +2086,7 @@ bool CECLIPSEData::CorrespondingElements()
 	if (long(m_msh->ele_vector.size()) != this->elements)
 	{
 		cout << "Error: The number of elements between Geosys and Eclipse is not equal!" <<
-		endl;
+		"\n";
 		return false;
 	}
 
@@ -2117,17 +2117,17 @@ bool CECLIPSEData::CorrespondingElements()
 	for (unsigned long i = 0; i < m_msh->ele_vector.size(); i++)
 	{
 		cout << "   CorrespondingEclipseElement[" << i << "] " <<
-		CorrespondingEclipseElement[i] << endl;
+		CorrespondingEclipseElement[i] << "\n";
 		if (CorrespondingEclipseElement[i] < 0)
 		{
-			cout << "Error: No Eclipse element linked to the Geosys element!" << endl;
+			cout << "Error: No Eclipse element linked to the Geosys element!" << "\n";
 			return 0;
 		}
 	}
 	for (long j = 0; j < this->elements; j++)
 		if (CorrespondingGeosysElement[j] < 0)
 		{
-			cout << "Error: No Geosys element linked to the Eclipse element!" << endl;
+			cout << "Error: No Geosys element linked to the Eclipse element!" << "\n";
 			return 0;
 		}
 	return 1;
@@ -2156,7 +2156,7 @@ bool CECLIPSEData::CompareElementsGeosysEclipse()
 	if (long(m_msh->ele_vector.size()) != this->elements)
 	{
 		cout << "Error: The number of elements between Geosys and Eclipse is not equal!" <<
-		endl;
+		"\n";
 		return false;
 	}
 
@@ -2168,8 +2168,8 @@ bool CECLIPSEData::CompareElementsGeosysEclipse()
 		// Test output
 		//for(int j=0;j<8;j++){
 		//	a_node = ele_nodes[j];
-		//	cout << endl;
-		//	cout << a_node->X() << " " << a_node->Y() << " " << a_node->Z() << " ECL " << this->eclgrid[i]->x_coordinates[j] << " " << this->eclgrid[i]->y_coordinates[j]  << " " << this->eclgrid[i]->z_coordinates[j] << endl;
+		//	cout << "\n";
+		//	cout << a_node->X() << " " << a_node->Y() << " " << a_node->Z() << " ECL " << this->eclgrid[i]->x_coordinates[j] << " " << this->eclgrid[i]->y_coordinates[j]  << " " << this->eclgrid[i]->z_coordinates[j] << "\n";
 		//}
 		//A loop can't be used because the order of nodes is not equal
 
@@ -2233,7 +2233,7 @@ bool CECLIPSEData::CompareElementsGeosysEclipse()
 	}
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                    Time: " << time << " seconds." << endl;
+	cout << "                    Time: " << time << " seconds." << "\n";
 
 	return 1;
 }
@@ -2301,10 +2301,10 @@ bool CECLIPSEData::CreateFaces(void)
 		//double *tmp_coord;
 		//for (int j = 0; j < 8; j++) {
 		//	tmp_coord = element_nodes[j]->GetCoordinates();
-		//	cout << "Punkt " << j << " " << tmp_coord[0] << " " << tmp_coord[1] << " " << tmp_coord[2] << endl;
+		//	cout << "Punkt " << j << " " << tmp_coord[0] << " " << tmp_coord[1] << " " << tmp_coord[2] << "\n";
 		//}
 		//if ((i == 608) || (i == 645))
-		//	cout << i << endl;
+		//	cout << i << "\n";
 		//non-radial elements: Right face of the Element (i-direction) (Nodes: 1,5,2,6) -> with this order of the nodes the normal vector shows automatically to the positve i-direction
 		//radial elements: Right face of the Element (i-direction) (Nodes: 6,5,2,1) -> with this order of the nodes the normal vector shows automatically to the positve i-direction
 		m_face = new CFaces(int(this->Phases.size()));
@@ -2332,7 +2332,7 @@ bool CECLIPSEData::CreateFaces(void)
 		                       vec_face_nodes[3]) == false)
 		{
 			cout << "Error at creating face: The given points form not a plane!" <<
-			endl;
+			"\n";
 			system("Pause");
 			return false;
 		}
@@ -2385,7 +2385,7 @@ bool CECLIPSEData::CreateFaces(void)
 		                       vec_face_nodes[3]) == false)
 		{
 			cout << "Error at creating face: The given points form not a plane!" <<
-			endl;
+			"\n";
 			system("Pause");
 			return false;
 		}
@@ -2437,7 +2437,7 @@ bool CECLIPSEData::CreateFaces(void)
 		                       vec_face_nodes[3]) == false)
 		{
 			cout << "Error at creating face: The given points form not a plane!" <<
-			endl;
+			"\n";
 			system("Pause");
 			return false;
 		}
@@ -2494,7 +2494,7 @@ bool CECLIPSEData::CreateFaces(void)
 			{
 				cout <<
 				"Error at creating face: The given points form not a plane!" <<
-				endl;
+				"\n";
 				system("Pause");
 				return false;
 			}
@@ -2551,7 +2551,7 @@ bool CECLIPSEData::CreateFaces(void)
 			{
 				cout <<
 				"Error at creating face: The given points form not a plane!" <<
-				endl;
+				"\n";
 				system("Pause");
 				return false;
 			}
@@ -2608,7 +2608,7 @@ bool CECLIPSEData::CreateFaces(void)
 			{
 				cout <<
 				"Error at creating face: The given points form not a plane!" <<
-				endl;
+				"\n";
 				system("Pause");
 				return false;
 			}
@@ -2647,12 +2647,12 @@ bool CECLIPSEData::CreateFaces(void)
 	//	n_vec = faces[i]->PlaneEquation->GetNormalVector();
 	//	for(int j=0;j<3;j++) cout << n_vec[j] << ", ";
 	//	cout << "     Area: " << faces[i]->face_area;
-	//	cout << endl;
+	//	cout << "\n";
 	//}
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                        Time: " << time << " seconds." << endl;
+	cout << "                        Time: " << time << " seconds." << "\n";
 
 	return true;
 }
@@ -2692,14 +2692,14 @@ bool CECLIPSEData::ConnectFacesToElements(void)
 	//for(unsigned long i=0;i<eclgrid.size();i++){
 	//	cout << "    Faces at block " << eclgrid[i]->index << " :  ";
 	//	for(int j=0;j<eclgrid[i]->connected_faces.size();j++) cout << eclgrid[i]->connected_faces[j] << ", ";
-	//	cout << endl;
+	//	cout << "\n";
 	//}
 
 	for(long i = 0; i < long(eclgrid.size()); i++)
 	{
 		// Test output: all faces at one block
 		if(eclgrid[i]->connected_faces.size() != 6)
-			cout << " Error - not 6 faces at one block " << endl;
+			cout << " Error - not 6 faces at one block " << "\n";
 		// initialize vector faces_at_block
 		faces_at_block.clear();
 		for(unsigned long j = 0; j < 6; j++)
@@ -2758,11 +2758,11 @@ bool CECLIPSEData::ConnectFacesToElements(void)
 		//// Test output
 		//cout << "    Faces at block " << eclgrid[i]->index << " :  ";
 		//for(j=0;j<eclgrid[i]->connected_faces.size();j++) cout << eclgrid[i]->connected_faces[j] << ", ";
-		//cout << endl;
+		//cout << "\n";
 	}
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "             Time: " << time << " seconds." << endl;
+	cout << "             Time: " << time << " seconds." << "\n";
 
 	return true;
 }
@@ -2801,7 +2801,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 
 		if ((number_elements < 1) || (number_elements > 2))
 		{
-			cout << "There is an error in connecting faces and elements" << endl;
+			cout << "There is an error in connecting faces and elements" << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -2828,7 +2828,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 						{
 							cout <<
 							"This phase is not considered yet in GetFlowForFaces"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -2852,7 +2852,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 						{
 							cout <<
 							"This phase is not considered yet in GetFlowForFaces"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -2861,7 +2861,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			}
 			if (variable_index < 0)
 			{
-				cout << "There are no variables!" << endl;
+				cout << "There are no variables!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -2870,7 +2870,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			        (this->Data[element_index][variable_index] /
 			         m_face->face_area) / 86400.0;
 			m_face->Calculate_components_of_a_vector(0, phase_index, Radialmodell);
-			//cout << " Flow through face " << m_face->index << " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << endl;
+			//cout << " Flow through face " << m_face->index << " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << "\n";
 		}
 		// upper face (y)
 		if (m_face->model_axis == "J+")
@@ -2893,7 +2893,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 						{
 							cout <<
 							"This phase is not considered yet in GetFlowForFaces"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -2917,7 +2917,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 						{
 							cout <<
 							"This phase is not considered yet in GetFlowForFaces"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -2927,7 +2927,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			//WW		time_index = 0;
 			if (variable_index < 0)
 			{
-				cout << "There are no variables!" << endl;
+				cout << "There are no variables!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -2936,7 +2936,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			        (this->Data[element_index][variable_index] /
 			         m_face->face_area) / 86400.0;
 			m_face->Calculate_components_of_a_vector(0, phase_index, Radialmodell);
-			//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << endl;
+			//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << "\n";
 		}
 		// bottom face (z) (Eclipse has the opposite z direction -> k = +
 		if (m_face->model_axis == "K+")
@@ -2956,7 +2956,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 					{
 						cout <<
 						"This phase is not considered yet in GetFlowForFaces"
-						     << endl;
+						     << "\n";
 						system("Pause");
 						exit(0);
 					}
@@ -2965,7 +2965,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			//WW		time_index = 0;
 			if (variable_index < 0)
 			{
-				cout << "There are no variables!" << endl;
+				cout << "There are no variables!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -2974,7 +2974,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			        (this->Data[element_index][variable_index] /
 			         m_face->face_area) / 86400.0;
 			m_face->Calculate_components_of_a_vector(0, phase_index, Radialmodell);
-			//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << endl;
+			//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->Data[element_index][time_index][variable_index] << " ,  " << m_face->q_norm << "\n";
 		}
 		// left, lower and top faces -> now flow over these faces
 		if ((m_face->model_axis == "I-") || (m_face->model_axis == "J-") ||
@@ -2984,7 +2984,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			m_face->Calculate_components_of_a_vector(0, phase_index, Radialmodell);
 		}
 		//if ((element_index == 609) || (element_index == 610) || (element_index == 611) || (element_index == 646) || (element_index == 647) || (element_index == 648) || (element_index == 683) || (element_index == 684) || (element_index == 685)  || (element_index == 720)  ||  (element_index == 721)  ||  (element_index == 722))
-		//	cout << "Zentrum" << endl;
+		//	cout << "Zentrum" << "\n";
 
 		//
 		//Get additional flow for border cells that contain boundary conditions
@@ -2996,7 +2996,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 			{
 				cout <<
 				"There is more than 1 boundary condition assigned to the cell " <<
-				ele_index << endl;
+				ele_index << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -3011,7 +3011,7 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 					if (m_face->phases[phase_index]->q_norm == 0)
 					{
 						//calculate q [m�/m�.s] for Geosys from Q [m�/d] from Eclipse
-						//cout << " BC Flow through face " << m_face->index << " :  " << this->BC[bc_index]->value[0] << endl;
+						//cout << " BC Flow through face " << m_face->index << " :  " << this->BC[bc_index]->value[0] << "\n";
 						vz = 1.0;
 						//if(this->BC[bc_index]->value[0] < 0){ // outflow out of model area
 						//The values in I+, J+ and K+ direction have to be counted with the opposit direction
@@ -3030,13 +3030,13 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 						        0,
 						        phase_index,
 						        Radialmodell);
-						//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->BC[bc_index]->value[0] << " ,  " << m_face->q_norm << endl;
+						//cout << " Flow through face " << m_face->index <<  " element " << element_index << " :  " << this->BC[bc_index]->value[0] << " ,  " << m_face->q_norm << "\n";
 					}
 					else
 					{
 						cout <<
 						"There is already a flow assigned to the boundary face, which shouldn't happen "
-						     << m_face->index << endl;
+						     << m_face->index << "\n";
 						system("Pause");
 						exit(0);
 					}
@@ -3046,12 +3046,12 @@ bool CECLIPSEData::GetFlowForFaces(int phase_index)
 
 		//cout << " Face " << m_face->index << ", " << m_face->connected_elements[0] ;
 		//if(m_face->connected_elements.size() > 1) cout << ", " << m_face->connected_elements[1];
-		//cout << ":           " << m_face->q_norm << ":   " << m_face->q[0] << ", " << m_face->q[1] << ", " << m_face->q[2] << endl;
+		//cout << ":           " << m_face->q_norm << ":   " << m_face->q[0] << ", " << m_face->q[1] << ", " << m_face->q[2] << "\n";
 	}
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                     Time: " << time << " seconds." << endl;
+	cout << "                     Time: " << time << " seconds." << "\n";
 
 	return true;
 }
@@ -3124,9 +3124,9 @@ bool CECLIPSEData::GetVelForFaces(void)
 		cout << " Face " << m_face->index << ", " << m_face->connected_elements[0];
 		if(m_face->connected_elements.size() > 1)
 			cout << ", " << m_face->connected_elements[1];
-		//cout << ": " << m_face->q_norm << endl;
+		//cout << ": " << m_face->q_norm << "\n";
 		//if(fabs(m_face->v_norm) > MKleinsteZahl) cout << " q/v: " << m_face->q_norm/m_face->face_area/0.5 /m_face->v_norm ;
-		//cout << endl;
+		//cout << "\n";
 	}
 	return true;
 }
@@ -3151,31 +3151,31 @@ bool CECLIPSEData::CalcBlockBudget(int phase_index)
 	{
 		m_block = this->eclgrid[i];
 		flow = flow_max = 0.0;
-		//cout << "  Budget for block " << i << ": " << endl ;
+		//cout << "  Budget for block " << i << ": " << "\n" ;
 		for(unsigned int j = 0; j < m_block->connected_faces.size(); j++)
 		{
 			m_face = faces[m_block->connected_faces[j]];
 			flow_face = m_face->phases[phase_index]->q_norm * m_face->face_area;
-			//cout << "flow_face " << flow_face << endl;
+			//cout << "flow_face " << flow_face << "\n";
 			if(fabs(flow_face) > flow_max)
 				flow_max = fabs(flow_face);
 			if((j == 1) || (j == 3) || (j == 5)) // minus faces: -i, -j or -k
 				flow_face *= -1.0;
-			//cout << " face " << m_face->index << ": " << flow_face << " ;   " << endl;
+			//cout << " face " << m_face->index << ": " << flow_face << " ;   " << "\n";
 			flow += flow_face;
 		}
-		//cout << " total flow: " << flow << endl;
+		//cout << " total flow: " << flow << "\n";
 		if((fabs(flow / flow_max) > 1.0e-3) && (fabs(flow) > 1.0e-10))
 		{
 			if (max_error < abs(flow / flow_max))
 				max_error = abs(flow / flow_max);
 			cout << " Error in budget for block " << i << " :  Sum_flow: " << flow <<
 			", max_flow : " << flow_max << ", rel_error: " << flow / flow_max <<
-			", max_error: " << max_error << endl;
+			", max_error: " << max_error << "\n";
 		}
-		//cout << " max_error: " << max_error << endl;
+		//cout << " max_error: " << max_error << "\n";
 		//if (max_error > 0.0043)
-		//	cout << endl;
+		//	cout << "\n";
 	}
 
 	return true;
@@ -3251,13 +3251,13 @@ bool CECLIPSEData::MakeNodeVector(void)
 //		for (long k = 0; k < 3; k++){
 //			cout << m_NodeData->phase_density[k] << " " << m_NodeData->phase_pressure[k] << " " << m_NodeData->phase_saturation[k] << " ";
 //		}
-//		cout << endl;
+//		cout << "\n";
 //		// Test output
 //		cout << " Node " << i << " (X,Y,Z): (" << this->NodeData[this->NodeData.size()-1]->x << ", " << this->NodeData[this->NodeData.size()-1]->y << ", "<< this->NodeData[this->NodeData.size()-1]->z << ") ";
 //		for (long k = 0; k < 3; k++){
 //			cout << this->NodeData[this->NodeData.size()-1]->phase_density[k] << " " << this->NodeData[this->NodeData.size()-1]->phase_pressure[k] << " " << this->NodeData[this->NodeData.size()-1]->phase_saturation[k] << " ";
 //		}
-//		cout << endl;
+//		cout << "\n";
 		}
 	else
 		for (unsigned long i = 0; i < m_msh->nod_vector.size(); i++)
@@ -3302,7 +3302,7 @@ bool CECLIPSEData::MakeNodeVector(void)
 //							weights_xyz[k] += weight;
 //							//cout << " Node " << i << " contributed by face " << m_face->index << ", " << m_face->model_axis << "  , " << m_face->q_norm << ": ";
 //							//for(int mm=0;mm<3;mm++) cout << m_face->q[mm] << ", ";
-//							//cout << endl;
+//							//cout << "\n";
 //						  }
 //					  }
 //					}
@@ -3313,7 +3313,7 @@ bool CECLIPSEData::MakeNodeVector(void)
 //						////m_NodeData->Flow[k] = m_NodeData->Flow[k] / weights_xyz[k];
 //					 // else{
 //						////m_NodeData->Flow[k] = m_NodeData->Flow[k];
-//						//cout << " Warning - no faces for direction (I=0,J=1,K=2): " << k << " at node " << i << " with non-zero contributions! " << endl;
+//						//cout << " Warning - no faces for direction (I=0,J=1,K=2): " << k << " at node " << i << " with non-zero contributions! " << "\n";
 //					 // }
 //					}
 //				}
@@ -3336,7 +3336,7 @@ bool CECLIPSEData::MakeNodeVector(void)
 //						//temp.str(""); temp.clear(); temp << m_NodeData->Flow[k]; tempstring += "; " + temp.str();
 //						//cout << m_NodeData->Data_separated[k] << " ";
 //					}
-//					//cout << endl;
+//					//cout << "\n";
 //					//calculate v
 ////					temp.str(""); temp.clear(); temp << sqrt(pow(m_NodeData->Flow[0],2) + pow(m_NodeData->Flow[1],2) + pow(m_NodeData->Flow[2], 2)); tempstring += "; " + temp.str();
 //
@@ -3359,7 +3359,7 @@ bool CECLIPSEData::MakeNodeVector(void)
 //				ofstream aus;
 //				aus.open(aus_file.data(),ios::out);
 //				for (unsigned long i = 0; i < vec_string.size(); i++) {
-//					aus << vec_string[i] << endl;
+//					aus << vec_string[i] << "\n";
 //				}
 //				aus.close();
 
@@ -3398,7 +3398,7 @@ void CECLIPSEData::InterpolateDataFromFacesToNodes(long ele_nr,
 	int face_flag = 1; // option: 0...take all faces at one node, 1...take 2 faces: only the faces which belong to the element
 	//todo eingabeoption
 
-	//cout << " InterpolateDataFromFacesToNodes2 " << endl << endl;
+	//cout << " InterpolateDataFromFacesToNodes2 " << "\n" << "\n";
 
 	/* Go through GeoSys mesh, and get each element (=Eclipse block). For each block, look at all corner points
 	   (=Nodes) of the element, as phase velocities are needed there. For each node, look at all faces connected to the node.
@@ -3416,13 +3416,13 @@ void CECLIPSEData::InterpolateDataFromFacesToNodes(long ele_nr,
 	m_ele->GetNodeIndeces(nod_index); // get node indexes of nodes on element
 
 	//if ((ele_nr == 646) || (ele_nr == 647) || (ele_nr == 648) || (ele_nr == 683) || (ele_nr == 684) || (ele_nr == 685)  || (ele_nr == 720)  ||  (ele_nr == 721)  ||  (ele_nr == 722))
-	//	cout << "Zentrum" << endl;
+	//	cout << "Zentrum" << "\n";
 
 	for (long i = 0; i < long(nod_index.Size()); i++) // go through list of connected nodes of the element
 	{ //Get the connected node
 		nod_ind = nod_index[i];
 		m_node = m_msh->nod_vector[nod_ind]; // m_node = Knoten, der gerade behandelt wird--> siehe Koordinaten
-		//cout << " Get Node " << nod_ind << " on element " << ele_nr << endl;
+		//cout << " Get Node " << nod_ind << " on element " << ele_nr << "\n";
 		// Set variable to zero, initialization
 		for (long k = 0; k < 3; k++)
 		{
@@ -3458,10 +3458,10 @@ void CECLIPSEData::InterpolateDataFromFacesToNodes(long ele_nr,
 			if(choose)
 			{
 				//Testoutput
-				//cout << endl;
+				//cout << "\n";
 				//cout << " Node " << nod_ind << " contributed by face " << m_face->index << ", " << m_face->model_axis << "  , " << m_face->phases[phase_index]->q_norm << ": ";
 				//for(int mm=0;mm<3;mm++) cout << m_face->phases[phase_index]->q[mm] << ", ";
-				//cout << endl;
+				//cout << "\n";
 
 				distance = m_node->distance_to_connected_faces[j];
 				//Weight of each face depending on distance
@@ -3512,7 +3512,7 @@ void CECLIPSEData::InterpolateDataFromFacesToNodes(long ele_nr,
 					cout <<
 					" Warning - no faces for direction (I=0,J=1,K=2): " << k <<
 					" at node " << i << " with non-zero contributions! " <<
-					endl;
+					"\n";
 			}
 		}
 		// transfer Data to node
@@ -3522,13 +3522,13 @@ void CECLIPSEData::InterpolateDataFromFacesToNodes(long ele_nr,
 
 		//Test output
 		//cout << " Node " << nod_ind << " (X,Y,Z): (" << m_node->X() << ", " << m_node->Y() << ", "<< m_node->Z() << ") " ;
-		//cout << data_separated[0] << " " << data_separated[1] << " " << data_separated[2] << " " << endl;
+		//cout << data_separated[0] << " " << data_separated[1] << " " << data_separated[2] << " " << "\n";
 	} // end loop connected nodes
 
 	// Test Output
 	//for(long i=0; i< nod_index.Size();i++){
 	//	cout << " Node "<< nod_index[i] << ":  (X,Y,Z): (" << m_msh->nod_vector[nod_index[i]]->X() << ", " << m_msh->nod_vector[nod_index[i]]->Y() << ", "<< m_msh->nod_vector[nod_index[i]]->Z() << "):        " ;
-	//	cout << n_vel_x[i] << " " << n_vel_y[i] << " " << n_vel_z[i] << " " << endl;
+	//	cout << n_vel_x[i] << " " << n_vel_y[i] << " " << n_vel_z[i] << " " << "\n";
 	//}/* */
 }
 
@@ -3617,7 +3617,7 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 			}
 			else
 			{
-				cout << "This phase is not considered yet!" << endl;
+				cout << "This phase is not considered yet!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -3699,10 +3699,10 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 
 			// Test output
 			//if ((m_block->z_barycentre == -2001.8)) {
-			//	//cout << " Node " << i << endl;
+			//	//cout << " Node " << i << "\n";
 			//	//cout << " :  connected block: " << m_node->connected_elements[j] << " (X,Y,Z): " << m_block->x_barycentre << ", " << m_block->y_barycentre << ", " << m_block->z_barycentre << " with saturation " << sat;
-			//	//cout << "  distance: " << distance <<  " weight: " << weight << " sum of weights: " << sum_weights << endl;
-			//	cout <<  "      Node " << i << " Element: " << m_node->connected_elements[j] << " SGAS: " << sat << endl;
+			//	//cout << "  distance: " << distance <<  " weight: " << weight << " sum of weights: " << sum_weights << "\n";
+			//	cout <<  "      Node " << i << " Element: " << m_node->connected_elements[j] << " SGAS: " << sat << "\n";
 			//}
 		} // for j=connected_elements
 
@@ -3720,7 +3720,7 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 				this->NodeData[i]->phase_saturation[phase_index] = saturation;
 			else
 			{
-				cout << "The saturation is not between 0 and 1!" << endl;
+				cout << "The saturation is not between 0 and 1!" << "\n";
 				if (saturation < 0.0)
 					this->NodeData[i]->phase_saturation[phase_index] = 0.0;
 				if (saturation > 1.0)
@@ -3742,10 +3742,10 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 		//Test output
 		//if ((m_block->z_barycentre == -2001.8)) {
 		//	//cout << " Node " << i << " (X,Y,Z): (" << m_node->X() << ", " << m_node->Y() << ", "<< m_node->X() << ") ";
-		//	//cout << " Pressure at Node " << this->NodeData[i]->pressure << endl;
+		//	//cout << " Pressure at Node " << this->NodeData[i]->pressure << "\n";
 		//	//cout << " Node " << i << " (X,Y,Z): (" << m_node->X() << ", " << m_node->Y() << ", "<< m_node->X() << ") ";
-		//	//cout << " Saturation at Node " << this->NodeData[i]->phase_saturation[phase_index] << endl;
-		//	cout << " Node " << i << " SGAS: " <<  this->NodeData[i]->phase_saturation[phase_index] << endl;
+		//	//cout << " Saturation at Node " << this->NodeData[i]->phase_saturation[phase_index] << "\n";
+		//	cout << " Node " << i << " SGAS: " <<  this->NodeData[i]->phase_saturation[phase_index] << "\n";
 		//}
 	}
 
@@ -3765,7 +3765,7 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 			//Get the Pressure from the Geosys run
 			Val = m_pcs->GetNodeValue(i, nidx1);
 			//cout << " NodeData[" << i << "]:  (X,Y,Z): (" << m_NodeData->x << ", " << m_NodeData->y << ", " << m_NodeData->z << "):        " ;
-			//cout << ", Geosys-P: " << Val << ", Eclipse: " << this->NodeData[i]->pressure << endl;;
+			//cout << ", Geosys-P: " << Val << ", Eclipse: " << this->NodeData[i]->pressure << "\n";;
 			temp.str("");
 			temp.clear();
 			temp << i;
@@ -3808,7 +3808,7 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 			{
 				m_NodeData = this->NodeData[i];
 				//cout << " NodeData[" << i << "]:  (X,Y,Z): (" << m_NodeData->x << ", " << m_NodeData->y << ", " << m_NodeData->z << "):        " ;
-				//cout << ", Geosys-P: " << Val << ", Eclipse: " << this->NodeData[i]->pressure << endl;;
+				//cout << ", Geosys-P: " << Val << ", Eclipse: " << this->NodeData[i]->pressure << "\n";;
 				temp.str("");
 				temp.clear();
 				temp << i;
@@ -3889,7 +3889,7 @@ void CECLIPSEData::InterpolateDataFromBlocksToNodes(CRFProcess* m_pcs,
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "    Time: " << time << " seconds." << endl;
+	cout << "    Time: " << time << " seconds." << "\n";
 }
 
 /*-------------------------------------------------------------------------
@@ -4002,7 +4002,7 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 		{
 			cout <<
 			"GAS-WATER System can not be considered with ECLIPSE E100 and GeoSys" <<
-			endl;
+			"\n";
 			system("Pause");
 			exit(0);
 		}
@@ -4018,7 +4018,7 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 			phase2 = 2;
 			break;
 		default:
-			cout << "There are not more than 3 phases possible!" << endl;
+			cout << "There are not more than 3 phases possible!" << "\n";
 			system("Pause");
 			exit(0);
 			break;
@@ -4032,13 +4032,13 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 		for(unsigned long i = 0; i < m_pcs->nod_val_vector.size(); i++)
 		{
 			//if ((this->NodeData[i]->x == 499.85001) && (this->NodeData[i]->y == 599.84998) && (this->NodeData[i]->z == -2875))
-			//	cout << "Punkt 44" << endl;
+			//	cout << "Punkt 44" << "\n";
 			//calculating capillary pressure (difference of the two phase pressures)
 			//cout << " Node " << i << " (X,Y,Z): (" << this->NodeData[i]->x << ", " << this->NodeData[i]->y << ", "<< this->NodeData[i]->z << ") ";
 			//for (long k = 0; k < 3; k++){
 			//	cout << this->NodeData[i]->phase_density[k] << " " << this->NodeData[i]->phase_pressure[k] << " " << this->NodeData[i]->phase_saturation[k] << " ";
 			//}
-			//cout << endl;
+			//cout << "\n";
 
 			value = this->NodeData[i]->phase_pressure[phase2] -
 			        this->NodeData[i]->phase_pressure[phase1];
@@ -4054,14 +4054,14 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 			{
 				//Saturation 1 is the wetting phase
 				value = this->NodeData[i]->phase_saturation[phase1];
-				//cout << " Node: " << i << " saturation1: " << value << endl;
+				//cout << " Node: " << i << " saturation1: " << value << "\n";
 				m_pcs->SetNodeValue(i, index_saturation1, value);
 			}
 			else
 			{
 				// the water phase is only used for boundary conditions, the wetting phase is phase 2 and the non-wetting phase is phase 3
 				value = 1 - this->NodeData[i]->phase_saturation[phase2];
-				//cout << " Node: " << i << " saturation1: " << value << endl;
+				//cout << " Node: " << i << " saturation1: " << value << "\n";
 				m_pcs->SetNodeValue(i, index_saturation1, value);
 			}
 			//transfer the gas density
@@ -4088,7 +4088,7 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 			{
 				cout <<
 				"In the model exists dissolved gas but there is no dissolved C in water defined. Please ad the mass transport for immobile C(4) or CO2_w!"
-				     << endl;
+				     << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -4112,15 +4112,15 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 				        i,
 				        indexConcentration,
 				        value);
-				//cout << "Node: " << i << " Druck: " << m_pcs->GetNodeValue(i, index_pressure2) << " RS: " << this->NodeData[i]->Gas_dissolved << " Dichte: " << this->SurfaceCO2Density << " C(4): " << value << endl;
+				//cout << "Node: " << i << " Druck: " << m_pcs->GetNodeValue(i, index_pressure2) << " RS: " << this->NodeData[i]->Gas_dissolved << " Dichte: " << this->SurfaceCO2Density << " C(4): " << value << "\n";
 				if (value < 0)
 				{
 					cout << "Node: " << i << " Druck: " << m_pcs->GetNodeValue(
 					        i,
 					        index_pressure2) << " RS: " <<
 					this->NodeData[i]->CO2inLiquid << " Dichte: " <<
-					this->SurfaceCO2Density << " C(4): " << value << endl;
-					cout << "  Fehler in Berechnung von DIC: " << value << endl;
+					this->SurfaceCO2Density << " C(4): " << value << "\n";
+					cout << "  Fehler in Berechnung von DIC: " << value << "\n";
 				}
 			}
 		}
@@ -4297,7 +4297,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 		if (CheckIfFileExists(EclipseExe) == false)
 		{
 			cout << "The ECLIPSE executable could not be found! (" << EclipseExe <<
-			")" << endl;
+			")" << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -4306,7 +4306,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 	//check if file exists
 	if (CheckIfFileExists(Filename) == false)
 	{
-		cout << "The ECLIPSE project file could not be found! (" << Filename << ")" << endl;
+		cout << "The ECLIPSE project file could not be found! (" << Filename << ")" << "\n";
 		system("Pause");
 		exit(0);
 	}
@@ -4335,9 +4335,9 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 		{
 			cout <<
 			"Warning: The Eclipse simulator model path is not part of the GeoSys model path!!!"
-			     << endl;
-			cout << root_folder << endl;
-			cout << geosys_folder << endl;
+			     << "\n";
+			cout << root_folder << "\n";
+			cout << geosys_folder << "\n";
 			system("Pause");
 		}
 	}
@@ -4368,7 +4368,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 				timestep_length = m_pcs->Tim->time_step_length / 60 / 60 / 24;
 			else
 			{
-				cout << "This time unit was not considered yet" << endl;
+				cout << "This time unit was not considered yet" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -4390,7 +4390,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 		if (ReplaceASectionInFile(File, Keyword, vecData, true) == false)
 		{
 			cout << "Replacing a section in the file: " << File <<
-			" didn't work for Keyword TSTEP!" << endl;
+			" didn't work for Keyword TSTEP!" << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -4422,7 +4422,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 			if (ReplaceASectionInFile(File, Keyword, vecData, true) == false)
 			{
 				cout << "Replacing a section in the file: " << File <<
-				" didn't work!" << endl;
+				" didn't work!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -4441,7 +4441,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 			Error = TextFile->Read_Text(Filename);
 			if (Error == true)
 			{
-				cout << "The program is canceled" << endl;
+				cout << "The program is canceled" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -4479,7 +4479,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 						{
 							cout <<
 							"The OGS-ECL code can currently only consider the components H2O, CO2 and NaCl in this order in E300!"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -4501,7 +4501,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 					// The software is not checked if water is not the wetting phase
 					cout <<
 					"The program is canceled because no water phase is defined in ECLIPSE!"
-					     << endl;
+					     << "\n";
 					system("Pause");
 					exit(0);
 				}
@@ -4562,7 +4562,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 						{
 							cout <<
 							"Currently only Oil-Water or Oil-Gas is available because there is no output option in Eclipse E100 for the capillary pressure!"
-							     << endl;
+							     << "\n";
 							system("Pause");
 							exit(0);
 						}
@@ -4694,7 +4694,7 @@ std::string CECLIPSEData::ExecuteEclipse(long Timestep, CRFProcess* m_pcs, std::
 			if (ReplaceASectionInFile(File, Keyword, vecData, true) == false)
 			{
 				cout << "Replacing a section in the file: " << File <<
-				" didn't work for Keyword RESTART!" << endl;
+				" didn't work for Keyword RESTART!" << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -4739,7 +4739,7 @@ bool CECLIPSEData::CleanUpEclipseFiles(std::string folder, std::string projectna
 	//delete temporary result files
 
 	DOScommand = "del " + folder + "TemporaryResult*.*";
-	cout << DOScommand << endl;
+	cout << DOScommand << "\n";
 	if (system(DOScommand.c_str()))
 	{
 		DisplayMsgLn("Could not delete temporary result files! ");
@@ -4756,7 +4756,7 @@ bool CECLIPSEData::CleanUpEclipseFiles(std::string folder, std::string projectna
 	//copy original result files
 	//DOScommand = "copy " + projectname + ".F* " + folder + "TemporaryResults.F*";
 	DOScommand = "ren " + projectname + ".F* " + "TemporaryResults.F*";
-	cout << DOScommand << endl;
+	cout << DOScommand << "\n";
 	if (system(DOScommand.c_str()))
 	{
 		DisplayMsgLn("Could not copy the result files! ");
@@ -4836,7 +4836,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 	const double epsilon = 1e-7;
 	int j_max;
 
-	cout << "      Write DIC to Eclipse File " << endl;
+	cout << "      Write DIC to Eclipse File " << "\n";
 
 	start = clock();
 
@@ -4852,7 +4852,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		//WW	phase2 = 2;
 		break;
 	default:
-		cout << "There are not more than 3 phases possible!" << endl;
+		cout << "There are not more than 3 phases possible!" << "\n";
 		system("Pause");
 		return 0;
 		break;
@@ -4871,7 +4871,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 	{
 		cout <<
 		"Not all variables are existing in the eclipse output files that are necessary to write data back to e100!"
-		     << endl;
+		     << "\n";
 		return 0;
 	}
 	if (((variable_index_porevolume < 0) || (variable_index_water_saturation < 0) ||
@@ -4879,7 +4879,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 	{
 		cout <<
 		"Not all variables are existing in the eclipse output files that are necessary to write data back to e300!"
-		     << endl;
+		     << "\n";
 		return 0;
 	}
 
@@ -4895,7 +4895,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		                                                             indexConcentration) <
 		    0)
 		{
-			cout << "The CO2 concentration after the reactions is negativ!" << endl;
+			cout << "The CO2 concentration after the reactions is negativ!" << "\n";
 			cout << "Node: " << i << " RS_alt: " << this->NodeData[i]->CO2inLiquid <<
 			" DIC: " << n_pcs->GetNodeValue(i, indexConcentration);
 			system("Pause");
@@ -4903,7 +4903,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		}
 		if (this->NodeData[i]->CO2inLiquid < 0)
 		{
-			cout << "The CO2 concentration from Eclipse is negativ!" << endl;
+			cout << "The CO2 concentration from Eclipse is negativ!" << "\n";
 			cout << "Node: " << i << " RS_alt: " << this->NodeData[i]->CO2inLiquid <<
 			" DIC: " << n_pcs->GetNodeValue(i, indexConcentration);
 			system("Pause");
@@ -4924,7 +4924,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 			//neglect difference if it is too small
 			if (((fabs(this->NodeData[i]->deltaDIC) /
 			      this->NodeData[i]->CO2inLiquid)) < epsilon)
-				//cout << " deltaDIC_alt: " << this->NodeData[i]->deltaDIC << " Fehler! " << endl;;
+				//cout << " deltaDIC_alt: " << this->NodeData[i]->deltaDIC << " Fehler! " << "\n";;
 				this->NodeData[i]->deltaDIC = 0;
 			else
 				this->NodeData[i]->CO2inLiquid =
@@ -4934,13 +4934,13 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 				         (Molweight_CO2 * 1e-3) / this->SurfaceCO2Density);
 		}
 
-		//cout << " RS_neu: " << this->NodeData[i]->Gas_dissolved << " deltaDIC: " << this->NodeData[i]->deltaDIC << endl;
+		//cout << " RS_neu: " << this->NodeData[i]->Gas_dissolved << " deltaDIC: " << this->NodeData[i]->deltaDIC << "\n";
 		if (this->NodeData[i]->CO2inLiquid < 0)
 		{
 			cout << " RS_neu: " << this->NodeData[i]->CO2inLiquid << " deltaDIC: " <<
-			this->NodeData[i]->deltaDIC << endl;
+			this->NodeData[i]->deltaDIC << "\n";
 			cout << "  Fehler in Berechnung von DIC: " <<
-			this->NodeData[i]->CO2inLiquid << endl;
+			this->NodeData[i]->CO2inLiquid << "\n";
 		}
 	}
 
@@ -4950,10 +4950,10 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		m_element = m_msh->ele_vector[i];
 		m_element->GetNodes(vec_element_nodes);
 		delta_gas_dissolved = 0.0;
-		//cout << endl;
+		//cout << "\n";
 		for (long j = 0; j < long(vec_element_nodes.Size()); j++)
 		{
-			//cout << "     Node: " << vec_element_nodes[j]->GetIndex() << " RS: " << this->NodeData[vec_element_nodes[j]->GetIndex()]->deltaDIC << endl;
+			//cout << "     Node: " << vec_element_nodes[j]->GetIndex() << " RS: " << this->NodeData[vec_element_nodes[j]->GetIndex()]->deltaDIC << "\n";
 			weight = float(1.0 / vec_element_nodes.Size()); //arithmetic average
 			delta_gas_dis = this->NodeData[vec_element_nodes[j]->GetIndex()]->deltaDIC;
 			delta_gas_dissolved += delta_gas_dis * weight;
@@ -4965,12 +4965,12 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 			{
 				cout <<
 				"The amount of CO2 removed from water is larger than the available amount of CO2! The value is corrected!"
-				     << endl;
+				     << "\n";
 				for (long j = 0; j < long(vec_element_nodes.Size()); j++)
 					cout << "     Node: " <<
 					vec_element_nodes[j]->GetIndex() << " RS: " <<
 					this->NodeData[vec_element_nodes[j]->GetIndex()]->deltaDIC
-					<< endl;
+					<< "\n";
 				cout << "  Element: " << i << " deltaDIC: " <<
 				delta_gas_dissolved << " RS_alt: " <<
 				this->Data[i][variable_index_Gas_dissolved];
@@ -5003,7 +5003,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 					//2. step: calculate total moles of CO2
 					//T_CO2 [mol] = c_CO2inLiquid [molCO2 / m�liquid] * s_CO2 [m�liquid / m�PV] * V_PV [m�PV]
 					//deltaT_CO2 = deltaT_CO2 * this->Data[i][variable_index_water_saturation] * this->Data[i][variable_index_porevolume];
-					//cout << " water saturation: " << this->Data[i][variable_index_water_saturation] << " pore volume: " << this->Data[i][variable_index_porevolume] << endl;
+					//cout << " water saturation: " << this->Data[i][variable_index_water_saturation] << " pore volume: " << this->Data[i][variable_index_porevolume] << "\n";
 					//T_CO2 [mol / L PV] = c_CO2inLiquid [molCO2 / m�liquid] * s_CO2 [m�liquid / m�PV] * 0.001 [m�PV / L PV]
 					deltaT_CO2 = deltaT_CO2 *
 					             this->Data[i][variable_index_water_saturation]
@@ -5032,11 +5032,11 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		if (vecRS[vecRS.size() - 1] < 0)
 		{
 			cout << "The new calculated dissolved amount of CO2 (RS) is negative!" <<
-			endl;
+			"\n";
 			system("Pause");
 			return 0;
 		}
-		//cout  << "  Element: " << i << " RS_neu: " << vecRS[vecRS.size()-1] << endl;
+		//cout  << "  Element: " << i << " RS_neu: " << vecRS[vecRS.size()-1] << "\n";
 	}
 
 	if (this->E100 == true)
@@ -5052,7 +5052,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		{
 			cout <<
 			"There was not the right number of RS data found during writing to Eclipse F-File!"
-			     << endl;
+			     << "\n";
 			system("Pause");
 			return 0;
 		}
@@ -5081,7 +5081,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		if (ReplaceASectionInFile(Filename, Keyword, vecString, false) == false)
 		{
 			cout << "Replacing a section in the file: " << Filename <<
-			" didn't work!" << endl;
+			" didn't work!" << "\n";
 			system("Pause");
 			return 0;
 		}
@@ -5099,7 +5099,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		{
 			cout <<
 			"There was not the right number of RS data found during writing to Eclipse F-File!"
-			     << endl;
+			     << "\n";
 			system("Pause");
 			return 0;
 		}
@@ -5129,7 +5129,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 		if (ReplaceASectionInFile(Filename, Keyword, vecString, false) == false)
 		{
 			cout << "Replacing a section in the file: " << Filename <<
-			" didn't work!" << endl;
+			" didn't work!" << "\n";
 			system("Pause");
 			return 0;
 		}
@@ -5137,7 +5137,7 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "                    Time: " << time << " seconds." << endl;
+	cout << "                    Time: " << time << " seconds." << "\n";
 
 	return 1;
 }
@@ -5196,7 +5196,7 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 	folder = Filename.substr(0, position + 1);
 
 	if (UsePrecalculatedFiles == false)
-		cout << "      Delete old result files " << endl;
+		cout << "      Delete old result files " << "\n";
 
 	////Delete Resultfiles
 	//projectname = Filename.substr(0, Filename.length() - 5);
@@ -5227,7 +5227,7 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 	if (this->SurfaceCO2Density <= 0)
 	{
 		cout <<
-		"The CO2 Density at surface conditions was not read properly (rho <= 0!)." << endl;
+		"The CO2 Density at surface conditions was not read properly (rho <= 0!)." << "\n";
 		system("Pause");
 		return 0;
 	}
@@ -5238,18 +5238,18 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 		if (this->UsePrecalculatedFiles == true)
 			cout <<
 			"Attention! If you run a simulation with precalculated Files you have no interaction between Multiphase Flow and Reactions thus you might get wrong Results for dissolved CO2 in liquid!"
-			     << endl;
+			     << "\n";
 		else if (this->WriteDataBackToEclipse(m_pcs, folder) == 0)
 		{
 			cout <<
 			"The WriteDataBackToEclipse funktion was not finished properly! The simulation is canceled!"
-			     << endl;
+			     << "\n";
 			system("Pause");
 			return 0;
 		}
 	}
 
-	cout << "      RunEclipse() called " << endl;
+	cout << "      RunEclipse() called " << "\n";
 
 	//Execute Eclipse, try several times in case of problems finding the license
 	start_execute = clock();
@@ -5257,7 +5257,7 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 	int number_loops = 0;
 	int maximum_loops = 10;
 	do {
-		cout << number_loops + 1 << ". trial" << endl;
+		cout << number_loops + 1 << ". trial" << "\n";
 		projectname = ExecuteEclipse(Timestep, m_pcs, folder);
 		//check if Eclipse has run properly -> errors in the projectname.prt file must be zero
 		DataFilename = projectname + ".F" + AddZero(Timestep, 4, true);
@@ -5266,15 +5266,15 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 
 	finish_execute = clock();
 	time = (double(finish_execute) - double(start_execute)) / CLOCKS_PER_SEC;
-	cout << endl;
-	cout << "  Timestep: " << Timestep << endl;
+	cout << "\n";
+	cout << "  Timestep: " << Timestep << "\n";
 	cout << "        RunEclipse() called                   Time: " << time << " seconds." <<
-	endl;
+	"\n";
 
 	if (number_loops > maximum_loops)
 	{
 		cout << "The Eclipse execution does not work after " << number_loops <<
-		" trials!" << endl;
+		" trials!" << "\n";
 		system("Pause");
 		return 0;
 	}
@@ -5292,7 +5292,7 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 		{
 			cout <<
 			"The Eclipse grid is not identical to the Geosys grid! Abort Calculations!"
-			     << endl;
+			     << "\n";
 			system("Pause");
 			return 0;
 		}
@@ -5330,9 +5330,9 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 						break;  // foun all cells in layer ==1 and column == 1
 				}
 				if( count > 1)
-					cout << endl << endl <<
+					cout << "\n" << "\n" <<
 					" Error in definition of radial flow model; Use not more than one active column "
-					     << endl;
+					     << "\n";
 			}
 			// test if faces are perpenducular to I coordinate axis
 			for(int ii = 0; ii < int(this->eclgrid[iindex]->connected_faces.size());
@@ -5344,8 +5344,8 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 						this->Radial_I = true;
 				}
 			if(Radial_I != true)
-				cout << endl <<
-				" Error: I  Face is not perpendicular to coordinate axis " << endl;
+				cout << "\n" <<
+				" Error: I  Face is not perpendicular to coordinate axis " << "\n";
 		}
 	}
 
@@ -5379,7 +5379,7 @@ int CECLIPSEData::RunEclipse(long Timestep, CRFProcess* m_pcs)
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
 
-	cout << "        Time for this timestep: " << time << " seconds." << endl;
+	cout << "        Time for this timestep: " << time << " seconds." << "\n";
 
 	return 1;
 }

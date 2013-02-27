@@ -61,8 +61,8 @@ extern size_t max_dim;                            //OK411 todo
 #include "par_ddc.h"
 #endif
 #ifdef SUPERCOMPUTER
-// kg44 this is usefull for io-buffering as endl flushes the buffer
-#define endl '\n'
+// kg44 this is usefull for io-buffering as "\n" flushes the buffer
+#define "\n" '\n'
 #define MY_IO_BUFSIZE 4096
 #endif
 #ifdef GEM_REACT
@@ -100,7 +100,7 @@ bool OUTRead(const std::string& file_base_name,
 	out_file.seekg(0L, ios::beg);
 
 	// Keyword loop
-	cout << "OUTRead" << endl;
+	cout << "OUTRead" << "\n";
 	while (!out_file.eof())
 	{
 		out_file.getline(line, MAX_ZEILE);
@@ -217,7 +217,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		//		m_msh = m_out->GetMSH();
 		m_msh = m_out->getMesh();
 		if (!m_msh)
-			cout << "Warning in OUTData - no MSH data" << endl;
+			cout << "Warning in OUTData - no MSH data" << "\n";
 		//OK continue;
 		// PCS
 		if (m_out->_nod_value_vector.size() > 0)
@@ -227,7 +227,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		if (!m_pcs)
 			m_pcs = m_out->GetPCS();  //OK
 		if (!m_pcs)
-			cout << "Warning in OUTData - no PCS data" << endl;
+			cout << "Warning in OUTData - no PCS data" << "\n";
 		//OK4704 continue;
 		//--------------------------------------------------------------------
 		m_out->setTime (time_current);
@@ -251,7 +251,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 			switch (m_out->getGeoType())
 			{
 			case GEOLIB::GEODOMAIN: // domain data
-				cout << "Data output: Domain" << endl;
+				cout << "Data output: Domain" << "\n";
 				if (OutputBySteps)
 				{
 					if (m_out->_pcon_value_vector.size() > 0)
@@ -293,7 +293,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 			//------------------------------------------------------------------
 			case GEOLIB::POLYLINE: // profiles along polylines
 				 if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD 5.3.07
-					 std::cout << "Data output: Polyline profile - " << m_out->getGeoName() << std::endl;
+					 std::cout << "Data output: Polyline profile - " << m_out->getGeoName() << "\n";
 				if (OutputBySteps)
 				{
 					tim_value = m_out->NODWritePLYDataTEC(time_step_number);
@@ -329,14 +329,14 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 			//------------------------------------------------------------------
 			case GEOLIB::POINT: // breakthrough curves in points
 				if (m_out->dat_type_name.compare("GNUPLOT") != 0) // JOD 5.3.07
-					cout << "Data output: Breakthrough curves - " << m_out->getGeoName() << endl;
+					cout << "Data output: Breakthrough curves - " << m_out->getGeoName() << "\n";
 				m_out->NODWritePNTDataTEC(time_current, time_step_number);
 				if (!m_out->_new_file_opened)
 					m_out->_new_file_opened = true;  //WW
 				break;
 			//------------------------------------------------------------------
 			case GEOLIB::SURFACE: // profiles at surfaces
-				cout << "Data output: Surface profile" << endl;
+				cout << "Data output: Surface profile" << "\n";
 				//..............................................................
 				//				if (m_out->_dis_type_name.compare("AVERAGE") == 0) {
 				if (m_out->getProcessDistributionType() == FiniteElement::AVERAGE)
@@ -389,7 +389,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				break;
 
 			//			case 'Y': // Layer
-			//				cout << "Data output: Layer" << endl;
+			//				cout << "Data output: Layer" << "\n";
 			//				if (OutputBySteps) {
 			//					m_out->NODWriteLAYDataTEC(time_step_number);
 			//					OutputBySteps = false;
@@ -614,7 +614,7 @@ COutput* OUTGetRWPT(const std::string & out_name)
  *****************************************************************************************/
 void OUTCheck()
 {
-	std::cout << "Checking output data " << std::endl;
+	std::cout << "Checking output data " << "\n";
 	// Go through all out objects (#OUTPUT-section in input file)
 	for (size_t i = 0; i < out_vector.size(); i++)
 		out_vector[i]->checkConsistency();

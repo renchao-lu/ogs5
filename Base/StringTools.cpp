@@ -108,7 +108,7 @@ void correctScientificNotation(std::string filename, size_t precision)
 
 	if (!stream)
 	{
-		std::cout << "correctScientificNotation: fstream is not open" << std::endl;
+		std::cout << "correctScientificNotation: fstream is not open" << "\n";
 		return;
 	}
 
@@ -148,7 +148,7 @@ void correctScientificNotation(std::string filename, size_t precision)
 
 			outputStream << word << " ";
 		}
-		outputStream << std::endl;
+		outputStream << "\n";
 	}
 
 	stream.close();

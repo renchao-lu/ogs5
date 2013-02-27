@@ -215,7 +215,7 @@ Grid<POINT>::Grid(std::vector<POINT*> const& pnts, size_t max_num_per_grid_cell)
 		const size_t k(static_cast<size_t> ((pnt[2] - _min_pnt[2]) * _inverse_step_sizes[2]));
 
 		if (i >= _n_steps[0] || j >= _n_steps[1] || k >= _n_steps[2]) {
-			std::cout << "error computing indices " << std::endl;
+			std::cout << "error computing indices " << "\n";
 		}
 
 		_grid_quad_to_node_map[i + j * _n_steps[0] + k * n_plane].push_back(pnts[l]);

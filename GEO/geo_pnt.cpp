@@ -163,7 +163,7 @@ CGLPoint* GEOGetPointById(long number)
 //	std::vector<CGLPoint*>::iterator it (gli_points_vector.begin());
 //	for (; it != gli_points_vector.end(); it++)
 //		if ((*it)->name.compare (point_name) == 0) return *it;
-//	std::cout << "Warning: point " << point_name << " not found" << std::endl;
+//	std::cout << "Warning: point " << point_name << " not found" << "\n";
 //	return NULL;
 //}
 
@@ -413,7 +413,7 @@ void GEOReadPointProperties(const std::string &file_name_base)
 	int pos1,pos2;
 	char pnt_name[80];
 
-	cout << "Read PNT properties from " << file_name_base << "_springs" << endl;
+	cout << "Read PNT properties from " << file_name_base << "_springs" << "\n";
 	//========================================================================
 	// File handling
 	string csv_file_name = file_name_base + CSV_FILE_EXTENSIONS; //OK4105

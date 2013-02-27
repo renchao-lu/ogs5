@@ -40,7 +40,7 @@ public:
 	std::string getPath(std::string filename)
 	{
 		if (_directories.empty()) std::cout <<
-			"Error: FileFinder::getPath() -- directory list is empty." << std::endl;
+			"Error: FileFinder::getPath() -- directory list is empty." << "\n";
 		for (std::list<std::string>::iterator it = _directories.begin();
 		     it != _directories.end(); ++it)
 		{
@@ -48,7 +48,7 @@ public:
 			std::ifstream is(testDir.append(filename).c_str());
 			if (is.good()) return testDir;
 		}
-		std::cout << "Error: FileFinder::getPath() -- file not found." << std::endl;
+		std::cout << "Error: FileFinder::getPath() -- file not found." << "\n";
 		return filename;
 	}
 

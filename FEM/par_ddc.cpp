@@ -108,7 +108,7 @@ void DOMRead(string file_base_name)
 	ifstream ddc_file (ddc_file_name.data(),ios::in);
 	if(!ddc_file.good())
 	{
-		cout << "no DDC file" << endl;
+		cout << "no DDC file" << "\n";
 		return;
 	}
 	ddc_file.seekg(0L,ios::beg);
@@ -129,7 +129,7 @@ void DOMRead(string file_base_name)
 		}                         // keyword found
 	}                                     // eof
 	//----------------------------------------------------------------------
-	cout << dom_vector.size() << " domains" << endl;
+	cout << dom_vector.size() << " domains" << "\n";
 	//----------------------------------------------------------------------
 }
 
@@ -227,7 +227,7 @@ void DOMCreate()
 
 	//----------------------------------------------------------------------
 	// Create domain nodes
-	cout << "->Create DOM" << endl;
+	cout << "->Create DOM" << "\n";
 	/* // Comment by WW
 	   for(i=0;i<no_domains;i++){
 	   m_dom = dom_vector[i];
@@ -237,21 +237,21 @@ void DOMCreate()
 
 	//----------------------------------------------------------------------
 	// Create domain nodes
-	cout << "  Create domain nodes" << endl;
+	cout << "  Create domain nodes" << "\n";
 	for(i = 0; i < no_domains; i++)
 	{
 		m_dom = dom_vector[i];
 		m_dom->m_msh = m_pcs->m_msh;
-		cout << "    Domain:" << m_dom->ID << endl;
+		cout << "    Domain:" << m_dom->ID << "\n";
 		m_dom->CreateNodes();
 	}
 	//----------------------------------------------------------------------
 	// Create domain elements
-	cout << "  Create domain elements" << endl;
+	cout << "  Create domain elements" << "\n";
 	for(i = 0; i < no_domains; i++)
 	{
 		m_dom = dom_vector[i];
-		cout << "    Domain:" << m_dom->ID << endl;
+		cout << "    Domain:" << m_dom->ID << "\n";
 		m_dom->CreateElements(quadr);
 	}
 	// For find nodes connected to node WW
@@ -269,9 +269,9 @@ void DOMCreate()
 	//
 	// Find nodes of all neighbors of each node. // WW
 	// Local topology. WW
-	cout << "  Find nodes on borders" << endl;
+	cout << "  Find nodes on borders" << "\n";
 	FindNodesOnInterface(m_pcs->m_msh, quadr);
-	cout << "  Find the connected nodes for each node" << endl;
+	cout << "  Find the connected nodes for each node" << "\n";
 #ifndef USE_MPI                                //WW
 	for(i = 0; i < no_domains; i++)
 	{
@@ -285,7 +285,7 @@ void DOMCreate()
 #endif
 		//----------------------------------------------------------------------
 		// Create domain EQS
-		cout << "  Create domain EQS" << endl;
+		cout << "  Create domain EQS" << "\n";
 #ifdef USE_MPI
 		i = myrank;
 #else
@@ -293,7 +293,7 @@ void DOMCreate()
 		{
 #endif
 		m_dom = dom_vector[i];
-		cout << "    Domain:" << m_dom->ID << endl;
+		cout << "    Domain:" << m_dom->ID << "\n";
 #ifdef NEW_EQS
 		m_dom->CreateEQS();
 #else
@@ -563,15 +563,15 @@ void DOMCreate()
 		{
 			k = nodes_inner[j];
 			nodes.push_back(k);
-			//cout << nodes[j] << endl;
+			//cout << nodes[j] << "\n";
 		}
-		//cout << "---" << endl;
+		//cout << "---" << "\n";
 		no_nodes_halo = (long)nodes_halo.size();
 		for(j = 0; j < no_nodes_halo; j++)
 		{
 			k = nodes_halo[j];
 			nodes.push_back(k);
-			//cout << nodes[no_nodes_inner+j] << endl;
+			//cout << nodes[no_nodes_inner+j] << "\n";
 		}
 		nnodes_dom = no_nodes_halo + no_nodes_inner; //WW
 		nnodesHQ_dom = nnodes_dom;
@@ -649,7 +649,7 @@ void DOMCreate()
 			}
 			nnodesHQ_dom = (long) nodes.size();
 			//------------------WW
-			// cout << endl;
+			// cout << "\n";
 		}
 		//
 		//----------------------------------------------------------------------
@@ -961,24 +961,24 @@ void DOMCreate()
 				break;
 			default:
 				std::cerr << "CPARDomain::WriteTecplot MshElemType not handled" <<
-				std::endl;
+				"\n";
 			}
 		}
 		//--------------------------------------------------------------------
-		dom_file << "VARIABLES = X,Y,Z,DOM" << endl;
+		dom_file << "VARIABLES = X,Y,Z,DOM" << "\n";
 		long no_nodes = (long)m_msh->nod_vector.size();
 		dom_file << "ZONE T = " << dom_name << ", " \
 		         << "N = " << no_nodes << ", " \
 		         << "E = " << (long)elements.size() << ", " \
-		         << "F = FEPOINT" << ", " << element_type << endl;
+		         << "F = FEPOINT" << ", " << element_type << "\n";
 		//......................................................................
 		for(i = 0; i < no_nodes; i++)
 		{
 			double const* const coords (m_msh->nod_vector[i]->getData());
 			dom_file << coords[0] << " " << coords[1] << " " << coords[2] << " " <<
-			ID << endl;
+			ID << "\n";
 //      m_nod = m_msh->nod_vector[i];
-//      dom_file << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z() << " " << ID << endl;
+//      dom_file << m_nod->X() << " " << m_nod->Y() << " " << m_nod->Z() << " " << ID << "\n";
 		}
 		//......................................................................
 		for(i = 0; i < (long)elements.size(); i++)
@@ -992,14 +992,14 @@ void DOMCreate()
 				dom_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[1] + 1 << " " << m_ele->getNodeIndices()[0] +
-				1 << endl;
+				1 << "\n";
 				element_type = "ET = QUADRILATERAL";
 				break;
 			case MshElemType::QUAD:
 				dom_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << endl;
+				1 << "\n";
 				element_type = "ET = QUADRILATERAL";
 				break;
 			case MshElemType::HEXAHEDRON:
@@ -1009,20 +1009,20 @@ void DOMCreate()
 				1 << " " \
 				<< m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] + 1 <<
 				" " << m_ele->getNodeIndices()[6] + 1 << " " << m_ele->getNodeIndices()[7] +
-				1 << endl;
+				1 << "\n";
 				element_type = "ET = BRICK";
 				break;
 			case MshElemType::TRIANGLE:
 				dom_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << endl;
+				" " << m_ele->getNodeIndices()[2] + 1 << "\n";
 				element_type = "ET = TRIANGLE";
 				break;
 			case MshElemType::TETRAHEDRON:
 				dom_file \
 				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
 				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << endl;
+				1 << "\n";
 				element_type = "ET = TETRAHEDRON";
 				break;
 			case MshElemType::PRISM:
@@ -1032,12 +1032,12 @@ void DOMCreate()
 				1 << " " \
 				<< m_ele->getNodeIndices()[3] + 1 << " " << m_ele->getNodeIndices()[3] + 1 <<
 				" " << m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] +
-				1 << endl;
+				1 << "\n";
 				element_type = "ET = BRICK";
 				break;
 			default:
 				std::cerr << "CPARDomain::WriteTecplot MshElemType not handled" <<
-				std::endl;
+				"\n";
 			}
 		}
 	}
@@ -1345,12 +1345,12 @@ void DOMCreate()
 		   sprintf(stro, "%d",myrank);
 		   string test1 = test+(string)stro+"dom.txt";
 		   ofstream Dum(test1.c_str(), ios::out); // WW
-		   Dum<<b_start[0]<<endl;
-		   Dum<<b_end[0]<<endl;
-		   Dum<<b_start[1]<<endl;
-		   Dum<<b_end[1]<<endl;
+		   Dum<<b_start[0]<<"\n";
+		   Dum<<b_end[0]<<"\n";
+		   Dum<<b_start[1]<<"\n";
+		   Dum<<b_end[1]<<"\n";
 		   for(i=0;i<bnode_connected_dom.size();i++)
-		   Dum<<bnode_connected_dom[i]<<endl;
+		   Dum<<bnode_connected_dom[i]<<"\n";
 		   exit(1);
 		 */
 	}
@@ -1385,7 +1385,7 @@ void DOMCreate()
 		   sprintf(stro, "%d",myrank);
 		   string test1 = test+(string)stro+"Assemble.txt";
 		   ofstream Dum(test1.c_str(), ios::out); // WW
-		   Dum<<"Mysize" <<mysize<<"  "<<quadratic<<endl;
+		   Dum<<"Mysize" <<mysize<<"  "<<quadratic<<"\n";
 
 		   Dum.close();
 		   MPI_Finalize();
@@ -1520,15 +1520,15 @@ void DOMCreate()
 		   string test1 = test+(string)stro+"dom.txt";
 
 		   ofstream Dum(test1.c_str(), ios::out);
-		   Dum<<" nnodesHQ_dom  "<< nnodesHQ_dom<<endl;
+		   Dum<<" nnodesHQ_dom  "<< nnodesHQ_dom<<"\n";
 
-		   Dum<<" nq "<<nq <<endl;
+		   Dum<<" nq "<<nq <<"\n";
 
 		   for(k=0; k<nq; k++)
 		   {
-		   Dum<<" i_start[k]  "<<i_start[k] <<endl;
+		   Dum<<" i_start[k]  "<<i_start[k] <<"\n";
 
-		   Dum<<"  i_end[k] "<<i_end[k] <<endl;
+		   Dum<<"  i_end[k] "<<i_end[k] <<"\n";
 
 		   for(i=i_start[k];i<i_end[k];i++)
 		   {
@@ -1537,7 +1537,7 @@ void DOMCreate()
 		   //
 		   val += localr0[i+n_loc*ii]*localr0[i+n_loc*ii];
 
-		   Dum<<"[i+n_loc*ii] "<< i+n_loc*ii <<" localr0[i+n_loc*ii] "<< localr0[i+n_loc*ii]<<endl;
+		   Dum<<"[i+n_loc*ii] "<< i+n_loc*ii <<" localr0[i+n_loc*ii] "<< localr0[i+n_loc*ii]<<"\n";
 
 		   }
 		   }
@@ -1897,9 +1897,9 @@ void DOMCreate()
 	{
 		if(eqs)
 			os << "CPU time elapsed in linear solver for linear elements: "
-			   << eqs->GetCPUtime() << endl;
+			   << eqs->GetCPUtime() << "\n";
 		if(eqsH)
 			os << "CPU time elapsed in linear solver for quadratic elements: "
-			   << eqsH->GetCPUtime() << endl;
+			   << eqsH->GetCPUtime() << "\n";
 	}
 #endif                                            //// if defined(USE_MPI)

@@ -1119,27 +1119,27 @@ void CFiniteElementVec::LocalAssembly(const int update)
 		//Output matrices
 		if(pcs->Write_Matrix)
 		{
-			(*pcs->matrix_file) << "### Element: " << Index << std::endl;
-			(*pcs->matrix_file) << "---Stiffness matrix: " << std::endl;
+			(*pcs->matrix_file) << "### Element: " << Index << "\n";
+			(*pcs->matrix_file) << "---Stiffness matrix: " << "\n";
 			Stiffness->Write(*pcs->matrix_file);
-			(*pcs->matrix_file) << "---RHS: " << std::endl;
+			(*pcs->matrix_file) << "---RHS: " << "\n";
 			RHS->Write(*pcs->matrix_file);
 			if(PressureC)
 			{
-				(*pcs->matrix_file) << "Pressue coupling matrix: " << std::endl;
+				(*pcs->matrix_file) << "Pressue coupling matrix: " << "\n";
 				PressureC->Write(*pcs->matrix_file);
 			}
 			// 07.2011. WW
 			if(PressureC_S)
 			{
 				(*pcs->matrix_file) <<
-				"Saturation depedent pressue coupling matrix: " << std::endl;
+				"Saturation depedent pressue coupling matrix: " << "\n";
 				PressureC_S->Write(*pcs->matrix_file);
 			}
 			if(PressureC_S_dp)
 			{
 				(*pcs->matrix_file) << "Jacobi pressue coupling matrix: " <<
-				std::endl;
+				"\n";
 				PressureC_S_dp->Write(*pcs->matrix_file);
 			}
 		}
@@ -1891,21 +1891,21 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 	   #endif
 	   oss.open(fname.c_str(), ios::app|ios::out);
 	   //    oss.open(fname.c_str(), ios::trunc|ios::out);
-	   oss<<"\nElement  "<<Index<<endl;
-	   oss<<endl;
+	   oss<<"\nElement  "<<Index<<"\n";
+	   oss<<"\n";
 
-	   oss<<"Diaplacement "<<endl;
+	   oss<<"Diaplacement "<<"\n";
 	   for(i=0;i<nnodesHQ;i++)
 	   {
 	   oss<<nodes[i]<<"  ";
 	   for(int ii=0; ii<dim; ii++)
 	   oss<<Disp[ii*nnodesHQ+i]<<"  ";
-	   oss<<endl;
+	   oss<<"\n";
 	   }
-	   oss<<"Temperature "<<endl;
+	   oss<<"Temperature "<<"\n";
 	   for(i=0; i<nnodes;i++)
 	   oss<<Temp[i]<<"  ";
-	   oss<<endl;
+	   oss<<"\n";
 	   oss.close();
 	   }
 	 */
@@ -2183,7 +2183,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 	      //TEST
 	        if(update&&Index==0)
 	        {
-	           oss<<" Stress "<<endl;
+	           oss<<" Stress "<<"\n";
 	           eleV_DM->Stress->Write(oss);
 	           oss.close();
 	        }

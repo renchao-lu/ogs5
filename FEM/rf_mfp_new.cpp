@@ -533,7 +533,7 @@ bool MFPRead(std::string file_base_name)
 	mfp_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// Keyword loop
-	std::cout << "MFPRead" << std::endl;
+	std::cout << "MFPRead" << "\n";
 	while (!mfp_file.eof())
 	{
 		mfp_file.getline(line,MAX_ZEILE);
@@ -573,7 +573,7 @@ bool MFPRead(std::string file_base_name)
 	// Test
 	if(mfp_vector.size() == 0)
 	{
-		std::cout << "Error in MFPRead: no MFP data" << std::endl;
+		std::cout << "Error in MFPRead: no MFP data" << "\n";
 		abort();
 	}
 	//----------------------------------------------------------------------
@@ -590,41 +590,41 @@ bool MFPRead(std::string file_base_name)
 void CFluidProperties::Write(std::ofstream* mfp_file) const
 {
 	//KEYWORD
-	*mfp_file << "#FLUID_PROPERTIES" << std::endl;
-	*mfp_file << " $FLUID_TYPE" << std::endl;
-	*mfp_file << "  " << name << std::endl;
-	*mfp_file << " $DAT_TYPE" << std::endl;
-	*mfp_file << "  " << name << std::endl;
-	*mfp_file << " $DENSITY" << std::endl;
+	*mfp_file << "#FLUID_PROPERTIES" << "\n";
+	*mfp_file << " $FLUID_TYPE" << "\n";
+	*mfp_file << "  " << name << "\n";
+	*mfp_file << " $DAT_TYPE" << "\n";
+	*mfp_file << "  " << name << "\n";
+	*mfp_file << " $DENSITY" << "\n";
 	// TF 11/2011 - _rho_fct_name is used only here and in the read-method
 //	if(density_model == 0)
-//		*mfp_file << "  " << density_model << " " << _rho_fct_name << std::endl;
+//		*mfp_file << "  " << density_model << " " << _rho_fct_name << "\n";
 	if(density_model == 1)
-		*mfp_file << "  " << density_model << " " << rho_0 << std::endl;
+		*mfp_file << "  " << density_model << " " << rho_0 << "\n";
 	//todo
-	*mfp_file << " $VISCOSITY" << endl;
+	*mfp_file << " $VISCOSITY" << "\n";
 	// TF 11/2011 - used only in read- and write-method
 //	if(viscosity_model == 0)
-//		*mfp_file << "  " << viscosity_model << " " << _my_fct_name << std::endl;
+//		*mfp_file << "  " << viscosity_model << " " << _my_fct_name << "\n";
 	if(viscosity_model == 1)
-		*mfp_file << "  " << viscosity_model << " " << my_0 << std::endl;
+		*mfp_file << "  " << viscosity_model << " " << my_0 << "\n";
 	//todo
-	*mfp_file << " $SPECIFIC_HEAT_CAPACITY" << endl;
+	*mfp_file << " $SPECIFIC_HEAT_CAPACITY" << "\n";
 	// TF 11/2011 - used only in read- and write-method
 //	if(heat_capacity_model == 0)
 //		*mfp_file << "  " << heat_capacity_model << " " << heat_capacity_fct_name <<
-//		std::endl;
+//		"\n";
 	if(heat_capacity_model == 1)
 		*mfp_file << "  " << heat_capacity_model << " " << specific_heat_capacity <<
-		std::endl;
-	*mfp_file << " $SPECIFIC_HEAT_CONDUCTIVITY" << endl;
+		"\n";
+	*mfp_file << " $SPECIFIC_HEAT_CONDUCTIVITY" << "\n";
 	// TF 11/2011 - used only in read- and write-method
 //	if(heat_conductivity_model == 0)
 //		*mfp_file << "  " << heat_conductivity_model << " " <<
-//		heat_conductivity_fct_name << std::endl;
+//		heat_conductivity_fct_name << "\n";
 	if(heat_conductivity_model == 1)
 		*mfp_file << "  " << heat_conductivity_model << " " << heat_conductivity <<
-		std::endl;
+		"\n";
 	//--------------------------------------------------------------------
 }
 
@@ -651,7 +651,7 @@ void MFPWrite(std::string base_file_name)
 		return;
 	//  mfp_file.seekg(0L,ios::beg);
 	//========================================================================
-	mfp_file << "GeoSys-MFP: Material Fluid Properties -------------" << std::endl;
+	mfp_file << "GeoSys-MFP: Material Fluid Properties -------------" << "\n";
 	//========================================================================
 	// OUT vector
 	int mfp_vector_size = (int)mfp_vector.size();
@@ -903,7 +903,7 @@ density =  rho;
 		       break;
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
-			std::endl;
+			"\n";
 			break;
 		}
 	}
@@ -997,7 +997,7 @@ density =  rho;
 		       break;
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
-			std::endl;
+			"\n";
 			break;
 		}
 	}
@@ -1034,8 +1034,8 @@ double CFluidProperties::GetElementValueFromNodes(long ElementIndex,
 		{
 			cout <<
 			"The Phase_Transition_Model should be used together with the density and viscosity model 18 !"
-			     << endl;
-			cout << "The run is terminated now ..." << endl;
+			     << "\n";
+			cout << "The run is terminated now ..." << "\n";
 			system("Pause");
 			exit(0);
 		}
@@ -1107,7 +1107,7 @@ double CFluidProperties::GetElementValueFromNodes(long ElementIndex,
 		}
 		variable = variable / sum_weights;
 	}
-	//cout << "Variable: " << variable << endl;
+	//cout << "Variable: " << variable << "\n";
 	return variable;
 }
 
@@ -1459,7 +1459,7 @@ viscosity =  my;
 	case 19: // reserved for GEMS coupling
 	        break;
 	default:
-		cout << "Error in CFluidProperties::Viscosity: no valid model" << endl;
+		cout << "Error in CFluidProperties::Viscosity: no valid model" << "\n";
 		break;
 	}
 	//----------------------------------------------------------------------
@@ -1954,7 +1954,7 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
    break;
    //....................................................................
    default:
-   cout << "Error in MFPCalcFluidsHeatCapacity: no fluid phase data" << endl;
+   cout << "Error in MFPCalcFluidsHeatCapacity: no fluid phase data" << "\n";
    }
    return heat_capacity_fluids;
    }*/
@@ -2148,7 +2148,7 @@ double MFPCalcFluidsHeatConductivity(long index,double* gp,double theta, CFinite
 		                            * m_mfp->HeatConductivity();
 		break;
 	default:
-		cout << "Error in MFPCalcFluidsHeatConductivity: no fluid phase data" << endl;
+		cout << "Error in MFPCalcFluidsHeatConductivity: no fluid phase data" << "\n";
 	}
 	return heat_conductivity_fluids;
 }
@@ -3373,7 +3373,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	//NB AUG 2009
 	case 3: mfp_value = m_mfp->SpecificHeatCapacity(arguments);
 		break;
-	default: cout << "MFPGetNodeValue: no MFP data" << endl;
+	default: cout << "MFPGetNodeValue: no MFP data" << "\n";
 	}
 	//......................................................................
 	m_mfp->mode = restore_mode;           //NB changeback

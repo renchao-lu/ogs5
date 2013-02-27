@@ -117,7 +117,7 @@ bool CFaces::Calculate_FaceGravityCentre(const double Point1[3],
 	//Order of the faces: 0..left(x); 1..right(x); 2..front(y); 3..back(y); 4..bottom(z); 5..top(z)
 	if (this->connected_nodes.size() > 4)
 	{
-		std::cout << "Error: The face has more than 4 corner points!" << std::endl;
+		std::cout << "Error: The face has more than 4 corner points!" << "\n";
 		exit(1);
 	}
 
@@ -230,7 +230,7 @@ void CFaces::Calculate_components_of_a_vector(int flag, int phase_index, bool Ra
 			{
 				std::cout <<
 				"Error at the normal vector. The i-component is not positiv!" <<
-				std::endl;
+				"\n";
 				//system("Pause");
 				exit(1);
 			}
@@ -239,7 +239,7 @@ void CFaces::Calculate_components_of_a_vector(int flag, int phase_index, bool Ra
 			{
 				std::cout <<
 				"Error at the normal vector. The j-component is not positiv!" <<
-				std::endl;
+				"\n";
 				//system("Pause");
 				exit(1);
 			}
@@ -248,7 +248,7 @@ void CFaces::Calculate_components_of_a_vector(int flag, int phase_index, bool Ra
 		if(normal_vector[2] < 0.0)
 		{
 			std::cout <<
-			"Error at the normal vector. The k-component is not positiv!" << std::endl;
+			"Error at the normal vector. The k-component is not positiv!" << "\n";
 			//system("Pause");
 			exit(1);
 		}
@@ -261,7 +261,7 @@ void CFaces::Calculate_components_of_a_vector(int flag, int phase_index, bool Ra
 			                                  normal_vector[i];
 		if(flag == 1)
 			this->vel[i] = this->v_norm * fabs(normal_vector[i]);
-		//cout << this->q[i] << endl;
+		//cout << this->q[i] << "\n";
 	}
 }
 

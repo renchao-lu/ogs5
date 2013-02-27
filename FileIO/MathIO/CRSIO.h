@@ -44,16 +44,16 @@ template<class T> void readCompressedStorageFmt(std::istream &is, unsigned &n,
 #ifndef NDEBUG
 	// do simple checks
 	if (iA[0] != 0)
-		std::cerr << std::endl
-		          << "CRS matrix: array iA doesn't start with 0" << std::endl;
+		std::cerr << "\n"
+		          << "CRS matrix: array iA doesn't start with 0" << "\n";
 
 	unsigned i = 0;
 	while (i < iA[n] && jA[i] < n)
 		++i;
 	if (i < iA[n])
-		std::cerr << std::endl << "CRS matrix: the " << i
+		std::cerr << "\n" << "CRS matrix: the " << i
 		          << "th entry of jA has the value " << jA[i]
-		          << ", which is out of bounds." << std::endl;
+		          << ", which is out of bounds." << "\n";
 #endif
 }
 
@@ -87,16 +87,16 @@ template<class T> void readCompressedStorageFmt(std::istream &is, long &n,
 #ifndef NDEBUG
 	// do simple checks
 	if (iA[0] != 0)
-		std::cerr << std::endl
-		          << "CRS matrix: array iA doesn't start with 0" << std::endl;
+		std::cerr << "\n"
+		          << "CRS matrix: array iA doesn't start with 0" << "\n";
 
 	long i = 0;
 	while (i < iA[n] && jA[i] < n)
 		++i;
 	if (i < iA[n])
-		std::cerr << std::endl << "CRS matrix: the " << i
+		std::cerr << "\n" << "CRS matrix: the " << i
 		          << "th entry of jA has the value " << jA[i]
-		          << ", which is out of bounds." << std::endl;
+		          << ", which is out of bounds." << "\n";
 #endif
 }
 } // end namespace FileIO

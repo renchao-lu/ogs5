@@ -101,7 +101,7 @@ void CBoundaryConditionNode::Write(std::ostream& os) const
 	os << msh_node_number << deli;
 	os << CurveIndex << deli;
 	os << node_value << deli;
-	os << std::endl;
+	os << "\n";
 }
 
 //==========================================================================
@@ -155,7 +155,7 @@ CBoundaryCondition::CBoundaryCondition(const BoundaryCondition* bc)
 	else
 		std::cout << "Error in CBoundaryCondition() - DistributionType \""
 		          << FiniteElement::convertDisTypeToString(this->getProcessDistributionType())
-				  << "\" currently not supported." << std::endl;
+				  << "\" currently not supported." << "\n";
 }
 
 /**************************************************************************
@@ -444,31 +444,31 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 //void CBoundaryCondition::Write(std::fstream* rfd_file) const
 //{
 //   //KEYWORD
-//   *rfd_file << "#BOUNDARY_CONDITION" << std::endl;
+//   *rfd_file << "#BOUNDARY_CONDITION" << "\n";
 //   //--------------------------------------------------------------------
 //   //NAME+NUMBER
-//   *rfd_file << " $PCS_TYPE" << std::endl;
-//   *rfd_file << "  " << convertProcessTypeToString(getProcessType()) << std::endl;
-//   *rfd_file << " $PRIMARY_VARIABLE" << std::endl;
-//   *rfd_file << "  " << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << std::endl;
+//   *rfd_file << " $PCS_TYPE" << "\n";
+//   *rfd_file << "  " << convertProcessTypeToString(getProcessType()) << "\n";
+//   *rfd_file << " $PRIMARY_VARIABLE" << "\n";
+//   *rfd_file << "  " << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << "\n";
 //   //--------------------------------------------------------------------
 //   //GEO_TYPE
-//   *rfd_file << " $GEO_TYPE" << std::endl;
+//   *rfd_file << " $GEO_TYPE" << "\n";
 //   *rfd_file << "  ";
-//   *rfd_file << getGeoTypeAsString() << " " << geo_name << std::endl;
+//   *rfd_file << getGeoTypeAsString() << " " << geo_name << "\n";
 //
 //   //--------------------------------------------------------------------
 //   /*OK4910
 //    //MSH_TYPE
 //    if(msh_node_number>0){
-//    *rfd_file << " $MSH_TYPE" << endl;
+//    *rfd_file << " $MSH_TYPE" << "\n";
 //    *rfd_file << "  ";
-//    *rfd_file << "NODE" << " " << msh_node_number << endl;
+//    *rfd_file << "NODE" << " " << msh_node_number << "\n";
 //    }
 //    */
 //   //--------------------------------------------------------------------
 //   //DIS_TYPE
-//   *rfd_file << " $DIS_TYPE" << std::endl;
+//   *rfd_file << " $DIS_TYPE" << "\n";
 //   *rfd_file << "  ";
 //   *rfd_file << convertDisTypeToString(this->getProcessDistributionType());
 //   //switch (dis_type_name[0]) {
@@ -476,17 +476,17 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 //   if (this->getProcessDistributionType() == FiniteElement::CONSTANT)
 //   {
 //      *rfd_file << " " << geo_node_value;
-//      *rfd_file << std::endl;
+//      *rfd_file << "\n";
 //      //break;
 //   }
 //   //case 'L': // Linear
 //   else if (this->getProcessDistributionType() == FiniteElement::LINEAR)
 //   {
-//      *rfd_file << " " << _PointsHaveDistribedBC.size() << std::endl;
+//      *rfd_file << " " << _PointsHaveDistribedBC.size() << "\n";
 //      for (size_t i = 0; i < _PointsHaveDistribedBC.size(); i++)
 //      {
 //         *rfd_file << "  " << _PointsHaveDistribedBC[i] << " ";
-//         *rfd_file << "  " << _DistribedBC[i] << std::endl;
+//         *rfd_file << "  " << _DistribedBC[i] << "\n";
 //      }
 //      //break;
 //   }
@@ -494,9 +494,9 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 //   //FCT
 //   if (fct_name.length() > 0)                     //OK4108
 //   {
-//      *rfd_file << " $FCT_TYPE" << std::endl;
+//      *rfd_file << " $FCT_TYPE" << "\n";
 //      *rfd_file << "  ";
-//      *rfd_file << fct_name << std::endl;
+//      *rfd_file << fct_name << "\n";
 //   }
 //}
 
@@ -518,7 +518,7 @@ void CBoundaryCondition::WriteTecplot(std::fstream* tec_file) const
 	long no_points = 0;
 	std::vector<CTriangle*> triangle_vector;
 
-	*tec_file << "VARIABLES = X,Y,Z,V1" << std::endl;
+	*tec_file << "VARIABLES = X,Y,Z,V1" << "\n";
 
 	if (getGeoType () == GEOLIB::SURFACE)
 	{
@@ -573,7 +573,7 @@ void CBoundaryCondition::WriteTecplot(std::fstream* tec_file) const
 	*tec_file << "ZONE T = " << geo_name << ", "
 	          << "N = " << no_nodes << ", "
 	          << "E = " << no_elements << ", "
-	          << "F = FEPOINT" << ", " << "ET = TRIANGLE" << std::endl;
+	          << "F = FEPOINT" << ", " << "ET = TRIANGLE" << "\n";
 	if(m_polyline1)
 		for(i = 0; i < no_points; i++)
 			*tec_file
@@ -581,7 +581,7 @@ void CBoundaryCondition::WriteTecplot(std::fstream* tec_file) const
 			m_polyline1->point_vector[i]->y << " " <<
 			m_polyline1->point_vector[i]->z <<
 			" " \
-			<< geo_node_value << std::endl;
+			<< geo_node_value << "\n";
 
 	if(m_polyline2)
 		for(i = 0; i < no_points; i++)
@@ -590,15 +590,15 @@ void CBoundaryCondition::WriteTecplot(std::fstream* tec_file) const
 			m_polyline2->point_vector[i]->y << " " <<
 			m_polyline2->point_vector[i]->z <<
 			" " \
-			<< geo_node_value << std::endl;
+			<< geo_node_value << "\n";
 
 	for(i = 0; i < no_points - 1; i++)
 		*tec_file \
-		<< i + 1 << " " << i + 1 + 1 << " " << no_points + i + 1 << std::endl;
+		<< i + 1 << " " << i + 1 + 1 << " " << no_points + i + 1 << "\n";
 	for(i = 0; i < no_points - 1; i++)
 		*tec_file \
 		<< no_points + i + 1 << " " << no_points + i + 1 + 1 << " " << i + 1 + 1 <<
-		std::endl;
+		"\n";
 }
 
 /**************************************************************************
@@ -622,7 +622,7 @@ bool BCRead(std::string const& file_base_name, const GEOLIB::GEOObjects& geo_obj
 	std::ifstream bc_file(bc_file_name.data(), std::ios::in);
 	if (!bc_file.good())
 	{
-		std::cout << "! Error in BCRead: No boundary conditions !" << std::endl;
+		std::cout << "! Error in BCRead: No boundary conditions !" << "\n";
 		return false;
 	}
 
@@ -635,7 +635,7 @@ bool BCRead(std::string const& file_base_name, const GEOLIB::GEOObjects& geo_obj
 		if (line_string.find("#STOP") != std::string::npos)
 		{
 			std::cout << "done, read " << bc_list.size()
-			          << " boundary conditions" << std::endl;
+			          << " boundary conditions" << "\n";
 			return true;
 		}
 		if (line_string.find("#BOUNDARY_CONDITION") != std::string::npos)
@@ -736,7 +736,7 @@ inline void CBoundaryCondition::DirectAssign(long ShiftInNodeVector)
 	if (!d_file.good())
 	{
 		std::cout << "! Error in direct node source terms: Could not find file:!\n"
-		          << fname << std::endl;
+		          << fname << "\n";
 		abort();
 	}
 	// Rewind the file
@@ -787,7 +787,7 @@ inline void CBoundaryCondition::PatchAssign(long ShiftInNodeVector)
 	{
 		std::cout
 		<< "! Error in direct node source terms: Could not find file:!\n"
-		<< fname << std::endl;
+		<< fname << "\n";
 		abort();
 	}
 	// Rewind the file
@@ -878,7 +878,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 
 	if (!m_msh)
 		std::cout << "Warning in CBoundaryConditionsGroup::Set - no MSH data"
-		          << std::endl;
+		          << "\n";
 	//return;
 	if (m_msh) //WW
 	{
@@ -1229,13 +1229,13 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 //					geo_obj.getSurfaceVecObj(geo_project_name)->getNameOfElement(sfc, sfc_name);
 //					std::string debug_fname("MeshNodesOld-BC-" + sfc_name + ".gli");
 //					std::ofstream debug_out (debug_fname.c_str());
-//					debug_out << "#POINTS" << std::endl;
+//					debug_out << "#POINTS" << "\n";
 //					for (size_t k(0); k<nodes_vector.size(); k++) {
 //						debug_out << k << " " <<
 //							GEOLIB::Point((m_msh->getNodeVector())[nodes_vector[k]]->getData()) <<
-//							" $NAME " << nodes_vector[k] << std::endl;
+//							" $NAME " << nodes_vector[k] << "\n";
 //					}
-//					debug_out << "#STOP" << std::endl;
+//					debug_out << "#STOP" << "\n";
 //					debug_out.close();
 //#endif
 					std::vector<size_t> msh_nod_vec;
@@ -1243,18 +1243,18 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 //#ifndef NDEBUG
 //					debug_fname = "MeshNodesNew-BC-" + sfc_name + ".gli";
 //					debug_out.open (debug_fname.c_str());
-//					debug_out << "#POINTS" << std::endl;
+//					debug_out << "#POINTS" << "\n";
 //					for (size_t k(0); k<msh_nod_vec.size(); k++) {
 //						debug_out << k << " " <<
 //							GEOLIB::Point((m_msh->getNodeVector())[msh_nod_vec[k]]->getData()) <<
-//							" $NAME " << msh_nod_vec[k] << std::endl;
+//							" $NAME " << msh_nod_vec[k] << "\n";
 //					}
-//					debug_out << "#STOP" << std::endl;
+//					debug_out << "#STOP" << "\n";
 //					debug_out.close();
 //#endif
 //					nodes_vector.clear();
 					for (size_t k(0); k < msh_nod_vec.size(); k++) {
-//						std::cout << "\t" << k << "\t" << nodes_vector_old[k] << "\t" << msh_nod_vec[k] << std::endl;
+//						std::cout << "\t" << k << "\t" << nodes_vector_old[k] << "\t" << msh_nod_vec[k] << "\n";
 						nodes_vector.push_back (msh_nod_vec[k]);
 					}
 					size_t nodes_vector_length (nodes_vector.size());
@@ -1383,7 +1383,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 	} // list
 
 	clock_t end_time (clock());
-	std::cout << "\t[BC] set BC took " << (end_time-start_time)/(double)(CLOCKS_PER_SEC) << std::endl;
+	std::cout << "\t[BC] set BC took " << (end_time-start_time)/(double)(CLOCKS_PER_SEC) << "\n";
 
 	start_time = clock();
 	// SetTransientBCtoNodes  10/2008 WW/CB Implementation
@@ -1461,10 +1461,10 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 	     // Test
 	     long no_bc = (long)pcs->bc_node_value.size();
 	     if(no_bc<1)
-	     cout << "Warning: no boundary conditions specified for " << pcs_type_name << endl;
+	     cout << "Warning: no boundary conditions specified for " << pcs_type_name << "\n";
 	   */
 	end_time = clock();
-	std::cout << "\t[BC] set transient BC took " << (end_time-start_time)/(double)(CLOCKS_PER_SEC) << std::endl;
+	std::cout << "\t[BC] set transient BC took " << (end_time-start_time)/(double)(CLOCKS_PER_SEC) << "\n";
 }
 
 /**************************************************************************

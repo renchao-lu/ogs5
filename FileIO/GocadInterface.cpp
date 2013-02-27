@@ -24,12 +24,12 @@ GocadInterface::GocadInterface(const std::string &fname, GEOObjects* obj) :
 	std::ifstream in(fname.c_str());
 	if (in)
 	{
-		std::cout << "done" << std::endl;
+		std::cout << "done" << "\n";
 		readObjects (in);
 		in.close();
 	}
 	else
-		std::cerr << "error opening stream " << std::endl;
+		std::cerr << "error opening stream " << "\n";
 
 	obj->addPointVec (_pnt_vec, _fname);
 	obj->addPolylineVec (_ply_vec, _fname);
@@ -50,7 +50,7 @@ void GocadInterface::readObjects (std::istream &in)
 			in >> line;
 			if (line.find("TSurf") != std::string::npos)
 			{
-				std::cout << "reading GOCAD object TSurf" << std::endl;
+				std::cout << "reading GOCAD object TSurf" << "\n";
 				readHeader(in);
 				readCoordinateSystem(in);
 
@@ -70,7 +70,7 @@ void GocadInterface::readObjects (std::istream &in)
 					in.getline(buffer, MAX_COLS_PER_ROW);
 					line = buffer;
 				}
-//				std::cout << "done" << std::endl;
+//				std::cout << "done" << "\n";
 
 //				std::cout << "reading optional geologic information ... "
 //						<< std::flush;
@@ -81,23 +81,23 @@ void GocadInterface::readObjects (std::istream &in)
 					in.getline(buffer, MAX_COLS_PER_ROW);
 					line = buffer;
 				}
-//				std::cout << "done" << std::endl;
+//				std::cout << "done" << "\n";
 
 				if (line.find("TFACE") != std::string::npos)
 					readTSurfData(in);
 				else
-					std::cout << "no points found" << std::endl;
+					std::cout << "no points found" << "\n";
 			}
 			else if (line.find("PLine") != std::string::npos)
 			{
-				std::cout << "reading GOCAD object PLine" << std::endl;
+				std::cout << "reading GOCAD object PLine" << "\n";
 				readHeader(in);
 				readCoordinateSystem(in);
 //				readPLineData(in);
 			}
 			else
 				std::cout << "*** reading GOCAD object " << line
-				          << " not implemented" << std::endl;
+				          << " not implemented" << "\n";
 		}
 	}
 }
@@ -106,46 +106,46 @@ void GocadInterface::readHeader (std::istream &in)
 {
 	std::string line;
 	in >> line; // version
-	std::cout << "version " << line << std::endl;
+	std::cout << "version " << line << "\n";
 	in >> line;
 
 	// read header of TSurf object
 	if (line.find ("HEADER") != std::string::npos)
-//		std::cout << "found header" << std::endl;
-//		std::cout << line << std::endl;
+//		std::cout << "found header" << "\n";
+//		std::cout << line << "\n";
 		while (in && line.find ("}") == std::string::npos)
 		{
 			if (line.find("name:") != std::string::npos)
 			{
 				// extract name
-//				std::cout << "name of object: " << line.substr (5) << std::endl;
+//				std::cout << "name of object: " << line.substr (5) << "\n";
 			}
 			if (line.find("mesh:") != std::string::npos)
 			{
-//				std::cout << "mesh of object: " << line.substr (5) << std::endl;
+//				std::cout << "mesh of object: " << line.substr (5) << "\n";
 			}
 			if (line.find("cn:") != std::string::npos)
 			{
-//				std::cout << "cn of object: " << line.substr (3) << std::endl;
+//				std::cout << "cn of object: " << line.substr (3) << "\n";
 			}
 			if (line.find("*solid*color:") != std::string::npos)
 			{
 				float col[4];
 				col[0] = str2number<float> ((line.substr(13)).c_str());
 				in >> col[1] >> col[2] >> col[3];
-//				std::cout << "color of object: " << col[0] << "," << col[1] << "," << col[2] << "," << col[3] << std::endl;
+//				std::cout << "color of object: " << col[0] << "," << col[1] << "," << col[2] << "," << col[3] << "\n";
 			}
 			if (line.find("ivolmap:") != std::string::npos)
 			{
-//				std::cout << "ivolmap of object: " << line.substr (8) << std::endl;
+//				std::cout << "ivolmap of object: " << line.substr (8) << "\n";
 			}
 			if (line.find("imap:") != std::string::npos)
 			{
-//				std::cout << "imap of object: " << line.substr (5) << std::endl;
+//				std::cout << "imap of object: " << line.substr (5) << "\n";
 			}
 			in >> line;
 		}
-	//	std::cout << "read header done" << std::endl;
+	//	std::cout << "read header done" << "\n";
 }
 
 void GocadInterface::readCoordinateSystem (std::istream &in)
@@ -157,7 +157,7 @@ void GocadInterface::readCoordinateSystem (std::istream &in)
 	{
 		std::string name_of_coordinate_system, axis_name[3], axis_unit[3],
 		            zpositive;
-//		std::cout << "reading coordinate system" << std::endl;
+//		std::cout << "reading coordinate system" << "\n";
 		in >> line;
 		if (line.find("NAME") != std::string::npos)
 			in >> name_of_coordinate_system;
@@ -172,16 +172,16 @@ void GocadInterface::readCoordinateSystem (std::istream &in)
 			in >> zpositive;
 		in >> line;
 		if (line.find("END_ORIGINAL_COORDINATE_SYSTEM") != std::string::npos)
-//			std::cout << "ok" << std::endl;
+//			std::cout << "ok" << "\n";
 			return;
 
 //		std::cout << "name of coordinate system: " << name_of_coordinate_system
-//				<< std::endl;
+//				<< "\n";
 //		std::cout << "axis names: " << axis_name[0] << " " << axis_name[1]
-//				<< " " << axis_name[2] << std::endl;
+//				<< " " << axis_name[2] << "\n";
 //		std::cout << "axis units: " << axis_unit[0] << " " << axis_unit[1]
-//				<< " " << axis_unit[2] << std::endl;
-//		std::cout << "z axis is: " << zpositive << std::endl;
+//				<< " " << axis_unit[2] << "\n";
+//		std::cout << "z axis is: " << zpositive << "\n";
 	}
 }
 
@@ -195,17 +195,17 @@ bool GocadInterface::isProperty (const std::string &line, std::istream &in)
 //		it++;
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 		return true;
 	}
 	if (line.find("PROPERTY_CLASS_HEADER") != std::string::npos)
 	{
-		std::cout << "found tag PROPERTY_CLASS_HEADER" << std::endl;
+		std::cout << "found tag PROPERTY_CLASS_HEADER" << "\n";
 		std::list<std::string> str_list(splitString(line, ' '));
 		std::list<std::string>::iterator it(str_list.begin());
 //		while (it != str_list.end())
 //			std::cout << *it++ << " " << std::flush;
-//		std::cout << std::endl;
+//		std::cout << "\n";
 
 		char buffer[MAX_COLS_PER_ROW];
 		in.getline(buffer, MAX_COLS_PER_ROW);
@@ -216,7 +216,7 @@ bool GocadInterface::isProperty (const std::string &line, std::istream &in)
 			it = property_str_list.begin();
 //			while (it != property_str_list.end())
 //				std::cout << *it++ << " " << std::flush;
-//			std::cout << std::endl;
+//			std::cout << "\n";
 			in.getline(buffer, MAX_COLS_PER_ROW);
 			str = buffer;
 		}
@@ -224,7 +224,7 @@ bool GocadInterface::isProperty (const std::string &line, std::istream &in)
 	}
 	if (line.find("PROPERTY_CLASSES") != std::string::npos)
 	{
-		std::cout << "found tag PROPERTY_CLASSES" << std::endl;
+		std::cout << "found tag PROPERTY_CLASSES" << "\n";
 		return true;
 	}
 	return false;
@@ -242,7 +242,7 @@ bool GocadInterface::isGeologicInformation (const std::string &line)
 		std::list<std::string> str_list(splitString(line, ' '));
 		std::list<std::string>::iterator it(str_list.begin()++);
 		geologic_type = *it;
-		std::cout << geologic_type << std::endl;
+		std::cout << geologic_type << "\n";
 		return true;
 	}
 	if (line.find("GEOLOGICAL_FEATURE") != std::string::npos)
@@ -251,7 +251,7 @@ bool GocadInterface::isGeologicInformation (const std::string &line)
 		std::list<std::string> str_list(splitString(line, ' '));
 		std::list<std::string>::iterator it(str_list.begin()++);
 		geologic_feature = *it;
-		std::cout << geologic_feature << std::endl;
+		std::cout << geologic_feature << "\n";
 		return true;
 	}
 	if (line.find("STRATIGRAPHIC_POSITION") != std::string::npos)
@@ -262,7 +262,7 @@ bool GocadInterface::isGeologicInformation (const std::string &line)
 		stratigraphic_age = *it++;
 		char* res;
 		stratigraphic_time = strtol (it++->c_str(), &res, 10);
-		std::cout << stratigraphic_age << " " << stratigraphic_time << std::endl;
+		std::cout << stratigraphic_age << " " << stratigraphic_time << "\n";
 		return true;
 	}
 	return false;
@@ -303,7 +303,7 @@ void GocadInterface::readTSurfData (std::istream &in)
 //				std::cout << " - additional info: " << std::flush;
 //			while (it != str_list.end())
 //				std::cout << *it++ << " " << std::flush;
-//			std::cout << std::endl;
+//			std::cout << "\n";
 		}
 		else if (it->find("TRGL") != std::string::npos)
 		{
@@ -321,7 +321,7 @@ void GocadInterface::readTSurfData (std::istream &in)
 //				std::cout << " - additional information: " << std::flush;
 //			while (it != str_list.end())
 //				std::cout << *it++ << " " << std::flush;
-//			std::cout << std::endl;
+//			std::cout << "\n";
 		}
 		else if (it->find("BSTONE") != std::string::npos)
 		{
@@ -359,7 +359,7 @@ void GocadInterface::readTSurfData (std::istream &in)
 //	for (size_t k(0); k<_ply_vec->size(); k++) {
 //		std::cout << k << ": ";
 //		((*_ply_vec)[k])->write (std::cout);
-//		std::cout << std::endl;
+//		std::cout << "\n";
 //	}
 }
 

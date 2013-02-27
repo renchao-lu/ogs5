@@ -54,7 +54,7 @@ void MshEditor::getNodeAreas(const MeshLib::CFEMesh* mesh, std::vector<double> &
 		node_area_vec.push_back(node_area);
 	}
 
-	std::cout<< "Total surface Area: " << total_area << std::endl;
+	std::cout<< "Total surface Area: " << total_area << "\n";
 }
 
 
@@ -128,7 +128,7 @@ MeshLib::CFEMesh* MshEditor::removeMeshNodes(MeshLib::CFEMesh* mesh,
 
 std::vector<GEOLIB::PointWithID*> MshEditor::getSurfaceNodes(const MeshLib::CFEMesh &mesh)
 {
-	std::cout << "Extracting surface nodes..." << std::endl;
+	std::cout << "Extracting surface nodes..." << "\n";
 	// Sort points lexicographically
 	size_t nNodes (mesh.nod_vector.size());
 	std::vector<GEOLIB::PointWithID*> nodes;
@@ -158,7 +158,7 @@ std::vector<GEOLIB::PointWithID*> MshEditor::getSurfaceNodes(const MeshLib::CFEM
 
 MeshLib::CFEMesh* MshEditor::getMeshSurface(const MeshLib::CFEMesh &mesh)
 {
-	std::cout << "Extracting mesh surface..." << std::endl;
+	std::cout << "Extracting mesh surface..." << "\n";
 	GridAdapter surface;
 	const std::vector<GEOLIB::PointWithID*> sfc_points = MshEditor::getSurfaceNodes(mesh);
 	const size_t nSurfacePoints (sfc_points.size());

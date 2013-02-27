@@ -17,11 +17,11 @@ namespace BASELIB
 {
 void printList (std::list<size_t> const& mylist, std::string const& title)
 {
-	std::cout << title << std::endl;
+	std::cout << title << "\n";
 	for (std::list<size_t>::const_iterator my_it (mylist.begin());
 	     my_it != mylist.end(); my_it++)
 		std::cout << *my_it << " ";
-	std::cout << std::endl;
+	std::cout << "\n";
 }
 } // end namespace BASELIB
 

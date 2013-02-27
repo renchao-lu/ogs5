@@ -18,7 +18,7 @@ CFEMesh* FEFLOWInterface::readFEFLOWModelFile(const std::string &filename)
 	std::ifstream feflow_file(filename.c_str());
 	if (!feflow_file)
 	{
-		std::cerr << "error opening stream " << std::endl;
+		std::cerr << "error opening stream " << "\n";
 		return NULL;
 	}
 
@@ -160,7 +160,7 @@ CFEMesh* FEFLOWInterface::readFEFLOWModelFile(const std::string &filename)
 				line_stream.str(line_string);
 				int j = 0;
 				line_stream >> j;
-				//file << j << endl;
+				//file << j << "\n";
 				line_stream.clear();
 			}
 		}
@@ -249,7 +249,7 @@ CFEMesh* FEFLOWInterface::readFEFLOWModelFile(const std::string &filename)
 		}
 	}
 
-	std::cout << "done" << std::endl;
+	std::cout << "done" << "\n";
 
 	return m_msh;
 }
@@ -301,7 +301,7 @@ void FEFLOWInterface::readSuperMesh(std::ifstream &feflow_file,
 	while (true)
 	{
 		line_string = GetLineFromFile1(&feflow_file);
-		oss << line_string << endl;
+		oss << line_string << "\n";
 		if (line_string.find("</supermesh>") != string::npos)
 			break;
 	}
@@ -312,7 +312,7 @@ void FEFLOWInterface::readSuperMesh(std::ifstream &feflow_file,
 	if (!doc.setContent(strXML))
 	{
 		// error
-		std::cerr << "error illegal XML format for supermesh" << std::endl;
+		std::cerr << "error illegal XML format for supermesh" << "\n";
 		return;
 	}
 

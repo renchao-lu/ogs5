@@ -72,7 +72,7 @@ CInitialCondition::CInitialCondition(const InitialCondition* ic)
 	else
 		std::cout << "Error in CBoundaryCondition() - DistributionType \""
 		          << FiniteElement::convertDisTypeToString(this->getProcessDistributionType())
-				  << "\" currently not supported." << std::endl;
+				  << "\" currently not supported." << "\n";
 }
 
 /**************************************************************************
@@ -114,7 +114,7 @@ bool ICRead(const std::string& file_base_name,
 	std::ifstream ic_file(ic_file_name.data(), std::ios::in);
 	if (!ic_file.good())
 	{
-		std::cout << "WARNING: ICRead: No initial conditions !" << std::endl;
+		std::cout << "WARNING: ICRead: No initial conditions !" << "\n";
 		return false;
 	}
 
@@ -123,7 +123,7 @@ bool ICRead(const std::string& file_base_name,
 	std::ios::pos_type position;
 
 	// Keyword loop
-	std::cout << "ICRead" << std::endl;
+	std::cout << "ICRead" << "\n";
 	while (!ic_file.eof())
 	{
 		ic_file.getline(line, MAX_ZEILE);
@@ -142,7 +142,7 @@ bool ICRead(const std::string& file_base_name,
 			else
 			{
 				std::cerr <<
-				"WARNING: in ICRead: could not read initial condition" << std::endl;
+				"WARNING: in ICRead: could not read initial condition" << "\n";
 				delete ic;
 			}
 			ic = NULL;
@@ -337,7 +337,7 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 				{
 					std::cerr <<
 					"error in CInitialCondition::Read: point name \"" <<
-					geo_name << "\" not found!" << std::endl;
+					geo_name << "\" not found!" << "\n";
 #ifndef OGS_USE_QT	//KR
 					exit (1);
 #endif
@@ -358,7 +358,7 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 				{
 					std::cerr <<
 					"error in CInitialCondition::Read: polyline name \"" <<
-					geo_name << "\" not found!" << std::endl;
+					geo_name << "\" not found!" << "\n";
 #ifndef OGS_USE_QT	//KR
 					exit (1);
 #endif
@@ -374,7 +374,7 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 				//						geo_name, _geo_obj_idx))) {
 				//					std::cerr
 				//							<< "ERROR: CInitialCondition::Read: surface name not found!"
-				//							<< std::endl;
+				//							<< "\n";
 				//					exit(1);
 				//				}
 				in >> geo_name;
@@ -430,26 +430,26 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 void CInitialCondition::Write(fstream* ic_file) const
 {
 	//KEYWORD
-	*ic_file << "#INITIAL_CONDITION" << endl;
+	*ic_file << "#INITIAL_CONDITION" << "\n";
 	//--------------------------------------------------------------------
 	//NAME+NUMBER
-	*ic_file << " $PCS_TYPE" << endl;
+	*ic_file << " $PCS_TYPE" << "\n";
 	*ic_file << "  ";
-	*ic_file << convertProcessTypeToString(this->getProcessType()) << endl;
-	*ic_file << " $PRIMARY_VARIABLE" << endl;
+	*ic_file << convertProcessTypeToString(this->getProcessType()) << "\n";
+	*ic_file << " $PRIMARY_VARIABLE" << "\n";
 	*ic_file << "  ";
-	*ic_file << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << endl;
+	*ic_file << convertPrimaryVariableToString(this->getProcessPrimaryVariable()) << "\n";
 	//--------------------------------------------------------------------
 	//GEO_TYPE
-	*ic_file << " $GEO_TYPE" << endl;
+	*ic_file << " $GEO_TYPE" << "\n";
 	*ic_file << "  " << getGeoTypeAsString() <<
-	" CInitialCondition::Write ToDo write name of GeoObject " << std::endl;
+	" CInitialCondition::Write ToDo write name of GeoObject " << "\n";
 
 	//--------------------------------------------------------------------
 	//DIS_TYPE
-	*ic_file << " $DIS_TYPE" << endl;
+	*ic_file << " $DIS_TYPE" << "\n";
 	*ic_file << "  ";
-	*ic_file << convertDisTypeToString(this->getProcessDistributionType()) << endl;
+	*ic_file << convertDisTypeToString(this->getProcessDistributionType()) << "\n";
 	*ic_file << " ";
 	if (this->getProcessDistributionType() == FiniteElement::CONSTANT)
 		/* KR
@@ -469,7 +469,7 @@ void CInitialCondition::Write(fstream* ic_file) const
 		*ic_file << this->gradient_ref_depth_gradient;
 	}
 	//--------------------------------------------------------------------
-	*ic_file << endl;
+	*ic_file << "\n";
 }
 
 /**************************************************************************
@@ -489,7 +489,7 @@ void CInitialCondition::Set(int nidx)
 		{
 		case GEOLIB::POINT:
 			SetPoint(nidx);
-			std::cout << "WARNING: CInitialCondition::Set - ToDo" << endl;
+			std::cout << "WARNING: CInitialCondition::Set - ToDo" << "\n";
 			break;
 		case GEOLIB::POLYLINE:
 			SetPolyline(nidx);
@@ -498,13 +498,13 @@ void CInitialCondition::Set(int nidx)
 			SetSurface(nidx);
 			break;
 		case GEOLIB::VOLUME:
-			std::cout << "WARNING: CInitialCondition::Set - ToDo" << endl;
+			std::cout << "WARNING: CInitialCondition::Set - ToDo" << "\n";
 			break;
 		case GEOLIB::GEODOMAIN:
 			SetDomain(nidx);
 			break;
 		case GEOLIB::INVALID:
-			std::cout << "WARNING: CInitialCondition::Set - invalid geo type" << endl;
+			std::cout << "WARNING: CInitialCondition::Set - invalid geo type" << "\n";
 			break;
 		}
 	}
@@ -529,7 +529,7 @@ void CInitialCondition::SetByNodeIndex(int nidx)
 	if (!d_file.is_open())
 	{
 		cout << "! Error in direct node source terms: Could not find file " << fname <<
-		endl;
+		"\n";
 		abort();
 	}
 
@@ -568,7 +568,7 @@ void CInitialCondition::SetPoint(int nidx)
 	else
 		std::cerr << "Error in CInitialCondition::SetPoint - point: "
 		          << *(static_cast<const GEOLIB::Point*>(getGeoObj()))
-		          << " not found" << endl;
+		          << " not found" << "\n";
 }
 
 /**************************************************************************
@@ -582,23 +582,23 @@ void CInitialCondition::SetEle(int nidx)
 	switch (getGeoType())
 	{
 	case GEOLIB::POINT:
-		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		std::cout << "Warning CInitialCondition::Set - ToDo" << "\n";
 		break;
 	case GEOLIB::POLYLINE:
 		// SetPolyline(nidx);
-		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		std::cout << "Warning CInitialCondition::Set - ToDo" << "\n";
 		break;
 	case GEOLIB::SURFACE:
-		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		std::cout << "Warning CInitialCondition::Set - ToDo" << "\n";
 		break;
 	case GEOLIB::VOLUME:
-		std::cout << "Warning CInitialCondition::Set - ToDo" << std::endl;
+		std::cout << "Warning CInitialCondition::Set - ToDo" << "\n";
 		break;
 	case GEOLIB::GEODOMAIN:
 		SetDomainEle(nidx);
 		break;
 	case GEOLIB::INVALID:
-		std::cout << "WARNING: CInitialCondition::SetEle - invalid geo type" << endl;
+		std::cout << "WARNING: CInitialCondition::SetEle - invalid geo type" << "\n";
 		break;
 	}
 }
@@ -623,7 +623,7 @@ void CInitialCondition::SetPolyline(int nidx)
 		//			}
 		//		} else {
 		//			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
-		//					<< geo_name << " not found" << std::endl;
+		//					<< geo_name << " not found" << "\n";
 		//		}
 		if (getGeoObj())
 		{
@@ -636,7 +636,7 @@ void CInitialCondition::SetPolyline(int nidx)
 		}
 		else
 			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
-			          << geo_name << " not found" << std::endl;
+			          << geo_name << " not found" << "\n";
 	}
 	//	if (dis_type_name.find("LINEAR") != string::npos) {
 	//	}
@@ -683,7 +683,7 @@ void CInitialCondition::SetSurface(int nidx)
 					cout <<
 					"Error in CInitialCondition::SetSurface - dis_type: " <<
 					convertDisTypeToString(this->getProcessDistributionType())
-					<< "don't know If 2D or 3D" <<  endl;
+					<< "don't know If 2D or 3D" <<  "\n";
 					node_depth = 0;
 				}
 				value =
@@ -696,11 +696,11 @@ void CInitialCondition::SetSurface(int nidx)
 		else
 			cout << "Error in CInitialCondition::SetSurface - dis_type: " <<
 			convertDisTypeToString(this->getProcessDistributionType()) <<
-			" not found" << endl;
+			" not found" << "\n";
 	}                                     // end m_sfc
 	else
 		cout << "Error in CInitialCondition::SetSurface - surface: " << geo_name <<
-		" not found" << endl;
+		" not found" << "\n";
 }
 
 /**************************************************************************
@@ -805,7 +805,7 @@ void CInitialCondition::SetDomain(int nidx)
 			if (rfr_file_name.size() == 0)
 			{
 				cout << "Warning in CInitialCondition::SetDomain - no RFR file"
-				     << endl;
+				     << "\n";
 				return;
 			}
 			std::ifstream rfr_file;
@@ -842,7 +842,7 @@ void CInitialCondition::SetDomain(int nidx)
 			if (!rfr_file.good())
 			{
 				cout << "Warning in CInitialCondition::SetDomain - no RFR file"
-				     << endl;
+				     << "\n";
 				return;
 			}
 			rfr_file.seekg(0L, ios::beg); // rewind?
@@ -864,7 +864,7 @@ void CInitialCondition::SetDomain(int nidx)
 			{
 				rfr_file >> dddummy;
 				ldummy = (long) dddummy;
-				//WW        cout << ldummy << endl;
+				//WW        cout << ldummy << "\n";
 				for (i = 0; i < (size_t)no_var; i++) // HEAD, m ...
 				{
 					rfr_file >> ddummy;

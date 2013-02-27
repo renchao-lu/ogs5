@@ -372,7 +372,7 @@ void CClockTime::StopTime(const std::string &name)
 
 	//WW time2=GetTickCount();
 	difftime = (time2 - time1) / 1000.0;
-	// cout << " ClockTime: " << delta_clocktime << ", TickTime: " << difftime << endl;
+	// cout << " ClockTime: " << delta_clocktime << ", TickTime: " << difftime << "\n";
 
 	switch (name1)
 	{
@@ -405,21 +405,21 @@ void CClockTime::PrintTimes(void)
 
 	cout.precision(2);
 	tot = time_total_flow + time_total_transport + time_total_kinreact + time_total_equireact;
-	cout << "ClockTimes: " << endl <<
-	"Unit   Flow:  Transport:  KinReactions:  EquiReactions:  total: " << endl;
+	cout << "ClockTimes: " << "\n" <<
+	"Unit   Flow:  Transport:  KinReactions:  EquiReactions:  total: " << "\n";
 	cout <<  "[sec] " << setw(6) << time_total_flow << "  " << setw(10) <<
 	time_total_transport << "  " << setw(13) << time_total_kinreact << "  " << setw(14) <<
-	time_total_equireact << "  " << setw(6) << tot << endl;
+	time_total_equireact << "  " << setw(6) << tot << "\n";
 	cout <<  "[%]   " << setw(6) <<  time_total_flow / tot * 100 << "  " <<  setw(10) <<
 	time_total_transport / tot * 100 << "  " <<  setw(13) << time_total_kinreact / tot * 100 <<
 	"  " <<  setw(14) << time_total_equireact / tot * 100 << "  " <<  setw(6) << tot / tot *
-	100 << endl;
+	100 << "\n";
 
 	length = (int)this->time_flow.size();
 	ofstream out_file (outname.data(),ios::out);
 	out_file.precision(6);
 
-	out_file << "Flow   Transport  KinReactions  EquiReactions " << endl;
+	out_file << "Flow   Transport  KinReactions  EquiReactions " << "\n";
 	for(i = 0; i < length; i++)
 	{
 		//flow
@@ -448,14 +448,14 @@ void CClockTime::PrintTimes(void)
 		out_file << help << "  ";
 		tot_zeitschritt += help;
 
-		out_file << tot_zeitschritt << endl;
+		out_file << tot_zeitschritt << "\n";
 	}
-	out_file << endl;
+	out_file << "\n";
 	out_file << time_total_flow << "  " << time_total_transport << "  " <<
-	time_total_kinreact << "  " << time_total_equireact << "  " << endl;
+	time_total_kinreact << "  " << time_total_equireact << "  " << "\n";
 	out_file <<  time_total_flow / tot * 100 << "  " << time_total_transport / tot * 100 <<
 	"  " << time_total_kinreact / tot * 100 << "  " << time_total_equireact / tot * 100 <<
-	"  " << tot / tot * 100 << endl;
+	"  " << tot / tot * 100 << "\n";
 	out_file.close();
 }
 

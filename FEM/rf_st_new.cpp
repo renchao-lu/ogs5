@@ -134,7 +134,7 @@ CSourceTerm::CSourceTerm(const SourceTerm* st)
 	else
 		std::cout << "Error in CBoundaryCondition() - DistributionType \""
 		          << FiniteElement::convertDisTypeToString(this->getProcessDistributionType())
-				  << "\" currently not supported." << std::endl;
+				  << "\" currently not supported." << "\n";
 }
 
 /**************************************************************************
@@ -458,7 +458,7 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
 
    if (dis_type_name.compare (convertDisTypeToString (this->getProcessDistributionType())) != 0)
    {
-      std::cerr << "Error in CSourceTerm::ReadDistributionType (): dist_type_name #" << dis_type_name << "#, new: " << convertDisTypeToString (this->getProcessDistributionType()) << std::endl;
+      std::cerr << "Error in CSourceTerm::ReadDistributionType (): dist_type_name #" << dis_type_name << "#, new: " << convertDisTypeToString (this->getProcessDistributionType()) << "\n";
       exit (1);
    }
 
@@ -563,7 +563,7 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       std::ifstream ins(fname.c_str());
       if(!ins.good())
       {
-         std::cout<<"Could not find file "<<fname<<std::endl;
+         std::cout<<"Could not find file "<<fname<<"\n";
          exit(0);
       }
       double timess;
@@ -653,7 +653,7 @@ const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 
    if (!st_file.good())
    {
-      std::cout << "! Warning in STRead: No source terms !" << std::endl;
+      std::cout << "! Warning in STRead: No source terms !" << "\n";
       return false;
    }
 
@@ -686,7 +686,7 @@ const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
             }
          }
 
-         std::cout << "done, read " << st_vector.size() << " source terms" << std::endl;
+         std::cout << "done, read " << st_vector.size() << " source terms" << "\n";
          return true;
       }
       //----------------------------------------------------------------------
@@ -702,14 +702,14 @@ const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
          }
          else
          {
-            std::cerr << "WARNING: in STRead: could not read source term" << std::endl;
+            std::cerr << "WARNING: in STRead: could not read source term" << "\n";
             delete st;
          }
          st_file.seekg(position, std::ios::beg);
       }                                           // keyword found
    }                                              // eof
 
-   std::cout << "done, read " << st_vector.size() << " source terms" << std::endl;
+   std::cout << "done, read " << st_vector.size() << " source terms" << "\n";
 
    return true;
 }
@@ -861,68 +861,68 @@ void STWrite(std::string base_file_name)
 void CSourceTerm::Write(std::fstream* st_file)
 {
    //KEYWORD
-   *st_file << "#SOURCE_TERM" << std::endl;
+   *st_file << "#SOURCE_TERM" << "\n";
    //--------------------------------------------------------------------
    //NAME+NUMBER
-   *st_file << " $PCS_TYPE" << std::endl;
+   *st_file << " $PCS_TYPE" << "\n";
    *st_file << "  ";
-   //	*st_file << pcs_type_name << std::endl;
-   *st_file << convertProcessTypeToString (getProcessType()) << std::endl;
-   *st_file << " $PRIMARY_VARIABLE" << std::endl;
+   //	*st_file << pcs_type_name << "\n";
+   *st_file << convertProcessTypeToString (getProcessType()) << "\n";
+   *st_file << " $PRIMARY_VARIABLE" << "\n";
    *st_file << "  ";
-   *st_file << convertPrimaryVariableToString (getProcessPrimaryVariable()) << std::endl;
+   *st_file << convertPrimaryVariableToString (getProcessPrimaryVariable()) << "\n";
    //--------------------------------------------------------------------
    //GEO_TYPE
    if (this->getProcessDistributionType() != FiniteElement::DIRECT)
    {
-	   *st_file << " $GEO_TYPE" << std::endl;
+	   *st_file << " $GEO_TYPE" << "\n";
 	   *st_file << "  ";
-	   *st_file << getGeoTypeAsString() << " " << geo_name << std::endl;
+	   *st_file << getGeoTypeAsString() << " " << geo_name << "\n";
    }
    //--------------------------------------------------------------------
    // TIM_TYPE
    if (tim_type_name.size() > 0)                  //OK
    {
-      *st_file << " $TIM_TYPE" << std::endl;
+      *st_file << " $TIM_TYPE" << "\n";
       *st_file << "  ";
-      *st_file << tim_type_name << std::endl;
+      *st_file << tim_type_name << "\n";
    }
    //--------------------------------------------------------------------
    //DIS_TYPE
-   *st_file << " $DIS_TYPE" << std::endl;
+   *st_file << " $DIS_TYPE" << "\n";
    *st_file << "  ";
    *st_file << convertDisTypeToString(this->getProcessDistributionType());
    switch (this->getProcessDistributionType())
    {
       case FiniteElement::CONSTANT:
          *st_file << " " << geo_node_value;
-         *st_file << std::endl;
+         *st_file << "\n";
          break;
       case  FiniteElement::CONSTANT_NEUMANN:
          *st_file << " " << geo_node_value;
-         *st_file << std::endl;
+         *st_file << "\n";
          break;
       case FiniteElement::LINEAR:
-         *st_file << " " << (int) PointsHaveDistribedBC.size() << std::endl;
+         *st_file << " " << (int) PointsHaveDistribedBC.size() << "\n";
          for (long i = 0; i < (long) PointsHaveDistribedBC.size(); i++)
          {
             *st_file << "  " << PointsHaveDistribedBC[i] << " ";
-            *st_file << "  " << DistribedBC[i] << std::endl;
+            *st_file << "  " << DistribedBC[i] << "\n";
          }
          break;
       case  FiniteElement::LINEAR_NEUMANN:
-         *st_file << " " << PointsHaveDistribedBC.size() << std::endl;
+         *st_file << " " << PointsHaveDistribedBC.size() << "\n";
          for (size_t i = 0; i < PointsHaveDistribedBC.size(); i++)
          {
             *st_file << "  " << PointsHaveDistribedBC[i] << " ";
-            *st_file << "  " << DistribedBC[i] << std::endl;
+            *st_file << "  " << DistribedBC[i] << "\n";
          }
          break;
       case  FiniteElement::DIRECT:
-         *st_file << " " << this->fname << std::endl;
+         *st_file << " " << this->fname << "\n";
          break;
       default:
-         std::cerr << "this distributition type is not handled in CSourceTerm::Write" << std::endl;
+         std::cerr << "this distributition type is not handled in CSourceTerm::Write" << "\n";
    }
    //--------------------------------------------------------------------
 }
@@ -1051,7 +1051,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
       }                                           // end st loop
    }                                              // end msh
    else
-      std::cout << "Warning in CSourceTermGroup::Set - no MSH data" << std::endl;
+      std::cout << "Warning in CSourceTermGroup::Set - no MSH data" << "\n";
 
 }
 
@@ -2649,7 +2649,7 @@ void GetNormalDepthNODValue(double &value, CSourceTerm* st, long msh_node)
    {
       if (mesh->GetMaxElementDim() > 1)
          std::cout << "!!!!! give slope for NORMAL DEPTH in st-file !!!!!"
-            << std::endl;
+            << "\n";
 
       double elementlength = sqrt(MathLib::sqrDist(m_ele->GetNode(1)->getData(), m_ele->GetNode(0)->getData()));
 //    		  (MathLib::fastpow(m_ele->GetNode(1)->X()- m_ele->GetNode(0)->X(), 2)
@@ -2889,7 +2889,7 @@ const int ShiftInNodeVector)
    delete m_ply;
    }
    else
-   cout << "Warning - CSourceTermGroup::Set: LIN not found" << endl;
+   cout << "Warning - CSourceTermGroup::Set: LIN not found" << "\n";
    */
 }
 
@@ -3130,11 +3130,11 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
          else
             std::cout
                << "Warning in CSourceTermGroup::SetPolylineNodeVectorConditional - no area assembly for this process"
-               << std::endl;
+               << "\n";
       }                                           // end mesh_cond
       else
          std::cout << "Warning in CSourceTermGroup::SetPLY - no MSH_COND data"
-            << std::endl;
+            << "\n";
    }                                              // end area_assembly
    else
    {
@@ -3178,11 +3178,11 @@ void CSourceTermGroup::SetPolylineNodeVectorConditional(CSourceTerm* st,
 			} // end overland, groundwater
 			else std::cout
 					<< "Warning in CSourceTermGroup::SetPolylineNodeVectorConditional - no area assembly for this process"
-					<< std::endl;
+					<< "\n";
 		} // end mesh_cond
 		else std::cout
 				<< "Warning in CSourceTermGroup::SetPLY - no MSH_COND data"
-				<< std::endl;
+				<< "\n";
 	} // end area_assembly
 	else {
 		number_of_nodes = ply_nod_vector.size();
@@ -3517,7 +3517,7 @@ void CSourceTermGroup::DistributeVolumeFlux(CSourceTerm* st, std::vector<long> c
 	   SetSurfaceNodeValueVector(st, m_sfc, nod_vector, nod_val_vector_area);
 	}
 	else
-		std::cout << "GEO_TYPE not supported in CSourceTermGroup::DistributeVolumeFlux()" << std::endl;
+		std::cout << "GEO_TYPE not supported in CSourceTermGroup::DistributeVolumeFlux()" << "\n";
 
 	for(int i=0; i<(int)nod_val_vector_area.size();i++)
 	   area +=nod_val_vector_area[i];
@@ -3749,7 +3749,7 @@ void CSourceTerm::DirectAssign(long ShiftInNodeVector)
 		const std::vector<GEOLIB::PointWithID*> &points ( MshEditor::getSurfaceNodes(*(m_pcs->m_msh)) );
 
 		size_t nPoints (points.size());
-		std::cout << points.size() << " nodes found on mesh surface. " << std::endl;
+		std::cout << points.size() << " nodes found on mesh surface. " << "\n";
 			
 		for (size_t i=0; i<nPoints; i++)
 		{
@@ -3782,7 +3782,7 @@ void CSourceTerm::DirectAssign(long ShiftInNodeVector)
 
 	   if (!d_file.good())
 	   {
-		  std::cout << "! Error in direct node source terms: Could not find file:!\n" << fname << std::endl;
+		  std::cout << "! Error in direct node source terms: Could not find file:!\n" << fname << "\n";
 		  abort();
 	   }
 	   // Rewind the file
@@ -3893,7 +3893,7 @@ std::string CSourceTerm::DirectAssign_Precipitation(double current_time)
 
    if(!bin_sA.good())
    {
-      std::cout<<"Could not find file "<< fileA<<std::endl;
+      std::cout<<"Could not find file "<< fileA<<"\n";
       exit(0);
    }
    bin_sA.setf(std::ios::scientific,std::ios::floatfield);
@@ -3906,7 +3906,7 @@ std::string CSourceTerm::DirectAssign_Precipitation(double current_time)
       bin_sB.open(fileB.c_str(), ios::binary);
       if(!bin_sB.good())
       {
-          cout<<"Could not find file "<< fileB<<endl;
+          cout<<"Could not find file "<< fileB<<"\n";
           exit(0);
       }
       bin_sB.setf(ios::scientific,ios::floatfield);
@@ -4144,7 +4144,7 @@ void CSourceTerm::SetNodePastValue(long n, int idx, int pos, double value)
    m_pcs = PCSGet(convertProcessTypeToString(getProcessType()), convertPrimaryVariableToString (getProcessPrimaryVariable()));
    if (!m_pcs)                                    //OK
    {
-      std::cout << "Warning in SetNodePastValue - no PCS data" << std::endl;
+      std::cout << "Warning in SetNodePastValue - no PCS data" << "\n";
       return;
    }
 

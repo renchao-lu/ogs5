@@ -359,10 +359,10 @@ void CElement::ConfigNumerics(MshElemType::type ele_type)
 		extrapo_method = ExtrapolationMethod::EXTRAPO_AVERAGE;
 		return;
 	case MshElemType::INVALID:
-		std::cerr << "[CElement::ConfigNumerics] invalid element type" << std::endl;
+		std::cerr << "[CElement::ConfigNumerics] invalid element type" << "\n";
 		break;
 	default:
-		std::cerr << "[CElement::ConfigNumerics] unknown element type" << std::endl;
+		std::cerr << "[CElement::ConfigNumerics] unknown element type" << "\n";
 	}
 }
 
@@ -700,7 +700,7 @@ void CElement::SetGaussPoint(const int gp, int& gp_r, int& gp_s, int& gp_t)
 			SamplePointPyramid8(gp, unit);  //SamplePointPyramid13(gp, unit);
 		return;
 	default:
-		std::cerr << "CElement::SetGaussPoint invalid mesh element type given" << std::endl;
+		std::cerr << "CElement::SetGaussPoint invalid mesh element type given" << "\n";
 	}
 }
 /***************************************************************************
@@ -756,7 +756,7 @@ double CElement::GetGaussData(int gp, int& gp_r, int& gp_s, int& gp_t)
 		fkt *= unit[3];           // Weights
 		break;
 	default:
-		std::cerr << "CElement::GetGaussData invalid mesh element type given" << std::endl;
+		std::cerr << "CElement::GetGaussData invalid mesh element type given" << "\n";
 	}
 	return fkt;
 }
@@ -814,7 +814,7 @@ void CElement::FaceIntegration(double* NodeVal)
 			break;
 		default:
 			std::cerr << "CElement::FaceIntegration element type not handled" <<
-			std::endl;
+			"\n";
 		}
 
 		ComputeShapefct(Order);
@@ -1037,7 +1037,7 @@ int CElement::GetLocalIndex(const int gp_r, const int gp_s, int gp_t)
 		break;
 	default:
 		std::cerr << "CElement::GetLocalIndex invalid mesh element type given"
-		          << std::endl;
+		          << "\n";
 	}
 	return LoIndex;
 }

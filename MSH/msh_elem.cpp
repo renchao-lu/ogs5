@@ -114,7 +114,7 @@ CElem::CElem(size_t Index, CElem* onwer, int Face) :
 			this->setElementProperties(MshElemType::TRIANGLE, true);
 		break;
 	default:
-		std::cerr << "CElem::CElem MshElemType not handled" << std::endl;
+		std::cerr << "CElem::CElem MshElemType not handled" << "\n";
 	}
 
 	patch_index =  owner->patch_index;
@@ -467,7 +467,7 @@ void CElem:: SetFace(CElem* onwer, const int Face)
 			this->setElementProperties(MshElemType::TRIANGLE, true);
 		break;                           // 3-D pyramid element
 	default:
-		std::cerr << "CElem::SetFace MshElemType not handled" << std::endl;
+		std::cerr << "CElem::SetFace MshElemType not handled" << "\n";
 	}
 
 	for(size_t i = 0; i < n; i++)
@@ -757,7 +757,7 @@ void CElem::WriteIndex(std::ostream &os) const
 	os << index << " " << patch_index << " " << GetName() << " ";
 	for(int i = 0; i < nnodes - 1; i++)
 		os << nodes_index[i] << " ";
-	os << nodes_index[nnodes - 1] << std::endl;
+	os << nodes_index[nnodes - 1] << "\n";
 }
 
 /**************************************************************************
@@ -790,7 +790,7 @@ void CElem::WriteIndex_TEC(std::ostream &os) const
 
 		for(int i = 0; i < nnodes; i++)
 			os << nodes_index[i] + 1 << deli;
-	os << '\n';                               // GK44 for io performance do not flush buffer with endl...
+	os << '\n';                               // GK44 for io performance do not flush buffer with "\n"...
 }
 /**************************************************************************
    MSHLib-Method:
@@ -802,12 +802,12 @@ void CElem::WriteAll(std::ostream &os) const
 {
 	std::string deli = "  ";
 	os << index << deli << patch_index << deli << GetName() << deli;
-	os << "Index X Y Z: " << std::endl;
+	os << "Index X Y Z: " << "\n";
 	for (size_t i = 0; i < nodes.Size(); i++)
 	{
 		double const* const pnt_i(nodes[i]->getData());
 		os << nodes_index[i] << deli << pnt_i[0] << deli << pnt_i[1]
-		   << deli << pnt_i[2] << std::endl;
+		   << deli << pnt_i[2] << "\n";
 	}
 }
 
@@ -819,10 +819,10 @@ void CElem::WriteAll(std::ostream &os) const
 **************************************************************************/
 void CElem::WriteNeighbors(std::ostream &os) const
 {
-	os << "Neighbors of " << index << std::endl;
+	os << "Neighbors of " << index << "\n";
 	for(size_t i = 0; i < nfaces; i++)
 		neighbors[i]->WriteAll(os);
-	os << "End neighbors of " << index << std::endl << std::endl;
+	os << "End neighbors of " << index << "\n" << "\n";
 }
 
 /**************************************************************************
@@ -953,7 +953,7 @@ void CElem::GetLocalIndicesOfEdgeNodes(const int Edge, int* EdgeNodes)
 		break;
 	default:
 		std::cerr << "CElem::GetLocalIndicesOfEdgeNodes() - MshElemType not handled" <<
-		std::endl;
+		"\n";
 	}
 }
 /**************************************************************************
@@ -1375,7 +1375,7 @@ int CElem::GetElementFaceNodes(int Face, int* FacesNode)
 	case MshElemType::PYRAMID:                // 3-D pyramid element
 		return GetElementFacesPyramid(Face, FacesNode);
 	default:
-		std::cerr << "CElem::GetElementFaceNodes MshElemType not handled" << std::endl;
+		std::cerr << "CElem::GetElementFaceNodes MshElemType not handled" << "\n";
 	}
 	return 0;
 }
@@ -1406,7 +1406,7 @@ void CElem::ComputeVolume()
 	else if (this->geo_type == MshElemType::PYRAMID)
 		representative_length = 0.0;  //NW set zero because I don't know what is the representative_length.
 	else
-		std::cerr << "Error in CElem::ComputeVolume() - MshElemType not found" << std::endl;
+		std::cerr << "Error in CElem::ComputeVolume() - MshElemType not found" << "\n";
 }
 
 double CElem::calcVolume () const
@@ -1479,7 +1479,7 @@ double CElem::calcVolume () const
 		                            nodes[0]->getData(), nodes[4]->getData());
 	}
 	else
-		std::cerr << "Error in CElem::ComputeVolume() - MshElemType not found" << std::endl;
+		std::cerr << "Error in CElem::ComputeVolume() - MshElemType not found" << "\n";
 
 	return elemVolume;
 }
@@ -1637,7 +1637,7 @@ void CElem::setElementProperties(MshElemType::type t, bool isFace)
 		nedges = 8;
 		break;
 	default:
-		std::cerr << "CElem::setElementProperties MshElemType not handled" << std::endl;
+		std::cerr << "CElem::setElementProperties MshElemType not handled" << "\n";
 	}
 	this->nodes_index.resize(nnodes);
 }

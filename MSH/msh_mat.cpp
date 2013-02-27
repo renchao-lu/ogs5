@@ -77,7 +77,7 @@ void MSHAssignMATGroup2TrisElements(std::string msh_name)
 	if (!m_msh)
 	{
 		std::cout << "Warning: MSHAssignMATGroup2TrisElements: no MSH data: "
-		          << msh_name << std::endl;
+		          << msh_name << "\n";
 		return;
 	}
 	//-----------------------------------------------------------------------
@@ -371,7 +371,7 @@ void MSH2MATPris(void)
 	   //-----------------------------------------------------------------------
 	   for(j=0;j<ElListSize();j++){
 	   if(fmod((double)j,100.)<1e-3)
-	   mat_test_file << j << endl;
+	   mat_test_file << j << "\n";
 	   if(ElGetElementType(j)==6){
 	   ElSetElementGroupNumber(j,-1);
 	   element_nodes = ElGetElementNodes(j);
@@ -409,7 +409,7 @@ void MSH2MATPris(void)
 	   element_mat_group = ElGetElementGroupNumber(j);
 	   if(element_mat_group<0){
 	   elements_failed_file << "Element number: " << j \
-	   << ", Element type: " << ElGetElementType(j) << endl;
+	   << ", Element type: " << ElGetElementType(j) << "\n";
 	   }
 	   }
 	   elements_failed_file.close();

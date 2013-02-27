@@ -875,7 +875,7 @@ void CFEMesh::SetMSHPart(std::vector<long>&elements_active, long StrangNumber)
 			if(!found)
 				m_msh_strang->nod_vector.push_back(m_nod);
 		}
-		// cout<< "Element"  << i << "  " << m_ele->GetNodeIndex(0)<< "  "  << m_ele->GetNodeIndex(1) <<  endl;
+		// cout<< "Element"  << i << "  " << m_ele->GetNodeIndex(0)<< "  "  << m_ele->GetNodeIndex(1) <<  "\n";
 	}
 
 	for(i = 0; i < (long)m_msh_strang->nod_vector.size(); i++)
@@ -883,7 +883,7 @@ void CFEMesh::SetMSHPart(std::vector<long>&elements_active, long StrangNumber)
 		m_msh_strang->nod_vector[i]->SetEquationIndex(i);
 		//+ test;
 		m_msh_strang->Eqs2Global_NodeIndex[i] = m_msh_strang->nod_vector[i]->GetIndex();
-		//cout<< " " << i << "  " << m_msh_strang->Eqs2Global_NodeIndex[i] <<  endl;
+		//cout<< " " << i << "  " << m_msh_strang->Eqs2Global_NodeIndex[i] <<  "\n";
 	}
 }
 

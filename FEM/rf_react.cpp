@@ -195,19 +195,19 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 {
 	long i, ii,  ok = 0;
 
-	std::cout << "   ExecuteReactionsPHREEQCNew:" << std::endl;
+	std::cout << "   ExecuteReactionsPHREEQCNew:" << "\n";
 
 	/* File handling - GeoSys input file */
 	std::ifstream pqc_file (this->file_name_pqc.data(),ios::in);
 	if (!pqc_file.good())
 		std::cout <<
-		"! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << std::endl;
+		"! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" << "\n";
 	//         exit(1);
 	//	File handling - data exchange file to phreeqc, input to PHREEQC
 	std::ofstream outfile (this->outfile_name.data(),ios::out);
 	if(!outfile.is_open())
 		std::cout << "Error: Outfile phinp.dat could not be opened for writing " <<
-		std::endl;
+		"\n";
 	//        exit(1);
 
 	// Set up reaction model
@@ -215,7 +215,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 	{
 		ok = this->ReadReactionModelNew(&pqc_file);
 		if(!ok)
-			std::cout << "Error setting up reaction model" << std::endl;
+			std::cout << "Error setting up reaction model" << "\n";
 	}
 
 	// Check for nodes without reactions
@@ -223,7 +223,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 	{
 		ok = this->CheckNoReactionNodes();
 		if(!ok)
-			std::cout << "Error when checking for nodes without reactions" << std::endl;
+			std::cout << "Error when checking for nodes without reactions" << "\n";
 	}
 	/* Read the input file (*.pqc) and set up the input file for PHREEQC ("phinp.dat")*/
 	// Write input data block to PHREEQC for each node
@@ -246,7 +246,7 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 		ok = Call_Phreeqc();
 	if(ok == 0)
 	{
-		std::cout << " Error executing PHREEQC.exe - Stopping " << std::endl;
+		std::cout << " Error executing PHREEQC.exe - Stopping " << "\n";
 		std::cout.flush();
 		//        exit(1);
 	}
@@ -255,10 +255,10 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 	{
 		ok = ReadOutputPhreeqcNew();
 		if(!ok)
-			std::cout << " Error in call to PHREEQC !!!" << std::endl;
+			std::cout << " Error in call to PHREEQC !!!" << "\n";
 	}
 
-	std::cout << " Calculated equilibrium geochemistry at " << ii << " nodes." << std::endl;
+	std::cout << " Calculated equilibrium geochemistry at " << ii << " nodes." << "\n";
 
 	/* Calculate Rates */
 	// CalculateReactionRates();
@@ -696,7 +696,7 @@ void REACT::CalculateReactionRates(void)
 		m_tim = time_vector[0];
 	else
 		std::cout <<
-		"Error in MPCCalcCharacteristicNumbers: no time discretization data !" << std::endl;
+		"Error in MPCCalcCharacteristicNumbers: no time discretization data !" << "\n";
 	delta_t = m_tim->CalcTimeStep();
 	//OK_TIM delta_t = GetDt(aktueller_zeitschritt-1l);
 	teta = 0.0;                           /* teta = 0; concentration before reactions */
@@ -1030,7 +1030,7 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 						{
 							cout <<
 							" PHREEQC SOLUTION SPECIES not in GeoSys components - Stopping"
-							     << endl;
+							     << "\n";
 							cout.flush();
 							exit(1);
 						}
@@ -1044,13 +1044,13 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 						pqc_index.push_back(idx);
 						/*                    if(speciesname.compare("H+") == 0){
 						                        Hplus_found = 1;
-						                        cout << "H+ found in GeoSys species" << endl;
+						                        cout << "H+ found in GeoSys species" << "\n";
 						                        this->pqc_Hplus_index = n_master_species-1; // Store index for H+ in vectors
 						                    } */
 					}
 					else if (line_string.find("pH") != string::npos)
 						//WW pH_found = 1;
-						//                    cout << " pH found in GeoSys species" << endl;
+						//                    cout << " pH found in GeoSys species" << "\n";
 						if (line_string.find("charge") != string::npos)
 							this->rcml_pH_charge = 1;
 				}
@@ -1211,16 +1211,16 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 	if((this->gamma_Hplus > 0))
 		cout <<
 		" pH found and H+ found, pH for PHREEQC input is calculated using gamma_H+ and [H+] "
-		     << gamma_Hplus << endl;
+		     << gamma_Hplus << "\n";
 
 	//WW nj=rcml_number_of_master_species + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges + rcml_number_of_gas_species;
 	cout << " Found in *.pqc file: " << rcml_number_of_master_species <<
 	" master species (excluding pH, H+ and pe), ";
 	cout << rcml_number_of_equi_phases << " equilibrium phases,  " <<
 	rcml_number_of_ion_exchanges << " ion exchangers and ";
-	cout << rcml_number_of_gas_species << " gas species " << endl;
+	cout << rcml_number_of_gas_species << " gas species " << "\n";
 	//    for(i=0; i< (int) pqc_names.size();i++)
-	//        cout << pqc_names[i] << ", " << pqc_index[i] << ", " << pqc_process[i] << endl;
+	//        cout << pqc_names[i] << ", " << pqc_index[i] << ", " << pqc_process[i] << "\n";
 
 	return 1;
 }
@@ -1598,7 +1598,7 @@ int REACT::ReadInputPhreeqc(long index, FILE* fpqc, FILE* Fphinp)
 							else
 								cout <<
 								"Error in MPCCalcCharacteristicNumbers: no time discretization data !"
-								     << endl;
+								     << "\n";
 							FilePrintDouble(f,m_tim->CalcTimeStep());
 							//OK_TIM	              FilePrintDouble(f, GetDt(aktueller_zeitschritt-1l));
 							FilePrintString(f, " in ");
@@ -1824,7 +1824,7 @@ int REACT::ReadInputPhreeqc(long index, FILE* fpqc, FILE* Fphinp)
 					else
 						cout <<
 						"Error in MPCCalcCharacteristicNumbers: no time discretization data !"
-						     << endl;
+						     << "\n";
 					FilePrintDouble(f,m_tim->CalcTimeStep());
 					//OK_TIM              FilePrintDouble(f, GetDt(aktueller_zeitschritt-1l));
 					FilePrintString(f, " in ");
@@ -1881,7 +1881,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 	double dval, dval1, sat_index = 0.0;
 	double z, h, dens, press, partial_press, volume, temp = -1.0, mm;
 
-//  cout << " WriteInputPhreeqc for node " << index << endl;
+//  cout << " WriteInputPhreeqc for node " << index << "\n";
 	cout.flush();
 /* File handling - rewind file */
 // pqc_infile->seekg(0L,ios_base::beg);
@@ -1904,8 +1904,8 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		/* Schleife ueber Keyword Solution */
 		if(line_string.find("SOLUTION") != string::npos) // keyword found
 		{
-			*out_file << "SOLUTION " << index + 1 << " #New Version " << endl;
-			*out_file << "#GRID " << index + 1 << endl;
+			*out_file << "SOLUTION " << index + 1 << " #New Version " << "\n";
+			*out_file << "#GRID " << index + 1 << "\n";
 			while(line_string.find("#ende") == string::npos)
 			{
 				pqc_infile.getline(line,MAX_ZEILE);
@@ -1928,17 +1928,17 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 						        index,
 						        pqc_index[count]);
 						/*                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
-						                cout << " Values: " << dval << ", " << dval1 << endl;
+						                cout << " Values: " << dval << ", " << dval1 << "\n";
 						 */
 						if(speciesname.compare("pe")) // if this is not pe
 							if(dval < 1.0e-19)
 								dval = 0.0;
 						//                if(speciesname.compare("pH"))
 						*out_file << speciesname << "       " << dval <<
-						"     # comp " << endl;
-						//					if(index <2) cout << speciesname << " " << dval << endl;
+						"     # comp " << "\n";
+						//					if(index <2) cout << speciesname << " " << dval << "\n";
 						//                else
-						//                    *out_file << speciesname << "       " << dval << " charge " << "       # comp " <<endl;
+						//                    *out_file << speciesname << "       " << dval << " charge " << "       # comp " <<"\n";
 						//                in.clear();
 					}
 				}
@@ -1953,7 +1953,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 						if (dval < 273.0)
 							dval += 273.15;  //change from °C to Kelvin if necessary
 						dval -= 273.15; // Input to PHREEQC is in °C
-						*out_file << "temp " << dval << "  # temp " << endl;
+						*out_file << "temp " << dval << "  # temp " << "\n";
 						temp = dval; // save for gas phase input
 					}
 				}
@@ -1961,14 +1961,14 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 				if (line_string.find("pH") == string::npos &&
 				    line_string.find("pe") == string::npos &&
 				    line_string.find("#ende") == string::npos)
-					*out_file << line_string << endl;
+					*out_file << line_string << "\n";
 			}             // end while
 
 			// special treat pH, and pe
 			n1 = this->rcml_number_of_master_species;
 			count++;
 			if(count != n1)
-				cout << "Error in index of pqc_vectors !" << endl;
+				cout << "Error in index of pqc_vectors !" << "\n";
 			dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
 			//		if(index <2)         cout << " pH: " << dval;
 			// H+
@@ -1985,25 +1985,25 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 			}
 			if(this->rcml_pH_charge > 0)
 				*out_file << "pH" << "       " << dval << " charge " <<
-				"       # comp " << endl;
+				"       # comp " << "\n";
 			else
-				*out_file << "pH" << "       " << dval << "       # comp " << endl;
-			//SB to do screen output				if(index <2) cout << "  pH: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << endl;
+				*out_file << "pH" << "       " << dval << "       # comp " << "\n";
+			//SB to do screen output				if(index <2) cout << "  pH: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << "\n";
 			// write pe
 			count++;
 			dval = pcs_vector[pqc_process[n1 + 2]]->GetNodeValue(index,
 			                                                     pqc_index[n1 + 2]);
-			*out_file << "pe" << "       " << dval << "       # comp " << endl;
-			//SB to do screen output		if(index <2)  cout << "  pe: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << endl;
+			*out_file << "pe" << "       " << dval << "       # comp " << "\n";
+			//SB to do screen output		if(index <2)  cout << "  pe: " << dval << ", " << pcs_vector[pqc_process[count]]->pcs_number << "\n";
 
-			*out_file << line_string << endl;
+			*out_file << line_string << "\n";
 		}                         // end SOLUTION
 		//-------------------------------------------------------------------------------------------------------------
 		/* Schleife ueber Keyword EQUILIBRIUM PHASES */
 		// keyword found
 		if(line_string.find("EQUILIBRIUM_PHASES") != string::npos)
 		{
-			*out_file << endl << "EQUILIBRIUM_PHASES   " << index + 1 << endl;
+			*out_file << "\n" << "EQUILIBRIUM_PHASES   " << index + 1 << "\n";
 			while(line_string.find("#ende") == string::npos)
 			{
 				pqc_infile.getline(line,MAX_ZEILE);
@@ -2018,7 +2018,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					                idx = m_pcs->GetNodeValueIndex(speciesname)+1; // old timelevel
 					                dval = m_pcs->GetNodeValue(index,idx);
 					 */
-					//                if(count != (n1+3)) cout << " Error in index pqc " << endl;
+					//                if(count != (n1+3)) cout << " Error in index pqc " << "\n";
 					speciesname = pqc_names[count];
 					dval = pcs_vector[pqc_process[count]]->GetNodeValue(
 					        index,
@@ -2028,20 +2028,20 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 						dval = 0.0;
 
 					//                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
-					//                if(index <2) cout << " EQ-Species " << speciesname << " " << dval << endl;
+					//                if(index <2) cout << " EQ-Species " << speciesname << " " << dval << "\n";
 					*out_file << speciesname << " " << sat_index << "  " <<
-					dval << "       # comp " << endl;
+					dval << "       # comp " << "\n";
 					in.clear();
 				}
 				else
-					*out_file << line_string << endl;
+					*out_file << line_string << "\n";
 			}
 		}                         // end EQUILIBRIUM PHASES
 		//-------------------------------------------------------------------------------------------------------------
 		/* Schleife ueber Keyword EXCHANGE */
 		if(line_string.find("EXCHANGE") != string::npos) // keyword found
 		{
-			*out_file << endl << "EXCHANGE   " <<  index + 1 << endl;
+			*out_file << "\n" << "EXCHANGE   " <<  index + 1 << "\n";
 			while(line_string.find("#ende") == string::npos)
 			{
 				pqc_infile.getline(line,MAX_ZEILE);
@@ -2064,21 +2064,21 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					if(dval < 1.0e-19)
 						dval = 0.0;
 					/*                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
-					                cout << " Values: " << dval << ", " << dval1 << endl;
+					                cout << " Values: " << dval << ", " << dval1 << "\n";
 					 */
 					*out_file << speciesname << "       " << dval <<
-					"       # comp " << endl;
+					"       # comp " << "\n";
 					//                in.clear();
 				}
 				else
-					*out_file << line_string << endl;
+					*out_file << line_string << "\n";
 			}
 		}                         // end EXCHANGE
 		//-------------------------------------------------------------------------------------------------------------
 		/* Schleife ueber Keyword GAS_PHASE */
 		if(line_string.find("GAS_PHASE") != string::npos) // keyword found
 		{
-			*out_file << endl << "GAS_PHASE   " <<  index + 1 << endl;
+			*out_file << "\n" << "GAS_PHASE   " <<  index + 1 << "\n";
 
 			// get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
 
@@ -2091,7 +2091,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 			// get piezometric hight h
 			m_pcs = PCSGet("GROUNDWATER_FLOW");
 			if(m_pcs == NULL)
-				cout << "   Error - no flow process found!" << endl;
+				cout << "   Error - no flow process found!" << "\n";
 			idx = m_pcs->GetNodeValueIndex("HEAD") + 1;
 			h = m_pcs->GetNodeValue(index,idx);
 
@@ -2100,7 +2100,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 
 			// calculate pressure in [Pa]
 			press = dens * gravity_constant * (h - z);
-			// cout << " Pressure: " << press << " = " << dens << " * " << gravity_constant << " * ( " << h << " - " << z << " ) " << endl;
+			// cout << " Pressure: " << press << " = " << dens << " * " << gravity_constant << " * ( " << h << " - " << z << " ) " << "\n";
 
 			// get temperature in [°C]
 			if(rcml_heat_flag < 1)
@@ -2115,7 +2115,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 				speciesname = this->pqc_names[i];
 				//			cout << "Testing index vectors: " << speciesname << ",   With vectors: " << pqc_names[i] << ", " << pcs_vector[pqc_process[i]]->pcs_number << ", " << pqc_index[i];
 				dval = pcs_vector[pqc_process[i]]->GetNodeValue(index,pqc_index[i]);
-				//			cout << dval << endl;
+				//			cout << dval << "\n";
 				mm += dval;
 			}
 
@@ -2129,14 +2129,14 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 				if (line_string.find("-pressure") != string::npos)
 					// pressure in atmospheres
 					*out_file << "        -pressure       " << press /
-					101325.0 << endl;
+					101325.0 << "\n";
 				else if (line_string.find("-volume") != string::npos)
 					// volume in Liters
 					*out_file << "        -volume       " << volume * 1000.0 <<
-					endl;
+					"\n";
 				else if (line_string.find("-temperature") != string::npos)
 					// temperature in °Celsius
-					*out_file << "        -temperature       " << temp << endl;
+					*out_file << "        -temperature       " << temp << "\n";
 				else if (line_string.find("# comp") != string::npos)
 				{
 					count++;
@@ -2148,19 +2148,19 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					if(dval < 1.0e-19)
 						dval = 0.0;
 					// cout << "Testing index vectors: " << speciesname << " , with vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
-					// cout << " Molar mass: " << dval  << ", component / total mass: " << dval/mm << endl;
+					// cout << " Molar mass: " << dval  << ", component / total mass: " << dval/mm << "\n";
 					// dval is molar mass of gas component, convert to partial pressure [Pa]
 					if (mm > 0.0)
 						partial_press = press * dval / mm;
 					else
 						partial_press = 0.0;
-					// cout << " partial pressure: " << partial_press  << ", partial/total press: " << (partial_press/press) << endl;
+					// cout << " partial pressure: " << partial_press  << ", partial/total press: " << (partial_press/press) << "\n";
 
 					*out_file << "        " << speciesname << "       " <<
-					partial_press / 101325.0 << "       # comp " << endl;
+					partial_press / 101325.0 << "       # comp " << "\n";
 				}
 				else
-					*out_file << line_string << endl;  //write line unchanged
+					*out_file << line_string << "\n";  //write line unchanged
 			}
 		}                         // end GAS_PHASE
 		//-------------------------------------------------------------------------------------------------------------
@@ -2169,16 +2169,16 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		if(line_string.find("SELECTED_OUTPUT") != string::npos)
 			if(index < 1)
 			{
-				*out_file << endl << "SELECTED_OUTPUT" << endl;
+				*out_file << "\n" << "SELECTED_OUTPUT" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
 					line_string = line;
 					if (line_string.find("-file") != string::npos)
 						*out_file << "-file " << this->results_file_name <<
-						endl;
+						"\n";
 					else
-						*out_file << line_string << endl;
+						*out_file << line_string << "\n";
 				}
 			}
 		// end SELECTED OUTPUT
@@ -2188,12 +2188,12 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 
 			if(index < 1)
 			{
-				*out_file << endl << "PRINT" << endl;
+				*out_file << "\n" << "PRINT" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
 					line_string = line;
-					*out_file << line_string << endl;
+					*out_file << line_string << "\n";
 				}
 			}
 		// end PRINT
@@ -2204,7 +2204,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 		{
 			if(index < 1)
 			{
-				*out_file << endl << "USER_PUNCH" << endl;
+				*out_file << "\n" << "USER_PUNCH" << "\n";
 				// Write Header
 				n1 = this->rcml_number_of_master_species;
 				n2 = this->rcml_number_of_equi_phases;
@@ -2222,7 +2222,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					*out_file << " " << pqc_names[i];
 				for(i = n1 + 3 + n2 + n3; i < n1 + 3 + n2 + n3 + n4; i++)
 					*out_file << " " << pqc_names[i];
-				*out_file << endl;
+				*out_file << "\n";
 				// Write master species
 				*out_file << " 10 PUNCH ";
 				for(i = 0; i < n1; i++)
@@ -2234,18 +2234,18 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 						// without pH and pe here
 						*out_file << " TOT(\"" << pqc_names[i] << "\"),";
 				}
-				*out_file << endl;
+				*out_file << "\n";
 				// Write pH and pe
 				*out_file << " 20 PUNCH " << " -LA(\"H+\"), ";
 				*out_file << " MOL(\"H+\"), ";
-				*out_file << "  -LA(\"e-\")" << endl;
+				*out_file << "  -LA(\"e-\")" << "\n";
 				// Write equilibrium phases
 				if(n2 > 0)
 				{
 					*out_file << " 40 PUNCH ";
 					for(i = n1 + 3; i < n1 + 3 + n2; i++)
 						*out_file << " EQUI(\"" << pqc_names[i] << "\"),";
-					*out_file << endl;
+					*out_file << "\n";
 				}
 				// Write ion exchangers
 				if(n3 > 0)
@@ -2253,7 +2253,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					*out_file << " 60 PUNCH ";
 					for(i = n1 + 3 + n2; i < n1 + 3 + n2 + n3; i++)
 						*out_file << " MOL(\"" << pqc_names[i] << "\"),";
-					*out_file << endl;
+					*out_file << "\n";
 				}
 				// Write gas phase species
 				if(n4 > 0)
@@ -2261,7 +2261,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 					*out_file << " 70 PUNCH ";
 					for(i = n1 + 3 + n2 + n3; i < n1 + 3 + n2 + n3 + n4; i++)
 						*out_file << " GAS(\"" << pqc_names[i] << "\"),";
-					*out_file << endl;
+					*out_file << "\n";
 				}
 			}             // end if index < 1
 
@@ -2285,26 +2285,26 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 				m_tim = time_vector[0];
 			else
 				cout <<
-				"Error in WriteInputPhreeqc: no time discretization data !" << endl;
+				"Error in WriteInputPhreeqc: no time discretization data !" << "\n";
 			dval = m_tim->CalcTimeStep();
 			*out_file << "-steps " << dval << " in " <<
-			this->rcml_number_of_pqcsteps << " steps" << endl;
+			this->rcml_number_of_pqcsteps << " steps" << "\n";
 		}                         // end -steps
 		//-------------------------------------------------------------------------------------------------------------
 		if(line_string.find("KNOBS") != string::npos)
 			if(index < 1)
 			{
-				*out_file << endl << "KNOBS" << endl;
+				*out_file << "\n" << "KNOBS" << "\n";
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
 					line_string = line;
-					*out_file << line_string << endl;
+					*out_file << line_string << "\n";
 				}
 			}
 	}                                     /*end while zeilenweises lesen */
 
-	*out_file << "END" << endl << endl;
+	*out_file << "END" << "\n" << "\n";
 
 	pqc_infile.close();
 //    out_file.close();
@@ -2470,7 +2470,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 	ifstream ein (this->results_file_name.data(),ios::in);
 	if (!ein)
 	{
-		cout << "The selected output file doesn't exist!!!" << endl;
+		cout << "The selected output file doesn't exist!!!" << "\n";
 		return 0;
 	}
 	n1 = this->rcml_number_of_master_species;
@@ -2506,7 +2506,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 					pcs_vector[pqc_process[j]]->SetNodeValue(index,
 					                                         pqc_index[j] + dix,
 					                                         dval);
-			//					if(index <2) cout << " Read aqu. for " << pqc_names[j] << " " << dval << endl;
+			//					if(index <2) cout << " Read aqu. for " << pqc_names[j] << " " << dval << "\n";
 			/* Read pH and pe */
 			if(ein >> dval) // read pH
 			{
@@ -2530,7 +2530,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 			{
 				j++;
 				//WW m_pcs = pcs_vector[pqc_process[j]];
-				//				if(index <2) cout << " pe: " <<  dval << endl;
+				//				if(index <2) cout << " pe: " <<  dval << "\n";
 				pcs_vector[pqc_process[j]]->SetNodeValue(index,
 				                                         pqc_index[j] + dix,
 				                                         dval);
@@ -2547,7 +2547,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 					pcs_vector[pqc_process[j]]->SetNodeValue(index,
 					                                         pqc_index[j] + dix,
 					                                         dval);
-			//				if(index <2)  cout << " Read equi. for " << pqc_names[j] << " " << dval << endl;
+			//				if(index <2)  cout << " Read equi. for " << pqc_names[j] << " " << dval << "\n";
 			/*--------------------Read the concentration of all ion exchangers -------*/
 			for (j = n1 + 3 + n2; j < n1 + 3 + n2 + n3; j++)
 				if(ein >> dval)
@@ -2559,7 +2559,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 					pcs_vector[pqc_process[j]]->SetNodeValue(index,
 					                                         pqc_index[j] + dix,
 					                                         dval);
-			//                cout << " Read ex. for " << pqc_names[j] << " " << dval << endl;
+			//                cout << " Read ex. for " << pqc_names[j] << " " << dval << "\n";
 
 			/*--------------------Read the concentration of all gas phase species -------*/
 			for (j = n1 + 3 + n2 + n3; j < n1 + 3 + n2 + n3 + n4; j++)
@@ -2570,7 +2570,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 					                                         dval);
 					if(index < 2)
 						cout << " Read gas phase for " << pqc_names[j] <<
-						" " << dval << endl;
+						" " << dval << "\n";
 				}
 		}                         //if rateflag
 		// Determine new gamma_Hplus
@@ -2587,7 +2587,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 			dval1 = pcs_vector[pqc_process[n1]]->GetNodeValue(index,pqc_index[n1] + dix);
 			dval1 = pow(10.0,-dval1); // activity H+ from pH
 			this->gamma_Hplus = dval1 / dval;
-			//        cout << " New gamma_Hplus: " << gamma_Hplus << endl;
+			//        cout << " New gamma_Hplus: " << gamma_Hplus << "\n";
 		}
 	}                                     // end for(index...
 
@@ -3101,7 +3101,7 @@ void REACTInit()
 				rc->CreateREACT(); //SB
 				rc->InitREACT();
 #ifdef LIBPHREEQC
-				cout << "MDL Calling ExecuteReactionsPHREEQCNewLib" << endl;
+				cout << "MDL Calling ExecuteReactionsPHREEQCNewLib" << "\n";
 				rc->ExecuteReactionsPHREEQCNewLib();
 #else
 				rc->ExecuteReactionsPHREEQCNew();
@@ -3146,7 +3146,7 @@ int REACT::CheckNoReactionNodes(void)
 	int ok = 0;
 	long l;
 
-	cout << " CheckNoReactionNodes " << endl;
+	cout << " CheckNoReactionNodes " << "\n";
 
 	if(aktueller_zeitschritt < 2)         //do not in the very first calculation before first time step and in the first time step
 
@@ -3158,13 +3158,13 @@ int REACT::CheckNoReactionNodes(void)
 			m_krd = KinReactData_vector[0];
 		if(m_krd == NULL)
 			// no KinReactData specified in *.krc file
-			cout << "No CKinReactData available in CheckNoReactionNodes" << endl;
+			cout << "No CKinReactData available in CheckNoReactionNodes" << "\n";
 		else if(m_krd->is_a_CCBC.size() > 0) // reaction nodes specified in krc input file
 		{
 			CFEMesh* m_msh = fem_msh_vector[0]; //SB: ToDo hart gesetzt
 			if(m_msh == NULL)
 			{
-				cout << "No mesh in CheckNoReactionNodes" << endl;
+				cout << "No mesh in CheckNoReactionNodes" << "\n";
 				exit(1);
 			}
 			// Initialize vector is_a_CCBC
@@ -3173,7 +3173,7 @@ int REACT::CheckNoReactionNodes(void)
 				// rateflag == 0 means no reactions calculated
 				if(m_krd->is_a_CCBC[l] == true)
 					this->rateflag[l] = 0;
-			// cout << " Node " << l << " is " << this->rateflag[l] << endl;
+			// cout << " Node " << l << " is " << this->rateflag[l] << "\n";
 		}
 
 		this->check_no_reaction_nodes = true;
@@ -3215,7 +3215,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 	double z, h, dens, press, partial_press, volume, temp = -1.0, mm;
 
 	cout.flush();
-	//  cout << "WriteInputPhreeqcLib starting ..." << endl;
+	//  cout << "WriteInputPhreeqcLib starting ..." << "\n";
 	ifstream pqc_infile (this->file_name_pqc.data(),ios::in);
 	pqc_infile.seekg(0L,ios::beg);
 
@@ -3225,7 +3225,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 
 	// reset the (partial) counter of lines
 	nline = 0;
-	//  cout << "Write: *nline =" << *nline << "; nline++ ="<< nline++ << endl;
+	//  cout << "Write: *nline =" << *nline << "; nline++ ="<< nline++ << "\n";
 	// linewise read
 	while(!pqc_infile.eof())
 	{
@@ -3238,7 +3238,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		// keyword found
 		if(line_string.find("SOLUTION") != string::npos)
 		{
-			*out_buff << "SOLUTION " << index + 1 << endl;
+			*out_buff << "SOLUTION " << index + 1 << "\n";
 			nline++;
 			while(line_string.find("#ende") == string::npos)
 			{
@@ -3259,7 +3259,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 						if(speciesname.compare("pe")) // if this is not pe
 							if(dval < 1.0e-19)
 								dval = 0.0;
-						*out_buff << speciesname << " " << dval << endl;
+						*out_buff << speciesname << " " << dval << "\n";
 						nline++;
 					}
 				}
@@ -3274,7 +3274,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 						if (dval < 273.0)
 							dval += 273.15;  //change from °C to Kelvin if necessary
 						dval -= 273.15; // Input to PHREEQC is in °C
-						*out_buff << "temp " << dval << endl;
+						*out_buff << "temp " << dval << "\n";
 						nline++;
 						temp = dval; // save for gas phase input
 					}
@@ -3285,7 +3285,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 				    line_string.find("pe") == string::npos &&
 				    line_string.find("#ende") == string::npos)
 				{
-					*out_buff << line_string << endl;
+					*out_buff << line_string << "\n";
 					nline++;
 				}
 			}             // end while
@@ -3294,7 +3294,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 			n1 = this->rcml_number_of_master_species;
 			count++;
 			if(count != n1)
-				cout << "Error in index of pqc_vectors !" << endl;
+				cout << "Error in index of pqc_vectors !" << "\n";
 			dval = pcs_vector[pqc_process[count]]->GetNodeValue(index,pqc_index[count]);
 			count++;
 			if(this->gamma_Hplus > 0) // pH and H+ in GeoSys species, calculate pH from H+
@@ -3308,23 +3308,23 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 			}
 			if(this->rcml_pH_charge > 0)
 			{
-				*out_buff << "pH " << dval << " charge " << endl;
+				*out_buff << "pH " << dval << " charge " << "\n";
 				nline++;
 			}
 			else
 			{
-				*out_buff << "pH " << dval << endl;
+				*out_buff << "pH " << dval << "\n";
 				nline++;
 			}
 			// pe
 			count++;
 			dval = pcs_vector[pqc_process[n1 + 2]]->GetNodeValue(index,
 			                                                     pqc_index[n1 + 2]);
-			*out_buff << "pe " << dval << endl;
+			*out_buff << "pe " << dval << "\n";
 			nline++;
 			if (line_string.find("#ende") != 0)
 			{
-				*out_buff << line_string << endl;
+				*out_buff << line_string << "\n";
 				nline++;
 			}
 		}                         // end SOLUTION
@@ -3332,7 +3332,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		// Keyword EQUILIBRIUM PHASES
 		if(line_string.find("EQUILIBRIUM_PHASES") != string::npos)
 		{                         // keyword found
-			*out_buff << "PURE " << index + 1 << endl;
+			*out_buff << "PURE " << index + 1 << "\n";
 			nline++;
 			while(line_string.find("#ende") == string::npos)
 			{
@@ -3348,19 +3348,19 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					        [count]);
 					if(dval < 1.0e-19)
 						dval = 0.0;
-					*out_buff << speciesname << " 0.0 " << dval << endl;
+					*out_buff << speciesname << " 0.0 " << dval << "\n";
 					nline++;
 				}
 				else
 				if (line_string.find("#ende") != 0)
-					*out_buff << line_string << endl;
+					*out_buff << line_string << "\n";
 			}
 		}                         // end EQUILIBRIUM PHASES
 
 		// Keyword EXCHANGE
 		if(line_string.find("EXCHANGE") != string::npos)
 		{                         // keyword found
-			*out_buff << "EXCHANGE " <<  index + 1 << endl;
+			*out_buff << "EXCHANGE " <<  index + 1 << "\n";
 			nline++;
 			while(line_string.find("#ende") == string::npos)
 			{
@@ -3376,13 +3376,13 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					        [count]);
 					if(dval < 1.0e-19)
 						dval = 0.0;
-					*out_buff << speciesname << "       " << dval << endl;
+					*out_buff << speciesname << "       " << dval << "\n";
 					nline++;
 				}
 				else
 				if (line_string.find("#ende") != 0)
 				{
-					*out_buff << line_string << endl;
+					*out_buff << line_string << "\n";
 					nline++;
 				}
 			}
@@ -3391,7 +3391,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		// Keyword GAS_PHASE
 		if(line_string.find("GAS_PHASE") != string::npos)
 		{                         // keyword found
-			*out_buff << "GAS_PHASE " <<  index + 1 << endl;
+			*out_buff << "GAS_PHASE " <<  index + 1 << "\n";
 			nline++;
 
 			// get necessary values for conversion of molar concentrations to partial pressures, and to calculate total pressure and total volume
@@ -3405,7 +3405,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 			// get piezometric hight h
 			m_pcs = PCSGet("GROUNDWATER_FLOW");
 			if(m_pcs == NULL)
-				cout << "   Error - no flow process found!" << endl;
+				cout << "   Error - no flow process found!" << "\n";
 			idx = m_pcs->GetNodeValueIndex("HEAD") + 1;
 			h = m_pcs->GetNodeValue(index,idx);
 
@@ -3440,19 +3440,19 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 				if (line_string.find("-pressure") != string::npos)
 				{
 					// pressure in atmospheres
-					*out_buff << "-pressure " << press / 101325.0 << endl;
+					*out_buff << "-pressure " << press / 101325.0 << "\n";
 					nline++;
 				}
 				else if (line_string.find("-volume") != string::npos)
 				{
 					// volume in Liters
-					*out_buff << "-volume " << volume * 1000.0 << endl;
+					*out_buff << "-volume " << volume * 1000.0 << "\n";
 					nline++;
 				}
 				else if (line_string.find("-temperature") != string::npos)
 				{
 					// temperature in °Celsius
-					*out_buff << "-temperature " << temp << endl;
+					*out_buff << "-temperature " << temp << "\n";
 					nline++;
 				}
 				else if (line_string.find("# comp") != string::npos)
@@ -3471,13 +3471,13 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 						partial_press = 0.0;
 
 					*out_buff << " " << speciesname << " " << partial_press /
-					101325.0 << endl;
+					101325.0 << "\n";
 					nline++;
 				}
 				else
 				if (line_string.find("#ende") != 0)
 				{
-					*out_buff << line_string << endl; //write line unchanged
+					*out_buff << line_string << "\n"; //write line unchanged
 					nline++;
 				}
 			}
@@ -3487,7 +3487,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		if(line_string.find("SELECTED_OUTPUT") != string::npos) // keyword found
 			if(index < 1) // this block has to appear just in the first solution
 			{
-				*out_buff << "SELECTED_OUTPUT" << endl;
+				*out_buff << "SELECTED_OUTPUT" << "\n";
 				nline++;
 				while(line_string.find("#ende") == string::npos)
 				{
@@ -3496,13 +3496,13 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					if (line_string.find("-file") != string::npos)
 					{
 						*out_buff << "-file " << this->results_file_name <<
-						endl;
+						"\n";
 						nline++;
 					}
 					else
 					if (line_string.find("#ende") != 0)
 					{
-						*out_buff << line_string << endl;
+						*out_buff << line_string << "\n";
 						nline++;
 					}
 				}
@@ -3513,7 +3513,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		if(line_string.find("PRINT") != string::npos) // keyword found
 			if(index < 1) // this block has to appear just in the first solution
 			{
-				*out_buff << "PRINT" << endl;
+				*out_buff << "PRINT" << "\n";
 				nline++;
 				while(line_string.find("#ende") == string::npos)
 				{
@@ -3523,7 +3523,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 						libphreeqc_print = "T";
 					else if (line_string.find("#ende") != 0)
 					{
-						*out_buff << line_string << endl;
+						*out_buff << line_string << "\n";
 						nline++;
 					}
 				}
@@ -3535,7 +3535,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 		{                         // keyword found
 			if(index < 1)
 			{
-				*out_buff << "USER_PUNCH" << endl;
+				*out_buff << "USER_PUNCH" << "\n";
 				nline++;
 				// Write Header
 				n1 = this->rcml_number_of_master_species;
@@ -3554,7 +3554,7 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					*out_buff << " " << pqc_names[i];
 				for(i = n1 + 3 + n2 + n3; i < n1 + 3 + n2 + n3 + n4; i++)
 					*out_buff << " " << pqc_names[i];
-				*out_buff << endl;
+				*out_buff << "\n";
 				nline++;
 				// Write everything in just 1 line
 				*out_buff << "10 PUNCH ";
@@ -3585,8 +3585,8 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 					for(i = n1 + 3 + n2 + n3; i < n1 + 3 + n2 + n3 + n4; i++)
 						*out_buff << ", GAS(\"" << pqc_names[i] << "\")";
 
-				// MDL: now the endl
-				*out_buff << endl;
+				// MDL: now the "\n"
+				*out_buff << "\n";
 				nline++;
 			}             // end if index < 1
 
@@ -3611,28 +3611,28 @@ int REACT::WriteInputPhreeqcLib(long index, stringstream* out_buff, int* nl)
 			else
 				cout <<
 				"Error in WriteInputPhreeqcLib: no time discretization data !" <<
-				endl;
+				"\n";
 			dval = m_tim->CalcTimeStep();
 			*out_buff << "-steps " << dval << " in " <<
-			this->rcml_number_of_pqcsteps << " steps" << endl;
+			this->rcml_number_of_pqcsteps << " steps" << "\n";
 			nline++;
 		}                         // end -steps
 
 		if(line_string.find("KNOBS") != string::npos)
 			if(index < 1)
 			{
-				*out_buff << "KNOBS" << endl;
+				*out_buff << "KNOBS" << "\n";
 				nline++;
 				while(line_string.find("#ende") == string::npos)
 				{
 					pqc_infile.getline(line,MAX_ZEILE);
 					line_string = line;
-					*out_buff << line_string << endl;
+					*out_buff << line_string << "\n";
 					nline++;
 				}
 			}
 	}                                     // end of "while" linewise read
-	*out_buff << "END" << endl;
+	*out_buff << "END" << "\n";
 	nline++;
 	*nl = nline;
 	pqc_infile.close();
@@ -3655,7 +3655,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	ifstream pqc_file (this->file_name_pqc.data(),ios::in);
 	if (!pqc_file.good())
 		cout << "! Error in ExecuteReactionsPHREEQCNew: no Input File (*.pqc) found !" <<
-		endl;
+		"\n";
 
 	// data exchange buffer to libphreeqc, as stringstream
 	stringstream out_buff;
@@ -3665,7 +3665,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	{
 		ok = this->ReadReactionModelNew(&pqc_file);
 		if(!ok)
-			cout << "Error setting up reaction model" << endl;
+			cout << "Error setting up reaction model" << "\n";
 	}
 
 	// Check for nodes without reactions
@@ -3673,13 +3673,13 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	{
 		ok = this->CheckNoReactionNodes();
 		if(!ok)
-			cout << "Error when checking for nodes without reactions" << endl;
+			cout << "Error when checking for nodes without reactions" << "\n";
 	}
 
 	// Read the input file (*.pqc) and set up the input for PHREEQC;
 	// Write input data block to PHREEQC for each node;
 	// sum number of lines of input.
-	cout << endl << "Preparing phreeqc's input...";
+	cout << "\n" << "Preparing phreeqc's input...";
 	ii = 0;
 	nline = 0;
 	// Should libphreeqc print to file? Defaults to no (=="F")
@@ -3695,18 +3695,18 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 		}
 
 	if(ok)
-		cout << " [OK]" << endl;
+		cout << " [OK]" << "\n";
 	else
-		cout << " [ERROR]" << endl;
+		cout << " [ERROR]" << "\n";
 
 	// TODO: don't try to run phreeqc if output is not ok
 
 #ifdef MDL_DEBUG
-	cout << "MDL_DEBUG: libphreeqc_print = " << libphreeqc_print << endl;
+	cout << "MDL_DEBUG: libphreeqc_print = " << libphreeqc_print << "\n";
 	cout << "MDL_DEBUG: final input is " << nline << " lines, nodes " << ii << "/" <<
-	this->nodenumber << endl;
-	cout << endl << "MDL_DEBUG: ****** Current input:" << endl << out_buff.str() << endl <<
-	"MDL_DEBUG: ****** end of input" << endl;
+	this->nodenumber << "\n";
+	cout << "\n" << "MDL_DEBUG: ****** Current input:" << "\n" << out_buff.str() << "\n" <<
+	"MDL_DEBUG: ****** end of input" << "\n";
 #endif
 
 	//  Close *.pqc input file
@@ -3718,7 +3718,7 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 	double* out_vec = new double [ npunch * ii ];
 
 	// call to libphreeqc
-	std::cout << endl << std::endl;
+	std::cout << "\n" << "\n";
 	ok = Call_PhreeqcLib(ii,npunch, nline, &out_buff, out_vec);
 
 	if(ok)
@@ -3728,9 +3728,9 @@ void REACT::ExecuteReactionsPHREEQCNewLib(void)
 		if(!ok)
 			std::cout <<
 			" [ERROR] ExecuteReactionsPHREEQCNewLib: Error reading phreeqc's output" <<
-			std::endl;
+			"\n";
 		else
-			std::cout << " [OK]" << std::endl;
+			std::cout << " [OK]" << "\n";
 	}
 
 	// deallocation
@@ -3879,7 +3879,7 @@ int REACT::Call_PhreeqcLib(int nsim,
 
 #ifdef MDL_DEBUG
 	cout << "MDL_DEB:: Call_PhreeqcLib ->  nsim = " << nsim << "; npunch = "  << npunch <<
-	"; nline = " << nline << endl;
+	"; nline = " << nline << "\n";
 #endif
 
 	// copy the stringstream to a char ** for the c library

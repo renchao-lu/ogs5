@@ -27,12 +27,12 @@ PetrelInterface::PetrelInterface(std::list<std::string> &sfc_fnames,
 		std::ifstream in((*it).c_str());
 		if (in)
 		{
-			std::cout << "done" << std::endl;
+			std::cout << "done" << "\n";
 			readPetrelSurface(in);
 			in.close();
 		}
 		else
-			std::cerr << "error opening stream " << std::endl;
+			std::cerr << "error opening stream " << "\n";
 	}
 
 	for (std::list<std::string>::const_iterator it(well_path_fnames.begin()); it
@@ -43,12 +43,12 @@ PetrelInterface::PetrelInterface(std::list<std::string> &sfc_fnames,
 		std::ifstream in((*it).c_str());
 		if (in)
 		{
-			std::cout << "done" << std::endl;
+			std::cout << "done" << "\n";
 			readPetrelWellTrace(in);
 			in.close();
 		}
 		else
-			std::cerr << "error opening stream " << std::endl;
+			std::cerr << "error opening stream " << "\n";
 	}
 
 	// store data in GEOObject
@@ -104,7 +104,7 @@ void PetrelInterface::readPetrelSurface(std::istream &in)
 		}
 	}
 	else
-		std::cerr << "error reading petrel points: " << line << std::endl;
+		std::cerr << "error reading petrel points: " << line << "\n";
 }
 
 void PetrelInterface::readPetrelWellTrace(std::istream &in)
@@ -123,7 +123,7 @@ void PetrelInterface::readPetrelWellTrace(std::istream &in)
 		std::list<std::string>::const_iterator it(str_list.begin());
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 
 		// read well head x coordinate
 		in.getline(buffer, MAX_COLS_PER_ROW);
@@ -132,7 +132,7 @@ void PetrelInterface::readPetrelWellTrace(std::istream &in)
 		it = str_list.begin();
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 		it = (str_list.end())--;
 		it--;
 		char* buf;
@@ -145,7 +145,7 @@ void PetrelInterface::readPetrelWellTrace(std::istream &in)
 		it = str_list.begin();
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 		it = (str_list.end())--;
 		it--;
 		double well_head_y(strtod((*it).c_str(), &buf));
@@ -157,13 +157,13 @@ void PetrelInterface::readPetrelWellTrace(std::istream &in)
 		it = str_list.begin();
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 		it = (str_list.end())--;
 		it--;
 		double well_kb(strtod((*it).c_str(), &buf));
 
 		std::cout << "PetrelInterface::readPetrelWellTrace: " << well_head_x << "," <<
-		well_head_y << "," << well_kb << std::endl;
+		well_head_y << "," << well_kb << "\n";
 		well_vec->push_back(
 		        static_cast<GEOLIB::StationBorehole*> (new GEOLIB::StationBorehole(
 		                                                       well_head_x, well_head_y,
@@ -176,7 +176,7 @@ void PetrelInterface::readPetrelWellTrace(std::istream &in)
 		it = str_list.begin();
 		while (it != str_list.end())
 			std::cout << *it++ << " " << std::flush;
-		std::cout << std::endl;
+		std::cout << "\n";
 		std::string type(*((str_list.end())--));
 
 		readPetrelWellTraceData(in);
@@ -205,7 +205,7 @@ void PetrelInterface::readPetrelWellTraceData(std::istream &in)
 	it = str_list.begin();
 	while (it != str_list.end())
 		std::cout << *it++ << " " << std::flush;
-	std::cout << std::endl;
+	std::cout << "\n";
 
 	// read points
 	double md, x, y, z, tvd, dx, dy, azim, incl, dls;

@@ -87,7 +87,7 @@ const std::vector<Point*>* GEOObjects::getPointVec(const std::string &name) cons
 		if (_pnt_vecs[i]->getName().compare(name) == 0)
 			return _pnt_vecs[i]->getVector();
 */
-	std::cout << "GEOObjects::getPointVec() - No entry found with name \"" << name << "\"." << std::endl;
+	std::cout << "GEOObjects::getPointVec() - No entry found with name \"" << name << "\"." << "\n";
 	return NULL;
 }
 
@@ -101,7 +101,7 @@ const PointVec* GEOObjects::getPointVecObj(const std::string &name) const
 		if (_pnt_vecs[i]->getName().compare(name) == 0)
 			return _pnt_vecs[i];
 */
-	std::cout << "GEOObjects::getPointVecObj() - No entry found with name \"" << name << "\"." << std::endl;
+	std::cout << "GEOObjects::getPointVecObj() - No entry found with name \"" << name << "\"." << "\n";
 	return NULL;
 }
 
@@ -111,7 +111,7 @@ bool GEOObjects::removePointVec(const std::string &name)
 	{
 		std::cout <<
 		"GEOObjects::removePointVec() - There are still Polylines or Surfaces depending on these points."
-		          << std::endl;
+		          << "\n";
 		return false;
 	}
 
@@ -124,7 +124,7 @@ bool GEOObjects::removePointVec(const std::string &name)
 			return true;
 		}
 	std::cout << "GEOObjects::removePointVec() - No entry found with name \"" << name << "." <<
-	std::endl;
+	"\n";
 	return false;
 }
 
@@ -144,7 +144,7 @@ std::vector<Point*>* GEOObjects::filterStationVec(const std::string &name,
 			return (*it)->filterStations(bounds);
 
 	std::cout << "GEOObjects:: filterStations() - No entry found with name \""
-	          << name << "." << std::endl;
+	          << name << "." << "\n";
 	return NULL;
 }
 
@@ -157,7 +157,7 @@ const std::vector<Point*>* GEOObjects::getStationVec(const std::string &name) co
 		}
 	}
 	std::cout << "GEOObjects::getStationVec() - No entry found with name \""
-	          << name << "." << std::endl;
+	          << name << "." << "\n";
 	return NULL;
 }
 
@@ -213,7 +213,7 @@ const std::vector<Polyline*>* GEOObjects::getPolylineVec(const std::string &name
 
 #ifndef NDEBUG
 	std::cout << "DEB: GEOObjects::getPolylineVec() - No entry found with name \"" << name <<
-	"." << std::endl;
+	"." << "\n";
 #endif
 	return NULL;
 }
@@ -227,7 +227,7 @@ const PolylineVec* GEOObjects::getPolylineVecObj(const std::string &name) const
 
 #ifndef NDEBUG
 	std::cout << "DEB: GEOObjects::getPolylineVecObj() - No entry found with name \"" << name <<
-	"\"." << std::endl;
+	"\"." << "\n";
 #endif
 	return NULL;
 }
@@ -245,7 +245,7 @@ bool GEOObjects::removePolylineVec(const std::string &name)
 
 #ifndef NDEBUG
 	std::cout << "GEOObjects::removePolylineVec() - No entry found with name \""
-	          << name << "\"." << std::endl;
+	          << name << "\"." << "\n";
 #endif
 	return false;
 }
@@ -285,7 +285,7 @@ const std::vector<Surface*>* GEOObjects::getSurfaceVec(const std::string &name) 
 		if (_sfc_vecs[i]->getName().compare(name) == 0)
 			return _sfc_vecs[i]->getVector();
 	std::cout << "GEOObjects::getSurfaceVec() - No entry found with name \"" << name << "." <<
-	std::endl;
+	"\n";
 	return NULL;
 }
 
@@ -302,7 +302,7 @@ bool GEOObjects::removeSurfaceVec(const std::string &name)
 
 #ifndef NDEBUG
 	std::cout << "GEOObjects::removeSurfaceVec() - No entry found with name \""
-	          << name << "\"." << std::endl;
+	          << name << "\"." << "\n";
 #endif
 	return false;
 }
@@ -314,7 +314,7 @@ const SurfaceVec* GEOObjects::getSurfaceVecObj(const std::string &name) const
 		if (_sfc_vecs[i]->getName().compare(name) == 0)
 			return _sfc_vecs[i];
 	std::cout << "GEOObjects::getSurfaceVecObj() - No entry found with name \"" << name <<
-	"\"." << std::endl;
+	"\"." << "\n";
 	return NULL;
 }
 
@@ -404,7 +404,7 @@ const std::string GEOObjects::getElementNameByID(const std::string &geometry_nam
 			this->getSurfaceVecObj(geometry_name)->getNameOfElementByID(id, name);
 			break;
 		default:
-			std::cout << "No valid GEOTYPE given." << std::endl;
+			std::cout << "No valid GEOTYPE given." << "\n";
 	}
 	return name;
 }

@@ -102,7 +102,7 @@ void Matrix::operator = (const Matrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows() || ncols != m.Cols())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -117,7 +117,7 @@ void Matrix::operator += (const Matrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows() || ncols != m.Cols())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -132,7 +132,7 @@ void Matrix::operator -= (const Matrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows() || ncols != m.Cols()) //Assertion, will be removed
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -146,7 +146,7 @@ void Matrix::GetTranspose(Matrix& m)
 #ifdef gDEBUG
 	if(ncols != m.Rows() && nrows != m.Cols())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -163,7 +163,7 @@ void Matrix::multi(const Matrix& m, Matrix& m_result, double fac)
 #ifdef gDEBUG
 	if(ncols != m.Rows() && nrows != m_result.Rows() && m.Cols() != m_result.Cols())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -187,7 +187,7 @@ void Matrix::multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
 	if(ncols != m1.Rows() && m1.Cols() != m2.Rows()
 	   && m2.Cols() != m_result.Cols() && nrows != m_result.Rows())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << std::endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -216,7 +216,7 @@ double& Matrix::operator() (size_t i, size_t j) const
 #ifdef gDEBUG
 	if(i >= nrows || j >= ncols)
 	{
-		std::cout << "\n Index exceeds the size of the matrix" << std::endl;
+		std::cout << "\n Index exceeds the size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -227,7 +227,7 @@ void Matrix::LimitSize(size_t nRows, size_t nCols)
 #ifdef gDEBUG
 	if(nRows > nrows0 || nCols > ncols0)
 	{
-		std::cout << "\n Given size exceeds the original size of the matrix" << std::endl;
+		std::cout << "\n Given size exceeds the original size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -253,9 +253,9 @@ void Matrix::Write(std::ostream& os)
 		os << "| ";
 		for (size_t j = 0; j < ncols; j++)
 			os << (*this)(i, j) << " ";
-		os << "| " << std::endl;
+		os << "| " << "\n";
 	}
-	os << std::endl;
+	os << "\n";
 }
 
 /**************************************************************************
@@ -357,7 +357,7 @@ void SymMatrix::operator = (const SymMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows() || ncols != m.Cols())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -378,7 +378,7 @@ void SymMatrix::operator += (const SymMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows())
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -399,7 +399,7 @@ void SymMatrix::operator -= (const SymMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows())                 //Assertion, will be removed
 	{
-		std::cout << "\n The sizes of the two matrices are not matched" << endl;
+		std::cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -419,7 +419,7 @@ double& SymMatrix::operator() (size_t i, size_t j) const
 #ifdef gDEBUG
 	if(i >= nrows || j >= nrows)
 	{
-		std::cout << "\n Index exceeds the size of the matrix" << std::endl;
+		std::cout << "\n Index exceeds the size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -435,7 +435,7 @@ void SymMatrix::LimitSize(size_t dim)
 #ifdef gDEBUG
 	if(dim > nrows0)
 	{
-		std::cout << "\n Given size exceeds the original size of the matrix" << std::endl;
+		std::cout << "\n Given size exceeds the original size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -521,7 +521,7 @@ void DiagonalMatrix::operator = (const DiagonalMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows() || ncols != m.Cols())
 	{
-		cout << "\n The sizes of the two matrices are not matched" << endl;
+		cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -535,7 +535,7 @@ void DiagonalMatrix::operator += (const DiagonalMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows())
 	{
-		cout << "\n The sizes of the two matrices are not matched" << endl;
+		cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -549,7 +549,7 @@ void DiagonalMatrix::operator -= (const DiagonalMatrix& m)
 #ifdef gDEBUG
 	if(nrows != m.Rows())                 //Assertion, will be removed
 	{
-		cout << "\n The sizes of the two matrices are not matched" << endl;
+		cout << "\n The sizes of the two matrices are not matched" << "\n";
 		abort();
 	}
 #endif
@@ -562,7 +562,7 @@ double& DiagonalMatrix::operator() (size_t i, size_t j) const
 #ifdef gDEBUG
 	if(i >= nrows || j >= nrows)
 	{
-		cout << "\n Index exceeds the size of the matrix" << endl;
+		cout << "\n Index exceeds the size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -578,7 +578,7 @@ double& DiagonalMatrix::operator() (size_t i) const
 #ifdef gDEBUG
 	if(i >= size)
 	{
-		cout << "\n Index exceeds the size of the matrix" << endl;
+		cout << "\n Index exceeds the size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -591,7 +591,7 @@ void DiagonalMatrix::LimitSize(size_t dim)
 #ifdef gDEBUG
 	if(dim > nrows0)
 	{
-		cout << "\n Given size exceeds the original size of the matrix" << endl;
+		cout << "\n Given size exceeds the original size of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -674,7 +674,7 @@ template<class T> void vec<T>:: Write(std::ostream& os) const
 {
 	for (size_t i = 0; i < _size; i++)
 		os << _entry[i] << "  ";
-	os << std::endl;
+	os << "\n";
 }
 
 //2.
@@ -733,7 +733,7 @@ void vec<void*>::Write(std::ostream& os) const
 {
 	for (size_t i = 0; i < _size; i++)
 		os << _entry[i] << "  ";
-	os << std::endl;
+	os << "\n";
 }
 
 void vec<void*>:: operator = (const vec<void*>& v)
@@ -1094,34 +1094,34 @@ void SparseTable::Write(std::ostream &os)
 	long i, k, counter = 0;
 
 	os.width(10);
-	os << "Symmetry: " << symmetry << std::endl;
-	os << "\n*** Row index  " << std::endl;
+	os << "Symmetry: " << symmetry << "\n";
+	os << "\n*** Row index  " << "\n";
 
 	if(storage_type == CRS)
 	{
-		os << "\n*** Sparse entry  " << std::endl;
+		os << "\n*** Sparse entry  " << "\n";
 		for (i = 0; i < rows; i++)
 		{
 			for (k = num_column_entries[i]; k < num_column_entries[i + 1]; k++)
 				os << entry_column[k] + 1 << " ";
-			os << std::endl;
+			os << "\n";
 		}
 	}
 	else if(storage_type == JDS)
 	{
 		for (i = 0; i < rows; i++)
-			os << row_index_mapping_n2o[i] + 1 << std::endl;
+			os << row_index_mapping_n2o[i] + 1 << "\n";
 		//
-		os << "\n*** Sparse entry  " << std::endl;
+		os << "\n*** Sparse entry  " << "\n";
 		for (k = 0; k < max_columns; k++)
 		{
-			os << "--Column: " << k + 1 << std::endl;
+			os << "--Column: " << k + 1 << "\n";
 			for (i = 0; i < num_column_entries[k]; i++)
 			{
-				os << entry_column[counter] + 1 << std::endl;
+				os << entry_column[counter] + 1 << "\n";
 				counter++;
 			}
-			os << std::endl;
+			os << "\n";
 		}
 	}
 }
@@ -1256,7 +1256,7 @@ double& CSparseMatrix::operator() (const long i, const long j) const
 #ifdef gDEBUG
 	if(i >= rows * DOF || j >= rows * DOF)
 	{
-		std::cout << "\n Index exceeds the dimension of the matrix" << std::endl;
+		std::cout << "\n Index exceeds the dimension of the matrix" << "\n";
 		abort();
 	}
 #endif
@@ -1360,7 +1360,7 @@ void CSparseMatrix::operator = (const CSparseMatrix& m)
 #ifdef gDEBUG
 	if(size != m.DOF * m.DOF * m.size_entry_column)
 	{
-		std::cout << "\n Dimensions of two matrices do not match" << std::endl;
+		std::cout << "\n Dimensions of two matrices do not match" << "\n";
 		abort();
 	}
 #endif
@@ -1379,7 +1379,7 @@ void CSparseMatrix::operator += (const CSparseMatrix& m)
 #ifdef gDEBUG
 	if(size != m.DOF * m.DOF * m.size_entry_column)
 	{
-		std::cout << "\n Dimensions of two matrices do not match" << std::endl;
+		std::cout << "\n Dimensions of two matrices do not match" << "\n";
 		abort();
 	}
 #endif
@@ -1398,7 +1398,7 @@ void CSparseMatrix::operator -= (const CSparseMatrix& m)
 #ifdef gDEBUG
 	if(size != m.DOF * m.DOF * m.size_entry_column)
 	{
-		std::cout << "\n Dimensions of two matrices do not match" << std::endl;
+		std::cout << "\n Dimensions of two matrices do not match" << "\n";
 		abort();
 	}
 #endif
@@ -1416,7 +1416,7 @@ void CSparseMatrix::Write(std::ostream &os)
 {
 	//
 	long i, k, ii, jj, row_in_parse_table, counter;
-	os << "*** Non-zero entries of matrix:  " << std::endl;
+	os << "*** Non-zero entries of matrix:  " << "\n";
 	os.width(14);
 	os.precision(8);
 	//
@@ -1431,7 +1431,7 @@ void CSparseMatrix::Write(std::ostream &os)
 						os << std::setw(10) << ii * rows + i << " "
 						   << std::setw(10) << jj * rows + entry_column[k] << " "
 						   << std::setw(15) <<
-						entry[(ii * DOF + jj) * size_entry_column + k] << std::endl;
+						entry[(ii * DOF + jj) * size_entry_column + k] << "\n";
 
 	else if(storage_type == JDS )
 	{
@@ -1454,7 +1454,7 @@ void CSparseMatrix::Write(std::ostream &os)
 							   << std::setw(15) <<
 							entry[(ii * DOF +
 							       jj) * size_entry_column +
-							      counter] << std::endl;
+							      counter] << "\n";
 							counter += num_column_entries[k];
 						}
 						else
@@ -1881,7 +1881,7 @@ void CSparseMatrix::Precond_Jacobi(double* vec_s, double* vec_r)
 				if(fabs(diag) < DBL_MIN)
 					//        if(fabs(diag)<DBL_EPSILON)
 					diag = 1.0;
-				//  std::cout<<"Diagonal entry is zero. Abort simulation!!  " <<std::endl;
+				//  std::cout<<"Diagonal entry is zero. Abort simulation!!  " <<"\n";
 				vec_r[idof * rows + i] = vec_s[idof * rows + i] / diag;
 			}
 		//
@@ -1894,7 +1894,7 @@ void CSparseMatrix::Precond_Jacobi(double* vec_s, double* vec_r)
 			//if(fabs(diag)<DBL_EPSILON)
 			if(fabs(diag) < DBL_MIN)
 				diag = 1.0;
-			//   std::cout<<"Diagonal entry is zero. Abort simulation!!  " <<std::endl;
+			//   std::cout<<"Diagonal entry is zero. Abort simulation!!  " <<"\n";
 			//
 			vec_r[i] = vec_s[i] / diag;
 		}

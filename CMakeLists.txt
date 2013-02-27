@@ -12,13 +12,6 @@ INCLUDE(CMakeConfiguration/CMakeSetup.cmake)
 ### Compiler setup ###
 INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
 
-### Find directories and libraries ###
-IF(NOT OGS_NO_EXTERNAL_LIBS)
-	INCLUDE (CMakeConfiguration/Find.cmake)
-ENDIF() # NOT OGS_NO_EXTERNAL_LIBS
-
-### General project setup ###
-INCLUDE(CMakeConfiguration/GeneralProjectSetup.cmake)
 
 ###############
 ### Options ###
@@ -28,6 +21,7 @@ INCLUDE(CMakeConfiguration/GeneralProjectSetup.cmake)
 OPTION(OGS_FEM "Default configuration" OFF)
 OPTION(OGS_FEM_SP "Sparse matrix configuration" OFF)
 OPTION(OGS_FEM_JFNK "Jacobi free Newton-Krylov method for H2M problem" OFF)
+OPTION(OGS_FEM_PETSC "Use PETSc parallel solver" OFF)
 OPTION(OGS_FEM_GEMS "GEMS configuration" OFF)
 OPTION(OGS_FEM_PQC "Phreeqc configuration" OFF)
 OPTION(OGS_FEM_BRNS "BRNS configuration" OFF)
@@ -35,11 +29,36 @@ OPTION(OGS_FEM_CHEMAPP "CHEMAPP configuration" OFF)
 OPTION(OGS_USE_QT "User interface configuration" OFF)
 OPTION(OGS_FEM_LIS "Library of Iterative Solvers for Linear Systems configuration" OFF)
 OPTION(OGS_FEM_MKL "Math kernel library configuration" OFF)
+OPTION(BLUE_G "Blue/G optimization" OFF)
 
 # supported on Linux and Windows
 OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 OPTION(PARALLEL_USE__MPI "Message passing interface configuration also for GEMS coupling" OFF)
+
+
+### CMake setup ###
+INCLUDE(CMakeConfiguration/CMakeSetup.cmake)
+
+### Compiler setup ###
+INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
+
+
+### Find directories and libraries ###
+IF(NOT OGS_FEM_PETSC)
+IF(NOT OGS_NO_EXTERNAL_LIBS)
+	INCLUDE (CMakeConfiguration/Find.cmake)
+ENDIF() # NOT OGS_NO_EXTERNAL_LIBS
+ENDIF()
+
+### General project setup ###
+INCLUDE(CMakeConfiguration/GeneralProjectSetup.cmake)
+
+
+
+IF(BLUE_G)
+ADD_DEFINITIONS ( "-O3 -qstrict -qarch=qp -qtune=qp" )
+ENDIF()
 
 # Set default configuration when no other config is given
 IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
@@ -82,12 +101,12 @@ MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_IN
 ### OGS version information. Adjust these if you release a new version. ###
 ###########################################################################
 SET (OGS_VERSION_MAJOR 5)
-SET (OGS_VERSION_MINOR 3)
-SET (OGS_VERSION_PATCH 7)
-SET (OGS_RELEASE_PERSONS "JOD")
+SET (OGS_VERSION_MINOR 4)
+SET (OGS_VERSION_PATCH 0)
+SET (OGS_RELEASE_PERSONS "WW")
 SET (OGS_VERSION "${OGS_VERSION_MAJOR}.${OGS_VERSION_MINOR}.${OGS_VERSION_PATCH}(${OGS_RELEASE_PERSONS})")
 # should we use ISO dates: 2010-12-31 ?
-SET (OGS_DATE "18.12.2012")
+SET (OGS_DATE "26.2.2013")
 
 # Check for number of processors
 INCLUDE(ProcessorCount)
@@ -112,6 +131,26 @@ IF(OGS_FEM_JFNK)
 	MESSAGE (STATUS "Configuring for Jacobi free Newton-Krylov method for H2M problem" )
 	ADD_DEFINITIONS(-DNEW_EQS -DJFNK_H2M)
 ENDIF(OGS_FEM_JFNK)
+
+IF(OGS_FEM_PETSC)
+	MESSAGE (STATUS  "Configuring for PETSc" )
+      
+	ADD_DEFINITIONS(-DUSE_PETSC)
+	SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/findPETSC)
+
+	FIND_PACKAGE(PETSc REQUIRED)
+ 
+        include_directories(
+              ${PETSC_INCLUDES} 
+        )
+	FIND_PACKAGE(MPI)
+	IF(MPI_FOUND)		
+	  SET(CMAKE_C_COMPILER ${MPI_COMPILER})
+	  SET(CMAKE_CXX_COMPILER ${MPI_COMPILER})
+	ELSE(MPI_FOUND)
+	  MESSAGE (FATAL_ERROR "Aborting: MPI implementation is not found!")
+	ENDIF(MPI_FOUND)			
+ENDIF(OGS_FEM_PETSC)
 
 IF(OGS_FEM_MPI)
 	MESSAGE (STATUS "Configuring for FEM command line with MPI" )

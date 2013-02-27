@@ -1594,7 +1594,7 @@ int SpBICGSTAB(double* b, double* x, long n)
 	//MXDumpGLS("rf_pcs.txt",1,b,x); abort();
 	/* Ggf. starten der Vorkonditionierung */
 	if (vorkond)
-		//WW      cout << "        Preconditioning" << endl;
+		//WW      cout << "        Preconditioning" << "\n";
 		MXVorkond(0,x,b);
 	r = (double*) Malloc(n * sizeof(double));
 	r2 = (double*) Malloc(n * sizeof(double));
@@ -1655,7 +1655,7 @@ restart:
 	//OK
 	r0norm = VEKNORM_BICGSTAB(r,n);
 	//WW error_rel = r0norm/eps;
-	//WW    cout << "\n  SpBICGSTAB iteration: 0/" << max_iter << " Error: " << error_rel << endl;
+	//WW    cout << "\n  SpBICGSTAB iteration: 0/" << max_iter << " Error: " << error_rel << "\n";
 #ifdef TESTLOES4
 	DisplayMsg("eps = ");
 	DisplayDouble(eps, 22, 20);

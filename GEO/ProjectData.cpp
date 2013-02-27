@@ -51,7 +51,7 @@ void ProjectData::addProcess(ProcessInfo* pcs)
 		if ((*it)->getProcessType() == pcs->getProcessType())
 		{
 			std::cout << "Error in ProjectData::addProcess() - "
-			  << FiniteElement::convertProcessTypeToString(pcs->getProcessType()) << " process already exists." << std::endl;
+			  << FiniteElement::convertProcessTypeToString(pcs->getProcessType()) << " process already exists." << "\n";
 		}
 
 	_pcs_vec.push_back(pcs);
@@ -64,7 +64,7 @@ const ProcessInfo* ProjectData::getProcess(FiniteElement::ProcessType type) cons
 			return *it;
 
 	std::cout << "Error in ProjectData::getProcess() - No " 
-			  << FiniteElement::convertProcessTypeToString(type) << " process found..." << std::endl;
+			  << FiniteElement::convertProcessTypeToString(type) << " process found..." << "\n";
 	return NULL;
 }
 
@@ -80,7 +80,7 @@ bool ProjectData::removeProcess(FiniteElement::ProcessType type)
 		}
 
 	std::cout << "Error in ProjectData::removeProcess() - No "
-			  << FiniteElement::convertProcessTypeToString(type) << " process found..." << std::endl;
+			  << FiniteElement::convertProcessTypeToString(type) << " process found..." << "\n";
 	return false;
 }
 
@@ -106,7 +106,7 @@ const FEMCondition* ProjectData::getCondition(const std::string &geo_name,
 				return *it;
 
 	std::cout << "Error in ProjectData::getCondition() - No condition found with name \"" <<
-	cond_name << "\"..." << std::endl;
+	cond_name << "\"..." << "\n";
 	return NULL;
 }
 
@@ -171,7 +171,7 @@ bool ProjectData::removeCondition(const std::string &geo_name,
 			}
 	}
 	std::cout << "Error in ProjectData::removeCondition() - No condition found with name \"" <<
-	cond_name << "\"..." << std::endl;
+	cond_name << "\"..." << "\n";
 	return false;
 }
 

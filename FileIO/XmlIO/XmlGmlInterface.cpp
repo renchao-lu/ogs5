@@ -26,7 +26,7 @@ int XmlGmlInterface::readFile(const QString &fileName)
 	if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 	{
 		std::cout << "XmlGmlInterface::readFile() - Can't open xml-file " <<
-		fileName.toStdString() << "." << std::endl;
+		fileName.toStdString() << "." << "\n";
 		delete file;
 		return 0;
 	}
@@ -49,7 +49,7 @@ int XmlGmlInterface::readFile(const QString &fileName)
 	QDomElement docElement = doc.documentElement(); //OpenGeoSysGLI
 	if (docElement.nodeName().compare("OpenGeoSysGLI"))
 	{
-		std::cout << "XmlGmlInterface::readFile() - Unexpected XML root." << std::endl;
+		std::cout << "XmlGmlInterface::readFile() - Unexpected XML root." << "\n";
 		delete file;
 		return 0;
 	}
@@ -73,7 +73,7 @@ int XmlGmlInterface::readFile(const QString &fileName)
 			readSurfaces(type_node, surfaces, points,
 			             geoObjects->getPointVecObj(gliName)->getIDMap(), sfc_names);
 		else
-			std::cout << "Unknown XML-Node found in file." << std::endl;
+			std::cout << "Unknown XML-Node found in file." << "\n";
 	}
 	delete file;
 
@@ -117,7 +117,7 @@ void XmlGmlInterface::readPoints( const QDomNode &pointsRoot,
 		else
 			std::cout <<
 			"XmlGmlInterface::readPoints() - Attribute missing in <point> tag ..." <<
-			std::endl;
+			"\n";
 
 		point = point.nextSiblingElement();
 	}
@@ -158,7 +158,7 @@ void XmlGmlInterface::readPolylines( const QDomNode &polylinesRoot,
 			std::cout <<
 			"XmlGmlInterface::readPolylines() - Attribute missing in <polyline> tag ..."
 			          <<
-			std::endl;
+			"\n";
 
 		polyline = polyline.nextSiblingElement();
 	}
@@ -206,14 +206,14 @@ void XmlGmlInterface::readSurfaces( const QDomNode &surfacesRoot,
 				else
 					std::cout <<
 					"XmlGmlInterface::readSurfaces() - Attribute missing in <element> tag ..."
-					          << std::endl;
+					          << "\n";
 				element = element.nextSiblingElement();
 			}
 		}
 		else
 			std::cout <<
 			"XmlGmlInterface::readSurfaces() - Attribute missing in <surface> tag ..." <<
-			std::endl;
+			"\n";
 
 		surface = surface.nextSiblingElement();
 	}
@@ -225,7 +225,7 @@ int XmlGmlInterface::write(std::ostream& stream)
 {
 	if (this->_exportName.empty())
 	{
-		std::cout << "Error in XmlGmlInterface::write() - No geometry specified..." << std::endl;
+		std::cout << "Error in XmlGmlInterface::write() - No geometry specified..." << "\n";
 		return 0;
 	}
 
@@ -277,13 +277,13 @@ int XmlGmlInterface::write(std::ostream& stream)
 		}
 		else
 		{
-			std::cout << "Point vector empty, abort writing geometry." << std::endl;
+			std::cout << "Point vector empty, abort writing geometry." << "\n";
 			return 0;
 		}
 	}
 	else
 	{
-		std::cout << "Point vector empty, abort writing geometry." << std::endl;
+		std::cout << "Point vector empty, abort writing geometry." << "\n";
 		return 0;
 	}
 
@@ -322,11 +322,11 @@ int XmlGmlInterface::write(std::ostream& stream)
 				}
 			}
 			else
-				std::cout << "Polyline vector empty, no polylines written to file." << std::endl;
+				std::cout << "Polyline vector empty, no polylines written to file." << "\n";
 		}
 	}
 	else
-		std::cout << "Polyline vector empty, no polylines written to file." << std::endl;
+		std::cout << "Polyline vector empty, no polylines written to file." << "\n";
 
 
 	// SURFACES
@@ -366,11 +366,11 @@ int XmlGmlInterface::write(std::ostream& stream)
 				}
 			}
 			else
-				std::cout << "Surface vector empty, no surfaces written to file." << std::endl;
+				std::cout << "Surface vector empty, no surfaces written to file." << "\n";
 		}
 	}
 	else
-		std::cout << "Surface vector empty, no surfaces written to file." << std::endl;
+		std::cout << "Surface vector empty, no surfaces written to file." << "\n";
 
 
 	//insertStyleFileDefinition(filename);

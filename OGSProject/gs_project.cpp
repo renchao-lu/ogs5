@@ -71,7 +71,7 @@ std::string gsp_path_base;
 //  //
 //  ifstream gsp_file(gsp_this.data(),ios::in);
 //  if (!gsp_file.good()){
-//    cout << "Warning: no project data *.gsp file is missing" << endl;
+//    cout << "Warning: no project data *.gsp file is missing" << "\n";
 //    return;
 //  }
 //  gsp_file.clear();
@@ -257,7 +257,7 @@ void GSPWrite()
 		return;
 	gsp_file.seekg(0L,std::ios::beg);
 	//========================================================================
-	gsp_file << "#PROJECT_MEMBERS" << std::endl;
+	gsp_file << "#PROJECT_MEMBERS" << "\n";
 	//========================================================================
 	// GSP vector
 	std::string line;
@@ -265,7 +265,7 @@ void GSPWrite()
 	for(i = 0; i < gsp_vector_size; i++)
 	{
 		m_gsp = gsp_vector[i];
-		gsp_file << m_gsp->base << "." << m_gsp->type << std::endl;
+		gsp_file << m_gsp->base << "." << m_gsp->type << "\n";
 	}
 	gsp_file << "#STOP";
 	gsp_file.close();

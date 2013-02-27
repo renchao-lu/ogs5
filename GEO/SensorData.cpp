@@ -24,7 +24,7 @@ SensorData::SensorData(std::vector<size_t> time_steps)
 	for (size_t i=1; i<time_steps.size(); i++)
 	{
 		if (time_steps[i-1]>=time_steps[i])
-			std::cout << "Error in SensorData() - Time series has no order!" << std::endl;
+			std::cout << "Error in SensorData() - Time series has no order!" << "\n";
 	}
 }
 
@@ -48,10 +48,10 @@ void SensorData::addTimeSeries( SensorDataType::type data_name, std::vector<floa
 	if (_step_size>0)
 	{
 		if (((_end-_start)/_step_size) != data->size())
-			std::cout << "Warning in SensorData::addTimeSeries() - Lengths of time series does not match number of time steps." << std::endl;
+			std::cout << "Warning in SensorData::addTimeSeries() - Lengths of time series does not match number of time steps." << "\n";
 	}
 	else if  (data->size() != _time_steps.size())
-		std::cout << "Warning in SensorData::addTimeSeries() - Lengths of time series does not match number of time steps." << std::endl;
+		std::cout << "Warning in SensorData::addTimeSeries() - Lengths of time series does not match number of time steps." << "\n";
 	else
 	{
 		_vec_names.push_back(data_name);
@@ -68,7 +68,7 @@ const std::vector<float>* SensorData::getTimeSeries(SensorDataType::type time_se
 		if (time_series_name == _vec_names[i])
 			return _data_vecs[i];
 	}
-	std::cout << "Error in SensorData::getTimeSeries() - Time series \"" << time_series_name << "\" not found." << std::endl;
+	std::cout << "Error in SensorData::getTimeSeries() - Time series \"" << time_series_name << "\" not found." << "\n";
 	return NULL;
 }
 
@@ -79,7 +79,7 @@ const std::string SensorData::getDataUnit(SensorDataType::type time_series_name)
 		if (time_series_name == _vec_names[i])
 			return _data_unit_string[i];
 	}
-	std::cout << "Error in SensorData::getDataUnit() - Time series \"" << time_series_name << "\" not found." << std::endl;
+	std::cout << "Error in SensorData::getDataUnit() - Time series \"" << time_series_name << "\" not found." << "\n";
 	return "";
 }
 

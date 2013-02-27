@@ -99,7 +99,7 @@ int GridAdapter::convertCFEMesh(const MeshLib::CFEMesh* mesh)
 			_elems->push_back(newElem);
 		}
 		else
-			std::cout << "GridAdapter::convertCFEMesh() - Error recognising element type..." << std::endl;
+			std::cout << "GridAdapter::convertCFEMesh() - Error recognising element type..." << "\n";
 	}
 
 	return 1;
@@ -145,7 +145,7 @@ const MeshLib::CFEMesh* GridAdapter::toCFEMesh() const
 	}
 
 	mesh->ConstructGrid();
-	std::cout << "done." << std::endl;
+	std::cout << "done." << "\n";
 
 	return mesh;
 }
@@ -160,7 +160,7 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 	if (!in.is_open())
 	{
 		std::cout << "GridAdapter::readMeshFromFile() - Could not open file..."  <<
-		std::endl;
+		"\n";
 		return 0;
 	}
 
@@ -202,12 +202,12 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 			else
 				std::cout <<
 				"GridAdapter::readMeshFromFile() - Index error while reading nodes..."
-				          << std::endl;
+				          << "\n";
 		}
 		else
 			std::cout <<
 			"GridAdapter::readMeshFromFile() - Error reading node format..." <<
-			std::endl;
+			"\n";
 	}
 
 	if (line.compare("$ELEMENTS") == 0)
@@ -255,22 +255,22 @@ int GridAdapter::readMeshFromFile(const std::string &filename)
 					else
 						std::cout <<
 						"GridAdapter::readMeshFromFile() - Error recognising element type..."
-						          << std::endl;
+						          << "\n";
 				}
 				else
 					std::cout <<
 					"GridAdapter::readMeshFromFile() - Index error while reading element " << *it << "... "
-					          << std::endl;
+					          << "\n";
 			}
 			else
 				std::cout <<
 				"GridAdapter::readMeshFromFile() - Error reading element format..."
-				          << std::endl;
+				          << "\n";
 		}
 	}
 	else
 		std::cout <<
-		"GridAdapter::readMeshFromFile() - Index error after reading nodes..." << std::endl;
+		"GridAdapter::readMeshFromFile() - Index error after reading nodes..." << "\n";
 
 	in.close();
 

@@ -55,7 +55,7 @@ ProcessType convertProcessType ( const std::string& pcs_type_string )
 		return PTC_FLOW;
 	//else
 		//std::cout << "WARNING in convertProcessType: process type #" << pcs_type_string <<
-		//"# unknown" << std::endl;
+		//"# unknown" << "\n";
 	return INVALID_PROCESS;
 }
 
@@ -219,7 +219,7 @@ PrimaryVariable convertPrimaryVariable ( const std::string& pcs_pv_string )
 		return STRAIN_PLS;
 	//else
 	//{
-		//std::cout << "convertPrimaryVariable #" << pcs_pv_string << "# not found" << std::endl;
+		//std::cout << "convertPrimaryVariable #" << pcs_pv_string << "# not found" << "\n";
 		//exit (1);
 	//}
 	return INVALID_PV;
@@ -344,7 +344,7 @@ DistributionType convertDisType(const std::string& dis_type_string)
 	else
 	{
 		std::cout << "convertDisType #" << dis_type_string << "# not found"
-		          << std::endl;
+		          << "\n";
 		exit(1);
 	}
 	return INVALID_DIS_TYPE;
@@ -418,7 +418,7 @@ ErrorMethod convertErrorMethod(const std::string& error_method_string)
 		return BNORM;
 	else
 	{
-		std::cout << "convertErrorMethod #" << error_method_string << "# not found"<< std::endl;
+		std::cout << "convertErrorMethod #" << error_method_string << "# not found"<< "\n";
 		exit(1);
 	}
 	return INVALID_ERROR_METHOD;

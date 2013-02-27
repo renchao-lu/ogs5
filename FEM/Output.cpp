@@ -45,8 +45,8 @@ extern size_t max_dim;                            //OK411 todo
 #include "par_ddc.h"
 #endif
 #ifdef SUPERCOMPUTER
-// kg44 this is usefull for io-buffering as endl flushes the buffer
-#define endl '\n'     // Introduced by WW. LB super bad programming style: this breaks platform independet IO
+// kg44 this is usefull for io-buffering as "\n" flushes the buffer
+#define "\n" '\n'     // Introduced by WW. LB super bad programming style: this breaks platform independet IO
 #define MY_IO_BUFSIZE 4096
 #endif // SUPERCOMPUTER
 #ifdef GEM_REACT
@@ -86,23 +86,23 @@ void COutput::init()
 	{
 		std::cerr <<
 		"COutput::init(): could not initialize process pointer (process type INVALID_PROCESS) and appropriate mesh"
-		          << std::endl;
+		          << "\n";
 		std::cerr <<
 		"COutput::init(): trying to fetch process pointer using msh_type_name ... " <<
-		std::endl;
+		"\n";
 		if(msh_type_name.size() > 0)
 		{
 			_pcs = PCSGet(msh_type_name);
 			if (_pcs)
-				std::cerr << " successful" << std::endl;
+				std::cerr << " successful" << "\n";
 			else
 			{
-				std::cerr << " failed" << std::endl;
+				std::cerr << " failed" << "\n";
 				exit (1);
 			}
 		}
 		else
-			std::cerr << " failed" << std::endl;
+			std::cerr << " failed" << "\n";
 	}
 
 	m_msh = FEMGet(convertProcessTypeToString(getProcessType()));
@@ -452,65 +452,65 @@ void COutput::Write(fstream* out_file)
 {
 	//--------------------------------------------------------------------
 	// KEYWORD
-	*out_file << "#OUTPUT" << endl;
+	*out_file << "#OUTPUT" << "\n";
 	//--------------------------------------------------------------------
 	// PCS_TYPE
-	*out_file << " $PCS_TYPE" << std::endl << "  ";
-	*out_file << convertProcessTypeToString(getProcessType()) << std::endl;
+	*out_file << " $PCS_TYPE" << "\n" << "  ";
+	*out_file << convertProcessTypeToString(getProcessType()) << "\n";
 	//--------------------------------------------------------------------
 	// NOD_VALUES
-	*out_file << " $NOD_VALUES" << endl;
+	*out_file << " $NOD_VALUES" << "\n";
 	size_t nod_value_vector_size(_nod_value_vector.size());
 	for (size_t i = 0; i < nod_value_vector_size; i++)
-		*out_file << "  " << _nod_value_vector[i] << endl;
+		*out_file << "  " << _nod_value_vector[i] << "\n";
 	//--------------------------------------------------------------------
 	// ELE_VALUES
-	*out_file << " $ELE_VALUES" << endl;
+	*out_file << " $ELE_VALUES" << "\n";
 	size_t ele_value_vector_size (_ele_value_vector.size());
 	for (size_t i = 0; i < ele_value_vector_size; i++)
-		*out_file << "  " << _ele_value_vector[i] << endl;
+		*out_file << "  " << _ele_value_vector[i] << "\n";
 	//--------------------------------------------------------------------
 	// GEO_TYPE
-	*out_file << " $GEO_TYPE" << endl;
+	*out_file << " $GEO_TYPE" << "\n";
 	*out_file << "  ";
-	*out_file << getGeoTypeAsString() << " " << geo_name << endl;
+	*out_file << getGeoTypeAsString() << " " << geo_name << "\n";
 	//--------------------------------------------------------------------
 	// TIM_TYPE
-	*out_file << " $TIM_TYPE" << endl;
+	*out_file << " $TIM_TYPE" << "\n";
 	if (tim_type_name == "STEPS")
-		*out_file << "  " << tim_type_name << " " << nSteps << endl;
+		*out_file << "  " << tim_type_name << " " << nSteps << "\n";
 	else
 	{
 		size_t time_vector_size (time_vector.size());
 		for (size_t i = 0; i < time_vector_size; i++)
-			*out_file << "  " << time_vector[i] << endl;
+			*out_file << "  " << time_vector[i] << "\n";
 	}
 
 	// DIS_TYPE
 	//	if (_dis_type_name.size() > 0) {
-	//		*out_file << " $DIS_TYPE" << endl;
+	//		*out_file << " $DIS_TYPE" << "\n";
 	//		*out_file << "  ";
-	//		*out_file << _dis_type_name << endl;
+	//		*out_file << _dis_type_name << "\n";
 	//	}
 	if (getProcessDistributionType() != FiniteElement::INVALID_DIS_TYPE)
 	{
-		*out_file << " $DIS_TYPE" << endl;
+		*out_file << " $DIS_TYPE" << "\n";
 		*out_file << "  ";
-		*out_file << convertDisTypeToString (getProcessDistributionType()) << std::endl;
+		*out_file << convertDisTypeToString (getProcessDistributionType()) << "\n";
 	}
 
 	// MSH_TYPE
 	if (msh_type_name.size() > 0)
 	{
-		*out_file << " $MSH_TYPE" << endl;
+		*out_file << " $MSH_TYPE" << "\n";
 		*out_file << "  ";
-		*out_file << msh_type_name << endl;
+		*out_file << msh_type_name << "\n";
 	}
 	//--------------------------------------------------------------------
 	// DAT_TYPE
-	*out_file << " $DAT_TYPE" << endl;
+	*out_file << " $DAT_TYPE" << "\n";
 	*out_file << "  ";
-	*out_file << dat_type_name << endl;
+	*out_file << dat_type_name << "\n";
 	//--------------------------------------------------------------------
 }
 
@@ -544,7 +544,7 @@ void COutput::NODWriteDOMDataTEC()
 	//  m_msh = GetMSH();
 	if(!m_msh)
 	{
-		cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << endl;
+		cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << "\n";
 		return;
 	}
 	//======================================================================
@@ -650,7 +650,7 @@ void COutput::NODWriteDOMDataTEC()
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 		sprintf(tf_name, "%d", myrank);
 		tec_file_name += "_" + string(tf_name);
-		std::cout << "Tecplot filename: " << tec_file_name << endl;
+		std::cout << "Tecplot filename: " << tec_file_name << "\n";
 #endif
 		tec_file_name += TEC_FILE_EXTENSION;
 		//WW
@@ -937,7 +937,7 @@ void COutput::WriteTECNodeData(fstream &tec_file)
 				tec_file << MFPGetNodeValue(m_msh->nod_vector[j]->GetIndex(),
 				                            mfp_value_vector[k], atoi(&mfp_value_vector[k][mfp_value_vector[k].size() - 1]) - 1) << " ";  //NB: MFP output for all phases
 		}
-		tec_file << endl;
+		tec_file << "\n";
 	}
 }
 
@@ -1013,7 +1013,7 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 	for (size_t k = 0; k < nPconName; k++)
 		//MX
 		tec_file << ", " << _pcon_value_vector[k] << "";
-	tec_file << endl;
+	tec_file << "\n";
 
 	//--------------------------------------------------------------------
 	// Write Header II: zone
@@ -1024,12 +1024,12 @@ void COutput::WriteTECHeader(fstream &tec_file,int e_type, string e_type_name)
 	tec_file << "E=" << no_elements << ", ";
 	tec_file << "F=" << "FEPOINT" << ", ";
 	tec_file << "ET=" << e_type_name;
-	tec_file << endl;
+	tec_file << "\n";
 	//--------------------------------------------------------------------
     // Write Header III: solution time			; BG 05/2011
     tec_file << "STRANDID=1, SOLUTIONTIME=";
     tec_file << _time;			// << "s\"";
-    tec_file << endl;
+    tec_file << "\n";
 
     //--------------------------------------------------------------------
     // Write Header IV: Variable sharing		; BG 05/2011
@@ -1094,7 +1094,7 @@ void COutput::WriteELEValuesTECHeader(fstream &tec_file)
 		//WW
 		if (_ele_value_vector[i].find("VELOCITY") == string::npos)
 			tec_file << "," << _ele_value_vector[i];
-	tec_file << endl;
+	tec_file << "\n";
 
 	// Write Header II: zone
 	tec_file << "ZONE T=\"";
@@ -1102,7 +1102,7 @@ void COutput::WriteELEValuesTECHeader(fstream &tec_file)
 	tec_file << "I=" << (long) m_msh->ele_vector.size() << ", ";
 	tec_file << "F=POINT" << ", ";
 	tec_file << "C=BLACK";
-	tec_file << endl;
+	tec_file << "\n";
 }
 
 /**************************************************************************
@@ -1183,7 +1183,7 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 		   tec_file << ElGetElementVal(i,eidx) << " ";
 		   }
 		 */
-		tec_file << endl;
+		tec_file << "\n";
 	}
 
 	ele_value_index_vector.clear();
@@ -1223,7 +1223,7 @@ double COutput::NODWritePLYDataTEC(int number)
 	if (this->getGeoType() != GEOLIB::POLYLINE || ply == NULL)
 	{
 		std::cerr << "COutput::NODWritePLYDataTEC geometric object is not a polyline" <<
-		std::endl;
+		"\n";
 		return 0.0;
 	}
 
@@ -1259,9 +1259,9 @@ double COutput::NODWritePLYDataTEC(int number)
 //   CGLPolyline* m_ply = GEOGetPLYByName(geo_name);//CC
 //   if (!m_ply)
 //   {
-//      cout << "Warning in COutput::NODWritePLYDataTEC - no GEO data" << endl;
+//      cout << "Warning in COutput::NODWritePLYDataTEC - no GEO data" << "\n";
 //      tec_file << "Warning in COutput::NODWritePLYDataTEC - no GEO data: "
-//         << geo_name << endl;
+//         << geo_name << "\n";
 //      tec_file.close();
 //      return 0.0;
 //   }
@@ -1270,8 +1270,8 @@ double COutput::NODWritePLYDataTEC(int number)
 	//	CFEMesh* m_msh = GetMSH();
 	//	m_msh = GetMSH();
 	if (!m_msh)
-		cout << "Warning in COutput::NODWritePLYDataTEC - no MSH data" << endl;
-	//OKtec_file << "Warning in COutput::NODWritePLYDataTEC - no MSH data: " << geo_name << endl;
+		cout << "Warning in COutput::NODWritePLYDataTEC - no MSH data" << "\n";
+	//OKtec_file << "Warning in COutput::NODWritePLYDataTEC - no MSH data: " << geo_name << "\n";
 	//OKtec_file.close();
 	//OKToDo return;
 	else
@@ -1298,8 +1298,8 @@ double COutput::NODWritePLYDataTEC(int number)
 	   //m_pcs_flow = PCSGet("GROUNDWATER_FLOW"); //OKToDo
 	   if (!m_pcs_flow)
 	   {
-	   //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
-	   //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
+	   //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << "\n";
+	   //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << "\n";
 	   //tec_file.close();
 	   //return 0.0;
 	   }
@@ -1315,8 +1315,8 @@ double COutput::NODWritePLYDataTEC(int number)
 //   {
 //      if (v_eidx[i] < 0)
 //      {
-//         //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << endl;
-//         //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << endl;
+//         //WW cout << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data" << "\n";
+//         //tec_file << "Warning in COutput::NODWritePLYDataTEC() - no PCS flow data " << "\n";
 //         //tec_file.close();
 //      }
 //   }
@@ -1334,7 +1334,7 @@ double COutput::NODWritePLYDataTEC(int number)
 
 	    if (dat_type_name.compare("GNUPLOT") != 0) // 5.3.07 JOD
 		   tec_file << " TITLE = \"" << project_title_string
-		         << "\"" << endl;
+		         << "\"" << "\n";
 		else
 		   tec_file << "# ";
 
@@ -1362,7 +1362,7 @@ double COutput::NODWritePLYDataTEC(int number)
 
 			tec_file << " p_(1st_Invariant) " << " q_(2nd_Invariant)  "
 			         << " Effective_Strain";
-		tec_file << endl;
+		tec_file << "\n";
 	}
 	//....................................................................
 	// WW: M specific data
@@ -1387,11 +1387,11 @@ double COutput::NODWritePLYDataTEC(int number)
 		}
 	}
 	//......................................................................
-	// , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
+	// , I=" << NodeListLength << ", J=1, K=1, F=POINT" << "\n";
 	if (dat_type_name.compare("GNUPLOT") == 0) // 6/2012 JOD
 		tec_file << "# ";
 
-	tec_file << " ZONE T=\"TIME=" << _time << "\"" << endl;
+	tec_file << " ZONE T=\"TIME=" << _time << "\"" << "\n";
 	//----------------------------------------------------------------------
 	// Write data
 	//======================================================================
@@ -1412,7 +1412,7 @@ double COutput::NODWritePLYDataTEC(int number)
 	m_msh->getPointsForInterpolationAlongPolyline (ply, interpolation_points);
 	m_msh->setMinEdgeLength(tmp_min_edge_length);
 
-//   std::cout << "size of nodes_vector: " << nodes_vector.size() << ", size of old_nodes_vector: " << old_nodes_vector.size() << std::endl;
+//   std::cout << "size of nodes_vector: " << nodes_vector.size() << ", size of old_nodes_vector: " << old_nodes_vector.size() << "\n";
 	//bool b_specified_pcs = (m_pcs != NULL); //NW m_pcs = PCSGet(pcs_type_name);
 	for (size_t j(0); j < nodes_vector.size(); j++)
 	{
@@ -1431,10 +1431,10 @@ double COutput::NODWritePLYDataTEC(int number)
 			if (!m_pcs)
 			{
 				cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data"
-				     << endl;
+				     << "\n";
 				tec_file
 				<< "Warning in COutput::NODWritePLYDataTEC - no PCS data"
-				<< endl;
+				<< "\n";
 				return 0.0;
 			}
 			// WW
@@ -1455,7 +1455,7 @@ double COutput::NODWritePLYDataTEC(int number)
 				tec_file << flux_nod << " ";
 				//flux_sum += abs(m_pcs->eqs->b[gnode]);
 				flux_sum += abs(flux_nod);
-				//OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
+				//OK cout << gnode << " " << flux_nod << " " << flux_sum << "\n";
 			}
 		}
 		if (dm_pcs) //WW
@@ -1483,7 +1483,7 @@ double COutput::NODWritePLYDataTEC(int number)
 			                                                         ].size() - 1]) - 1)
 			<< " ";  //NB: MFP output for all phases
 
-		tec_file << endl;
+		tec_file << "\n";
 	}
 	tec_file.close();                     // kg44 close file
 	return flux_sum;
@@ -1538,9 +1538,9 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 	if (!m_msh)
 	{
 		cout << "Warning in COutput::NODWritePNTDataTEC - no MSH data: "
-		     << endl;
+		     << "\n";
 		tec_file << "Warning in COutput::NODWritePNTDataTEC - no MSH data: "
-		         << endl;
+		         << "\n";
 		tec_file.close();
 		return;
 	}
@@ -1557,7 +1557,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 		//project_title;
 		if (dat_type_name.compare("GNUPLOT") != 0) { // 6/2012 JOD
 			const std::string project_title_string ("Time curves in points");
-			tec_file << " TITLE = \"" << project_title_string << "\"" << endl;
+			tec_file << " TITLE = \"" << project_title_string << "\"" << "\n";
 		} else
 					tec_file << "# ";
 
@@ -1594,18 +1594,18 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 		if (dm_pcs)               //WW
 			tec_file << " p_(1st_Invariant) " << " q_(2nd_Invariant)  "
 			         << " Effective_Strain";
-		tec_file << endl;
+		tec_file << "\n";
 
 		if (dat_type_name.compare("GNUPLOT") == 0) // 5.3.07 JOD
 		  tec_file << "# "; // comment
 
 		if (geo_name.find("POINT") == std::string::npos)
 			tec_file << " ZONE T=\"POINT="
-			//, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
-			         << getGeoTypeAsString() << geo_name << "\"" << endl;
+			//, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << "\n";
+			         << getGeoTypeAsString() << geo_name << "\"" << "\n";
 		else
 			tec_file << " ZONE T=\"POINT=" << geo_name << "\""
-			         << endl;  //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
+			         << "\n";  //, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << "\n";
 	}
 
 	// For deformation
@@ -1701,10 +1701,10 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 			if (!m_pcs)
 			{
 				cout << "Warning in COutput::NODWritePLYDataTEC - no PCS data"
-				     << endl;
+				     << "\n";
 				tec_file
 				<< "Warning in COutput::NODWritePLYDataTEC - no PCS data"
-				<< endl;
+				<< "\n";
 				return;
 			}
 			//..................................................................
@@ -1728,7 +1728,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 				tec_file << flux_nod << " ";
 				//flux_sum += abs(m_pcs->eqs->b[gnode]);
 				flux_sum += abs(flux_nod);
-				//OK cout << gnode << " " << flux_nod << " " << flux_sum << endl;
+				//OK cout << gnode << " " << flux_nod << " " << flux_sum << "\n";
 			}
 		}
 		//....................................................................
@@ -1764,7 +1764,7 @@ void COutput::NODWritePNTDataTEC(double time_current,int time_step_number)
 			                                                      size() - 1])
 			                            - 1) << " ";  //NB
 	}
-	tec_file << endl;
+	tec_file << "\n";
 	//----------------------------------------------------------------------
 	tec_file.close();                     // kg44 close file
 }
@@ -1777,20 +1777,20 @@ void COutput::WriteRFOHeader(fstream &rfo_file)
 	rfo_file << "#0#";
 	rfo_file << OGS_VERSION;
 	rfo_file << "###########################################";
-	rfo_file << endl;
+	rfo_file << "\n";
 }
 
 void COutput::WriteRFONodes(fstream &rfo_file)
 {
 	//0 101 100
 	rfo_file << 0 << " " << m_msh->nod_vector.size() << " "
-	         << m_msh->ele_vector.size() << std::endl;
+	         << m_msh->ele_vector.size() << "\n";
 	//0 0.00000000000000 0.00000000000000 0.00000000000000
 	for (size_t i = 0; i < m_msh->nod_vector.size(); i++)
 	{
 		double const* const pnt_i (m_msh->nod_vector[i]->getData());
 		rfo_file << i << " " << pnt_i[0] << " " << pnt_i[1] << " "
-		         << pnt_i[2] << " " << std::endl;
+		         << pnt_i[2] << " " << "\n";
 	}
 }
 
@@ -1807,7 +1807,7 @@ void COutput::WriteRFOElements(fstream &rfo_file)
 		         << m_ele->GetName() << " ";
 		for(j = 0; j < m_ele->GetNodesNumber(false); j++)
 			rfo_file << m_ele->getNodeIndices()[j] << " ";
-		rfo_file << endl;
+		rfo_file << "\n";
 	}
 }
 
@@ -1816,13 +1816,13 @@ void COutput::WriteRFOValues(fstream &rfo_file)
 	int p,nidx;
 	CRFProcess* m_pcs = NULL;
 	//1 2 4
-	rfo_file << "1 1 4" << endl;
+	rfo_file << "1 1 4" << "\n";
 	//2 1 1
 	int no_processes = (int)pcs_vector.size();
 	rfo_file << no_processes;
 	for(p = 0; p < no_processes; p++)
 		rfo_file << " 1";
-	rfo_file << endl;
+	rfo_file << "\n";
 	//PRESSURE1, Pa
 	// Names and units
 	for(p = 0; p < no_processes; p++)
@@ -1831,7 +1831,7 @@ void COutput::WriteRFOValues(fstream &rfo_file)
 		rfo_file << m_pcs->pcs_primary_function_name[0];
 		rfo_file << ", ";
 		rfo_file << m_pcs->pcs_primary_function_unit[0];
-		rfo_file << endl;
+		rfo_file << "\n";
 	}
 	//0 0.00000000000000 0.00000000000000
 	// Node values
@@ -1844,7 +1844,7 @@ void COutput::WriteRFOValues(fstream &rfo_file)
 			nidx = m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[0]) + 1;
 			rfo_file << " " << m_pcs->GetNodeValue(i,nidx);
 		}
-		rfo_file << " " << endl;
+		rfo_file << " " << "\n";
 	}
 }
 
@@ -1853,7 +1853,7 @@ void COutput::WriteRFO()
 	m_msh = FEMGet(convertProcessTypeToString (getProcessType()));
 	if(!m_msh)
 	{
-		cout << "Warning in COutput::WriteRFONodes - no MSH data" << endl;
+		cout << "Warning in COutput::WriteRFONodes - no MSH data" << "\n";
 		return;
 	}
 	//--------------------------------------------------------------------
@@ -1921,13 +1921,13 @@ void COutput::NODWriteSFCDataTEC(int number)
 	//project_title;
 	string project_title_string = "Profile at surface";
 	tec_file << " TITLE = \"" << project_title_string << "\""
-	         << endl;
+	         << "\n";
 	tec_file << " VARIABLES = \"X\",\"Y\",\"Z\",";
 	for (size_t k = 0; k < _nod_value_vector.size(); k++)
 		tec_file << _nod_value_vector[k] << ",";
-	tec_file << endl;
-	// , I=" << NodeListLength << ", J=1, K=1, F=POINT" << endl;
-	tec_file << " ZONE T=\"TIME=" << _time << "\"" << endl;
+	tec_file << "\n";
+	// , I=" << NodeListLength << ", J=1, K=1, F=POINT" << "\n";
+	tec_file << " ZONE T=\"TIME=" << _time << "\"" << "\n";
 	//--------------------------------------------------------------------
 	// Write data
 	std::vector<long> nodes_vector;
@@ -1947,12 +1947,12 @@ void COutput::NODWriteSFCDataTEC(int number)
 				int nidx = m_pcs->GetNodeValueIndex(_nod_value_vector[k]) + 1;
 				tec_file << m_pcs->GetNodeValue(nodes_vector[i], nidx) << " ";
 			}
-			tec_file << endl;
+			tec_file << "\n";
 		}
 	}
 	else
 		tec_file << "Error in NODWritePLYDataTEC: polyline " << geo_name
-		         << " not found" << endl;
+		         << " not found" << "\n";
 	tec_file.close();                     // kg44 close file
 }
 
@@ -1981,7 +1981,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 	if (!m_sfc)
 	{
 		cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no GEO data"
-		     << endl;
+		     << "\n";
 		return;
 	}
 	//	CFEMesh* m_msh = NULL;
@@ -1989,13 +1989,13 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 	if (!m_msh)
 	{
 		cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no MSH data"
-		     << endl;
+		     << "\n";
 		return;
 	}
 	CRFProcess* m_pcs(PCSGet(getProcessType()));
 	if (!m_pcs)
 		no_pcs = true;
-	//cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no PCS data" << endl;
+	//cout << "Warning in COutput::NODWriteSFCAverageDataTEC - no PCS data" << "\n";
 	//return;
 	//--------------------------------------------------------------------
 	// File handling
@@ -2022,13 +2022,13 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 		//project_title;
 		string project_title_string = "Time curve at surface";
 		tec_file << " TITLE = \"" << project_title_string
-		         << "\"" << endl;
+		         << "\"" << "\n";
 		tec_file << " VARIABLES = Time ";
 		for (size_t i = 0; i < _nod_value_vector.size(); i++)
 			tec_file << _nod_value_vector[i] << " ";
-		tec_file << endl;
-		//, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << endl;
-		tec_file << " ZONE T=\"SFC=" << geo_name << "\"" << endl;
+		tec_file << "\n";
+		//, I=" << anz_zeitschritte << ", J=1, K=1, F=POINT" << "\n";
+		tec_file << " ZONE T=\"SFC=" << geo_name << "\"" << "\n";
 	}
 	//--------------------------------------------------------------------
 	// node_value_index_vector
@@ -2076,7 +2076,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 			dtemp /= t_flux;
 			tec_file << dtemp << " ";
 		}
-		tec_file << endl;
+		tec_file << "\n";
 	}
 	else
 	{
@@ -2100,7 +2100,7 @@ void COutput::NODWriteSFCAverageDataTEC(double time_current,int time_step_number
 			dtemp /= t_flux;
 			tec_file << dtemp << " ";
 		}
-		tec_file << endl;
+		tec_file << "\n";
 	}
 	tec_file.close();                     // kg44 close file
 }
@@ -2120,7 +2120,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
 			{
 				cout
 				<< "Warning in COutput::GetNodeIndexVector - no PCS data: "
-				<< _nod_value_vector[k] << endl;
+				<< _nod_value_vector[k] << "\n";
 				return;
 			}
 			NodeIndex[k] = pcs->GetNodeValueIndex(_nod_value_vector[k],true);  // JT latest
@@ -2132,7 +2132,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
 		if (!pcs)
 		{
 			cout << "Warning in COutput::GetNodeIndexVector - no PCS data"
-			     << endl;
+			     << "\n";
 			return;
 		}
 		for (size_t k = 0; k < nName; k++)
@@ -2150,7 +2150,7 @@ void COutput::GetNodeIndexVector(vector<int>&NodeIndex)
 			{
 				cout
 				<< "Warning in COutput::GetNodeIndexVector - no PCS data: "
-				<< _nod_value_vector[k] << endl;
+				<< _nod_value_vector[k] << "\n";
 				return;
 			}
 			NodeIndex[k] = pcs->GetNodeValueIndex(_nod_value_vector[k],true); // JT latest
@@ -2240,21 +2240,21 @@ void COutput::SetNODFluxAtPLY()
 	//  CGLPolyline* ply = GEOGetPLYByName(geo_name);
 	//	CGLPolyline* ply = polyline_vector[getGeoObjIdx()];
 	//	if (!ply) {
-	//		cout << "Warning in COutput::SetNODFluxAtPLY() - no PLY data" << endl;
+	//		cout << "Warning in COutput::SetNODFluxAtPLY() - no PLY data" << "\n";
 	//		return;
 	//	}
 
 	//	CFEMesh* msh = GetMSH();
 	if (!m_msh)
 	{
-		cout << "Warning in COutput::SetNODFluxAtPLY() - no MSH data" << endl;
+		cout << "Warning in COutput::SetNODFluxAtPLY() - no MSH data" << "\n";
 		return;
 	}
 
 	CRFProcess* pcs = GetPCS("FLUX");
 	if (!pcs)
 	{
-		cout << "Warning in COutput::SetNODFluxAtPLY() - no PCS data" << endl;
+		cout << "Warning in COutput::SetNODFluxAtPLY() - no PCS data" << "\n";
 		return;
 	}
 
@@ -2317,7 +2317,7 @@ void COutput::ELEWriteSFC_TECHeader(fstream &tec_file)
 	tec_file << "VARIABLES = \"X\",\"Y\",\"Z\"";
 	for (size_t i = 0; i < _ele_value_vector.size(); i++)
 		tec_file << "," << _ele_value_vector[i];
-	tec_file << endl;
+	tec_file << "\n";
 	//--------------------------------------------------------------------
 	// Write Header II: zone
 	tec_file << "ZONE T=\"";
@@ -2325,12 +2325,12 @@ void COutput::ELEWriteSFC_TECHeader(fstream &tec_file)
 	tec_file << "I=" << (long) m_msh->ele_vector.size() << ", ";
 	tec_file << "F=POINT" << ", ";
 	tec_file << "C=BLACK";
-	tec_file << endl;
+	tec_file << "\n";
 }
 
 void COutput::ELEWriteSFC_TECData(fstream &tec_file)
 {
-	tec_file << "COutput::ELEWriteSFC_TECData - implementation not finished" << endl;
+	tec_file << "COutput::ELEWriteSFC_TECData - implementation not finished" << "\n";
 
 	/* // Make it as comment to avoid compilation warnings. 18.082011 WW
 	   long i;
@@ -2387,12 +2387,12 @@ void COutput::CalcELEFluxes()
 	const FiniteElement::ProcessType pcs_type (getProcessType());
 	if (pcs_type == FiniteElement::INVALID_PROCESS)      // WW moved it here.
 
-		//WW cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << endl;
+		//WW cout << "Warning in COutput::CalcELEFluxes(): no PCS data" << "\n";
 		return;
 
 	CRFProcess* pcs = PCSGet(getProcessType());
     //BG 04/2011: MASS_TRANSPORT added to get MASS FLUX for Polylines
-    //cout << pcs->Tim->step_current << endl;
+    //cout << pcs->Tim->step_current << "\n";
     if (isDeformationProcess(pcs_type) || (!isFlowProcess (pcs_type) && (pcs_type != FiniteElement::MASS_TRANSPORT))
 	//if (isDeformationProcess(pcs_type) || !isFlowProcess (pcs_type)
 	    //WW
@@ -2406,7 +2406,7 @@ void COutput::CalcELEFluxes()
 	{
 		//		CGLPolyline* ply = GEOGetPLYByName(geo_name);
 		//		if (!ply)
-		//			std::cout << "Warning in COutput::CalcELEFluxes - no GEO data" << std::endl;
+		//			std::cout << "Warning in COutput::CalcELEFluxes - no GEO data" << "\n";
 
 		 //BG 04/2011: ELEWritePLY_TEC does not work for MASS_TRANSPORT because there is no flux considered
 		if (pcs_type != FiniteElement::MASS_TRANSPORT)
@@ -2480,7 +2480,7 @@ void COutput::CalcELEFluxes()
 		//pcs->CalcELEFluxes(m_dom);
 		break;
 	default:
-		cout << "Warning in COutput::CalcELEFluxes(): no GEO type data" << endl;
+		cout << "Warning in COutput::CalcELEFluxes(): no GEO type data" << "\n";
 	}
 
 	// WW   pcs->CalcELEFluxes(ply) changed 'mark' of elements
@@ -2541,12 +2541,12 @@ void COutput::ELEWritePLY_TECHeader(fstream &tec_file)
 	tec_file << "VARIABLES = \"X\",\"Y\",\"Z\"";
 	for (size_t i = 0; i < _ele_value_vector.size(); i++)
 		tec_file << "," << _ele_value_vector[i];
-	tec_file << endl;
+	tec_file << "\n";
 
 	// Write Header II: zone
 	tec_file << "ZONE T=\"";
 	tec_file << _time << "s\", ";
-	tec_file << endl;
+	tec_file << "\n";
 }
 
 /**************************************************************************
@@ -2633,7 +2633,7 @@ void COutput::ELEWritePLY_TECData(fstream &tec_file)
 		tec_file << " " << pcs->GetElementValue(m_ele->GetIndex(), f_eidx[0]);
 		tec_file << " " << pcs->GetElementValue(m_ele->GetIndex(), f_eidx[1]);
 		tec_file << " " << pcs->GetElementValue(m_ele->GetIndex(), f_eidx[2]);
-		tec_file << endl;
+		tec_file << "\n";
 	}
 }
 
@@ -2678,15 +2678,15 @@ void COutput::TIMValue_TEC(double tim_value)
     if(aktueller_zeitschritt==0)		//BG:04/2011 bevor it was timestep 1
 	{
 		tec_file << "VARIABLES = \"Time\",\"Value\"";
-		tec_file << endl;
+		tec_file << "\n";
 		//--------------------------------------------------------------------
 		// Write Header II: zone
 		tec_file << "ZONE T=";
 		tec_file << geo_name;
-		tec_file << endl;
+		tec_file << "\n";
 	}
 	//--------------------------------------------------------------------
-	tec_file << aktuelle_zeit << " " << tim_value << endl;
+	tec_file << aktuelle_zeit << " " << tim_value << "\n";
 	//--------------------------------------------------------------------
 	tec_file.close();                     // kg44 close file
 }
@@ -2745,18 +2745,18 @@ void COutput::TIMValues_TEC(double tim_value[5], std::string *header, int dimens
 	  tec_file << "VARIABLES = \"Time\"";
 	  for (int i = 0; i < dimension; i++)
          tec_file << ",\"" << header[i] << "\"";
-      tec_file << endl;
+      tec_file << "\n";
       //--------------------------------------------------------------------
       // Write Header II: zone
       tec_file << "ZONE T=";
       tec_file << geo_name;
-      tec_file << endl;
+      tec_file << "\n";
    }
    //--------------------------------------------------------------------
    tec_file << aktuelle_zeit;
    for (int i = 0; i < dimension; i++)
       tec_file << " " << j[i];
-   tec_file << endl;
+   tec_file << "\n";
    //--------------------------------------------------------------------
    tec_file.close();                              // kg44 close file
 
@@ -2802,7 +2802,7 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
 	if (!m_msh)
 	{
 		cout << "Warning in COutput::NODWriteLAYDataTEC() - no MSH data"
-		     << endl;
+		     << "\n";
 		return;
 	}
 
@@ -2831,7 +2831,7 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
 	tec_file << "VARIABLES = X,Y,Z,N";
 	for (size_t k = 0; k < nName; k++)
 		tec_file << "," << _nod_value_vector[k] << " ";
-	tec_file << endl;
+	tec_file << "\n";
 
 	long j;
 	long no_per_layer = m_msh->GetNodesNumber(false)
@@ -2840,7 +2840,7 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
 	for (size_t l = 0; l < m_msh->getNumberOfMeshLayers() + 1; l++)
 	{
 		//--------------------------------------------------------------------
-		tec_file << "ZONE T=LAYER" << l << endl;
+		tec_file << "ZONE T=LAYER" << l << "\n";
 		//--------------------------------------------------------------------
 		for (j = 0l; j < no_per_layer; j++)
 		{
@@ -2856,7 +2856,7 @@ void COutput::NODWriteLAYDataTEC(int time_step_number)
 			for (size_t k = 0; k < nName; k++)
 				tec_file << m_pcs->GetNodeValue(
 				        m_msh->nod_vector[jl]->GetIndex(), NodeIndex[k]) << " ";
-			tec_file << endl;
+			tec_file << "\n";
 		}
 	}
 	tec_file.close();                     // kg44 close file
@@ -2888,7 +2888,7 @@ void COutput::PCONWriteDOMDataTEC()
 	//  m_msh = GetMSH();
 	if(!m_msh)
 	{
-		cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << endl;
+		cout << "Warning in COutput::NODWriteDOMDataTEC() - no MSH data" << "\n";
 		return;
 	}
 	//======================================================================
@@ -2990,7 +2990,7 @@ void COutput::PCONWriteDOMDataTEC()
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 		sprintf(tf_name, "%d", myrank);
 		tec_file_name += "_" + string(tf_name);
-		std::cout << "Tecplot filename: " << tec_file_name << endl;
+		std::cout << "Tecplot filename: " << tec_file_name << "\n";
 #endif
 		tec_file_name += TEC_FILE_EXTENSION;
 		//WW
@@ -3198,7 +3198,7 @@ void COutput::WriteTECNodePCONData(fstream &tec_file)
 			tec_file << eq->GetPconAq_mol_amount(j,PconIndex[k]) << " ";
 
 #endif
-		tec_file << endl;
+		tec_file << "\n";
 	}
 }
 
@@ -3235,24 +3235,24 @@ void COutput::checkConsistency ()
 				switch (getGeoType())
 				{
 				case GEOLIB::POINT:
-					std::cout << "POINT " << getGeoName() << std::endl;
+					std::cout << "POINT " << getGeoName() << "\n";
 					break;
 				case GEOLIB::POLYLINE:
-					std::cout << "POLYLINE " << getGeoName() << std::endl;
+					std::cout << "POLYLINE " << getGeoName() << "\n";
 					break;
 				case GEOLIB::SURFACE:
-					std::cout << "SURFACE " << getGeoName() << std::endl;
+					std::cout << "SURFACE " << getGeoName() << "\n";
 					break;
 				case GEOLIB::VOLUME:
-					std::cout << "VOLUME " << getGeoName() << std::endl;
+					std::cout << "VOLUME " << getGeoName() << "\n";
 					break;
 				case GEOLIB::GEODOMAIN:
-					std::cout << "DOMAIN " << getGeoName() << std::endl;
+					std::cout << "DOMAIN " << getGeoName() << "\n";
 					break;
 				case GEOLIB::INVALID:
 					std::cout <<
 					"WARNING: COutput::checkConsistency - invalid geo type" <<
-					endl;
+					"\n";
 					break;
 				}
 			}
@@ -3262,7 +3262,7 @@ void COutput::checkConsistency ()
 		if (del_index.size() < _nod_value_vector.size())
 		{
 			std::cout << " Reducing output to variables with existing PCS-data " <<
-			std::endl;
+			"\n";
 			_nod_value_vector.clear();
 			for (size_t j = 0; j < del_index.size(); j++)
 				_nod_value_vector.push_back(del_index[j]);
@@ -3273,7 +3273,7 @@ void COutput::checkConsistency ()
 		if (!pcs)
 			pcs = this->GetPCS();
 		if (!pcs)
-			cout << "Warning in OUTData - no PCS data" << endl;
+			cout << "Warning in OUTData - no PCS data" << "\n";
 	}                                     // end if(_nod_value_vector.size()>0)
 }
 
@@ -3292,7 +3292,7 @@ void COutput::setInternalVarialbeNames(CFEMesh *msh)
     bool isPVD = (dat_type_name.compare("PVD") == 0); //currently only for PVD
 
     if (isXZplane && isPVD) {
-        std::cout << "-> recognized XZ plane for PVD output." << std::endl;
+        std::cout << "-> recognized XZ plane for PVD output." << "\n";
         map<string,string> map_output_variable_name;
         map_output_variable_name.insert(pair<string, string>("DISPLACEMENT_Y1", "DISPLACEMENT_Z1" ));
         map_output_variable_name.insert(pair<string, string>("DISPLACEMENT_Z1", "DISPLACEMENT_Y1" ));
@@ -3328,7 +3328,7 @@ void COutput::setInternalVarialbeNames(CFEMesh *msh)
     bool isPVD = (dat_type_name.compare("PVD") == 0); //currently only for PVD
 
     if (isXZplane && isPVD) {
-        std::cout << "-> recognized XZ plane for PVD output." << std::endl;
+        std::cout << "-> recognized XZ plane for PVD output." << "\n";
         map<string,string> map_output_variable_name;
         map_output_variable_name.insert(pair<string, string>("DISPLACEMENT_Y1", "DISPLACEMENT_Z1" ));
         map_output_variable_name.insert(pair<string, string>("DISPLACEMENT_Z1", "DISPLACEMENT_Y1" ));
@@ -3657,7 +3657,7 @@ void COutput::NODWriteWaterBalancePNT(double time_current)
 									- m_pcs->m_msh->nod_vector[msh_node_number]->getData()[2]);
 
 	tec_file << "time: " << time_current << " groundwater discharge (m^3/s): " << volume_flux
-					<< endl;
+					<< "\n";
 
 	tec_file.close();
 
@@ -3706,7 +3706,7 @@ void COutput::NODWriteWaterBalancePLY(double time_current)
 	if (ply) {
 		m_msh->GetNODOnPLY(ply, nodes_vector);
 		volume_flux = 0;
-		tec_file << "time: " << _time << endl;
+		tec_file << "time: " << _time << "\n";
 		for (int i = 0; i < (long) nodes_vector.size(); i++) {
 			volume_flux_node = m_pcs->GetNodeValue(nodes_vector[i], m_pcs->GetNodeValueIndex(
 							"FLUX") + 1) * (m_pcs->GetNodeValue(nodes_vector[i],
@@ -3716,10 +3716,10 @@ void COutput::NODWriteWaterBalancePLY(double time_current)
 							<< m_msh->nod_vector[nodes_vector[i]]->getData()[0] << " y: "
 							<< m_msh->nod_vector[nodes_vector[i]]->getData()[1] << " z: "
 							<< m_msh->nod_vector[nodes_vector[i]]->getData()[2]
-							<< " groundwater discharge (m^3/s): " << volume_flux_node << endl;
+							<< " groundwater discharge (m^3/s): " << volume_flux_node << "\n";
 			volume_flux += volume_flux_node;
 		}
-		tec_file << " total groundwater discharge (m^3/s): " << volume_flux << endl;
+		tec_file << " total groundwater discharge (m^3/s): " << volume_flux << "\n";
 	} // m_ply
 
 	tec_file.close();
@@ -3778,7 +3778,7 @@ void COutput::NODWriteWaterBalanceSFC(double time_current)
 			volume_flux += nodes_vector_volume_flux[i];
 			cout << nodes_vector_volume_flux[i] << " ";
 		}
-		tec_file << time_current << " " << volume_flux << endl;
+		tec_file << time_current << " " << volume_flux << "\n";
 
 	} // m_sfc
 
@@ -3838,7 +3838,7 @@ void COutput::NODWritePointsCombined(double time_current)
 		nod_value_name = _nod_value_vector[i];
 		val_n = m_pcs_out->GetNodeValue(msh_node_number, NodeIndex[i]);
 		tec_file << "time " << time_current << " " << nod_value_name << " " << val_n << " "
-						<< endl;
+						<< "\n";
 	}
 
 	tec_file.close();

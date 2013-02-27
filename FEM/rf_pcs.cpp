@@ -560,7 +560,7 @@ void CRFProcess::Create()
 		matrix_file = new std::fstream(m_file_name.c_str(), ios::trunc | ios::out);
 		if (!matrix_file->good())
 			std::cout << "Warning in GlobalAssembly: Matrix files are not found"
-			          << std::endl;
+			          << "\n";
 	}
 	//----------------------------------------------------------------------------
 	if (m_msh)                            //OK->MB please shift to Config()
@@ -572,7 +572,7 @@ void CRFProcess::Create()
 	int DOF = GetPrimaryVNumber();        //OK should be PCS member variable
 	//----------------------------------------------------------------------------
 	// MMP - create mmp groups for each process //YD
-	std::cout << "->Create MMP" << std::endl;
+	std::cout << "->Create MMP" << "\n";
 	CMediumPropertiesGroup* m_mmp_group = NULL;
 	int continua = 1;                     //WW
 	if (RD_Process)
@@ -589,7 +589,7 @@ void CRFProcess::Create()
 	m_mmp_group = NULL;
 	//----------------------------------------------------------------------------
 	// NUM_NEW
-	std::cout << "->Create NUM" << std::endl;
+	std::cout << "->Create NUM" << "\n";
 	//	if (pcs_type_name.compare("RANDOM_WALK")) { // PCH RWPT does not need this.
 	if (this->getProcessType() != FiniteElement::RANDOM_WALK) // PCH RWPT does not need this.
 	{
@@ -610,7 +610,7 @@ void CRFProcess::Create()
 	}
 	if (!m_num)
 	{
-		std::cout << "Warning in CRFProcess::Create() - no NUM data" << std::endl;
+		std::cout << "Warning in CRFProcess::Create() - no NUM data" << "\n";
 		m_num = new CNumerics(pcs_type_name); //OK
 		//		m_num = m_num_tmp;
 	}
@@ -776,7 +776,7 @@ void CRFProcess::Create()
 			}
 			if (bc_node_value.size() < 1) //WW
 				cout << "Warning: no boundary conditions specified for "
-				     << pcs_type_name << endl;
+				     << pcs_type_name << "\n";
 
 			if(WriteProcessed_BC == 1)
 				Write_Processed_BC();
@@ -880,7 +880,7 @@ void CRFProcess::Create()
 	if(reload >= 2 && type != 4 && type / 10 != 4) // Modified at 03.08.2010. WW
 	{
 		// PCH
-		cout << "Reloading the primary variables... " << endl;
+		cout << "Reloading the primary variables... " << "\n";
 		ReadSolution();           //WW
 	}
 
@@ -893,7 +893,7 @@ void CRFProcess::Create()
 	else
 		// Bypassing IC
 		cout << "RELOAD is set to be " << reload << ". So, bypassing IC's"
-		     << endl;
+		     << "\n";
 
 	if (pcs_type_name_vector.size() && pcs_type_name_vector[0].find("DYNAMIC")
 	    != string::npos)                  //WW
@@ -970,22 +970,22 @@ void CRFProcess::WriteRHS_of_ST_NeumannBC()
 	std::ofstream os(m_file_name.c_str(), ios::trunc | ios::out);
 	if (!os.good())
 	{
-		cout << "Failure to open file: " << m_file_name << endl;
+		cout << "Failure to open file: " << m_file_name << "\n";
 		abort();
 	}
 
-	os << "$PCS_TYPE  " << endl;
+	os << "$PCS_TYPE  " << "\n";
 
-	os << pcs_type_name << endl;
+	os << pcs_type_name << "\n";
 	os << "geo_node_number  ";
 	os << "msh_node_number  ";
 	os << "CurveIndex ";
 	os << "node_value ";
-	os << endl;
+	os << "\n";
 	os.setf(std::ios::scientific, std::ios::floatfield);
 	os.precision(14);
 	const size_t st_node_value_size(st_node_value.size());
-	os << st_node_value_size << endl;
+	os << st_node_value_size << "\n";
 	for (size_t i = 0; i < st_node_value_size; i++)
 		st_node_value[i]->Write(os);
 	os.close();
@@ -1006,7 +1006,7 @@ void CRFProcess::ReadRHS_of_ST_NeumannBC()
 	std::ifstream is(m_file_name.c_str(), std::ios::in);
 	if (!is.good())
 	{
-		cout << "File " << m_file_name << " is not found" << endl;
+		cout << "File " << m_file_name << " is not found" << "\n";
 		abort();
 	}
 
@@ -1040,7 +1040,7 @@ void CRFProcess::Read_Processed_BC()
 	std::ifstream is(m_file_name.c_str(), std::ios::in);
 	if (!is.good())
 	{
-		cout << "File " << m_file_name << " is not found" << endl;
+		cout << "File " << m_file_name << " is not found" << "\n";
 		abort();
 	}
 
@@ -1074,22 +1074,22 @@ void CRFProcess::Write_Processed_BC()
 	std::ofstream os(m_file_name.c_str(), ios::trunc | ios::out);
 	if (!os.good())
 	{
-		cout << "Failure to open file: " << m_file_name << endl;
+		cout << "Failure to open file: " << m_file_name << "\n";
 		abort();
 	}
 
-	os << "$PCS_TYPE  " << endl;
+	os << "$PCS_TYPE  " << "\n";
 
-	os << pcs_type_name << endl;
+	os << pcs_type_name << "\n";
 	os << "geo_node_number  ";
 	os << "msh_node_number  ";
 	os << "CurveIndex ";
 	os << "node_value ";
-	os << endl;
+	os << "\n";
 	os.setf(std::ios::scientific, std::ios::floatfield);
 	os.precision(14);
 	const size_t bc_node_value_size(bc_node_value.size());
-	os << bc_node_value_size << endl;
+	os << bc_node_value_size << "\n";
 	for (size_t i = 0; i < bc_node_value_size; i++)
 		bc_node_value[i]->Write(os);
 	os.close();
@@ -1116,7 +1116,7 @@ void CRFProcess:: WriteSolution()
 	std::ofstream os ( m_file_name.c_str(), ios::trunc | ios::out );
 	if (!os.good() )
 	{
-		cout << "Failure to open file: " << m_file_name << endl;
+		cout << "Failure to open file: " << m_file_name << "\n";
 		abort();
 	}
 
@@ -1134,11 +1134,11 @@ void CRFProcess:: WriteSolution()
 	{
 		for ( j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
 			os << GetNodeValue ( i,idx[j] ) << "  ";
-		os << endl;
+		os << "\n";
 	}
 	os.close();
 	cout << "Write solutions for timestep " << aktueller_zeitschritt << " into file " <<
-	m_file_name << endl;
+	m_file_name << "\n";
 	delete [] idx;
 }
 
@@ -1157,7 +1157,7 @@ void CRFProcess:: ReadSolution()
 	std::ifstream is ( m_file_name.c_str(), ios::in );
 	if (!is.good())
 	{
-		cout << "Failure to open file: " << m_file_name << endl;
+		cout << "Failure to open file: " << m_file_name << "\n";
 		abort();
 	}
 	int j;
@@ -1494,7 +1494,7 @@ bool PCSRead(std::string file_base_name)
 	std::ifstream pcs_file(pcs_file_name.data(), ios::in);
 	if (!pcs_file.good())
 	{
-		cout << "Warning: no PCS data *.pcs file is missing" << endl;
+		cout << "Warning: no PCS data *.pcs file is missing" << "\n";
 		return false;
 	}
 
@@ -1539,7 +1539,7 @@ bool PCSRead(std::string file_base_name)
 		}                         // keyword found
 	}                                     // eof
 
-	std::cout << "done, read " << pcs_vector.size() << " processes" << std::endl;
+	std::cout << "done, read " << pcs_vector.size() << " processes" << "\n";
 
 	return true;
 }
@@ -1612,7 +1612,7 @@ void CRFProcess::PCSReadConfigurations()
 	{
 		//NW
 		std::cout << "***Error: DEFORMATION_FLOW is vague definition." <<
-		std::endl;
+		"\n";
 		exit(0);
 	}
 
@@ -1972,16 +1972,16 @@ void PCSWrite(string file_base_name)
 	pcs_file.clear();
 	//----------------------------------------------------------------------
 	// PCS loop
-	cout << "PCSWrite" << endl;
+	cout << "PCSWrite" << "\n";
 	CRFProcess* m_pcs = NULL;
 	for(int i = 0; i < (int)pcs_vector.size(); i++)
 	{
 		m_pcs = pcs_vector[i];
-		pcs_file << "#PROCESS" << endl;
+		pcs_file << "#PROCESS" << "\n";
 		m_pcs->Write(&pcs_file);
 	}
 	//----------------------------------------------------------------------
-	pcs_file << "#STOP" << endl;
+	pcs_file << "#STOP" << "\n";
 }
 
 /**************************************************************************
@@ -1994,22 +1994,22 @@ void PCSWrite(string file_base_name)
 **************************************************************************/
 void CRFProcess::Write(std::fstream* pcs_file)
 {
-	*pcs_file << " $PCS_TYPE" << endl;
-	*pcs_file << "  " << convertProcessTypeToString(this->getProcessType()) << endl;
+	*pcs_file << " $PCS_TYPE" << "\n";
+	*pcs_file << "  " << convertProcessTypeToString(this->getProcessType()) << "\n";
 
-	*pcs_file << " $NUM_TYPE" << endl;
-	*pcs_file << "  " << num_type_name << endl;
+	*pcs_file << " $NUM_TYPE" << "\n";
+	*pcs_file << "  " << num_type_name << "\n";
 
-	*pcs_file << " $CPL_TYPE" << endl;
-	*pcs_file << "  " << cpl_type_name << endl;
+	*pcs_file << " $CPL_TYPE" << "\n";
+	*pcs_file << "  " << cpl_type_name << "\n";
 
-	*pcs_file << " $TIM_TYPE" << endl;
-	*pcs_file << "  " << tim_type_name << endl;
+	*pcs_file << " $TIM_TYPE" << "\n";
+	*pcs_file << "  " << tim_type_name << "\n";
 
 	if (msh_type_name.size() > 0)
 	{
-		*pcs_file << " $MSH_TYPE" << endl;
-		*pcs_file << "  " << msh_type_name << endl;
+		*pcs_file << " $MSH_TYPE" << "\n";
+		*pcs_file << "  " << msh_type_name << "\n";
 	}
 }
 
@@ -2144,7 +2144,7 @@ void CRFProcess::Config(void)
 	m_msh = FEMGet(pcs_type_name);
 	if (!m_msh)
 	{
-		cout << "Error in CRFProcess::Config - no MSH data" << endl;
+		cout << "Error in CRFProcess::Config - no MSH data" << "\n";
 		return;
 	}
 	CheckMarkedElement();                 //WW
@@ -2155,7 +2155,7 @@ void CRFProcess::Config(void)
 	//	if (_pcs_type_name.compare("LIQUID_FLOW") == 0) {
 	if (this->getProcessType() == FiniteElement::LIQUID_FLOW || this->getProcessType() == FiniteElement::FLUID_FLOW)
 	{
-		std::cout << "CRFProcess::Config LIQUID_FLOW" << std::endl;
+		std::cout << "CRFProcess::Config LIQUID_FLOW" << "\n";
 		type = 1;
 		ConfigLiquidFlow();
 	}
@@ -2681,7 +2681,7 @@ void CRFProcess::ConfigMassTransport()
 
 	if((int)cp_vec.size() < pcs_component_number + 1)
 	{
-		cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << endl;
+		cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << "\n";
 		return;
 	}
 	//----------------------------------------------------------------------
@@ -3753,7 +3753,7 @@ int PCSGetNODValueIndex(const string &name,int timelevel)
 				   (m_pcs->pcs_nval_data[j].timelevel == timelevel))
 					return m_pcs->pcs_nval_data[j].nval_index;
 		}
-	cout << "Error in PCSGetNODValueIndex: " << name << endl;
+	cout << "Error in PCSGetNODValueIndex: " << name << "\n";
 	return -1;
 }
 
@@ -4028,14 +4028,14 @@ double CRFProcess::Execute()
 	cpu_time = -clock();
 	if(myrank == 0)
 #endif
-	cout << "      Assembling equation system..." << endl;
+	cout << "      Assembling equation system..." << "\n";
 	GlobalAssembly();
 #ifdef USE_MPI
 	cpu_time += clock();
 	cpu_time_assembly += cpu_time;
 	if(myrank == 0)
 #endif
-	cout << "      Calling linear solver..." << endl;
+	cout << "      Calling linear solver..." << "\n";
 #ifdef CHECK_EQS
 	std::string eqs_name = convertProcessTypeToString(this->getProcessType()) + "_EQS.txt";
 	MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
@@ -4067,8 +4067,8 @@ double CRFProcess::Execute()
 		if(myrank == 0)
 		{
 #endif
-        cout << "    Relative PCS error: " << pcs_error << endl;
-        cout << "    Start FCT calculation" << endl;
+        cout << "    Relative PCS error: " << pcs_error << "\n";
+        cout << "    Start FCT calculation" << "\n";
 #ifdef USE_MPI
 		}
 #endif
@@ -4315,7 +4315,7 @@ void CRFProcess::AddFCT_CorrectionVector()
 
 	// List of Dirichlet nodes
 	std::set<long> list_bc_nodes;
-	//cout << "Dirichlet nodes" << endl;
+	//cout << "Dirichlet nodes" << "\n";
 	for (i = 0; i < bc_node_value.size(); i++)
 	{
 		CBoundaryConditionNode* bc_node = bc_node_value[i];
@@ -4537,12 +4537,12 @@ void CRFProcess::AddFCT_CorrectionVector()
 	}
 
 	// for Dirichlet nodes
-	//cout << "Dirichlet nodes" << endl;
+	//cout << "Dirichlet nodes" << "\n";
 	for (i = 0; i < bc_node_value.size(); i++)
 	{
 		CBoundaryConditionNode* bc_node = bc_node_value[i];
 		long nod_id = bc_node->geo_node_number;
-		//cout << nod_id << ": R+=" <<  (*R_plus)(nod_id) << ", R-=" << (*R_min)(nod_id) << endl;
+		//cout << nod_id << ": R+=" <<  (*R_plus)(nod_id) << ", R-=" << (*R_min)(nod_id) << "\n";
 		(*R_plus)(nod_id) = 1.0;
 		(*R_min)(nod_id) = 1.0;
 
@@ -4550,7 +4550,7 @@ void CRFProcess::AddFCT_CorrectionVector()
 		//for (jj=col->begin(); jj!=col->end(); jj++) {
 		//  j = (*jj).first;
 		//  double f = (*jj).second; //double f = (*FCT_AFlux)(i,j);
-		//  cout << nod_id << "," << j << ": f=" << f << endl;
+		//  cout << nod_id << "," << j << ": f=" << f << "\n";
 		//}
 	}
 
@@ -4608,7 +4608,7 @@ void CRFProcess::GlobalAssembly()
 		Tim = TIMGet(convertProcessTypeToString(this->getProcessType()));
 	if (!Tim)
 	{
-		cout << "Error in CRFProcess::GlobalAssembly() - no TIM data" << endl;
+		cout << "Error in CRFProcess::GlobalAssembly() - no TIM data" << "\n";
 		return;
 	}
 
@@ -4899,7 +4899,7 @@ void CRFProcess::CalGPVelocitiesfromFluidMomentum()
 	MeshLib::CElem* elem = NULL;
 	int i_ind[3];
 
-	cout << "      CalGPVelocitiesfromFluidMomentum()" << endl;
+	cout << "      CalGPVelocitiesfromFluidMomentum()" << "\n";
 
 	// Get fluid_momentum process
 	CRFProcess* m_pcs_fm =  PCSGet(FiniteElement::FLUID_MOMENTUM);
@@ -4923,7 +4923,7 @@ void CRFProcess::CalGPVelocitiesfromFluidMomentum()
 	i_ind[2] = m_pcs_fm->GetNodeValueIndex("VELOCITY1_Z") + 1;
 
 	if((i_ind[0] < 0) || (i_ind[1] < 0) || (i_ind[2] < 0))
-		cout << " Error - wrong index in Cal_GP_Velocity_FM " << endl;
+		cout << " Error - wrong index in Cal_GP_Velocity_FM " << "\n";
 
 	// Loop over all elements
 	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
@@ -5287,7 +5287,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		long Size = ( long ) Water_ST_vec.size();
 		long l_index = -1;
 
-		//	cout << "dom_vec_size: " << dom_vector.size() << endl;
+		//	cout << "dom_vec_size: " << dom_vector.size() << "\n";
 		//	for ( k=0;k< ( int ) dom_vector.size();k++ )
 		//	{
 		k = myrank;               //do it for each domain only once!
@@ -5304,19 +5304,19 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					stgem_node_value_in_dom.push_back ( i );
 					//index for RHS
 					stgem_local_index_in_dom.push_back ( j );
-					//	cout << "dom " << k <<  " i, j " << i << " " << j   << endl;
+					//	cout << "dom " << k <<  " i, j " << i << " " << j   << "\n";
 				}
 		}
 		// only one element per domain!
 		rank_stgem_node_value_in_dom.push_back ( ( long ) stgem_node_value_in_dom.size() );
-		//	cout << "dom " << k <<  " rank_stgem_node_value_in_dom " << (long) rank_stgem_node_value_in_dom[0]  << endl;
+		//	cout << "dom " << k <<  " rank_stgem_node_value_in_dom " << (long) rank_stgem_node_value_in_dom[0]  << "\n";
 
 		//	}
 
 		for ( i = 0; i < Size; i++ )
 		{
 			l_index = Water_ST_vec[i].index_node;
-			// cout << i << " " << node_connected_doms[l_index] << " " << endl;
+			// cout << i << " " << node_connected_doms[l_index] << " " << "\n";
 			//values for shared nodes are scaled
 			Water_ST_vec[i].water_st_value /= ( double ) node_connected_doms[l_index];
 		}
@@ -5553,7 +5553,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					else
 						cout <<
 						"Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data"
-						     << endl;
+						     << "\n";
 				}
 				//................................................................
 				// Conditions
@@ -5836,7 +5836,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						else
 							cout <<
 							"Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data"
-							     << endl;
+							     << "\n";
 					}
 					//................................................................
 					// Conditions
@@ -5961,7 +5961,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						else
 							cout <<
 							"Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data"
-							     << endl;
+							     << "\n";
 					}
 					//................................................................
 					// Conditions
@@ -6083,7 +6083,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						else
 							cout <<
 							"Warning in CRFProcess::IncorporateBoundaryConditions - no FCT data"
-							     << endl;
+							     << "\n";
 					}
 					//................................................................
 					// Conditions
@@ -6269,16 +6269,16 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				}
 
 				filename << Tim->step_current << ".csv";
-				cout << "      Interpolation result written in " << filename.str() << endl;
+				cout << "      Interpolation result written in " << filename.str() << "\n";
 
 				file.open(filename.str().c_str());
-				file << "node,x,y,z,recharge,area"<< endl;
+				file << "node,x,y,z,recharge,area"<< "\n";
 
 				for (size_t i=0;i<st_node_value.size();i++)
 				{
 					const long z = st_node_value[i]->msh_node_number;
 					const double *coords (m_msh->nod_vector[z]->getData());
-					file << z << "," << coords[0] << "," << coords[1] << "," << "0" << ","<< st_node_value[i]->node_value << "," << m_msh->nod_vector[z]->patch_area<< endl;
+					file << z << "," << coords[0] << "," << coords[1] << "," << "0" << ","<< st_node_value[i]->node_value << "," << m_msh->nod_vector[z]->patch_area<< "\n";
 				}
 
 				file.close();
@@ -6425,15 +6425,15 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 				time_fac = GetCurveValue(curve, interp_method, aktuelle_zeit,
 				                         &valid);
-				//cout << "step: " << this->Tim->step_current << " Time: " << aktuelle_zeit << " Laenge: " << this->Tim->this_stepsize << " Beginn: " << this->Tim->time_start << " Ende " << this->Tim->time_end << " Faktor: " << time_fac << endl;
+				//cout << "step: " << this->Tim->step_current << " Time: " << aktuelle_zeit << " Laenge: " << this->Tim->this_stepsize << " Beginn: " << this->Tim->time_start << " Ende " << this->Tim->time_end << " Faktor: " << time_fac << "\n";
 				if (!valid)
 				{
 					cout <<
 					"\n!!! Time dependent curve is not found. Results are not guaranteed "
-					     << endl;
+					     << "\n";
 					cout <<
 					" in void CRFProcess::IncorporateSourceTerms(const double Scaling)"
-					     << endl;
+					     << "\n";
 					time_fac = 1.0;
 				}
 			}
@@ -6458,7 +6458,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						else
 							cout <<
 							"Warning in CRFProcess::IncorporateSourceTerms - no FCT data"
-							     << endl;
+							     << "\n";
 					}
 				}
 				else if (m_st->getFunctionName().length() > 0)
@@ -6469,7 +6469,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					else
 						cout <<
 						"Warning in CRFProcess::IncorporateSourceTerms - no FCT data"
-						     << endl;
+						     << "\n";
 				}
 			}
 			//----------------------------------------------------------------------------------------
@@ -6510,10 +6510,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				{
 					//				cout << "rank " << rank ;
 					gindex = stgem_node_value_in_dom[i]; //contains indexes to water-st_vec
-					//				cout << " gindex " << gindex << " i " << i << endl ;
+					//				cout << " gindex " << gindex << " i " << i << "\n" ;
 					// contains index to node
 					glocalindex = stgem_local_index_in_dom[i];
-					//				cout << " gem_node_index " << gem_node_index << endl;
+					//				cout << " gem_node_index " << gem_node_index << "\n";
 					eqs_rhs[glocalindex] += Water_ST_vec[gindex].water_st_value;
 				}
 				else // serial version
@@ -6590,7 +6590,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		{
 			cout <<
 			"Warning in CRFProcess::ExecuteLinearSolver() - Maximum iteration number reached"
-			     << endl;
+			     << "\n";
 			return -1;
 		}
 		iter_sum += iter_count;
@@ -6636,7 +6636,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		{
 			cout <<
 			"Warning in CRFProcess::ExecuteLinearSolver() - Maximum iteration number reached"
-			     << endl;
+			     << "\n";
 			return -1;
 		}
 		iter_sum += iter_count;
@@ -6651,7 +6651,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			if((name.compare(pcs_nval_data[j].name) == 0) && \
 			   (pcs_nval_data[j].timelevel == timelevel))
 				return pcs_nval_data[j].nval_index;
-		cout << "Error in PCSGetNODValueIndex: " << name << endl;
+		cout << "Error in PCSGetNODValueIndex: " << name << "\n";
 		return -1;
 	}
 
@@ -6682,7 +6682,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		   string file_name_base = pcs_vector[0]->file_name_base;
 		   //OK  ok = ReadRFRRestartData(file_name_base);
 		   if(ok==0){
-		   cout << "RFR: no restart data" << endl;
+		   cout << "RFR: no restart data" << "\n";
 		   return;
 		   }
 		   //----------------------------------------------------------------------
@@ -7134,7 +7134,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	{
 		//OK  return (get_rfcp_adaptive_mesh_refinement_flag(rfcp));
 		if(show_onces_adp)
-			cout << "GetRFControlGridAdapt - to be removed" << endl;
+			cout << "GetRFControlGridAdapt - to be removed" << "\n";
 		show_onces_adp = false;
 		return 0;
 	}
@@ -7142,28 +7142,28 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	int GetRFControlModel(void)
 	{
 		if(show_onces_mod)
-			cout << "GetRFControlModel - to be removed" << endl;
+			cout << "GetRFControlModel - to be removed" << "\n";
 		show_onces_mod = false;
 		return -1;
 	}
 
 	int GetRFProcessChemicalModel(void)
 	{
-		cout << "GetRFProcessChemicalModel - to be removed" << endl;
+		cout << "GetRFProcessChemicalModel - to be removed" << "\n";
 		return 0;
 	}
 
 	int GetRFProcessFlowModel(void)
 	{
 		if(show_onces_mod_flow)
-			cout << "GetRFProcessFlowModel - to be removed" << endl;
+			cout << "GetRFProcessFlowModel - to be removed" << "\n";
 		show_onces_mod_flow = false;
 		return 0;
 	}
 
 	int GetRFProcessHeatReactModel(void)
 	{
-		cout << "GetRFProcessHeatReactModel - to be removed" << endl;
+		cout << "GetRFProcessHeatReactModel - to be removed" << "\n";
 		return 0;
 	}
 
@@ -7197,13 +7197,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				return 1;
 		}
 		else
-			cout << "GetRFProcessProcessing - to be removed" << endl;
+			cout << "GetRFProcessProcessing - to be removed" << "\n";
 		return 0;
 	}
 
 	int GetRFProcessProcessingAndActivation(const char*)
 	{
-		cout << "GetRFProcessProcessingAndActivation - to be removed" << endl;
+		cout << "GetRFProcessProcessingAndActivation - to be removed" << "\n";
 		return 0;
 	}
 
@@ -7216,39 +7216,39 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 	int GetRFControlModex(void)
 	{
-		cout << "GetRFControlModex - to be removed" << endl;
+		cout << "GetRFControlModex - to be removed" << "\n";
 		return 0;
 	}
 
 	int GetRFProcessDensityFlow(void)
 	{
 		if(show_onces_density)
-			cout << "GetRFProcessDensityFlow - to be removed" << endl;
+			cout << "GetRFProcessDensityFlow - to be removed" << "\n";
 		show_onces_density = false;
 		return 0;
 	}
 
 	int GetRFProcessNumContinua(void)
 	{
-		cout << "GetRFProcessNumContinua - to be removed" << endl;
+		cout << "GetRFProcessNumContinua - to be removed" << "\n";
 		return 0;
 	}
 
 	int GetRFProcessNumElectricFields(void)
 	{
-		cout << "GetRFProcessNumElectricFields - to be removed" << endl;
+		cout << "GetRFProcessNumElectricFields - to be removed" << "\n";
 		return 0;
 	}
 
 	int GetRFProcessNumTemperatures(void)
 	{
-		cout << "GetRFProcessNumTemperatures - to be removed" << endl;
+		cout << "GetRFProcessNumTemperatures - to be removed" << "\n";
 		return -1;
 	}
 
 	int GetRFProcessSimulation(void)
 	{
-		cout << "GetRFProcessSimulation - to be removed" << endl;
+		cout << "GetRFProcessSimulation - to be removed" << "\n";
 		return -1;
 	}
 
@@ -7401,7 +7401,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #ifdef gDEBUG
 		if(nidx < 0)
 		{
-			cout << " Fatal error in  CRFProcess::SetNodeValue() " << endl;
+			cout << " Fatal error in  CRFProcess::SetNodeValue() " << "\n";
 			abort();
 		}
 #endif
@@ -7420,7 +7420,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #ifdef gDEBUG
 		if(nidx < 0)
 		{
-			cout << " Fatal error in  CRFProcess::SetElementValue() " << endl;
+			cout << " Fatal error in  CRFProcess::SetElementValue() " << "\n";
 			abort();
 		}
 #endif
@@ -7440,7 +7440,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #ifdef gDEBUG
 		if(nidx < 0)
 		{
-			cout << " Fatal error in  CRFProcess::GetNodeValue() " << endl;
+			cout << " Fatal error in  CRFProcess::GetNodeValue() " << "\n";
 			abort();
 		}
 #endif
@@ -7461,7 +7461,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #ifdef gDEBUG
 		if(nidx < 0)
 		{
-			cout << " Fatal error in CRFProcess::GetElementValue() " << endl;
+			cout << " Fatal error in CRFProcess::GetElementValue() " << "\n";
 			abort();
 		}
 #endif
@@ -7999,15 +7999,15 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
         {
 #endif
 		if(print_pcs){ // JT: need check because of Regional Richards
-			std::cout << "\n      ================================================" << std::endl;
+			std::cout << "\n      ================================================" << "\n";
 			if(getProcessType() == FiniteElement::MASS_TRANSPORT){
-				std::cout << "    ->Process   " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << std::endl;
-				std::cout << "    ->Component " << pcs_component_number << ": " << pcs_primary_function_name[0] << std::endl;
+				std::cout << "    ->Process   " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << "\n";
+				std::cout << "    ->Component " << pcs_component_number << ": " << pcs_primary_function_name[0] << "\n";
 			}
 			else{
-				std::cout << "    ->Process " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << std::endl;
+				std::cout << "    ->Process " << loop_process_number << ": " << convertProcessTypeToString (getProcessType()) << "\n";
 			}
-			std::cout << "      ================================================" << std::endl;
+			std::cout << "      ================================================" << "\n";
 		}
 #ifdef USE_MPI
 		}
@@ -8127,7 +8127,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 						cout.setf(ios::scientific);
 						cout << "         NR-Error  |" << "    RHS Norm|" << "  Unknowns Norm|"  << " Damping\n";
 						cout << "         " << setw(10) << error << "|  " << setw(9) << norm_b << "| ";
-						cout << setw(14) << norm_x << "| "<< setw(9) << damping << endl;
+						cout << setw(14) << norm_x << "| "<< setw(9) << damping << "\n";
 						cout.flush();
 						break;
 				}
@@ -8234,10 +8234,10 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		// LINEAR SOLUTION
 		if(m_num->nls_method < 0)
 		{
-			std::cout << "      -->LINEAR solution complete. " << std::endl;
+			std::cout << "      -->LINEAR solution complete. " << "\n";
 			if(write_std_errors){
 				for(ii = 0; ii < pcs_number_of_primary_nvals; ii++){
-					 std::cout << "         PCS error DOF["<< ii <<"]: " << pcs_absolute_error[ii] << std::endl;
+					 std::cout << "         PCS error DOF["<< ii <<"]: " << pcs_absolute_error[ii] << "\n";
 				}
 			}
 			return;
@@ -8245,21 +8245,21 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		//
 		// NON-LINEAR METHODS
 		if(m_num->nls_method == 0)
-			std::cout << "      -->End of PICARD iteration: " << iter_nlin << "/" << m_num->nls_max_iterations << std::endl;
+			std::cout << "      -->End of PICARD iteration: " << iter_nlin << "/" << m_num->nls_max_iterations << "\n";
 		else
-			std::cout << "      -->End of NEWTON-RAPHSON iteration: " << iter_nlin << "/" << m_num->nls_max_iterations << std::endl;
+			std::cout << "      -->End of NEWTON-RAPHSON iteration: " << iter_nlin << "/" << m_num->nls_max_iterations << "\n";
 		//
 		// Errors
 		// --------------------------------------------------
 		if(write_std_errors){
 			if(pcs_num_dof_errors == 1){
-				std::cout << "         PCS error: " << pcs_absolute_error[0] << std::endl;
+				std::cout << "         PCS error: " << pcs_absolute_error[0] << "\n";
 			}else{
 				for (ii = 0; ii < pcs_number_of_primary_nvals; ii++){
-					 std::cout << "         PCS error DOF["<< ii <<"]: " << pcs_absolute_error[ii] << std::endl;
+					 std::cout << "         PCS error DOF["<< ii <<"]: " << pcs_absolute_error[ii] << "\n";
 				}
 			}
-			std::cout <<"         ->Euclidian norm of unknowns: " << pcs_unknowns_norm << std::endl;
+			std::cout <<"         ->Euclidian norm of unknowns: " << pcs_unknowns_norm << "\n";
 		}
 	}
 
@@ -8436,13 +8436,13 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		CRFProcess* m_pcs_GW(PCSGet(FiniteElement::GROUNDWATER_FLOW));
 		if (!m_pcs_GW)            //OK
 		{
-			cout << "Fatal error: no GROUNDWATER_FLOW process" << endl;
+			cout << "Fatal error: no GROUNDWATER_FLOW process" << "\n";
 			return;
 		}
 		CRFProcess* m_pcs_OLF(PCSGet(FiniteElement::OVERLAND_FLOW));
 		if (!m_pcs_OLF)           //OK
 		{
-			cout << "Fatal error: no OVERLAND_FLOW process" << endl;
+			cout << "Fatal error: no OVERLAND_FLOW process" << "\n";
 			return;
 		}
 
@@ -8677,7 +8677,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				if (testname.compare(comp_name) == 0)
 				{
 					//        cout << " Found in PCSGetbyTypeandCompName for PCSType/Compname " << pcs_type_name << ", " << comp_name;
-					//        cout << " Process number " << m_pcs->pcs_number << ", compnumber " << m_pcs->pcs_component_number << endl;
+					//        cout << " Process number " << m_pcs->pcs_number << ", compnumber " << m_pcs->pcs_component_number << "\n";
 					pcs_no = i;
 					return pcs_no;
 				}
@@ -9004,10 +9004,10 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			break;
 
 		default:
-			cout << "Please define the option for various means!" << endl;
+			cout << "Please define the option for various means!" << "\n";
 			cout <<
 			"The code stops at GetCapillaryPressureOnNodeByNeighobringElementPatches function!"
-			     << endl;
+			     << "\n";
 			abort();
 			break;
 		}
@@ -9389,7 +9389,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		idxp = GetNodeValueIndex(pcs_primary_function_name[0]);
 		mcomp_name = new char[80];
 		sprintf(mcomp_name, "%s%i","CONC_BACK_",pcs_component_number);
-		//   cout << "mcomp_name"<< mcomp_name<<endl;
+		//   cout << "mcomp_name"<< mcomp_name<<"\n";
 		idx_storage = GetNodeValueIndex(mcomp_name);
 
 		for(i = 0; i < m_msh->GetNodesNumber(false); i++)
@@ -9438,10 +9438,10 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 
 		idxo = GetNodeValueIndex(pcs_primary_function_name[0]);
 		comp = pcs_component_number; // get component number
-		//   cout << "comp number "<<comp<<endl;
+		//   cout << "comp number "<<comp<<"\n";
 		mcomp_name = new char[80];
 		sprintf(mcomp_name, "%s%li","CONC_BACK_",comp);
-		//   cout << "mcomp_name"<< mcomp_name<<endl;
+		//   cout << "mcomp_name"<< mcomp_name<<"\n";
 		idxn = GetNodeValueIndex(mcomp_name);
 		for(i = 0; i < m_msh->GetNodesNumber(false); i++)
 		{
@@ -9457,7 +9457,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		if (tchange > 2.0)
 			tchange = 2.0;
 		cout << "Transport: max change of " << max_change << " at node " << mnode <<
-		" factor " << tchange << endl;
+		" factor " << tchange << "\n";
 		return tchange;
 	}
 #endif
@@ -9482,7 +9482,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		CRFProcess* m_pcs_cpl = PCSGet(cpl_type_name);
 		if (!m_pcs_cpl)
 		{
-			cout << "Fatal error in CRFProcess::SetCPL: no PCS data" << endl;
+			cout << "Fatal error in CRFProcess::SetCPL: no PCS data" << "\n";
 			return;
 		}
 		//----------------------------------------------------------------------
@@ -9490,7 +9490,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		CFEMesh* m_msh_cpl = m_pcs_cpl->m_msh;
 		if (!m_msh_cpl)
 		{
-			cout << "Fatal error in CRFProcess::SetCPL: no MSH data" << endl;
+			cout << "Fatal error in CRFProcess::SetCPL: no MSH data" << "\n";
 			return;
 		}
 		//----------------------------------------------------------------------
@@ -9498,7 +9498,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		Surface* m_sfc = GEOGetSFCByName(m_msh_cpl->geo_name);
 		if (!m_sfc)
 		{
-			cout << "Fatal error in CRFProcess::SetCPL: no GEO data" << endl;
+			cout << "Fatal error in CRFProcess::SetCPL: no GEO data" << "\n";
 			return;
 		}
 		//----------------------------------------------------------------------
@@ -9508,8 +9508,8 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		vector<long> cpl_msh_nodes_vector;
 		m_msh_cpl->GetNODOnSFC(m_sfc, cpl_msh_nodes_vector);
 		if ((int) cpl_msh_nodes_vector.size() == 0)
-			cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << endl;
-		cout << "CPL nodes = " << (int) cpl_msh_nodes_vector.size() << endl;
+			cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << "\n";
+		cout << "CPL nodes = " << (int) cpl_msh_nodes_vector.size() << "\n";
 		//.....................................................................-
 		// MSH nodes of PCS
 		cout << "      ->CPL: " << convertProcessTypeToString(this->getProcessType()) <<
@@ -9517,8 +9517,8 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		vector<long> msh_nodes_vector;
 		m_msh->GetNODOnSFC(m_sfc, msh_nodes_vector);
 		if ((int) msh_nodes_vector.size() == 0)
-			cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << endl;
-		cout << "CPL nodes = " << (int) msh_nodes_vector.size() << endl;
+			cout << "Warning in CRFProcess::SetCPL: no MSH nodes found" << "\n";
+		cout << "CPL nodes = " << (int) msh_nodes_vector.size() << "\n";
 		//----------------------------------------------------------------------
 		if (m_msh_cpl->pcs_name.compare("RICHARDS_FLOW") == 0)
 		{
@@ -9535,7 +9535,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				st_node_value = GetNodeValue(st_node_number, nidx);
 				st_node_value /= m_nod->patch_area;
 				value *= st_node_value;
-				//cout << "CPL value = " << value << endl;
+				//cout << "CPL value = " << value << "\n";
 				eqs->b[st_node_number] += value;
 			}
 		}
@@ -9550,7 +9550,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			//WW long cpl_msh_nod_number;
 			long cpl_msh_ele_number;
 			value = 0.0;
-			cout << "CPL value = " << value << endl;
+			cout << "CPL value = " << value << "\n";
 			// PCS-CON
 			CRFProcess* m_pcs_cond = PCSGet(cpl_type_name);
 			//int nidx = m_pcs_cond->GetNodeValueIndex(m_pcs_cond->pcs_primary_function_name[0]);
@@ -9586,7 +9586,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				cpl_ele_val /= m_ele_cnd->GetNodesNumber(false);
 				// VAL-CON
 				value = 2.314e-02 * cpl_ele_val * 1e-2;
-				//    st_out_file << value << endl;
+				//    st_out_file << value << "\n";
 				// EQS-RHS
 				eqs->b[msh_node_number] += value;
 			}
@@ -9625,7 +9625,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				//st_node_value /= m_nod->patch_area;
 				gf_node_value = of_node_value * 2e-11;
 				if (gf_node_value > 1e-13)
-					cout << "CPL value = " << gf_node_value << endl;
+					cout << "CPL value = " << gf_node_value << "\n";
 				gf_node_number = msh_nodes_vector[i];
 				eqs->b[gf_node_number] += gf_node_value;
 			}
@@ -9688,7 +9688,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			                     + "_source_Neumann_RHS.bin";
 			iSourceNBC_RHS_file = new ifstream(m_file_name.c_str(), ios::binary);
 			if (!iSourceNBC_RHS_file->good())
-				cout << "_source_Neumann_RHS file is not found" << endl;
+				cout << "_source_Neumann_RHS file is not found" << "\n";
 		}
 
 		for (size_t i = 0; i < GetPrimaryVNumber(); i++)
@@ -9781,12 +9781,12 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 
 	for (size_t i = 0; i < 3; i++)
 		if (v_eidx[i] < 0) {
-			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << std::endl;
+			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << "\n";
 			exit(0); //return 0.0;
 		}
 	if (pcs_type == FiniteElement::MULTI_PHASE_FLOW) for (size_t i = 0; i < 3; i++)
 		if (v_eidx_2[i] < 0) {
-			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << std::endl;
+			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << "\n";
 			exit(0); //return 0.0;
 		}
 
@@ -9863,7 +9863,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 		}
 		// edge projection // edge marked
 		m_ele->GetEdges(ele_edges_vector);
-		//cout << "Element: " << endl;
+		//cout << "Element: " << "\n";
 		edg_length = 0;
 		//loop over the edges of the element to find the edge at the polyline
 		for (size_t j = 0; j < static_cast<size_t> (m_ele->GetEdgesNumber()); j++) {
@@ -9890,7 +9890,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 							l = nod_vector_at_geo.size();
 						}
 					}
-					//cout << "     Node: " << vec_nodes_edge[k]->GetIndex() << " " << Point_on_Geo << endl;
+					//cout << "     Node: " << vec_nodes_edge[k]->GetIndex() << " " << Point_on_Geo << "\n";
 					if (Point_on_Geo == false) Edge_on_Geo = false;
 				}
 				if (Edge_on_Geo == true) j = m_ele->GetEdgesNumber();
@@ -9900,7 +9900,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 			vecConsideredEdges.push_back(m_edg->GetIndex()); //all edges that were already used are stored
 			m_edg->SetNormalVector(m_ele->normal_vector, edg_normal_vector);
 			edg_length = m_edg->getLength();
-			//cout << "Element: " << m_ele->GetIndex() << " LÃ¤nge: " << edg_length << " Normalvektor: x=" << edg_normal_vector[0] << " y=" << edg_normal_vector[1] << " z=" << edg_normal_vector[2] << endl;
+			//cout << "Element: " << m_ele->GetIndex() << " LÃ¤nge: " << edg_length << " Normalvektor: x=" << edg_normal_vector[0] << " y=" << edg_normal_vector[1] << " z=" << edg_normal_vector[2] << "\n";
 			m_edg->GetEdgeVector(edge_vector);
 
 			vn = MSkalarprodukt(v, edg_normal_vector, 3);
@@ -9984,7 +9984,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 				if (eidx[i] < 0)
 					cout <<
 					"Fatal error in CRFProcess::CalcELEVelocities - abort"
-					     << endl;
+					     << "\n";
 			//abort();	// PCH commented abort() out for FM.
 
 			FiniteElement::ElementValue* gp_ele = NULL;
@@ -10013,7 +10013,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 			if (eidx[i] < 0)
 				cout <<
 				"Fatal error in CRFProcess::CalcELEVelocities - abort"
-				     << endl;
+				     << "\n";
 			//abort();	// PCH commented abort() out for FM.
 
 			FiniteElement::ElementValue* gp_ele = NULL;
@@ -10117,7 +10117,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 	{
 		if (v_eidx[i] < 0)
 		{
-			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << std::endl;
+			std::cout << i << " " << v_eidx[i] << "Velocity output is not specified" << "\n";
 			exit(0);
 		}
 	}
@@ -10135,7 +10135,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 	{
 		m_ele = m_msh->ele_vector[ele_vector_at_geo[i]];
 		if (m_ele->GetIndex() == 4421)
-			cout << i << endl;
+			cout << i << "\n";
 		m_ele->SetNormalVector();
 		m_ele->GetNodeIndeces(element_nodes);
 		Use_Element = true;
@@ -10189,7 +10189,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 		{
 			// edge projection // edge marked
 			m_ele->GetEdges(ele_edges_vector);
-			//cout << "Element: " << endl;
+			//cout << "Element: " << "\n";
 			edg_length = 0;
 			//loop over the edges of the element to find the edge at the polyline
 			for (size_t j = 0; j < static_cast<size_t>(m_ele->GetEdgesNumber()); j++)
@@ -10224,7 +10224,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 							   l = nod_vector_at_geo.size();
 							}
 						}
-						//cout << "     Node: " << vec_nodes_edge[k]->GetIndex() << " " << Point_on_Geo << endl;
+						//cout << "     Node: " << vec_nodes_edge[k]->GetIndex() << " " << Point_on_Geo << "\n";
 						if (Point_on_Geo == false)
 							Edge_on_Geo = false;
 					}
@@ -10236,10 +10236,10 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 					vecConsideredEdges.push_back(m_edg->GetIndex());		//all edges that were already used are stored
 					m_edg->SetNormalVector(m_ele->normal_vector, edg_normal_vector);
 					edg_length = m_edg->getLength();
-					//cout << "Element: " << m_ele->GetIndex() << " LÃ¤nge: " << edg_length << " Normalvektor: x=" << edg_normal_vector[0] << " y=" << edg_normal_vector[1] << " z=" << edg_normal_vector[2] << endl;
+					//cout << "Element: " << m_ele->GetIndex() << " LÃ¤nge: " << edg_length << " Normalvektor: x=" << edg_normal_vector[0] << " y=" << edg_normal_vector[1] << " z=" << edg_normal_vector[2] << "\n";
 					m_edg->GetEdgeVector(edge_vector);
 
-					//cout << i << " " << m_ele->GetIndex() << endl;
+					//cout << i << " " << m_ele->GetIndex() << "\n";
 					//calculate the velocity vector perpendicular to the edge
 					vn = MSkalarprodukt(v, edg_normal_vector, 3);		//vn = MSkalarprodukt(v, edg_normal_vector, 3);
 					for (size_t j = 0; j < 3; j++)
@@ -10254,8 +10254,8 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 						//Darcy velocity times concentration times cross-section area
 						J_adv[j] = vn_vec[j] * edg_length * m_ele->GetFluxArea() * C_ele;	// unit: [mol/s]
 					}
-					//cout << " element: " << m_ele->GetIndex() << " vx: " << vn_vec[0] << " vy: " << vn_vec[1] << " vz: " << vn_vec[2] << " c1: " << ElementConcentration[0] << " c2: " << ElementConcentration[1] << " c3: " << ElementConcentration[2] << " c: " << C_ele << endl;
-					//cout << "      J_adv_x: " << J_adv[0] << " J_adv_y: " << J_adv[1] << " J_adv_z: " << J_adv[2] << endl;
+					//cout << " element: " << m_ele->GetIndex() << " vx: " << vn_vec[0] << " vy: " << vn_vec[1] << " vz: " << vn_vec[2] << " c1: " << ElementConcentration[0] << " c2: " << ElementConcentration[1] << " c3: " << ElementConcentration[2] << " c: " << C_ele << "\n";
+					//cout << "      J_adv_x: " << J_adv[0] << " J_adv_y: " << J_adv[1] << " J_adv_z: " << J_adv[2] << "\n";
 
 					//------------------------------------------------------------------------------
 					// diffusive mass flux
@@ -10271,7 +10271,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 						j_diff[j] = temp_j * edg_normal_vector[j];
 						J_diff[j] = j_diff[j] * edg_length * m_ele->GetFluxArea();										// [mol/s]
 					}
-					//cout << "      Dm: " << Dm_eff << " dc_x: " << ConcentrationGradient[0] << " dc_y: " << ConcentrationGradient[1] << " J_diff_x: " << J_diff[0] << " J_diff_y: " << J_diff[1] << " J_diff_z: " << J_diff[2] << endl;
+					//cout << "      Dm: " << Dm_eff << " dc_x: " << ConcentrationGradient[0] << " dc_y: " << ConcentrationGradient[1] << " J_diff_x: " << J_diff[0] << " J_diff_y: " << J_diff[1] << " J_diff_z: " << J_diff[2] << "\n";
 
 					//------------------------------------------------------------------------------
 					// dispersive mass flux
@@ -10338,8 +10338,8 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 				//calculate advective mass flux = v_n * l^e * z^e * C^e
 				//Darcy velocity times concentration times cross-section area
 				J_adv[0] = norm_v * m_ele->GetFluxArea() * C_ele;	// unit: [mol/s]
-				//cout << " element: " << m_ele->GetIndex() << " vx: " << vn_vec[0] << " vy: " << vn_vec[1] << " vz: " << vn_vec[2] << " c1: " << ElementConcentration[0] << " c2: " << ElementConcentration[1] << " c3: " << ElementConcentration[2] << " c: " << C_ele << endl;
-				//cout << "      J_adv_x: " << J_adv[0] << " J_adv_y: " << J_adv[1] << " J_adv_z: " << J_adv[2] << endl;
+				//cout << " element: " << m_ele->GetIndex() << " vx: " << vn_vec[0] << " vy: " << vn_vec[1] << " vz: " << vn_vec[2] << " c1: " << ElementConcentration[0] << " c2: " << ElementConcentration[1] << " c3: " << ElementConcentration[2] << " c: " << C_ele << "\n";
+				//cout << "      J_adv_x: " << J_adv[0] << " J_adv_y: " << J_adv[1] << " J_adv_z: " << J_adv[2] << "\n";
 
 				//------------------------------------------------------------------------------
 				// diffusive mass flux
@@ -10348,7 +10348,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 				//calculate diffusive mass flux
 				j_diff[0] = Dm_eff * ConcentrationGradient[0];													// [mol/m2.s]
 				J_diff[0] = j_diff[0] * m_ele->GetFluxArea();													// [mol/s]
-				//cout << "      Dm: " << Dm_eff << " dc_x: " << ConcentrationGradient[0] << " dc_y: " << ConcentrationGradient[1] << " J_diff_x: " << J_diff[0] << " J_diff_y: " << J_diff[1] << " J_diff_z: " << J_diff[2] << endl;
+				//cout << "      Dm: " << Dm_eff << " dc_x: " << ConcentrationGradient[0] << " dc_y: " << ConcentrationGradient[1] << " J_diff_x: " << J_diff[0] << " J_diff_y: " << J_diff[1] << " J_diff_z: " << J_diff[2] << "\n";
 
 				//------------------------------------------------------------------------------
 				// dispersive mass flux
@@ -10383,7 +10383,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 //		if (this->Tim->time_step_length > 0)
 //			totalmassflux = totalmass / this->Tim->time_step_length;
 		//cout << "Element: " << i << " Masse: " << totalmass << " Abstrom_adv: " << this->Tim->this_stepsize * MBtrgVec(J_adv, 3)  << " Abstrom_diff: " << this->Tim->this_stepsize * MBtrgVec(J_diff, 3) << " Abstrom_disp: " << this->Tim->this_stepsize * MBtrgVec(J_disp, 3);
-		//cout << endl;
+		//cout << "\n";
 		//correct mass flux
 		//if (J_temp > totalmassflux)
 		//{
@@ -10440,7 +10440,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			grad[2] = 0;
 		}
 		else
-			cout << "This element option is not yet considered for calculating the concentration gradient!" << endl;
+			cout << "This element option is not yet considered for calculating the concentration gradient!" << "\n";
 	}
 
 	else if (m_ele->GetDimension() == 2)
@@ -10482,7 +10482,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			PlaneEquation->CalculatePlaneEquationFrom3Points(coord_Point2, coord_Point3, coord_Point1);
 		}
 		else
-			cout << "This element option is not yet considered for calculating the concentration gradient!" << endl;
+			cout << "This element option is not yet considered for calculating the concentration gradient!" << "\n";
 
 		//calculate gradient
 		normal_vector = PlaneEquation->GetNormalVector();
@@ -10492,7 +10492,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 	}
 
 	else
-		cout << "This element option is not yet considered for calculating the concentration gradient!" << endl;
+		cout << "This element option is not yet considered for calculating the concentration gradient!" << "\n";
 }
 
 /*************************************************************************
@@ -10503,7 +10503,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 	//(vector<long>&ele_number_vector)
 	void CRFProcess::AssembleParabolicEquationRHSVector(CNode* m_nod)
 	{
-		//cout << "CRFProcess::AssembleParabolicEquationRHSVector" << endl;
+		//cout << "CRFProcess::AssembleParabolicEquationRHSVector" << "\n";
 		//int i;
 		//WW long ldummy;
 		//WW double ddummy;
@@ -10540,7 +10540,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			{
 				cout << v_eidx[i] << i <<
 				" Warning in CRFProcess::AssembleParabolicEquationRHSVector - no PCS-VEL data"
-				     << endl;
+				     << "\n";
 				return;
 			}
 		double v[3];
@@ -10606,7 +10606,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			default:
 				cout <<
 				"Warning in CRFProcess::AssembleParabolicEquationRHSVector - not implemented for this element type"
-				     << endl;
+				     << "\n";
 				break;
 			}             // switch
 		}
@@ -10621,7 +10621,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			case MshElemType::LINE:
 				if(m_ele->GetMark())
 				{
-					cout << m_ele->GetIndex() << endl;
+					cout << m_ele->GetIndex() << "\n";
 					//WW ldummy = m_nod->GetIndex();
 					//WW ddummy = eqs->b[m_nod->GetIndex()];
 					fem->ConfigElement(m_ele,false);
@@ -10641,7 +10641,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 				if(check_sign < 0.0)
 					continue;
 				{
-					//cout << m_ele->GetIndex() << endl;
+					//cout << m_ele->GetIndex() << "\n";
 					fem->ConfigElement(m_ele,false);
 					fem->AssembleParabolicEquationRHSVector();
 				}
@@ -10652,7 +10652,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			default:
 				cout <<
 				"Warning in CRFProcess::AssembleParabolicEquationRHSVector - not implemented for this element type"
-				     << endl;
+				     << "\n";
 				break;
 			}             // switch
 		}
@@ -10847,7 +10847,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 			if (satu_N_new < 0)
 			{
 				cout << " Warning in fct CalcNewNAPLSat: NAPL-Sat: " <<
-				satu_N_new << endl;
+				satu_N_new << "\n";
 				satu_N_new = MRange(0.0, satu_N_new, 1.0);
 			}
 			// set new SATURATION2
@@ -11034,7 +11034,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		ofstream os(m_file_name.c_str(), ios::trunc | ios::out);
 		if (!os.good())
 		{
-			cout << "Failure to open file: " << m_file_name << endl;
+			cout << "Failure to open file: " << m_file_name << "\n";
 			abort();
 		}
 		//
@@ -11070,7 +11070,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 				idx[2 * pcs_number_of_primary_nvals + j] = GetNodeValueIndex(
 				        pcs_secondary_function_name[j]);
 			}
-		os << endl;
+		os << "\n";
 		for (size_t i = 0; i < m_msh->GetNodesNumber(false); i++)
 		{
 			for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++)
@@ -11078,7 +11078,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 			for (j = 0; j < pcs_number_of_secondary_nvals; j++)
 				os << GetNodeValue(i, idx[2 * pcs_number_of_primary_nvals + j])
 				   << "  ";
-			os << endl;
+			os << "\n";
 		}
 		os.close();
 	}
@@ -11299,7 +11299,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		if (!m_num)
 		{
 			std::cout << "Warning in CRFProcess::Create() - no NUM data - default"
-			          << std::endl;
+			          << "\n";
 			succeed = false;
 		}
 		else
@@ -11326,7 +11326,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		}
 		else
 			cout << "Warning in CRFProcess::Create() - no TIM data - default"
-			     << endl;
+			     << "\n";
 
 		// OUT
 
@@ -11337,7 +11337,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 			m_msh = MSHGet(pcs_type_name);
 		if (!m_msh)
 		{
-			cout << "Warning in CRFProcess::Create() - no MSH data" << endl;
+			cout << "Warning in CRFProcess::Create() - no MSH data" << "\n";
 			succeed = false;
 		}
 
@@ -11551,7 +11551,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 			matrix_file = new fstream(m_file_name.c_str(), ios::trunc | ios::out);
 			if (!matrix_file->good())
 				cout << "Warning in GlobalAssembly: Matrix files are not found"
-				     << endl;
+				     << "\n";
 		}
 
 		// FEM
@@ -12069,9 +12069,9 @@ CRFProcess* PCSGetMass(size_t component_number)
 					const long k = ii * nnode + connected_nodes[j];
 					if(k >= eqs->dim)
 						continue;
-					eqs_out << i << "  " << k << "  " << MXGet(i,k) << endl;
+					eqs_out << i << "  " << k << "  " << MXGet(i,k) << "\n";
 				}
-			eqs_out <<   i << "  " <<   eqs->b[i] << "  " << eqs->x[i] << endl;
+			eqs_out <<   i << "  " <<   eqs->b[i] << "  " << eqs->x[i] << "\n";
 		}
 		eqs_out.close();
 	}
@@ -12096,7 +12096,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		std::ofstream os(m_file_name.c_str(), ios::trunc | ios::out);
 		if (!os.good())
 		{
-			cout << "Failure to open file: " << m_file_name << endl;
+			cout << "Failure to open file: " << m_file_name << "\n";
 			abort();
 		}
 		os.setf(ios::scientific, ios::floatfield);
@@ -12104,9 +12104,9 @@ CRFProcess* PCSGetMass(size_t component_number)
 		long nindex = 0;
 		if (size_bc > 0)
 		{
-			os << "#Dirchilet BC  (from " << m_file_name << ".bc file) " << endl;
-			os << "#Total BC nodes  " << size_bc << endl;
-			os << "#Node index, name, x, y, z,   value: " << endl;
+			os << "#Dirchilet BC  (from " << m_file_name << ".bc file) " << "\n";
+			os << "#Total BC nodes  " << size_bc << "\n";
+			os << "#Node index, name, x, y, z,   value: " << "\n";
 			for (size_t i = 0; i < size_bc; i++)
 			{
 				nindex = bc_node_value[i]->geo_node_number;
@@ -12114,20 +12114,20 @@ CRFProcess* PCSGetMass(size_t component_number)
 //         os << nindex << "  " << bc_node_value[i]->pcs_pv_name << " "
 //            << std::setw(14) << anode->X() << " " << std::setw(14) << anode->Y()
 //            << " " << std::setw(14) << anode->Z() << " " << std::setw(14)
-//            << bc_node_value[i]->node_value << endl;
+//            << bc_node_value[i]->node_value << "\n";
 				double const* const pnt (m_msh->nod_vector[nindex]->getData());
 				os << nindex << "  " << bc_node_value[i]->pcs_pv_name << " "
 				   << std::setw(14) << pnt[0] << " " << std::setw(14) << pnt[1]
 				   << " " << std::setw(14) << pnt[2] << " " << std::setw(14)
-				   << bc_node_value[i]->node_value << endl;
+				   << bc_node_value[i]->node_value << "\n";
 			}
 		}
 		if (size_st > 0)
 		{
 			os << "#Source term or Neumann BC  (from " << m_file_name
-			   << ".st file) " << endl;
-			os << "#Total ST nodes  " << size_st << endl;
-			os << "#Node index, x, y, z, name    value: " << endl;
+			   << ".st file) " << "\n";
+			os << "#Total ST nodes  " << size_st << "\n";
+			os << "#Node index, x, y, z, name    value: " << "\n";
 			for (size_t i = 0; i < size_st; i++)
 			{
 				nindex = st_node_value[i]->geo_node_number;
@@ -12136,17 +12136,17 @@ CRFProcess* PCSGetMass(size_t component_number)
 //            st_node[i]->getProcessPrimaryVariable()) << " " << std::setw(14)
 //            << anode->X() << " " << std::setw(14) << anode->Y() << " "
 //            << std::setw(14) << anode->Z() << " " << std::setw(14)
-//            << st_node_value[i]->node_value << endl;
+//            << st_node_value[i]->node_value << "\n";
 				double const* const pnt (m_msh->nod_vector[nindex]->getData());
 				os << nindex << "  " << convertPrimaryVariableToString(
 				        st_node[i]->getProcessPrimaryVariable()) << " " <<
 				std::setw(14)
 				<< pnt[0] << " " << std::setw(14) << pnt[1] << " "
 				<< std::setw(14) << pnt[2] << " " << std::setw(14)
-				<< st_node_value[i]->node_value << endl;
+				<< st_node_value[i]->node_value << "\n";
 			}
 		}
-		os << "#STOP" << endl;
+		os << "#STOP" << "\n";
 		os.close();
 	}
 
@@ -12390,7 +12390,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 			{
 				cout <<
 				"!!! More than 100 steps rejected and none of steps accepted. Quit the simulation now"
-				     << endl;
+				     << "\n";
 				exit(1);
 			}
 			// Recover solutions
@@ -12557,19 +12557,19 @@ CRFProcess* PCSGetMass(size_t component_number)
 				of_flux.precision(1);
 				of_primary.precision(1);
 
-				of_flux << "ncols" << setw(19) << ncol << endl;
-				of_flux << "nrows" << setw(19) << nrow << endl;
-				of_flux << "xllcorner" << setw(15) << g_para[2] << endl;
-				of_flux << "yllcorner" << setw(15) << g_para[3] << endl;
-				of_flux << "cellsize" << setw(16) << (long)g_para[4] << endl;
-				of_flux << "NODATA_value" << setw(11) << (long)g_para[5] << endl;
+				of_flux << "ncols" << setw(19) << ncol << "\n";
+				of_flux << "nrows" << setw(19) << nrow << "\n";
+				of_flux << "xllcorner" << setw(15) << g_para[2] << "\n";
+				of_flux << "yllcorner" << setw(15) << g_para[3] << "\n";
+				of_flux << "cellsize" << setw(16) << (long)g_para[4] << "\n";
+				of_flux << "NODATA_value" << setw(11) << (long)g_para[5] << "\n";
 
-				of_primary << "ncols" << setw(19) << ncol << endl;
-				of_primary << "nrows" << setw(19) << nrow << endl;
-				of_primary << "xllcorner" << setw(15) << g_para[2] << endl;
-				of_primary << "yllcorner" << setw(15) << g_para[3] << endl;
-				of_primary << "cellsize" << setw(16) << (long)g_para[4] << endl;
-				of_primary << "NODATA_value" << setw(11) << (long)g_para[5] << endl;
+				of_primary << "ncols" << setw(19) << ncol << "\n";
+				of_primary << "nrows" << setw(19) << nrow << "\n";
+				of_primary << "xllcorner" << setw(15) << g_para[2] << "\n";
+				of_primary << "yllcorner" << setw(15) << g_para[3] << "\n";
+				of_primary << "cellsize" << setw(16) << (long)g_para[4] << "\n";
+				of_primary << "NODATA_value" << setw(11) << (long)g_para[5] << "\n";
 
 				for(i = 0; i < (long)m_msh->face_vector.size(); i++)
 				{
@@ -12755,8 +12755,8 @@ CRFProcess* PCSGetMass(size_t component_number)
 						of_flux << " " << setw(9) << cell_data_v[m];
 						of_primary << setw(11) << cell_data_p[m];
 					}
-					of_flux << endl;
-					of_primary << endl;
+					of_flux << "\n";
+					of_primary << "\n";
 				}
 
 				cell_data_p.clear();
@@ -12815,7 +12815,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 						else
 							std::cout <<
 							"Warning in CBoundaryConditionsGroup - no FCT data"
-							          << std::endl;
+							          << "\n";
 
 						if (valid)
 							interpolation_values[interpolation_values.
@@ -13012,7 +13012,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// Configure Element for interpolation of node velocities to GP velocities
 			fem->ConfigElement(elem);
 			// Interpolate from nodes to GP of actual element
-			//cout << "Element: " << i << endl;
+			//cout << "Element: " << i << "\n";
 			tempstring = fem->Cal_GP_Velocity_ECLIPSE(tempstring,
 													  true,
 													  phase_index,
@@ -13034,14 +13034,14 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 	//ofstream aus;
 	//aus.open(aus_file.data(),ios::out);
 	//for (i = 0; i < vec_string.size(); i++) {
-	//	aus << vec_string[i] << endl;
+	//	aus << vec_string[i] << "\n";
 	//}
 	//aus.close();
 	//}
 
 	finish = clock();
 	time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
-	cout << "         Time: " << time << " seconds." << endl;
+	cout << "         Time: " << time << " seconds." << "\n";
 }
 
 
@@ -13075,13 +13075,13 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 		tH2O = vapor.H2O + liquid.H2O + solid.H2O;
 		tNaCl = vapor.NaCl + liquid.NaCl + solid.NaCl;
 		yH2O = VLE_fraction_H2O(T,P,AW); //water fraction in vapor
-		//	//cout << " yH2O " << yH2O << " xCO2 " << xCO2 << endl;
+		//	//cout << " yH2O " << yH2O << " xCO2 " << xCO2 << "\n";
 
-		//cout << " flag " << f << endl;
+		//cout << " flag " << f << "\n";
 		//V-L-S
 		if(f == 1 || f == 2)
 		{
-			//cout << " >>>>> phase equilibrium <<<<< " << endl;
+			//cout << " >>>>> phase equilibrium <<<<< " << "\n";
 			a = 0.0;
 			b = tCO2;
 			for(i = 0; i < iter_max; i++)
@@ -13100,7 +13100,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 				//???????????????????????????? (soluCO2 <= tCO2?)
 				xCO2 = soluCO2 / (soluCO2 + 1000 / Molweight_H2O);
 				tH2Or = tvH2O + (tCO2 - tvCO2) * (1 - xCO2) / xCO2;
-				//cout << " tH2Or " << tH2Or << " tH2O " << tH2O << endl;
+				//cout << " tH2Or " << tH2Or << " tH2O " << tH2O << "\n";
 
 				if(abs(tH2Or - tH2O) < er)
 					break;  // two phases coexisting
@@ -13123,7 +13123,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// single liquid phase
 			if(tvCO2 == 0)
 			{
-				//cout << " >>>>> single liquid phase <<<<< " << endl;
+				//cout << " >>>>> single liquid phase <<<<< " << "\n";
 				vapor.CO2  = 0.0;
 				vapor.H2O  = 0.0;
 				vapor.NaCl = 0.0;
@@ -13158,7 +13158,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// single vapor phase
 			else if(tvCO2 == tCO2)
 			{
-				//cout << " >>>>> single vapor phase <<<<< " << endl;
+				//cout << " >>>>> single vapor phase <<<<< " << "\n";
 				vapor.CO2  = tCO2;
 				vapor.H2O  = tH2O;
 				vapor.NaCl = 0.0;
@@ -13184,7 +13184,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// two phases coexisting
 			else
 			{
-				//cout << " >>>>> two phases coexisting <<<<< " << endl;
+				//cout << " >>>>> two phases coexisting <<<<< " << "\n";
 				vapor.H2O  = tvH2O;
 				vapor.CO2  = tvCO2;
 				vapor.NaCl = 0.0;
@@ -13223,7 +13223,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// single liquid phase
 			if(tCO2 < soluCO2 * wH2O)
 			{
-				//cout << " >>>>> single liquid phase <<<<< " << endl;
+				//cout << " >>>>> single liquid phase <<<<< " << "\n";
 				vapor.CO2  = 0.0;
 				vapor.H2O  = 0.0;
 				vapor.NaCl = 0.0;
@@ -13251,7 +13251,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			// two phases coexisting
 			else
 			{
-				//cout << " >>>>> two phases coexisting <<<<< " << endl;
+				//cout << " >>>>> two phases coexisting <<<<< " << "\n";
 				vapor.H2O  = 0.0;
 				vapor.CO2  = tCO2 - soluCO2 * wH2O;
 				vapor.NaCl = 0.0;
@@ -13304,7 +13304,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 		CO2_H2O_NaCl_VLE_isobaric(T, P, vapor, liquid, solid, f);
 		V = vapor.volume + liquid.volume;
 
-		//cout << " V input " << V << endl;
+		//cout << " V input " << V << "\n";
 
 		if(abs(V - V0) < err)
 			return;
@@ -13324,7 +13324,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			P = 0.5 * (P1 + P2);
 			CO2_H2O_NaCl_VLE_isobaric(T, P, vapor, liquid, solid, f);
 			V = vapor.volume + liquid.volume;
-			//cout << P << " " << V << endl;
+			//cout << P << " " << V << "\n";
 			if(abs(V0 - V) < err)
 				break;
 			else if(V < V0)
@@ -13505,7 +13505,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 					                                         b_NaClinPureWater,
 					                                         b_CO2inPureWater);
 					//cout.precision(8);
-					//cout << "Iteration: " << j << " estimated: " << temp_density << " calculated: " << Density_liquid << " a: " << a  << " b: " << b << endl;
+					//cout << "Iteration: " << j << " estimated: " << temp_density << " calculated: " << Density_liquid << " a: " << a  << " b: " << b << "\n";
 					//compare density with density estimation
 					if (Density_liquid < 0)
 						break;
@@ -13517,12 +13517,12 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 						a = temp_density;
 				}
 				//if (i == 230)
-				//	cout << i << endl;
+				//	cout << i << "\n";
 
 				if (Density_liquid < 0)
 				{
 					cout << "Density calculation of water was not possible" <<
-					endl;
+					"\n";
 					system("Pause");
 					exit(0);
 				}
@@ -13587,7 +13587,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 					// ToDo: reorganisation of the code [kg/m³]
 					Density_gas = DuansMixingRule(temperature, pressure * 1e5, x_CO2, 0, 1, 0);
 					//cout.precision(8);
-					//cout << "Iteration: " << j << " estimated: " << temp_density << " calculated: " << Density_gas << " a: " << a  << " b: " << b << endl;
+					//cout << "Iteration: " << j << " estimated: " << temp_density << " calculated: " << Density_gas << " a: " << a  << " b: " << b << "\n";
 
 					//compare density with density estimation
 					if (Density_gas < 0)
@@ -13603,7 +13603,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 				if (Density_gas < 0)
 				{
 					cout << "Density calculation of gas was not possible" <<
-					endl;
+					"\n";
 					system("Pause");
 					exit(0);
 				}
@@ -13616,13 +13616,13 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 				m_pcs->SetNodeValue(i, variable_index,  Viscosity_gas);
 			}
 
-			//cout << "   node: " << i << " Dichte_Wasser: " << Density_liquid << " Dichte_Gas: " << Density_gas << endl;
+			//cout << "   node: " << i << " Dichte_Wasser: " << Density_liquid << " Dichte_Gas: " << Density_gas << "\n";
 		}
 		finish = clock();
 		time = (double(finish) - double(start)) / CLOCKS_PER_SEC;
 
-		cout << "        Calculating Density and Viscosity " << time << " seconds." << endl;
-		cout << endl;
+		cout << "        Calculating Density and Viscosity " << time << " seconds." << "\n";
+		cout << "\n";
 	}
 
 //-------------------------------------------------------------------------
@@ -13678,7 +13678,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 		for (long i = 0; i < (long)m_msh->nod_vector.size(); i++)
 		{
 			if (i == 230)
-				cout << i << endl;
+				cout << i << "\n";
 			m_node = m_msh->nod_vector[i]; // get element
 			node_volume = 0;
 			//calculate Porevolume for the node based on connected elements
@@ -13760,7 +13760,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			//[m³]
 			gas.volume = Volume_eff * saturation_gas_effective;
 
-			//cout << "node: " << i << " p_cap: " << p_cap << " P2: " << gas.pressure << " sat_liquid: " << saturation_liquid << " sat_gas: " << saturation_gas << " V_liquid: " << liquid.volume << " V_gas: " << gas.volume << endl;
+			//cout << "node: " << i << " p_cap: " << p_cap << " P2: " << gas.pressure << " sat_liquid: " << saturation_liquid << " sat_gas: " << saturation_gas << " V_liquid: " << liquid.volume << " V_gas: " << gas.volume << "\n";
 
 			//get ID's of mass transport processes
 			for(int j = 0; j < int(pcs_vector.size()); j++)
@@ -13828,11 +13828,11 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			//variable_index = pcs_vector[indexProcess]->GetNodeValueIndex(pcs_vector[indexProcess]->pcs_primary_function_name[0]) + TimeStepVariableIndex; // +1: new timelevel
 			//c_CO2inLiquid_old = pcs_vector[indexProcess]->GetNodeValue(i, variable_index);		//[mol/m³]
 			//if (i == 230)
-			//	cout << i << endl;
+			//	cout << i << "\n";
 			//liquid.H2O = (Density_liquid_old * liquid.volume - c_CO2inLiquid_old * liquid.volume  * Molweight_CO2 * 1e-3 - liquid.NaCl * Molweight_NaCl * 1e-3 ) / (Molweight_H2O * 1e-3);	//[mol]
 
 			if (i == 230)
-				cout << i << endl;
+				cout << i << "\n";
 
 			// Test 2:
 			if (Step == 1)
@@ -13924,18 +13924,18 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			solid.mass *= 1000;
 
 			if (m_pcs->Tim->step_current == 14)
-				cout << i << endl;
+				cout << i << "\n";
 
 			if (i == 230)
 				cout << i << " gas pressure: " << gas.pressure <<
-				" liquid pressure: " << liquid.pressure << endl;
+				" liquid pressure: " << liquid.pressure << "\n";
 
 			//call Dedongs method to calculate CO2 phase transition
 			CO2_H2O_NaCl_VLE_isochoric(gas, liquid, solid, 1);
 
 			if (i == 230)
 				cout << i << " gas pressure: " << gas.pressure <<
-				" liquid pressure: " << liquid.pressure << endl;
+				" liquid pressure: " << liquid.pressure << "\n";
 
 			// g/cm³ -> kg/m³
 			gas.density *= 1000;
@@ -13964,9 +13964,9 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			{
 				cout <<
 				"The volume is not equal before and after the calculation of CO2 phase transition! "
-				     << endl;
+				     << "\n";
 				cout << "Before: " << Volume_eff << " After: " << gas.volume +
-				liquid.volume << endl;
+				liquid.volume << "\n";
 				system("Pause");
 				exit(0);
 			}
@@ -14017,7 +14017,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 
 			if (i == 230)
 				cout << i << " gas pressure: " << gas.pressure <<
-				" liquid pressure: " << liquid.pressure << endl;
+				" liquid pressure: " << liquid.pressure << "\n";
 
 			//set new pressure to nodes
 			if (Step == 1)
@@ -14034,7 +14034,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 				//+1... new time level
 				variable_index = m_pcs->GetNodeValueIndex("PRESSURE2") + 1;
 			m_pcs->SetNodeValue(i, variable_index, gas.pressure);
-			//cout << "node: " << i << " p_cap: " << p_cap << " P2: " << gas.pressure << " sat_liquid: " << saturation_liquid << " sat_gas: " << saturation_gas << " V_liquid: " << liquid.volume << " V_gas: " << gas.volume << endl;
+			//cout << "node: " << i << " p_cap: " << p_cap << " P2: " << gas.pressure << " sat_liquid: " << saturation_liquid << " sat_gas: " << saturation_gas << " V_liquid: " << liquid.volume << " V_gas: " << gas.volume << "\n";
 
 			// set new component concentration
 			if (liquid.volume > 0)

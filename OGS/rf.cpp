@@ -93,30 +93,30 @@ int main ( int argc, char* argv[] )
 			          << "Where OPTIONS are:\n"
 			          << "  -h [--help]       print this message and exit\n"
 			          << "  -b [--build-info] print build info and exit\n"
-			          << "  --version         print ogs version and exit" << std::endl;
+			          << "  --version         print ogs version and exit" << "\n";
 			continue;
 		}
 		if( anArg == "--build-info" || anArg == "-b" )
 		{
-			std::cout << "ogs version: " << OGS_VERSION << std::endl
-			          << "ogs date: " << OGS_DATE << std::endl;
+			std::cout << "ogs version: " << OGS_VERSION << "\n"
+			          << "ogs date: " << OGS_DATE << "\n";
 #ifdef CMAKE_CMD_ARGS
-			std::cout << "cmake command line arguments: " << CMAKE_CMD_ARGS << std::endl;
+			std::cout << "cmake command line arguments: " << CMAKE_CMD_ARGS << "\n";
 #endif // CMAKE_CMD_ARGS
 #ifdef GIT_COMMIT_INFO
-			std::cout << "git commit info: " << GIT_COMMIT_INFO << std::endl;
+			std::cout << "git commit info: " << GIT_COMMIT_INFO << "\n";
 #endif // GIT_COMMIT_INFO
 #ifdef SVN_REVISION
-			std::cout << "subversion info: " << SVN_REVISION << std::endl;
+			std::cout << "subversion info: " << SVN_REVISION << "\n";
 #endif // SVN_REVISION
 #ifdef BUILD_TIMESTAMP
-			std::cout << "build timestamp: " << BUILD_TIMESTAMP << std::endl;
+			std::cout << "build timestamp: " << BUILD_TIMESTAMP << "\n";
 #endif // BUILD_TIMESTAMP
 			continue;
 		}
 		if( anArg == "--version" )
 		{
-			std::cout << OGS_VERSION << std::endl;
+			std::cout << OGS_VERSION << "\n";
 			continue;
 		}
 		if( anArg == "--model-root" || anArg == "-m" )
@@ -222,7 +222,7 @@ int main ( int argc, char* argv[] )
 	tmpFilename.append(".pcs");
 	if(!IsFileExisting(tmpFilename))
 	{
-		std::cout << " Error: Cannot find file " << dateiname << std::endl;
+		std::cout << " Error: Cannot find file " << dateiname << "\n";
 		return 1;
 	}
 
@@ -242,7 +242,7 @@ int main ( int argc, char* argv[] )
 	delete aproblem;
 	aproblem = NULL;
 #ifdef TESTTIME
-	std::cout << "Simulation time: " << TGetTimer(0) << "s" << std::endl;
+	std::cout << "Simulation time: " << TGetTimer(0) << "s" << "\n";
 #endif
 	/* Abspann ausgeben */
 	/* Ctrl-C wieder normal */
@@ -251,7 +251,7 @@ int main ( int argc, char* argv[] )
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 	elapsed_time_mpi += MPI_Wtime(); // 12.09.2007 WW
 	std::cout << "\n *** Total CPU time of parallel modeling: " << elapsed_time_mpi <<
-	std::endl;                                                                          //WW
+	"\n";                                                                          //WW
 	// Count CPU time of post time loop WW
 	MPI_Finalize();
 #endif

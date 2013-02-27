@@ -376,7 +376,7 @@ void CGLPolyline::WritePointVector(const std::string & base)
 		ply_file.seekg(0L, std::ios::beg);
 		for (i = 0; i < no_points; i++)
 			ply_file << point_vector[i]->x << " " << point_vector[i]->y << " "
-			         << point_vector[i]->z << std::endl;
+			         << point_vector[i]->z << "\n";
 	}
 }
 
@@ -404,7 +404,7 @@ void CGLPolyline::ReadPointVector(const std::string &base)
 	if (!ply_file.is_open())
 	{
 		std::cout << "*** Warning in CGLPolyline::ReadPointVector: File "
-		          << ply_file_name << " not found" << std::endl;
+		          << ply_file_name << " not found" << "\n";
 		return;
 	}
 	ply_file.seekg(0L, std::ios::beg);
@@ -508,7 +508,7 @@ void GEOReadPolylines(const std::string &file_name_path_base)
 	std::ifstream gli_file(gli_file_name.data(), std::ios::in);
 	if (!gli_file.good())
 	{
-		std::cerr << "stream error GEOReadPolylines " << std::endl;
+		std::cerr << "stream error GEOReadPolylines " << "\n";
 		return;
 	}
 	gli_file.seekg(0L, std::ios::beg); // rewind?
@@ -628,7 +628,7 @@ ios::pos_type CGLPolyline::Read(std::ifstream &gli_file) //CC8888
 				else
 				{
 					std::cout << "Error: point " << lvalue << " not found" <<
-					std::endl;
+					"\n";
 					//--------------------------------------------------
 					std::string m_strname = name + ": Point not found: point ";
 					char m_strnameid[10];
@@ -739,15 +739,15 @@ void InterpolationAlongPolyline(CGLPolyline* plyL, std::vector<double>& bcNodalV
 		std::cout
 		<<
 		"Error in CGLPolyline::InterpolationAlongPolyline: no PNT data found for Spline interpolation"
-		<< std::endl;
+		<< "\n";
 		return;
 	}
 
 	// Spline interpolation
-	std::cout << "MathLib::CubicSpline input data: " << std::endl;
+	std::cout << "MathLib::CubicSpline input data: " << "\n";
 	for (size_t k(0); k < ss0.size(); k++)
-		std::cout << "\t" << ss0[k] << " " << bVal[k] << std::endl;
-	std::cout << "end MathLib::CubicSpline input data" << std::endl;
+		std::cout << "\t" << ss0[k] << " " << bVal[k] << "\n";
+	std::cout << "end MathLib::CubicSpline input data" << "\n";
 
 	MathLib::CubicSpline* csp = new MathLib::CubicSpline(ss0, bVal);
 
@@ -756,12 +756,12 @@ void InterpolationAlongPolyline(CGLPolyline* plyL, std::vector<double>& bcNodalV
 	for (i = 0; i < number_of_nodes; i++)
 		bcNodalValue[plyL->getOrderedPoints()[i]] = csp->interpolation(
 		        plyL->getSBuffer()[i]);
-	std::cout << "MathLib::CubicSpline results: " << std::endl;
+	std::cout << "MathLib::CubicSpline results: " << "\n";
 	for (size_t k(0); k < plyL->getSBuffer().size(); k++)
 		std::cout << "\t" << plyL->getOrderedPoints()[k] << " " << plyL->getSBuffer()[k] <<
 		" " << bcNodalValue[plyL->getOrderedPoints()[k]] << " (bcNodalValue[" <<
-		plyL->getOrderedPoints()[k] << "])" << std::endl;
-	std::cout << "end MathLib::CubicSpline results" << std::endl;
+		plyL->getOrderedPoints()[k] << "])" << "\n";
+	std::cout << "end MathLib::CubicSpline results" << "\n";
 
 	// Release the memory
 	delete csp;
@@ -797,18 +797,18 @@ void CGLPolyline::WriteTecplot(const std::string &file_path)
 	tec_file.setf(std::ios::scientific, std::ios::floatfield);
 	tec_file.precision(12);
 	// Write header
-	tec_file << "VARIABLES = X,Y,Z" << endl;
+	tec_file << "VARIABLES = X,Y,Z" << "\n";
 	long no_nodes = (long) point_vector.size();
 	long no_elements = no_nodes - 1;
 	tec_file << "ZONE T = " << name << ", " << "N = " << no_nodes << ", "
 	         << "E = " << no_elements << ", " << "F = FEPOINT" << ", "
-	         << "ET = TRIANGLE" << endl;
+	         << "ET = TRIANGLE" << "\n";
 	// Write data
 	for (i = 0; i < no_nodes; i++)
 		tec_file << point_vector[i]->x << " " << point_vector[i]->y << " "
-		         << point_vector[i]->z << " " << endl;
+		         << point_vector[i]->z << " " << "\n";
 	for (i = 0; i < no_elements; i++)
-		tec_file << i + 1 << " " << i + 1 + 1 << " " << i + 1 << endl;
+		tec_file << i + 1 << " " << i + 1 + 1 << " " << i + 1 << "\n";
 
 }
 /**************************************************************************
@@ -870,9 +870,9 @@ void CGLPolyline::SortPointVectorByDistance()
 **************************************************************************/
 void CGLPolyline::GetPointOrderByDistance()
 {
-//	std::cout << "CGLPolyline::GetPointOrderByDistance() polyline " << getName() << std::endl;
+//	std::cout << "CGLPolyline::GetPointOrderByDistance() polyline " << getName() << "\n";
 //	for (size_t k(0); k<sbuffer.size(); k++) {
-//		std::cout << "\tsbuffer[" << k << "]: " << sbuffer[k] << ", ibuffer[" << k << "]: " << ibuffer[k] <<std::endl;
+//		std::cout << "\tsbuffer[" << k << "]: " << sbuffer[k] << ", ibuffer[" << k << "]: " << ibuffer[k] <<"\n";
 //	}
 
 	long number_of_nodes, i, l;
@@ -969,9 +969,9 @@ void CGLPolyline::GetPointOrderByDistance()
 				OrderedPoint[k] = l;
 			}
 		}
-	//	std::cout << "CGLPolyline::GetPointOrderByDistance() polyline " << getName() << std::endl;
+	//	std::cout << "CGLPolyline::GetPointOrderByDistance() polyline " << getName() << "\n";
 //	for (size_t k(0); k<OrderedPoint.size(); k++) {
-//		std::cout << "OrderedPoint[" << k << "]: " << OrderedPoint[k] << ", sbuffer[" << k << "]: " << sbuffer[k] << ", ibuffer[" << k << "]: " << ibuffer[k] <<std::endl;
+//		std::cout << "OrderedPoint[" << k << "]: " << OrderedPoint[k] << ", sbuffer[" << k << "]: " << sbuffer[k] << ", ibuffer[" << k << "]: " << ibuffer[k] <<"\n";
 //	}
 }
 

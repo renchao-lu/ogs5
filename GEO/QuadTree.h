@@ -53,7 +53,7 @@ public:
 		else
 			_ur[0] = _ll[0] + _ur[1] - _ll[1];
 		//#ifndef NDEBUG
-//		std::cerr << "lower left: " << _ll << ", upper right: " << _ur << ", depth " << _depth << std::endl;
+//		std::cerr << "lower left: " << _ll << ", upper right: " << _ur << ", depth " << _depth << "\n";
 //#endif
 	}
 

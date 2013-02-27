@@ -120,9 +120,9 @@ int ReadData ( char* dateiname, GEOLIB::GEOObjects& geo_obj, std::string& unique
 	if(myrank == 0)
 	{
 #endif
-	std::cout << std::endl;
-	std::cout << "---------------------------------------------" << std::endl;
-	std::cout << "Data input:" << std::endl;
+	std::cout << "\n";
+	std::cout << "---------------------------------------------" << "\n";
+	std::cout << "Data input:" << "\n";
 #if defined(USE_MPI)                        //WW
 }
 #endif
@@ -281,7 +281,7 @@ void PRJRead(std::string base_file_name)
 	rfd_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// keyword loop
-	std::cout << "RFDRead" << std::endl;
+	std::cout << "RFDRead" << "\n";
 	while (!rfd_file.eof())
 	{
 		rfd_file.getline(line,MAX_ZEILE);
@@ -318,7 +318,7 @@ void CURRead(std::string base_file_name)
 	cur_file.seekg(0L,std::ios::beg);
 	//========================================================================
 	// keyword loop
-	std::cout << "CURRead" << std::endl;
+	std::cout << "CURRead" << "\n";
 	while (!cur_file.eof())
 	{
 		cur_file.getline(line,MAX_ZEILE);
@@ -407,17 +407,17 @@ void CURWrite()
 	if (!fct_file.good())
 		return;
 	fct_file << "GeoSys-CUR: Functions ------------------------------------------------" <<
-	std::endl;
+	"\n";
 	//========================================================================
 	int j;
 	StuetzStellen stuetz;
 	for(int i = 0; i < anz_kurven; i++)
 	{
-		fct_file << "#CURVES" << endl;
+		fct_file << "#CURVES" << "\n";
 		for(j = 0; j < kurven[i].anz_stuetzstellen; j++)
 		{
 			stuetz = kurven[i].stuetzstellen[j];
-			fct_file << stuetz.punkt << " " << stuetz.wert <<  endl;
+			fct_file << stuetz.punkt << " " << stuetz.wert <<  "\n";
 		}
 	}
 	fct_file << "#STOP";

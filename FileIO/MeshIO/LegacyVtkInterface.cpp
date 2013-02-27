@@ -67,7 +67,7 @@ void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
 
 	if(!_mesh)
 	{
-		cout << "Warning in LegacyVtkInterface::WriteVTKNodes - no MSH data" << endl;
+		cout << "Warning in LegacyVtkInterface::WriteVTKNodes - no MSH data" << "\n";
 		return;
 	}
 
@@ -87,7 +87,7 @@ void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
 	vtk_file.precision(12);
 	if (!vtk_file.good())
 	{
-		cout << "Could not open file for writing: " << baseFilename << endl;
+		cout << "Could not open file for writing: " << baseFilename << "\n";
 		return;
 	}
 	vtk_file.seekg(0L,ios::beg);
@@ -110,30 +110,30 @@ void LegacyVtkInterface::WriteVTKHeader(fstream &vtk_file,
 										int time_step_number,
 										double simulation_time) const
 {
-	vtk_file << "# vtk DataFile Version 3.0" << endl;
-	vtk_file << "Unstructured Grid from OpenGeoSys" << endl;
-	vtk_file << "ASCII"	 << endl;
-	vtk_file << "DATASET UNSTRUCTURED_GRID"	 << endl;
+	vtk_file << "# vtk DataFile Version 3.0" << "\n";
+	vtk_file << "Unstructured Grid from OpenGeoSys" << "\n";
+	vtk_file << "ASCII"	 << "\n";
+	vtk_file << "DATASET UNSTRUCTURED_GRID"	 << "\n";
 
 	// time information
 	// see http://www.visitusers.org/index.php?title=Time_and_Cycle_in_VTK_files
-	vtk_file << "FIELD TimesAndCycles 2" << endl;
-	vtk_file << "TIME 1 1 double" << endl;
-	vtk_file << simulation_time << endl;
-	vtk_file << "CYLCE 1 1 long" << endl;
-	vtk_file << time_step_number << endl;
+	vtk_file << "FIELD TimesAndCycles 2" << "\n";
+	vtk_file << "TIME 1 1 double" << "\n";
+	vtk_file << simulation_time << "\n";
+	vtk_file << "CYLCE 1 1 long" << "\n";
+	vtk_file << time_step_number << "\n";
 }
 
 void LegacyVtkInterface::WriteVTKPointData(fstream &vtk_file) const
 {
 	const std::vector<MeshLib::CNode*> pointVector = _mesh->getNodeVector();
 	const size_t n_linear_pnts (_mesh->GetNodesNumber(false));
-	vtk_file << "POINTS " << n_linear_pnts << " double" << endl;
+	vtk_file << "POINTS " << n_linear_pnts << " double" << "\n";
 
 	for(size_t i = 0; i < n_linear_pnts; i++)
 	{
 		double const* const coords (pointVector[i]->getData());
-		vtk_file << coords[0] << " " << coords[1] << " " << coords[2] << endl;
+		vtk_file << coords[0] << " " << coords[1] << " " << coords[2] << "\n";
 	}
 }
 
@@ -150,7 +150,7 @@ void LegacyVtkInterface::WriteVTKCellData(fstream &vtk_file) const
 	}
 
 	// write elements
-	vtk_file << "CELLS " << numCells << " " << numAllPoints << endl;
+	vtk_file << "CELLS " << numCells << " " << numAllPoints << "\n";
 	for(size_t i = 0; i < numCells; i++)
 	{
 		MeshLib::CElem* ele = _mesh->ele_vector[i];
@@ -180,19 +180,19 @@ void LegacyVtkInterface::WriteVTKCellData(fstream &vtk_file) const
 			vtk_file << "5";
 			break;
 		default:
-			cerr << "COutput::WriteVTKElementData MshElemType not handled" << endl;
+			cerr << "COutput::WriteVTKElementData MshElemType not handled" << "\n";
 			break;
 		}
 
 		for(size_t j = 0; j < ele->GetNodesNumber(false); j++)
 			vtk_file << " " << ele->getNodeIndices()[j];
 
-		vtk_file << endl;
+		vtk_file << "\n";
 	}
-	vtk_file << endl;
+	vtk_file << "\n";
 
 	// write cell types
-	vtk_file << "CELL_TYPES " << numCells << endl;
+	vtk_file << "CELL_TYPES " << numCells << "\n";
 
 	for(size_t i = 0; i < numCells; i++)
 	{
@@ -202,32 +202,32 @@ void LegacyVtkInterface::WriteVTKCellData(fstream &vtk_file) const
 		switch(ele->GetElementType())
 		{
 		case MshElemType::LINE:
-			vtk_file << "3" << endl;
+			vtk_file << "3" << "\n";
 			break;
 		case MshElemType::QUAD:
-			vtk_file << "9" << endl;
+			vtk_file << "9" << "\n";
 			break;
 		case MshElemType::HEXAHEDRON:
-			vtk_file << "12" << endl;
+			vtk_file << "12" << "\n";
 			break;
 		case MshElemType::TRIANGLE:
-			vtk_file << "5" << endl;
+			vtk_file << "5" << "\n";
 			break;
 		case MshElemType::TETRAHEDRON:
-			vtk_file << "10" << endl;
+			vtk_file << "10" << "\n";
 			break;
 		case MshElemType::PRISM: // VTK_WEDGE
-			vtk_file << "13" << endl;
+			vtk_file << "13" << "\n";
 			break;
 		case MshElemType::PYRAMID:
-			vtk_file << "14" << endl;
+			vtk_file << "14" << "\n";
 			break;
 		default:
-			cerr << "COutput::WriteVTKElementData MshElemType not handled" << endl;
+			cerr << "COutput::WriteVTKElementData MshElemType not handled" << "\n";
 			break;
 		}
 	}
-	vtk_file << endl;
+	vtk_file << "\n";
 }
 
 /**************************************************************************
@@ -256,7 +256,7 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 
 
 	// NODAL DATA
-	vtk_file << "POINT_DATA " << numNodes << endl;
+	vtk_file << "POINT_DATA " << numNodes << "\n";
 	const size_t numPointArrays = _pointArrayNames.size();
 
 	for (size_t k = 0; k < numPointArrays; k++)
@@ -293,9 +293,9 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 				}
 
 
-		        std::cout << "ArrayName: " << arrayName << std::endl;
+		        std::cout << "ArrayName: " << arrayName << "\n";
 				vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 2) <<
-				" double" << endl;
+				" double" << "\n";
 				
 				for (long j = 0l; j < numNodes; j++)
 				{
@@ -311,7 +311,7 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
                        vtk_file << "0.0  " ;
 					}
 
-					vtk_file << endl;
+					vtk_file << "\n";
 				}
 
 				k += space_dim;
@@ -349,7 +349,7 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 						{
 							
 							vector6[component] = pcs->GetNodeValue(node_id, tensor_val_idx[component]);
-							//std::cout << "vector " << component << " : " << vector6[component] << std::endl;
+							//std::cout << "vector " << component << " : " << vector6[component] << "\n";
 						}
 
 						double* tensor[3];
@@ -375,13 +375,13 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 						else 
 						{
 							 continue;
-                             //std::cout << " To be finished / " << std::endl;
+                             //std::cout << " To be finished / " << "\n";
 						}
-						// std::cout << "TensorMat:" << std::endl;
-						// std::cout << tensor0[0] << " " << tensor0[1] << " " << tensor0[2] << std::endl;
-						// std::cout << tensor1[0] << " " << tensor1[1] << " " << tensor1[2] << std::endl;
-						// std::cout << tensor2[0] << " " << tensor2[1] << " " << tensor2[2] << std::endl;
-						// std::cout << std::endl << std::endl;
+						// std::cout << "TensorMat:" << "\n";
+						// std::cout << tensor0[0] << " " << tensor0[1] << " " << tensor0[2] << "\n";
+						// std::cout << tensor1[0] << " " << tensor1[1] << " " << tensor1[2] << "\n";
+						// std::cout << tensor2[0] << " " << tensor2[1] << " " << tensor2[2] << "\n";
+						// std::cout << "\n" << "\n";
 
 						double *eigenvectors[3];
 						double eigenvectors0[3];
@@ -410,19 +410,19 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 					}
 
 					vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 3) <<
-					"_Eigenvector_1" << " double" << endl;
+					"_Eigenvector_1" << " double" << "\n";
 					for(vector<vector<double> >::iterator it = eigenvectors_1.begin(); it != eigenvectors_1.end(); ++it)
-						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << endl;
+						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << "\n";
 
 					vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 3) <<
-					"_Eigenvector_2" << " double" << endl;
+					"_Eigenvector_2" << " double" << "\n";
 					for(vector<vector<double> >::iterator it = eigenvectors_2.begin(); it != eigenvectors_2.end(); ++it)
-						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << endl;
+						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << "\n";
 
 					vtk_file << "VECTORS " << arrayName.substr(0, arrayName.size() - 3) <<
-					"_Eigenvector_3" << " double" << endl;
+					"_Eigenvector_3" << " double" << "\n";
 					for(vector<vector<double> >::iterator it = eigenvectors_3.begin(); it != eigenvectors_3.end(); ++it)
-						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << endl;
+						vtk_file << (*it)[0] << " " << (*it)[1] << " " << (*it)[2] << "\n";
     				k += tensor_com;
 	    			toNext = true;
 #else
@@ -445,12 +445,12 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 	if (pcs && pcs->type == 1212)
 	{
 		size_t i = pcs->GetNodeValueIndex("SATURATION1",true); // JT: Latest
-		vtk_file << "SCALARS SATURATION2 double 1" << endl;
-		vtk_file << "LOOKUP_TABLE default" << endl;
+		vtk_file << "SCALARS SATURATION2 double 1" << "\n";
+		vtk_file << "LOOKUP_TABLE default" << "\n";
 		for (long j = 0l; j < numNodes; j++)
 		{
 			double val_n = pcs->GetNodeValue(_mesh->nod_vector[j]->GetIndex(), i);
-			vtk_file << 1.0 - val_n << endl;
+			vtk_file << 1.0 - val_n << "\n";
 		}
 	}
 //kg44 GEM node data
@@ -470,7 +470,7 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 				ele_value_index_vector[i] = pcs->GetElementValueIndex(
 						_cellArrayNames[i]);
 
-		vtk_file << "CELL_DATA " << (long) _mesh->ele_vector.size() << endl;
+		vtk_file << "CELL_DATA " << (long) _mesh->ele_vector.size() << "\n";
 		wroteAnyEleData = true;
 		//....................................................................
 		//
@@ -479,13 +479,13 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 			// JTARON 2010, "VELOCITY" should only write as vector, scalars handled elswhere
 			if (_cellArrayNames[k].compare("VELOCITY") == 0)
 			{
-				vtk_file << "VECTORS velocity double " << endl;
+				vtk_file << "VECTORS velocity double " << "\n";
 				this->WriteELEVelocity(vtk_file); //WW/OK
 			}
 			// PRINT CHANGING (OR CONSTANT) PERMEABILITY TENSOR?   // JTARON 2010
 			else if (_cellArrayNames[k].compare("PERMEABILITY") == 0)
 			{
-				vtk_file << "VECTORS permeability double " << endl;
+				vtk_file << "VECTORS permeability double " << "\n";
 				for (int j = 0l; j < (long) _mesh->ele_vector.size(); j++)
 				{
 					MeshLib::CElem* ele = _mesh->ele_vector[j];
@@ -494,19 +494,19 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 					for (size_t i = 0; i < 3; i++)
 						vtk_file <<
 						MediaProp->PermeabilityTensor(j)[i * 3 + i] << " ";
-					vtk_file << endl;
+					vtk_file << "\n";
 				}
 			}
 			else if (ele_value_index_vector[k] > -1)
 			{
 				// NOW REMAINING SCALAR DATA  // JTARON 2010, reconfig
 				vtk_file << "SCALARS " << _cellArrayNames[k] << " double 1"
-						 << endl;
-				vtk_file << "LOOKUP_TABLE default" << endl;
+						 << "\n";
+				vtk_file << "LOOKUP_TABLE default" << "\n";
 				for (size_t i = 0; i < _mesh->ele_vector.size(); i++)
 					vtk_file << pcs->GetElementValue(i,
 													 ele_value_index_vector[k])
-							 << endl;
+							 << "\n";
 			}
 		}
 		//--------------------------------------------------------------------
@@ -522,7 +522,7 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 		// Let's say porosity
 		// write header for cell data
 		if (!wroteAnyEleData)
-			vtk_file << "CELL_DATA " << _mesh->ele_vector.size() << endl;
+			vtk_file << "CELL_DATA " << _mesh->ele_vector.size() << "\n";
 		wroteAnyEleData = true;
 		for (size_t i = 0; i < _mesh->ele_vector.size(); i++)
 		{
@@ -534,10 +534,10 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 				mat_value = mmp_vector[ele->GetPatchIndex()]->Porosity(i, 0.0);
 				break;
 			default:
-				cout << "COutput::WriteVTKValues: no MMP values specified" << endl;
+				cout << "COutput::WriteVTKValues: no MMP values specified" << "\n";
 				break;
 			}
-			vtk_file << mat_value << endl;
+			vtk_file << mat_value << "\n";
 		}
 	}
 	// PCH: Material groups from .msh just for temparary purpose
@@ -545,15 +545,15 @@ void LegacyVtkInterface::WriteVTKDataArrays(fstream &vtk_file) const
 	{
 		// write header for cell data
 		if (!wroteAnyEleData)				//NW: check whether the header has been already written
-			vtk_file << "CELL_DATA " << _mesh->ele_vector.size() << endl;
+			vtk_file << "CELL_DATA " << _mesh->ele_vector.size() << "\n";
 		wroteAnyEleData = true;
 
-		vtk_file << "SCALARS " << "MatGroup" << " int 1" << endl;
-		vtk_file << "LOOKUP_TABLE default" << endl;
+		vtk_file << "SCALARS " << "MatGroup" << " int 1" << "\n";
+		vtk_file << "LOOKUP_TABLE default" << "\n";
 		for (size_t i = 0; i < _mesh->ele_vector.size(); i++)
 		{
 			MeshLib::CElem* ele = _mesh->ele_vector[i];
-			vtk_file << ele->GetPatchIndex() << endl;
+			vtk_file << ele->GetPatchIndex() << "\n";
 		}
 	}
 }
@@ -604,7 +604,7 @@ inline void LegacyVtkInterface::WriteELEVelocity(fstream &vtk_file) const
 	{
 		for(int k = 0; k < 3; k++)
 			vtk_file << ele_gp_value[i]->Velocity(vel_ind[k],0) << " ";
-		vtk_file << endl;
+		vtk_file << "\n";
 	}
 }
 
@@ -640,13 +640,13 @@ void LegacyVtkInterface::printScalarArray(string arrayName, std::fstream &vtk_fi
 	int indexDataArray = pcs->GetNodeValueIndex(arrayName);
 	long numNodes = _mesh->GetNodesNumber(false);
 	
-	vtk_file << "SCALARS " << arrayName << " double 1" << endl;
-	vtk_file << "LOOKUP_TABLE default" << endl;
+	vtk_file << "SCALARS " << arrayName << " double 1" << "\n";
+	vtk_file << "LOOKUP_TABLE default" << "\n";
 	
 	for (long j = 0l; j < numNodes; j++)
 		vtk_file << pcs->GetNodeValue(_mesh->nod_vector[j]->GetIndex(),
 									  indexDataArray)
-		<< endl;
+		<< "\n";
 }
 
 // round very small and very large numbers in order to avoid read error in paraview

@@ -38,21 +38,21 @@ int XMLInterface::isValid(const QString &fileName) const
 		{
 			std::cout <<
 			"XMLInterface::isValid() - XML File is invalid (in reference to schema " <<
-			_schemaName << ")." << std::endl;
+			_schemaName << ")." << "\n";
 			return 0;
 		}
 	}
 	else
 	{
 		std::cout << "XMLInterface::isValid() - Schema " << _schemaName <<
-		" is invalid." << std::endl;
+		" is invalid." << "\n";
 		return 0;
 	}
 #else // ifdef QT_USE_QTXMLPATTERNS
 	Q_UNUSED (fileName);
 	std::cout <<
 	"XMLInterface: XML schema validation skipped. Qt 4.6 is required for validation." <<
-	std::endl;
+	"\n";
 	return 1;
 #endif // QT_USE_QTXMLPATTERNS
 }
@@ -101,7 +101,7 @@ bool XMLInterface::checkHash(const QString &fileName) const
 	if (!this->isValid(fileName))
 		return false;
 
-	std::cout << "File is valid, writing hashfile..." << std::endl;
+	std::cout << "File is valid, writing hashfile..." << "\n";
 	QByteArray hash = calcHash(fileName);
 	std::ofstream out( md5FileName.toStdString().c_str(), std::ios::out );
 	out.write(hash.data(), 16);
@@ -119,7 +119,7 @@ bool XMLInterface::hashIsGood(const QString &fileName, const QByteArray &hash) c
 		if (fileHash[i] != hash[i])
 		{
 			std::cout << "Hashfile does not match data ... checking file ..." <<
-			std::endl;
+			"\n";
 			return false;
 		}
 	return true;

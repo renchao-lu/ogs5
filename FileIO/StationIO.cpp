@@ -60,7 +60,7 @@ void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*>* boreho
 
 	for (size_t j = 0; j < boreholes->size(); j++)
 		out << static_cast<GEOLIB::StationBorehole*>((*boreholes)[j])->getName() << "\t";
-	out << std::endl;
+	out << "\n";
 
 	for (size_t i = 0; i < maxIterations; i++)
 	{
@@ -78,7 +78,7 @@ void StationIO::writeStratigraphyTable(const std::vector<GEOLIB::Point*>* boreho
 			}
 			out << "\t";
 		}
-		out << std::endl;
+		out << "\n";
 	}
 
 	out.close();

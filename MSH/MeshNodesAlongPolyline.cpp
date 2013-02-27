@@ -84,7 +84,7 @@ MeshNodesAlongPolyline::MeshNodesAlongPolyline(
 					_dist_of_proj_node_from_ply_start.size(), _msh_node_ids);
 
 #ifndef NDEBUG
-//	std::cout << "[DEBUG-INFO] " << std::endl;
+//	std::cout << "[DEBUG-INFO] " << "\n";
 //
 //	// fetch polyline name
 //	std::string ply_name;
@@ -93,14 +93,14 @@ MeshNodesAlongPolyline::MeshNodesAlongPolyline(
 //	}
 //
 //	std::cout << "distances of linear nodes along polyline " << ply_name <<
-//	" (epsilon radius = " << epsilon_radius << "): " << std::endl;
+//	" (epsilon radius = " << epsilon_radius << "): " << "\n";
 //	for (size_t k(0); k < _dist_of_proj_node_from_ply_start.size(); k++)
 //		std::cout << "\t" << _msh_node_ids[k] << " " <<
-//		_dist_of_proj_node_from_ply_start[k] << std::endl;
+//		_dist_of_proj_node_from_ply_start[k] << "\n";
 //	std::cout << "number of linear nodes along polyline " << ply_name << ": " <<
 //	_dist_of_proj_node_from_ply_start.size()
 //	          << ", number of higher order nodes: " << msh_node_higher_order_ids.size() <<
-//	std::endl;
+//	"\n";
 #endif
 	// assign/append higher order nodes at the end of vector _msh_node_ids
 	for (size_t k(0); k < msh_node_higher_order_ids.size(); k++)

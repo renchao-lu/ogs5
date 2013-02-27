@@ -35,7 +35,7 @@ double* Raster::getRasterFromSurface(Surface const& sfc, size_t &n_x_pnts, size_
 	double* z_vals (new double[n_x_pnts * n_y_pnts]);
 	if (!z_vals)
 		std::cout << "DEBUG: CreateRaster::getRaster " << n_x_pnts << " x " << n_y_pnts <<
-		" to big" << std::endl;
+		" to big" << "\n";
 	size_t k(0);
 
 	for (size_t r(0); r < n_x_pnts; r++)

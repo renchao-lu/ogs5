@@ -26,7 +26,7 @@ int XmlStnInterface::readFile(const QString &fileName)
 	QFile* file = new QFile(fileName);
 	if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
 	{
-		std::cout << "XmlStnInterface::readFile() - Can't open xml-file." << std::endl;
+		std::cout << "XmlStnInterface::readFile() - Can't open xml-file." << "\n";
 		delete file;
 		return 0;
 	}
@@ -41,7 +41,7 @@ int XmlStnInterface::readFile(const QString &fileName)
 	QDomElement docElement = doc.documentElement(); //root element, used for identifying file-type
 	if (docElement.nodeName().compare("OpenGeoSysSTN"))
 	{
-		std::cout << "XmlStnInterface::readFile() - Unexpected XML root." << std::endl;
+		std::cout << "XmlStnInterface::readFile() - Unexpected XML root." << "\n";
 		delete file;
 		return 0;
 	}
@@ -151,7 +151,7 @@ void XmlStnInterface::readStations( const QDomNode &stationsRoot,
 		else
 			std::cout <<
 			"XmlStnInterface::readStations() - Attribute missing in <station> tag ..." <<
-			std::endl;
+			"\n";
 		station = station.nextSiblingElement();
 	}
 }
@@ -185,12 +185,12 @@ void XmlStnInterface::readStratigraphy( const QDomNode &stratRoot, GEOLIB::Stati
 			}
 			else
 				std::cout << "Warning: Skipped layer \"" << horizonName << "\" in borehole \"" 
-					      << borehole->getName() << "\" because of thickness 0.0." << std::endl;
+					      << borehole->getName() << "\" because of thickness 0.0." << "\n";
 		}
 		else
 			std::cout <<
 			"XmlStnInterface::readStratigraphy() - Attribute missing in <horizon> tag ..."
-			          << std::endl;
+			          << "\n";
 		horizon = horizon.nextSiblingElement();
 	}
 }
@@ -199,7 +199,7 @@ int XmlStnInterface::write(std::ostream& stream)
 {
 	if (this->_exportName.empty())
 	{
-		std::cout << "Error in XmlStnInterface::write() - No station list specified..." << std::endl;
+		std::cout << "Error in XmlStnInterface::write() - No station list specified..." << "\n";
 		return 0;
 	}
 

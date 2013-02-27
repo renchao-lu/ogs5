@@ -34,7 +34,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			if (pnt == NULL)
 			{
 				std::cerr << "ERROR in GeoIO::readGeoInfo: point name \"" 
-						  << geo_name << "\" not found!" << std::endl;
+						  << geo_name << "\" not found!" << "\n";
 #ifdef OGS_USE_QT
 				return false;
 #else
@@ -45,7 +45,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			return true;
 		}
 
-		std::cerr << "Error in GeoIO::readGeoInfo: point vector not found!" <<std::endl;
+		std::cerr << "Error in GeoIO::readGeoInfo: point vector not found!" <<"\n";
 #ifdef OGS_USE_QT
 		return false;
 #else
@@ -64,7 +64,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			if (ply == NULL)
 			{
 				std::cerr << "error in GeoIO::readGeoInfo: polyline name \"" 
-					      << geo_name << "\" not found!" << std::endl;
+					      << geo_name << "\" not found!" << "\n";
 #ifdef OGS_USE_QT
 				return false;
 #else
@@ -75,7 +75,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			return true;
 		}
 
-		std::cerr << "Error in GeoIO::readGeoInfo: polyline vector not found!" <<std::endl;
+		std::cerr << "Error in GeoIO::readGeoInfo: polyline vector not found!" <<"\n";
 #ifdef OGS_USE_QT
 		return false;
 #else
@@ -94,7 +94,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			if (sfc == NULL)
 			{
 				std::cerr << "Error in GeoIO::readGeoInfo: surface name \"" 
-						  << geo_name << "\" not found!" << std::endl;
+						  << geo_name << "\" not found!" << "\n";
 #ifdef OGS_USE_QT
 				return false;
 #else
@@ -105,7 +105,7 @@ bool GeoIO::readGeoInfo (GeoInfo* geo_info, std::istream& in_str, std::string& g
 			return true;
 		}
 
-		std::cerr << "Error in GeoIO::readGeoInfo: surface vector not found!" <<std::endl;
+		std::cerr << "Error in GeoIO::readGeoInfo: surface vector not found!" <<"\n";
 #ifdef OGS_USE_QT
 		return false;
 #else

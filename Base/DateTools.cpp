@@ -15,7 +15,7 @@ int date2int(int y, int m, int d)
 {
 	if ( (y < 1000 || y > 9999) || (m < 1 || m > 12) || (d < 1 || d > 31) )
 	{
-		std::cout << "Error: date2double() -- input not in expected format." << std::endl;
+		std::cout << "Error: date2double() -- input not in expected format." << "\n";
 		return 0;
 	}
 
@@ -50,7 +50,7 @@ std::string date2string(double ddate)
 {
 	if (ddate < 10000101 || ddate > 99991231)
 	{
-		std::cout << "Error: date2String() -- input not in expected format." << std::endl;
+		std::cout << "Error: date2String() -- input not in expected format." << "\n";
 		return "0.0.0000";
 	}
 
@@ -59,11 +59,11 @@ std::string date2string(double ddate)
 	rest = rest % (y * 10000);
 	int m = static_cast<int>(floor(rest / 100.0));
 	if (m < 1 || m > 12)
-		std::cout << "Warning: date2String() -- month not in [1:12]" << std::endl;
+		std::cout << "Warning: date2String() -- month not in [1:12]" << "\n";
 	rest = rest % (m * 100);
 	int d = rest;
 	if (d < 1 || d > 31)
-		std::cout << "Warning: date2String() -- day not in [1:31]" << std::endl;
+		std::cout << "Warning: date2String() -- day not in [1:31]" << "\n";
 
 	std::string day = number2str(d);
 	if (d < 10)
@@ -94,11 +94,11 @@ int xmlDate2int(const std::string &s)
 	{
 		int d = atoi(s.substr(8,2).c_str());
 		if (d < 1 || d > 31)
-			std::cout << "Warning: xmlDate2double() -- day not in [1:31]" << std::endl;
+			std::cout << "Warning: xmlDate2double() -- day not in [1:31]" << "\n";
 		int m = atoi(s.substr(5,2).c_str());
 		if (m < 1 || m > 12)
 			std::cout << "Warning: xmlDate2double() -- month not in [1:12]" <<
-			std::endl;
+			"\n";
 		int y = atoi(s.substr(0,4).c_str());
 		return date2int(y, m, d);
 	}
