@@ -792,6 +792,9 @@ void Problem::PCSCreate()
 		pcs_vector[i]->Config();  //OK
 	}
 
+#if defined(NEW_EQS) 
+       CreateEQS_LinearSolver();  
+#endif
 
 	for (size_t i = 0; i < no_processes; i++)
 	{
@@ -812,7 +815,7 @@ void Problem::PCSCreate()
 	}
 
 
-#if defined(USE_PETSC) || defined(NEW_EQS) // || defined(other solver libs)//03.3012. WW
+#if defined(USE_PETSC) // || defined(other solver libs)//03.3012. WW
        CreateEQS_LinearSolver();  
 #endif
 
