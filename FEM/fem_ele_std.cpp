@@ -8123,7 +8123,7 @@ void CFiniteElementStd::Assembly()
 	case L:                               // Liquid flow
 		AssembleParabolicEquation();
 		Assemble_Gravity();
-		Assemble_RHS_LIQUIDFLOW();
+	    Assemble_RHS_LIQUIDFLOW();
 		if(dm_pcs)
 			Assemble_strainCPL();
 		add2GlobalMatrixII();
@@ -9453,7 +9453,8 @@ void CFiniteElementStd::Assemble_RHS_Pc()
  **************************************************************************/
 void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
 {
-    if (FluidProp->drho_dT == .0) return;
+    if (!isTemperatureCoupling()) return;
+    if (FluidProp->drho_dT == .0 && SolidProp->Thermal_Expansion()==.0) return;
 
     int dm_shift = 0;
     if(pcs->type / 10 == 4)
