@@ -8123,7 +8123,7 @@ void CFiniteElementStd::Assembly()
 	case L:                               // Liquid flow
 		AssembleParabolicEquation();
 		Assemble_Gravity();
-        Assemble_RHS_LIQUIDFLOW();
+		Assemble_RHS_LIQUIDFLOW();
 		if(dm_pcs)
 			Assemble_strainCPL();
 		add2GlobalMatrixII();
