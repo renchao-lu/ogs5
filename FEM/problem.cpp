@@ -102,7 +102,7 @@ Problem::Problem (char* filename) :
 	{
 		// read data
 		ReadData(filename, *_geo_obj, _geo_name);
-#if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
+#if !defined(USE_PETSC)  // &&  !defined(other parallel libs)//03~04.3012. WW
 		DOMRead(filename);
 #endif
 	}

@@ -6,12 +6,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
 # Project name
 PROJECT(OGS)
 
-### CMake setup ###
-INCLUDE(CMakeConfiguration/CMakeSetup.cmake)
-
-### Compiler setup ###
-INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
-
 
 ###############
 ### Options ###
