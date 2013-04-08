@@ -46,7 +46,7 @@ if [ "$OSTYPE" == 'msys' ]; then
 elif [[ "$OSTYPE" == darwin* ]]; then
 	configs=("FEM" "SP")                                       # Mac
 else
-	configs=("FEM" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS") # Linux
+	configs=("FEM" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC") # Linux
 fi
 
 # Iterate over configurations
