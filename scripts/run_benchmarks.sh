@@ -55,7 +55,7 @@ if  [ $RUN_EXCEEDING ]; then
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
-	
+
 	cd $BUILD_LOCATION/build_brns
 	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
@@ -65,7 +65,7 @@ if  [ $RUN_EXCEEDING ]; then
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
-	
+
 	cd $BUILD_LOCATION/build_pqc
 	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
@@ -75,7 +75,7 @@ if  [ $RUN_EXCEEDING ]; then
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
-	
+
 	cd $BUILD_LOCATION/build_gems
 	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
@@ -91,7 +91,7 @@ else
 
 	ctest -E 'Tests|FILE|EXCEED' -j $NUM_PROCESSORS > ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
-	
+
 	cd $BUILD_LOCATION/build_brns
 	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
@@ -99,14 +99,18 @@ else
 	cd $BUILD_LOCATION/build_pqc
 	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
-	
+
 	cd $BUILD_LOCATION/build_gems
+	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
+	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
+
+	cd $BUILD_LOCATION/build_petsc
 	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
 
 	# Print results
 	cat ../benchOut.txt
-	
+
 	cd $SOURCE_LOCATION/scripts
 	# Send emails on errors
 	FILESIZE=$(stat -c %s $BUILD_LOCATION/svnInfo.txt)

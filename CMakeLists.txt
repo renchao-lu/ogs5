@@ -39,26 +39,21 @@ INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
 
 
 ### Find directories and libraries ###
-IF(NOT OGS_FEM_PETSC)
-IF(NOT OGS_NO_EXTERNAL_LIBS)
-	INCLUDE (CMakeConfiguration/Find.cmake)
-ENDIF() # NOT OGS_NO_EXTERNAL_LIBS
-ENDIF()
+INCLUDE (CMakeConfiguration/Find.cmake)
+
 
 ### General project setup ###
 INCLUDE(CMakeConfiguration/GeneralProjectSetup.cmake)
 
-
-
 IF(BLUE_G)
-ADD_DEFINITIONS ( "-O3 -qstrict -qarch=qp -qtune=qp" )
+	ADD_DEFINITIONS ( "-O3 -qstrict -qarch=qp -qtune=qp" )
 ENDIF()
 
 # Set default configuration when no other config is given
-IF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+IF (NOT (OGS_FEM OR OGS_FEM_SP OR OGS_FEM_GEMS OR OGS_FEM_PQC OR OGS_FEM_BRNS OR OGS_FEM_CHEMAPP OR OGS_FEM_LIS OR OGS_FEM_MKL OR OGS_FEM_MPI OR OGS_USE_QT OR OGS_FEM_PETSC))
 	MESSAGE (STATUS "No configuration specified. Default confuguration is used.")
 	SET (OGS_FEM ON)
-ENDIF (NOT OGS_FEM AND NOT OGS_FEM_SP AND NOT OGS_FEM_GEMS AND NOT OGS_FEM_PQC AND NOT OGS_FEM_BRNS AND NOT OGS_FEM_CHEMAPP AND NOT OGS_FEM_LIS AND NOT OGS_FEM_MKL AND NOT OGS_FEM_MPI AND NOT OGS_USE_QT)
+ENDIF ()
 
 # Check if a valid OGS configuration is given (see Macros.cmake)
 CHECK_CONFIG()
@@ -127,23 +122,21 @@ IF(OGS_FEM_JFNK)
 ENDIF(OGS_FEM_JFNK)
 
 IF(OGS_FEM_PETSC)
-	MESSAGE (STATUS  "Configuring for PETSc" )
-      
+	MESSAGE (STATUS "Configuring for PETSc" )
+
 	ADD_DEFINITIONS(-DUSE_PETSC)
 	SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/findPETSC)
 
-	FIND_PACKAGE(PETSc REQUIRED)
- 
-        include_directories(
-              ${PETSC_INCLUDES} 
-        )
+	FIND_PACKAGE(PETSc REQUIRED QUIET)
+
+	INCLUDE_DIRECTORIES( ${PETSC_INCLUDES} )
 	FIND_PACKAGE(MPI)
-	IF(MPI_FOUND)		
+	IF(MPI_FOUND)
 	  SET(CMAKE_C_COMPILER ${MPI_COMPILER})
 	  SET(CMAKE_CXX_COMPILER ${MPI_COMPILER})
 	ELSE(MPI_FOUND)
 	  MESSAGE (FATAL_ERROR "Aborting: MPI implementation is not found!")
-	ENDIF(MPI_FOUND)			
+	ENDIF(MPI_FOUND)
 ENDIF(OGS_FEM_PETSC)
 
 IF(OGS_FEM_MPI)
