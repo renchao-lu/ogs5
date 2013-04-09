@@ -108,6 +108,10 @@ else
 	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
 
+	cd $BUILD_LOCATION/build_mpi
+	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
+	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
+
 	# Print results
 	cat ../benchOut.txt
 
