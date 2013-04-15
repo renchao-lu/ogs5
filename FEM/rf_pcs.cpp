@@ -66,6 +66,7 @@
 #include "eos.h"
 #include "rf_msp_new.h"
 #include "rf_node.h"
+#include "fem_ele_vec.h"//WX:08.2011
 
 /*-----------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------*/
@@ -181,6 +182,7 @@ using process::CRFProcessDeformation;
 using MeshLib::CNode;
 using MeshLib::CElem;
 using FiniteElement::ElementValue;
+using FiniteElement::ElementValue_DM;//WX:07.2011
 using Math_Group::vec;
 
 #define noCHECK_EQS
@@ -344,6 +346,7 @@ CRFProcess::CRFProcess(void) :
 #endif
 	ExcavMaterialGroup = -1;              //01.2010 WX
 	PCS_ExcavState = -1;                  //WX
+	Neglect_H_ini = -1;                   //WX
 
 	isRSM = false; //WW
 	eqs_x = NULL;
@@ -1622,6 +1625,8 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
 		dm_pcs->ExcavBeginCoordinate = ExcavBeginCoordinate;
 		dm_pcs->ExcavCurve = ExcavCurve;
 	}
+	dm_pcs->Neglect_H_ini = Neglect_H_ini;//WX:08.2011
+	dm_pcs->UpdateIniState = UpdateIniState;//WX:10.2011
 	//
 	return dynamic_cast<CRFProcess*> (dm_pcs);
 }
@@ -1984,6 +1989,16 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		{
 			*pcs_file >> ExcavMaterialGroup >> ExcavDirection >>
 			ExcavBeginCoordinate >> ExcavCurve;
+			continue;
+		}
+		if(line_string.find("$NEGLECT_H_INI_EFFECT")==0)//WX:10.2011
+		{
+			*pcs_file >> Neglect_H_ini;
+			continue;
+		}
+		if(line_string.find("$UPDATE_INI_STATE")==0)//WX:10.2011
+		{
+			*pcs_file >> UpdateIniState;
 			continue;
 		}
 		//....................................................................
@@ -3186,6 +3201,13 @@ void CRFProcess::ConfigUnsaturatedFlow()
 		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 		pcs_number_of_secondary_nvals++;
+		if(Neglect_H_ini==2)
+		{
+			pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
+			pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+			pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+			pcs_number_of_secondary_nvals++;//WX:08.2011
+		}
 		//TEST
 		//#define DECOVALEX
 #ifdef DECOVALEX
@@ -3442,6 +3464,17 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
+	if(Neglect_H_ini==2)
+	{
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;//WX:08.2011
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE2_Ini";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;//WX:08.2011
+	}
 
 	// 1.3 elemental variables								// BG, 04/2012
 	//pcs_number_of_evals = 0;
@@ -3516,6 +3549,13 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
+	if(Neglect_H_ini==2)
+	{
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;				  //WX 08.2011
+	}
 
 	// 1.3 elemental variables
 	//pcs_number_of_evals = 0;
@@ -3937,12 +3977,23 @@ void CRFProcess::CheckMarkedElement()
 		elem = m_msh->ele_vector[l];
 		done = false;
 		for(i = 0; i < (size_t)NumDeactivated_SubDomains; i++)
+		{
 			if(elem->GetPatchIndex() == static_cast<size_t>(Deactivated_SubDomain[i]))
 			{
 				elem->MarkingAll(false);
 				done = true;
 				break;
 			}
+		}
+		//WX:02.2013: excav with deactivated subdomain
+		if(ExcavMaterialGroup>=0&&ExcavMaterialGroup==elem->GetPatchIndex())
+		{
+			if(!elem->GetMark()||abs(elem->GetExcavState())<MKleinsteZahl)
+			{
+				elem->MarkingAll(false);
+				done = true;
+			}
+		}
 		if(done)
 			continue;
 		else
@@ -3990,7 +4041,7 @@ void CRFProcess::CheckExcavedElement()
 	for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
 	{
 		elem = m_msh->ele_vector[l];
-		if(elem->GetPatchIndex() == static_cast<size_t>(ExcavMaterialGroup) && elem->GetMark())
+		if(elem->GetPatchIndex() == ExcavMaterialGroup && elem->GetExcavState()==-1)//WX:04.2012
 		{
 			double const* ele_center(elem->GetGravityCenter());
 			if((GetCurveValue(ExcavCurve,0,aktuelle_zeit,
@@ -4822,7 +4873,7 @@ void CRFProcess::GlobalAssembly()
 		for (size_t i = 0; i < m_dom->elements.size(); i++)
 		{
 			elem = m_msh->ele_vector[m_dom->elements[i]];
-			if (elem->GetMark())
+			if (elem->GetMark() && elem->GetExcavState()==-1)//WX:10.2012
 			{
 				elem->SetOrder(false);
 				//WW
@@ -5531,8 +5582,9 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		CBoundaryCondition* m_bc; //WW
 		CFunction* m_fct = NULL;  //OK
 		bool is_valid = false;    //OK
-		//WW bool onExBoundary = false;                     //WX
+		bool onExBoundary = false;                     //WX
 		bool excavated = false;   //WX
+		bool onDeactiveBoundary=true;//WX:09.2011
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		vector<int> bc_eqs_id;
 		vector<double> bc_eqs_value;
@@ -5629,70 +5681,61 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				CNode* node;
 				CElem* elem;
 				//unsigned int counter;	//void warning
-				//WW onExBoundary = true;                     //WX:01.2011
+				onExBoundary = false;	//WX:01.2011
 				excavated = false;
+
 				node = m_msh->nod_vector[m_bc_node->geo_node_number];
 				double const* node_coordinate (node->getData()); //Coordinates(node_coordinate);
-				//tmp_counter3++;
-				//counter = 0;
-				/*if((node_coordinate[ExcavDirection]-(GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)-ExcavBeginCoordinate)<0.001
-				      &&(node_coordinate[ExcavDirection]-ExcavBeginCoordinate)>-0.001))*/
-				//used with deactive subdomain
-				if((node_coordinate[ExcavDirection] -
-				    (GetCurveValue(ExcavCurve,0,aktuelle_zeit,
-				                   &valid) - ExcavBeginCoordinate)) < 0.001)
+
+				if((node_coordinate[ExcavDirection]>=ExcavBeginCoordinate&&(GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)
+					+ExcavBeginCoordinate)>=node_coordinate[ExcavDirection])
+					||(node_coordinate[ExcavDirection]<ExcavBeginCoordinate&&(GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)
+					+ExcavBeginCoordinate)<node_coordinate[ExcavDirection]))
 				{
 					excavated = true;
-					for(unsigned int j = 0;
-					    j < node->getConnectedElementIDs().size(); j++)
+					double* tmp_ele_coor = NULL;
+					for(unsigned int j=0; j<node->getConnectedElementIDs().size(); j++)
 					{
-						elem =
-						        m_msh->ele_vector[node->
-						                          getConnectedElementIDs()[
-						                                  j]];
+						elem = m_msh->ele_vector[node->getConnectedElementIDs()[j]];
 						double const* tmp_ele_coor (elem->GetGravityCenter());
 						//if(elem->GetPatchIndex()!=ExcavMaterialGroup){
 						//if(elem->GetExcavState()==-1)
 						if(elem->GetPatchIndex() != static_cast<size_t>(ExcavMaterialGroup))
-							continue;
-						else if (tmp_ele_coor[ExcavDirection] -
-						         (GetCurveValue(ExcavCurve,0,aktuelle_zeit,
-						                        &valid) -
-						          ExcavBeginCoordinate) < 0.001)
-							//WW onExBoundary = false;
-							//tmp_counter1++;
+							//to be improved for more than 1 MG excavation
+						{
+							onExBoundary = true;
 							break;
 					}
-				}
-				//if(fabs(node_coordinate[ExcavDirection]-GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)-ExcavBeginCoordinate)<0.001)
-				//{
-				// excavated = true;
-				// onExBoundary = true;
-				//}
-				/*for(unsigned int j=0; j<node->connected_elements.size(); j++)
-				   {
-				   elem = m_msh->ele_vector[node->connected_elements[j]];
-				   if(elem->GetExcavState()>0)
-				      counter ++;
-				   }
-				   if ( counter!=0 && counter<node->connected_elements.size())
+						else if (tmp_ele_coor[ExcavDirection]-(GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)
+							-ExcavBeginCoordinate)>-0.001)
 				   {
 				   onExBoundary = true;
-				   excavated = true;
+							//tmp_counter1++;
+							break;
 				   }
-				   else
-				   if(counter==0)
-				   excavated = false;
-				   else
-				   if(counter==node->connected_elements.size())
-				   {
-				   excavated = true;
-				   onExBoundary = false;
 				   }
-				 */
+			}
 			}
 
 			if((m_bc->getExcav() > 0) && !excavated) //WX:01.2011. excav bc but is not excavated jet
+				continue;
+			if(m_bc->getGeoTypeAsString().compare("DOMAIN")==0)//WX
+			{
+				CNode * node;
+				CElem * elem;
+				onDeactiveBoundary = false;
+				node = m_msh->nod_vector[m_bc_node->geo_node_number];
+				for(size_t j=0; j<node->getConnectedElementIDs().size(); j++)
+				{
+					elem = m_msh->ele_vector[node->getConnectedElementIDs()[j]];
+					if(elem->GetMark())
+					{
+						onDeactiveBoundary = true;
+						break;
+					}
+				}
+			}
+			if(!onDeactiveBoundary)
 				continue;
 			//
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -5855,6 +5898,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 							SetNodeValue(m_bc_node->geo_node_number,
 							             idx0,
 							             bc_value);
+						if (m_bc->getNoDispIncre()>0)//WX
+							bc_value = 0;
 
 #ifdef JFNK_H2M
 						bc_inre_flag = false;
@@ -5920,6 +5965,20 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				   }
 				   }
 				 */
+				if(m_bc->getExcav()>0)
+				{
+					if(excavated&&!onExBoundary)
+					{
+#ifdef NEW_EQS
+						eqs_p->SetKnownX_i(bc_eqs_index, bc_value); //WX:12.2012
+#else
+						MXRandbed(bc_eqs_index,bc_value,eqs_rhs);
+#endif
+							continue;//WX:09.2011
+					}
+					else if (m_bc_node->pcs_pv_name.find("DISPLACEMENT")!=string::npos)
+						continue;//
+				}
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 				  bc_eqs_id.push_back(static_cast<int>( m_msh->nod_vector[bc_msh_node]->GetEquationIndex()
 									* dof_per_node + shift));
@@ -8408,6 +8467,8 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			CopyU_n();
 		if (hasAnyProcessDeactivatedSubdomains)
 			this->CheckMarkedElement();  //NW
+		if (ExcavMaterialGroup>-1)//WX:07.2011 HM excavation
+			this->CheckExcavedElement();
 		Tim->last_dt_accepted = true; // JT2012
 
 #if defined(USE_PETSC) || defined (USE_MPI)  // || defined(other parallel libs)//01.3013. WW

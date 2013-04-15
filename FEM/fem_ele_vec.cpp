@@ -501,6 +501,9 @@ void CFiniteElementVec::SetMaterial()
 	//......................................................................
 	// MSP
 	smat = msp_vector[MatGroup];
+	//WX:01.2013. time dependent E nv aniso
+	if(smat->Time_Dependent_E_nv_mode==2)
+		smat->CalculateTransformMatrixFromNormalVector(ele_dim);
 	smat->axisymmetry = pcs->m_msh->isAxisymmetry();
 	// Single yield surface model
 	if(smat->Plasticity_type == 2)
@@ -674,6 +677,12 @@ void CFiniteElementVec::setTransB_Matrix(const int LocalIndex)
 void CFiniteElementVec::ComputeStrain()
 {
 	int i, j = 0, k = 0;
+	if(excavation)//WX:03.2012 if element is excavated, strain = 0
+	{
+		for(i=0; i<ns; i++)
+			dstrain[i]=0.;
+		return;
+	}
 	switch(dim)
 	{
 	case 2:
@@ -843,6 +852,7 @@ void CFiniteElementVec::ComputeMatrix_RHS(const double fkt,
 		//TEST             (*B_matrix_T)(j,k)*dstress[k]*fkt;
 		if(PreLoad == 11)
 			continue;
+		if(excavation) continue;//WX:08.2011
 		// Local assembly of stiffness matrix, B^T C B
 #ifdef JFNK_H2M
 		/// If JFNK. 18.10.2010. WW
@@ -1049,6 +1059,10 @@ void CFiniteElementVec::LocalAssembly(const int update)
 	else
 		for(size_t i = 0; i < dim; i++)
 			for(j = 0; j < nnodesHQ; j++)
+				//WX:03.2013 use total disp. if damage or E=f(t) is on, dstress in LocalAssembly_continumm() is also changed
+				if(smat->Time_Dependent_E_nv_mode > MKleinsteZahl && pcs->ExcavMaterialGroup<0)
+					Disp[j+i*nnodesHQ] = pcs->GetNodeValue(nodes[j],Idx_dm0[i]) + pcs->GetNodeValue(nodes[j],Idx_dm0[i]+1);
+				else
 				Disp[j + i * nnodesHQ] = pcs->GetNodeValue(nodes[j],Idx_dm0[i]);
 
 	// Get saturation of element nodes
@@ -1118,7 +1132,7 @@ void CFiniteElementVec::LocalAssembly(const int update)
 				{
 					excavation = true;
 					*(eleV_DM->Stress) = 0.;
-					MeshElement->SetExcavState(1);
+					//MeshElement->SetExcavState(1); //WX:03.2012
 				}
 			}
 		}
@@ -1177,7 +1191,7 @@ void CFiniteElementVec::LocalAssembly(const int update)
  **************************************************************************/
 bool CFiniteElementVec::GlobalAssembly()
 {
-	// For excavation simulation. 12.2009. WW
+	/*// For excavation simulation. 12.2009. WW
 	int valid = 0;
 	if (excavation)
 	{
@@ -1237,20 +1251,20 @@ bool CFiniteElementVec::GlobalAssembly()
 				for (size_t j = 0; j < dim; j++)
 					(*RHS)(j * nnodesHQ + i) = 0.0;
 		}
-	}
+	}*/
 
 	GlobalAssembly_RHS();
 	if (PreLoad == 11)
 		return true;
 
 	// For excavation simulation. 12.2009. WW
-	if (excavation)
+	if (excavation)//WX: modify
 	{
-		MeshElement->MarkingAll(false);
-		*(eleV_DM->Stress) = 0.;
-		*(eleV_DM->Stress0) = 0.;
-		if (eleV_DM->Stress_j)
-			(*eleV_DM->Stress_j) = 0.0;
+		//MeshElement->MarkingAll(false);
+		//*(eleV_DM->Stress) = 0.;
+		//*(eleV_DM->Stress0) = 0.;
+		//if (eleV_DM->Stress_j)
+			//(*eleV_DM->Stress_j) = 0.0;
 		return false;
 	}
 
@@ -1568,6 +1582,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 	Residual = false;
 	fact = 1.0;
 	k = 0;
+	int idx_p1_ini, idx_p2_ini;//, idx_sw_ini;//WX:08.2011 neglect ini h affect
 
 	biot = smat->biot_const;
 	if(Flow_Type >= 0)
@@ -1592,6 +1607,63 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 	// If dynamic GetNodeValue(nodes[i],idx_P0) = 0;
 	if(Residual)
 	{
+		//WX:02.2013 coupling excavation
+		int onExBoundaryState[20] = {0};
+		if (excavation)
+		{
+			int valid = 0;
+			excavation = true;
+			bool onExBoundary = false;
+			CNode * node;
+			CElem * elem;
+			CSolidProperties* smat_e;
+
+			for (int i = 0; i < nnodes; i++)
+			{
+				node = MeshElement->nodes[i];
+				onExBoundary = false;
+				const size_t n_elements (node->getConnectedElementIDs().size());
+				for (size_t j = 0; j < n_elements; j++)
+				{
+					elem = pcs->m_msh->ele_vector[node->getConnectedElementIDs()[j]];
+					if (!elem->GetMark()) continue;
+
+					smat_e = msp_vector[elem->GetPatchIndex()];
+					if (smat_e->excavation > 0)
+					{
+						if (fabs(GetCurveValue(smat_e->excavation, 0,
+							aktuelle_zeit, &valid) - 1.0) < DBL_MIN)
+						{
+							onExBoundary = true;
+							break;
+						}
+					}
+					else if(pcs->ExcavMaterialGroup>-1)
+					{
+						double const* ele_center(elem->GetGravityCenter());
+						if((GetCurveValue(pcs->ExcavCurve,0,aktuelle_zeit,&valid)+pcs->ExcavBeginCoordinate)<
+							(ele_center[pcs->ExcavDirection]))
+						{
+							onExBoundary = true;
+							break;
+						}
+						else if (elem->GetPatchIndex()!=static_cast<size_t>(pcs->ExcavMaterialGroup))
+						{
+							onExBoundary = true;
+							break;
+						}
+					}
+					else
+					{
+						onExBoundary = true;
+						break;
+					}
+				}
+				if(onExBoundary)
+					onExBoundaryState[i] = 1;
+			}
+		}
+
 		switch(Flow_Type)
 		{
 		case 0:                   // Liquid flow
@@ -1600,9 +1672,13 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			{
 				val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
 				//                AuxNodal[i] = LoadFactor*( val_n -Max(pcs->GetNodeValue(nodes[i],idx_P0),0.0));
-				if(pcs->PCS_ExcavState == 1)
+				//if(pcs->PCS_ExcavState == 1)
 					//WX:07.2011 for HM excavation
-					val_n -= h_pcs->GetNodeValue(nodes[i],idx_P1 - 1);
+					//val_n -= h_pcs->GetNodeValue(nodes[i],idx_P1 - 1);
+				if(onExBoundaryState[i]==1)//WX:02.2013
+					val_n=0.;
+				if(pcs->Neglect_H_ini==2)//WX:08.2011 -pw_ini
+					val_n -= h_pcs->GetNodeValue(nodes[i], idx_p1_ini);
 				AuxNodal[i] = LoadFactor * val_n;
 			}
 			break;
@@ -1612,6 +1688,14 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 				AuxNodal[i] = LoadFactor * h_pcs->GetNodeValue(nodes[i],idx_P1);
 			break;
 		case 1:                   // Richards flow
+			//WX:08.2011
+			double bishop_coef_ini; 
+			double S_e, S_e_ini, sw_ini;
+
+			if(pcs->Neglect_H_ini==2)
+			{
+				idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");				   
+			}
 #ifdef DECOVALEX
 			int idv0;
 			// DECOVALEX
@@ -1621,16 +1705,60 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			for (i = 0; i < nnodes; i++)
 			{
 				val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
+				S_e = (m_mmp->SaturationCapillaryPressureFunction(-val_n)-m_mmp->capillary_pressure_values[1])
+					/(m_mmp->capillary_pressure_values[2]-m_mmp->capillary_pressure_values[1]);
+				if(onExBoundaryState[i]==1)//WX:02.2013
+					val_n=0.;
 				if(biot < 0.0 && val_n < 0.0)
 					AuxNodal[i] = 0.0;
 				else
+				{
 				// DECOVALEX
 #ifdef DECOVALEX
 					AuxNodal[i] = LoadFactor *
 					              (val_n -
 					               Max(h_pcs->GetNodeValue(nodes[i],idv0),0.0));
 #else
+					if(pcs->Neglect_H_ini==2)
+					{
+						sw_ini = m_mmp->SaturationCapillaryPressureFunction(-h_pcs->GetNodeValue(nodes[i],idx_p1_ini));
+						S_e_ini = (sw_ini-m_mmp->capillary_pressure_values[1])
+							/(m_mmp->capillary_pressure_values[2]-m_mmp->capillary_pressure_values[1]);
+					}
+
+					if(smat->bishop_model>0)
+					{
+						switch (smat->bishop_model)
+						{
+						case 1:
+							bishop_coef_ini=S_e_ini * smat->bishop_model_value;
+							AuxNodal[i] = LoadFactor*S_e*smat->bishop_model_value* val_n;
+							break;
+						case 2:
+							bishop_coef_ini = pow(S_e_ini,smat->bishop_model_value);
+							AuxNodal[i] = LoadFactor*pow(S_e,smat->bishop_model_value)* val_n;
+							break;
+						default :
+							break;
+						}
+					}
+					else
 					AuxNodal[i] = LoadFactor * S_Water * val_n;
+				}//WX:12.2012 end if(biot<0.0&&val_n<0.0) else
+
+				if(pcs->Neglect_H_ini==2)//WX:08.2011
+				{
+					if(biot<0.0&&h_pcs->GetNodeValue(nodes[i],idx_p1_ini)<0.0)
+						AuxNodal[i] -= 0;//WX:12.2012
+					else 
+					{
+						if(smat->bishop_model==1||smat->bishop_model==2)
+							AuxNodal[i] -= LoadFactor * bishop_coef_ini * h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+						else
+							AuxNodal[i] -= LoadFactor*(m_mmp->SaturationCapillaryPressureFunction(-h_pcs->GetNodeValue(nodes[i],idx_p1_ini)))
+							*h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+					}
+				}
 #endif
 			}
 			break;
@@ -1640,36 +1768,62 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			for (i = 0; i < dim_times_nnodesHQ; i++)
 				AuxNodal1[i] = 0.0;
 
+			if(h_pcs->Neglect_H_ini==2)
+			{
+				idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+				idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+				//idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+			}
+
 			if(smat->bishop_model > 0)
 			{
+				double bishop_coef, bishop_coef_ini;        //bishop
+				double S_e, S_e_ini, sw_ini;
+
 				for (i = 0; i < nnodes; i++)
 				{
-					double bishop_coef = 1.; //bishop
-					double S_e = 1.;
+					sw_ini = m_mmp->SaturationCapillaryPressureFunction(h_pcs->GetNodeValue(nodes[i],idx_p1_ini));
 					switch(smat->bishop_model)
 					{
 					case 1:
 						bishop_coef = smat->bishop_model_value;
+						bishop_coef_ini = bishop_coef;
 						break;
 					case 2:
-						S_e = m_mmp->GetEffectiveSaturationForPerm(AuxNodal_S[i],0);
+						S_e = (AuxNodal_S[i]-m_mmp->capillary_pressure_values[1])
+							/(m_mmp->capillary_pressure_values[2]-m_mmp->capillary_pressure_values[1]);
+						if(pcs->Neglect_H_ini==2)
+						{
+							S_e_ini = (sw_ini-m_mmp->capillary_pressure_values[1])
+								/(m_mmp->capillary_pressure_values[2]-m_mmp->capillary_pressure_values[1]);
+							bishop_coef_ini = pow(S_e_ini, smat->bishop_model_value);
+						}
 						bishop_coef = pow(S_e, smat->bishop_model_value);
 						break;
 					default:
 						break;
 					}
 					if(smat->bishop_model == 1 || smat->bishop_model == 2) // pg-bishop*pc 05.2011 WX
+					{
 						val_n = h_pcs->GetNodeValue(nodes[i],idx_P2)
-						        - bishop_coef* h_pcs->GetNodeValue(nodes[i],
-						                                           idx_P1);
+							-bishop_coef*h_pcs->GetNodeValue(nodes[i],idx_P1);
+						if(onExBoundaryState[i]==1)//WX:02.2013
+							val_n=0.;
+						if(pcs->Neglect_H_ini==2)
+							val_n -= h_pcs->GetNodeValue(nodes[i], idx_p2_ini)
+							-bishop_coef_ini*h_pcs->GetNodeValue(nodes[i], idx_p1_ini);
+					}
 					else
+					{
 						val_n = h_pcs->GetNodeValue(nodes[i],idx_P2) // pg - Sw*pc
-						        - AuxNodal_S[i] * h_pcs->GetNodeValue(
-						        nodes[i],
-						        idx_P1);
-					val_n = h_pcs->GetNodeValue(nodes[i],idx_P2)
-					        - AuxNodal_S[i] * h_pcs->GetNodeValue(nodes[i],
-					                                              idx_P1);
+							-AuxNodal_S[i]*h_pcs->GetNodeValue(nodes[i],idx_P1);
+						if(onExBoundaryState[i]==1)//WX:02.2013
+							val_n=0.;
+						if(pcs->Neglect_H_ini==2)
+							val_n -= h_pcs->GetNodeValue(nodes[i],idx_p2_ini)
+							-sw_ini*h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+					}
+
 					if(biot < 0.0 && val_n < 0.0)
 						AuxNodal[i] = 0.0;
 					else
@@ -1904,6 +2058,14 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 			*De = *(smat->getD_tran());  // UJG/WW
 	}
 
+	//WX: 06.2012 E depends on stress, strain ...
+	if(smat->E_Function_Model>0)
+	{
+		double tmp_value=1;
+		tmp_value=smat->E_Function(ele_dim, eleV_DM, nGaussPoints);
+		*De *= tmp_value;
+	}
+
 	if(PModel == 5)
 		smat->CalculateCoefficent_HOEKBROWN();  //WX:02.2011
 	/*
@@ -1983,12 +2145,29 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 		{
 			for (i = 0; i < ns; i++)
 				dstress[i] = 0.0;
+			if(!excavation)//WX:07.2011 nonlinear excavation					
+			{
+				//De->Write();
 			De->multi(dstrain, dstress);
+				if(smat->Time_Dependent_E_nv_mode > MKleinsteZahl && pcs->ExcavMaterialGroup < 0)
+					for(i=0; i<ns; i++)
+						dstress[i] -= (*eleV_DM->Stress)(i, gp)-(*eleV_DM->Stress0)(i, gp);
+		}
 		}
 
 		//---------------------------------------------------------
 		// Integrate the stress by return mapping:
 		//---------------------------------------------------------
+		if(excavation)//if elem is excavated, only do the comp. rhs WX:08.2011
+		{
+			for (i=0;i<ns;i++)
+				dstress[i] += (*eleV_DM->Stress)(i,gp);
+			S_Water=1.0;//WX:02.2013
+			if(Flow_Type>0&&Flow_Type!=10)
+				S_Water = interpolate(AuxNodal_S,1);
+		}
+		else
+		{
 		switch(PModel)
 		{
 		case -1:                  // Pure elasticity
@@ -2094,7 +2273,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 			dPhi = 1.0;
 			break;
 		case 4:                   // Mohr-Coloumb	//WX:10.2010
-			if(smat->DirectStressIntegrationMOHR(gp, eleV_DM, dstress, update, De))
+				if(smat->DirectStressIntegrationMOHR(gp, eleV_DM, dstress, update, De, pcs->ite_steps))
 			{
 				*ConsistDep = *De;
 				//also for tension
@@ -2103,6 +2282,15 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 				dPhi = 1.0;
 			}
 			break;
+			case 44:	//WX:12.2011 Mohr-Coloumb	bedding
+				if(smat->StressIntegrationMOHR_Aniso(gp, eleV_DM, dstress, update, De))
+				{
+					*ConsistDep = *De;
+					smat->TangentialMohrShear(ConsistDep);		//also for tension
+					//ConsistDep->Write();
+					dPhi = 1.0;
+				}
+				break;
 			/*case 5:
 			   if(smat->StressIntegrationHoekBrown(gp, eleV_DM, dstress, update, De))
 			   {
@@ -2112,6 +2300,7 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 			         dPhi = 1.0;
 			   }
 			   break;*/
+		}
 		}
 		// --------------------------------------------------------------------
 		// Stress increment by heat, swelling, or heat
@@ -2140,7 +2329,8 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 					strain_ne[i] -= ThermalExpansion * Tem;
 			}
 			// Strain increment by creep
-			if(smat->Creep_mode == 1 || smat->Creep_mode == 2)
+			if(smat->Creep_mode==1||smat->Creep_mode==2||smat->Creep_mode==3||smat->Creep_mode==4)
+				//TN:add BGRb BGRsf,WX
 			{
 				for (i = 0; i < ns; i++)
 					stress_ne[i] = (*eleV_DM->Stress)(i, gp);
@@ -2313,6 +2503,23 @@ void CFiniteElementVec::ExtropolateGuassStrain()
 	int i_s, i_e, ish, k = 0;
 	gp = 0;
 	//double Area1, Area2, Tol=10e-9;
+
+	//WX:03.2012. if excavation dbuff changed
+	if(pcs->ExcavMaterialGroup>-1)
+	{
+		int tmp_excavstate=-1;
+		for(i=0;i<nnodes;i++)
+		{
+			for(size_t jj=0;jj<MeshElement->nodes[i]->getConnectedElementIDs().size();jj++)
+			{
+				tmp_excavstate=pcs->m_msh->ele_vector[MeshElement->nodes[i]->getConnectedElementIDs()[jj]]->GetExcavState();
+				if(tmp_excavstate>-1)
+					dbuff[i] -=1;
+			}
+			if(dbuff[i]<MKleinsteZahl)//avoid error
+				dbuff[i]=1;
+		}
+	}
 
 	// l1=l2=l3=l4=0;
 	MshElemType::type ElementType = MeshElement->GetElementType();
@@ -3489,6 +3696,15 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
 	disp_j = 0.0;
 	tract_j = 0.0;
 	Localized = false;
+	scalar_aniso_comp = NULL;//WX: 11.2011 plasticity bedding
+	scalar_aniso_tens = NULL;
+	if(sdp->Plasticity_Bedding)
+	{
+		scalar_aniso_comp = new Matrix(NGPoints);
+		scalar_aniso_tens = new Matrix(NGPoints);
+		*scalar_aniso_comp = 0.;
+		*scalar_aniso_tens = 0.;
+}
 }
 // 01/2006 WW
 void ElementValue_DM::Write_BIN(std::fstream& os)
@@ -3602,6 +3818,11 @@ ElementValue_DM::~ElementValue_DM()
 	if(orientation)
 		delete orientation;
 
+	if(scalar_aniso_comp) 
+		delete scalar_aniso_comp;//WX:09.2011
+	if(scalar_aniso_tens) 
+		delete scalar_aniso_tens;
+
 	NodesOnPath = NULL;
 	orientation = NULL;
 	y_surface = NULL;
@@ -3614,6 +3835,8 @@ ElementValue_DM::~ElementValue_DM()
 	e_i = NULL;
 	xi = NULL;
 	MatP = NULL;
+	scalar_aniso_comp = NULL;
+	scalar_aniso_tens = NULL;
 }
 
 /***************************************************************************

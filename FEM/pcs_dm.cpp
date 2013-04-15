@@ -183,6 +183,11 @@ void CRFProcessDeformation::Initialization()
 	InitialMBuffer();
 	InitGauss();
 	////////////////////////////////////
+	//WX:08.2011 initialise node value of h_pcs
+	if(Neglect_H_ini == 2)
+		InitialNodeValueHpcs();
+	if(Neglect_H_ini == 1)
+		CalIniTotalStress();
 
 #ifdef DECOVALEX
 	// DECOVALEX test
@@ -204,6 +209,133 @@ void CRFProcessDeformation::Initialization()
 
 	//TEST
 	//   De_ActivateElement(false);
+}
+
+/*************************************************************************
+WX:08.2011 initialise node value of h pcs
+*************************************************************************/
+void CRFProcessDeformation::InitialNodeValueHpcs()
+{
+	CRFProcess *tmp_h_pcs=NULL;
+	if(fem_dm->h_pcs==NULL)
+		return;
+
+	tmp_h_pcs = fem_dm->h_pcs;	   
+	int h_pcs_type = tmp_h_pcs->type;
+	int idv_p_ini, idv_p1_ini, idv_p2_ini, idv_p_1, idv_p1_1, idv_p2_1;// idv_sw_ini, idv_sw_1;
+	size_t i;
+	if (h_pcs_type == 1 || h_pcs_type == 41)//Liquide Flow
+	{
+		idv_p_ini = tmp_h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		idv_p_1 = tmp_h_pcs->GetNodeValueIndex("PRESSURE1");
+		for (i = 0; i < m_msh->GetNodesNumber(false); i++)
+			tmp_h_pcs->SetNodeValue(i,idv_p_ini,tmp_h_pcs->GetNodeValue(i,idv_p_1));
+	}
+	else if (h_pcs_type == 14)//Richards Flow
+	{
+		idv_p_ini = tmp_h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		//idv_sw_ini = tmp_h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+		idv_p_1 = tmp_h_pcs->GetNodeValueIndex("PRESSURE1");
+		//idv_sw_1 = tmp_h_pcs->GetNodeValueIndex("SATURATION1");
+		for (i = 0; i < m_msh->GetNodesNumber(false); i++)
+		{
+			tmp_h_pcs->SetNodeValue(i,idv_p_ini,tmp_h_pcs->GetNodeValue(i,idv_p_1));
+			//tmp_h_pcs->SetNodeValue(i,idv_sw_ini,tmp_h_pcs->GetNodeValue(i,idv_sw_1));
+		}
+	}
+	else if (h_pcs_type == 1212||h_pcs_type==42)//Multi Phase Flwo
+	{
+		idv_p1_ini = tmp_h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		idv_p2_ini = tmp_h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+		//idv_sw_ini = tmp_h_pcs->GetNodeValueIndex("SATURSTION1_Ini");
+		idv_p1_1 = tmp_h_pcs->GetNodeValueIndex("PRESSURE1");
+		idv_p2_1 = tmp_h_pcs->GetNodeValueIndex("PRESSURE2");
+		//idv_sw_1 = tmp_h_pcs->GetNodeValueIndex("SATURATION1");
+		for (i = 0; i < m_msh->GetNodesNumber(false); i++)
+		{
+			tmp_h_pcs->SetNodeValue(i,idv_p1_ini,tmp_h_pcs->GetNodeValue(i,idv_p1_1));
+			tmp_h_pcs->SetNodeValue(i,idv_p2_ini,tmp_h_pcs->GetNodeValue(i,idv_p2_1));
+			//tmp_h_pcs->SetNodeValue(i,idv_sw_ini,tmp_h_pcs->GetNodeValue(i,idv_sw_1));
+		}
+	}
+	return;
+}
+/*************************************************************************
+WX:04.2013 calculate initial total stress for neglect h initial effect
+*************************************************************************/
+void CRFProcessDeformation::CalIniTotalStress()
+{
+	if(fem_dm->h_pcs==NULL)
+		return;
+	CRFProcess *tmp_h_pcs=NULL;
+	tmp_h_pcs = fem_dm->h_pcs;
+	size_t i;
+	int j, k, gp, NGS, MatGroup, n_dom;
+	ElementValue_DM *eleV_DM = NULL;
+	CSolidProperties *SMat = NULL;
+	MeshLib::CElem* elem = NULL;
+	int h_pcs_type = tmp_h_pcs->type;
+	int idx_p1, idx_p2, idx_s;
+	int nnodes;
+	double pw = 0.;
+	idx_p1 = tmp_h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+	idx_p2 = tmp_h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+	idx_s = tmp_h_pcs->GetNodeValueIndex("SATURATION1")+1;
+	for (i = 0; i < m_msh->ele_vector.size(); i++)
+	{
+		pw = 0.;
+		elem = m_msh->ele_vector[i];
+		nnodes = elem->GetNodesNumber(false);
+		MatGroup = elem->GetPatchIndex();
+		SMat = msp_vector[MatGroup];
+		for (j=0; j<nnodes; j++)
+		{
+			if(h_pcs_type == 1 || h_pcs_type==41)//liquid flow
+			{
+				pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1);
+			}
+			if(h_pcs_type == 14)//richards flow
+			{
+				if(SMat->bishop_model==1)
+					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*SMat->bishop_model_value;
+				else if (SMat->bishop_model==2)
+					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*pow(tmp_h_pcs->GetNodeValue(j,idx_s),SMat->bishop_model_value);
+				else
+					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*tmp_h_pcs->GetNodeValue(j,idx_s);
+			}
+			if(h_pcs_type == 1212 || h_pcs_type == 42)//multi phase flow  pg-sw*pc
+			{
+				if(SMat->bishop_model==1)
+					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - SMat->bishop_model_value;
+				else if(SMat->bishop_model==2)
+					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - pow(tmp_h_pcs->GetNodeValue(j,idx_s),SMat->bishop_model_value)
+					*tmp_h_pcs->GetNodeValue(j,idx_p1);
+				else
+					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - SMat->bishop_model_value*tmp_h_pcs->GetNodeValue(j,idx_p1);
+			}
+		}
+		pw /= nnodes;//average node value, could be also interp. value
+
+		if (elem->GetMark())                     // Marked for use, it is necessary here
+		{
+			//elem->SetOrder(true);
+			//fem_dm->ConfigElement(elem);
+			eleV_DM = ele_value_dm[i];
+			NGS = fem_dm->GetNumGaussPoints();
+
+			for (gp = 0; gp < NGS; gp++)
+			{
+				for(j=0; j<3; j++)
+				{
+					if(SMat->biot_const<0 && pw < 0)//if biot is negative value, negative pw is not considered
+						(*eleV_DM->Stress0)(j, gp) =  (*eleV_DM->Stress0)(j, gp);
+					else
+						(*eleV_DM->Stress0)(j, gp) =  (*eleV_DM->Stress0)(j, gp) - SMat->biot_const*pw;
+				}
+				//for postExcavation Stress0 is already updated with Stress, as well as UpdateIniStateValue()
+			}
+		}
+	}// end loop elements
 }
 
 /*************************************************************************
@@ -308,6 +440,8 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 		//if(NumDeactivated_SubDomains>0||num_type_name.find("EXCAVATION")!=string::npos)
 		CheckMarkedElement();
 	// MarkNodesForGlobalAssembly();
+	if(ExcavMaterialGroup>-1)
+		CheckExcavedElement();//WX:07.2011
 
 	counter++;                            // Times of this method  to be called
 	LoadFactor = 1.0;
@@ -670,7 +804,13 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 				if(Norm < 0.001 * InitialNorm)
 					break;
 				if(Error <= Tolerance_global_Newton)
+					if(ite_steps==1)//WX:05.2012
+					{
+						UpdateIterativeStep(damping, 0);
 					break;
+			}
+					else
+						break;
 			}
 			// w = w+dw for Newton-Raphson
 			UpdateIterativeStep(damping, 0); // w = w+dw
@@ -736,6 +876,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 	error_k0 = Error;
 	//
 
+	/*  WX: Move this part into PostExcavation() in PostLoop()
 	//----------------------------------------------------------------------
 	//Excavation. .. .12.2009. WW
 	//----------------------------------------------------------------------
@@ -818,6 +959,7 @@ double CRFProcessDeformation::Execute(int loop_process_number)
 			}
 		}                         //
 	}
+	*/
 
 	//----------------------------------------------------------------------
 
@@ -2511,6 +2653,230 @@ void CRFProcessDeformation::GlobalAssembly_DM()
 
 /**************************************************************************
    FEMLib-Method:
+Task: post process for excavation
+Programing:
+07/2011 WX
+**************************************************************************/
+void CRFProcessDeformation::PostExcavation()
+{
+	std::vector<int> deact_dom;
+	//PCS_ExcavState = -1;
+	bool now_Excav = false;
+	MeshLib::CElem *elem = NULL;
+	MeshLib::CNode *node = NULL;
+	for(size_t l=0; l<msp_vector.size(); l++)
+	{
+		if(msp_vector[l]->excavated)
+			deact_dom.push_back(l);
+	}
+	//if(ExcavMaterialGroup>=0&&PCS_ExcavState<0)	//WX:01.2010.update pcs excav state
+	if(ExcavMaterialGroup>=0)
+	{
+		for(size_t l=0; l<m_msh->ele_vector.size();l++)
+		{
+			//if((m_msh->ele_vector[l]->GetExcavState()>0)&&!(m_msh->ele_vector[l]->GetMark()))//WX:07.2011 HM excav
+			if(ExcavMaterialGroup==m_msh->ele_vector[l]->GetPatchIndex())
+			{
+				if((m_msh->ele_vector[l]->GetExcavState()>-1)&&m_msh->ele_vector[l]->GetMark())
+				{				
+					if(m_msh->ele_vector[l]->GetExcavState()==1)
+						m_msh->ele_vector[l]->SetExcavState(0);//1=now, 0=past
+					PCS_ExcavState = 1;//not necessary
+					now_Excav = true;//new elems are excavated at this time step
+					//break;
+				}
+			}
+		}
+	}
+
+	if((int)deact_dom.size()>0||now_Excav)   //WX:01.2011 modified for coupled excavation
+	{
+		//	 		  MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
+		// 07.04.2010 WW
+		bool done;
+		ElementValue_DM *eleV_DM = NULL;
+		if((fem_dm->Flow_Type==0||fem_dm->Flow_Type==2||fem_dm->Flow_Type==1)&&Neglect_H_ini==2)
+		{
+			int tmp_type, idx_p1_ini, idx_p2_ini,  idx_p1_1, idx_p2_1;//, idx_sw_1;//idx_sw_ini,
+			CRFProcess *h_pcs=NULL;
+			h_pcs = fem_dm->h_pcs;
+			tmp_type = h_pcs->type;
+			idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+			idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+			if(tmp_type==1212)
+			{
+				idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+				//idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+				idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+				//idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
+			}
+			for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
+			{
+				//if(tmp_type==1)//LiquideFlow, RichardsFlow, MultiPhaseFlow
+				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
+				if (tmp_type==1212)
+				{
+					//h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
+					h_pcs->SetNodeValue(i, idx_p2_ini, h_pcs->GetNodeValue(i, idx_p2_1));
+					//h_pcs->SetNodeValue(i, idx_sw_ini, h_pcs->GetNodeValue(i, idx_sw_1));
+				}
+			}
+		}
+		for (size_t l = 0; l < m_msh->ele_vector.size(); l++)
+		{
+			eleV_DM = ele_value_dm[l];
+			//
+			(*eleV_DM->Stress0) =  (*eleV_DM->Stress);//if not assembly the excavated eles in next time step
+			//
+			elem = m_msh->ele_vector[l];
+			done = false;
+			for(size_t i=0; i<deact_dom.size(); i++)
+			{
+				if(elem->GetPatchIndex()== deact_dom[i])
+				{
+					elem->MarkingAll(false);
+					*(eleV_DM->Stress) = 0.;
+					*(eleV_DM->Stress0) = 0.;
+					if (eleV_DM->Stress_j) (*eleV_DM->Stress_j) = 0.0;
+					if (eleV_DM->Stress_i) (*eleV_DM->Stress_i) = 0.0;
+					done = true;
+					break;
+				}
+			}
+			if(ExcavMaterialGroup>=0)//WX
+			{
+				if(elem->GetExcavState()>=0)
+				{
+					elem->MarkingAll(false);
+					//if update stress0
+					(*eleV_DM->Stress) = 0.;
+					(*eleV_DM->Stress0) = 0.;
+					if (eleV_DM->Stress_j) (*eleV_DM->Stress_j) = 0.0;
+					if (eleV_DM->Stress_i) (*eleV_DM->Stress_i) = 0.0;
+					//
+					done = true;
+				}
+			}
+			if(hasAnyProcessDeactivatedSubdomains)//WX:11.2012 if there is deactivated subdomain when excavated
+			{
+				for(size_t i=0; i<NumDeactivated_SubDomains; i++)
+				{
+					if(elem->GetPatchIndex()== Deactivated_SubDomain[i])
+					{
+						elem->MarkingAll(false);
+						done = true;
+						break;
+					}
+				}
+			}
+			if(done)
+				continue;
+			else
+				elem->MarkingAll(true);
+		}
+
+		size_t mesh_node_vector_size (m_msh->nod_vector.size());
+		for (size_t l = 0; l < mesh_node_vector_size; l++)
+		{
+			while(m_msh->nod_vector[l]->getConnectedElementIDs().size())
+				m_msh->nod_vector[l]->getConnectedElementIDs().pop_back();
+		}
+		//for (size_t l = 0; l < mesh_node_vector_size; l++)
+		size_t mesh_ele_vector_size (m_msh->ele_vector.size());
+		for (size_t l = 0; l < mesh_ele_vector_size; l++)//WX: 07.2011
+		{
+			elem = m_msh->ele_vector[l];
+			if(!elem->GetMark()) continue;
+			//for(size_t i=0; i<elem->GetNodesNumber(m_msh->getOrder()); i++)
+			for(size_t i=0; i<elem->GetNodesNumber(1); i++)//WX:10.2011 change for one way coup. M->H
+			{
+				done = false;
+				node = elem->GetNode(i);
+				for(size_t j=0; j<node->getConnectedElementIDs().size(); j++)
+				{
+					if(l==node->getConnectedElementIDs()[j])
+					{
+						done = true;
+						break;
+					}
+				}
+				if(!done)
+					node->getConnectedElementIDs().push_back(l);
+			}
+		}
+		if(Neglect_H_ini == 1)//WX:04.2013
+			CalIniTotalStress();
+	}
+	
+	//WX:10.2011 strain update for excavated node, the excavated node Strain = 0
+	int Idx_Strain[6];
+	Idx_Strain[0] = GetNodeValueIndex("STRAIN_XX");
+	Idx_Strain[1] = GetNodeValueIndex("STRAIN_YY");
+	Idx_Strain[2] = GetNodeValueIndex("STRAIN_ZZ");
+	Idx_Strain[3] = GetNodeValueIndex("STRAIN_XY");
+	if(problem_dimension_dm==3)
+	{
+		Idx_Strain[4] = GetNodeValueIndex("STRAIN_XZ");
+		Idx_Strain[5] = GetNodeValueIndex("STRAIN_YZ");
+	}
+	for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
+	{
+		node = m_msh->nod_vector[i];
+		if(node->getConnectedElementIDs().size()==0)
+			for(int ii=0; ii<(2*problem_dimension_dm); ii++)
+				fem_dm->pcs->SetNodeValue(i,Idx_Strain[ii],0);
+	}
+	return;
+}
+/**************************************************************************
+FEMLib-Method:
+Task: update initial stress. if (Neglect_H_ini == 2) also update pw,pg,pc ini
+Programing:
+07/2011 WX
+**************************************************************************/
+void CRFProcessDeformation::UpdateIniStateValue()
+{
+	for (size_t l = 0; l < m_msh->ele_vector.size(); l++)
+	{
+		ElementValue_DM *eleV_DM = NULL;
+		eleV_DM = ele_value_dm[l];
+		//
+		(*eleV_DM->Stress0) =  (*eleV_DM->Stress);
+	}
+	if(Neglect_H_ini == 1)
+		CalIniTotalStress();
+	if((fem_dm->Flow_Type==0||fem_dm->Flow_Type==1||fem_dm->Flow_Type==2 )&&Neglect_H_ini==2)
+	{
+		int tmp_type, idx_p1_ini, idx_p2_ini, idx_p1_1, idx_p2_1;//,idx_sw_ini,  idx_sw_1;
+		CRFProcess *h_pcs=NULL;
+		h_pcs = fem_dm->h_pcs;
+		tmp_type = fem_dm->Flow_Type;
+		idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+		if(tmp_type==2)
+		{
+			idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+			//idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+			idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+			//idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
+		}
+		for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
+		{
+			if(tmp_type==0||tmp_type==1)//LiquideFlow,RichardsFlow
+				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
+			else if (tmp_type==2)
+			{
+				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
+				h_pcs->SetNodeValue(i, idx_p2_ini, h_pcs->GetNodeValue(i, idx_p2_1));
+				//h_pcs->SetNodeValue(i, idx_sw_ini, h_pcs->GetNodeValue(i, idx_sw_1));
+			}
+		}
+	}
+	return;
+}
+
+/**************************************************************************
+   FEMLib-Method:
    Task: Update stresses and straines at each Gauss points
    Argument:
    Programing:
@@ -2600,14 +2966,19 @@ void CRFProcessDeformation::WriteGaussPointStress()
 	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
+		if (ExcavMaterialGroup > -1)//WX:if excavation write all eles
+			ActiveElements++;
+		else
+		{
 		if (elem->GetMark())      // Marked for use
 			ActiveElements++;
+	}
 	}
 	file_stress.write((char*)(&ActiveElements), sizeof(ActiveElements));
 	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
-		if (elem->GetMark())      // Marked for use
+		if (elem->GetMark()||ExcavMaterialGroup > -1)      // Marked for use//WX:if excavation write all eles
 		{
 			eleV_DM = ele_value_dm[i];
 			file_stress.write((char*)(&i), sizeof(i));

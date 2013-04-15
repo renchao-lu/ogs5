@@ -76,6 +76,9 @@ private:
 	bool Localized;
 	Matrix* NodesOnPath;
 	double* orientation;
+
+	Matrix *scalar_aniso_comp;//WX:11.2011
+	Matrix *scalar_aniso_tens;//WX:11.2011 for aniso. plas.
 };
 
 // Derived element for deformation caculation

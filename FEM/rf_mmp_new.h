@@ -100,6 +100,8 @@ public:
 	double PermeabilityPorosityFunction(long index,double* gp,double theta);
 	double PermeabilityFunctionPressure(long index, double PG2); //WX:  05.2010
 	double PermeabilityFunctionStrain(long index, int nnodes, CFiniteElementStd* h_fem); //WX
+	double PermeabilityFunctionEffStress(long index, int nnodes, CFiniteElementStd *h_fem);//AS:08.2012
+	double StorageFunctionEffStress(long index, int nnodes, CFiniteElementStd *h_fem);//AS 08.2012
 	double PorosityVolStrain(long index, double val0, CFiniteElementStd* assem); //WX: 03.2011
 	double KozenyCarman(double k0 /*old permeability*/,
 	                    double n0 /*old porosity*/,
@@ -204,6 +206,10 @@ public:
 	double permeability_pressure_rel;
 	int permeability_strain_model;        //WX: permeability function strain model. 05.2010
 	int permeability_strain_model_value[3]; //WX:permeability fuction strain model value. 05.2010
+	int permeability_effstress_model_value[3];	//AS:perlmeability function eff stress 08.2012
+	int permeability_effstress_model;
+	int storage_effstress_model_value[3];			//AS:storage function eff stress 08.2012
+	int storage_effstress_model;
 	//
 	// Relative permeability (JT)
 	int permeability_saturation_model[MAX_FLUID_PHASES];

@@ -59,6 +59,7 @@ private:
 	double biot_const;
 	int bishop_model;                     //05.2011 WX
 	double bishop_model_value;            //05.2011 WX
+	double threshold_dev_str;             //12.2012 WX
 	double grav_const;                    //WW
 	Matrix* data_Density;
 	//
@@ -95,6 +96,11 @@ private:
 	double Lambda;
 	double G;                             // Shear stress modulus
 	double K;                             // Bulk modulus
+	double Ks;                            //WX solid Bulk modulus
+	int E_Function_Model;                 //WX:06.2012. E depends on stress
+	double E_Function_Model_Value[3];     //WX:06.2012
+	int Time_Dependent_E_nv_mode;//WX:01.2013. E nv is changed with time
+	int Time_Dependent_E_nv_value[5];//WX:01.2013
 
 	// Rotation matrices and their transpose: UJG 25.11.2009
 	Matrix* Crotm;                        // If this is needed by permaebility calculation, we keep it. Otherwise remove it. (To do, UJG/WW)
@@ -122,7 +128,28 @@ private:
 	double* D_dGds;
 	double* dFtds;                        //WX: 08.2010
 	double* dGtds;                        //WX: 08.2010
-	Matrix* ConstitutiveMatrix;           //WX: 08.2010
+	
+	//Direct stress integration for Mohr-Coulomb.	WX:08.11.2010.
+	Matrix *TransMatrixA;
+	Matrix *TransMatrixA_T;
+	Matrix *Inv_TransA;
+	Matrix *Inv_TransA_T;
+	Matrix *TmpDe;
+	Matrix *Inv_De;
+	Matrix *TMatrix;
+	Matrix *TmpMatrix;
+	Matrix *TmpMatrix2;
+	Matrix *Dep_l;
+	Matrix *dDep_l;
+	Matrix *dGds_dFds;
+	Matrix *ConstitutiveMatrix;
+	Matrix *TransMicroStru;//WX: 11.2011 micro structure tensor transform matrix
+	Matrix *TransMicroStru_T;
+	Matrix *TransMicroStru_TInv;
+	double *MicroStruTensor;//WX: 11.2011
+	double *comp_para;//WX:12.2011
+	double *tens_para;
+
 	// Mini linear solver
 	void Gauss_Elimination(const int DimE, Matrix& AA, int* L,  double* xx);
 	void Gauss_Back(const int DimE, Matrix& AA, double* rhs, int* L, double* xx);
@@ -215,6 +242,7 @@ public:
 	void ElasticConstitutiveTransverseIsotropic(const int Dimension);
 	Matrix* getD_tran() const {return D_tran; }
 	void CalculateTransformMatrixFromNormalVector(const int Dimension);
+	double E_Function(int dim, const ElementValue_DM *ele_val, int ngp);//WX:06.2012
 	// 2. Plasticity
 	// 2.1 Drucker-Prager
 	double GetAngleCoefficent_DP(const double Angle);
@@ -299,12 +327,15 @@ public:
 	double Ntheta;
 	double Nphi;
 	double csn;
-	void CalculateCoefficent_MOHR(double ep);
+	void CalculateCoefficent_MOHR(double ep, double scalar_comp, double scalar_tens);
 	void CalPrinStrs(double* stresses, double* prin_stresses, int Size);
 	void CalPrinDir(double* prin_str, double* stress, double* v, int Size);
 	void CalTransMatrixA(double* v, Matrix* A, int Size);
-	int DirectStressIntegrationMOHR(const int GPiGPj, const ElementValue_DM* ele_val,
-	                                double* TryStress, const int Update, Matrix* Dep );
+	int DirectStressIntegrationMOHR(const int GPiGPj, ElementValue_DM *ele_val, 
+	           double *TryStress, const int Update, Matrix *Dep, int itesteps );
+	int StressIntegrationMOHR_Aniso(const int GPiGPj, const ElementValue_DM *ele_val,
+	           double *TryStress, const int Update, Matrix *Dep);//WX:12.2011 aniso mohr
+	double CalAnisoPara(double *Stress, double *MicroStruTensor);//WX:12.2011 cal. aniso parameter
 	int MohrCheckFailure(double* NormStr, int &failurestate, int Size);
 	void TangentialMohrShear(Matrix* Dep);
 	void TangentialMohrTension(Matrix* Dep);
@@ -318,6 +349,16 @@ public:
 	                int Size);
 	void CalDep_l(double* vecl, double* veclg, Matrix* D, Matrix* Dep_l, double fkt);
 	void VecCrossProduct(double* vec1, double* vec2, double* result_vec);
+
+	//WX:09.2011
+	double *Bedding_Norm;//Norm vector of bedding plane, used for anisotropic elasto-plasticity
+	int bedding_fric_curve;
+	int bedding_uc_curve;
+	int bedding_tens_curve;
+	int bedding_uc_curve_order;
+	int bedding_tens_curve_order;
+	bool Plasticity_Bedding;
+	void CalTransMatrixMicroStru(Matrix *A, double *v);
 
 	//5. Hoek-Brown WX
 	double HoekB_a;
@@ -335,6 +376,7 @@ public:
 	std::vector<std::string>  capacity_pcs_name_vector;
 	//WW
 	std::vector<std::string>  conductivity_pcs_name_vector;
+	bool GetBoolExcavated() {return excavated;}//WX:01.2013
 };
 }                                                 // end namespace
 extern std::vector<SolidProp::CSolidProperties*> msp_vector;

@@ -857,6 +857,8 @@ public:
 	int ExcavCurve;                       //WX
 	double ExcavBeginCoordinate;          //WX
 	int PCS_ExcavState;                   //WX
+	int Neglect_H_ini;                    //WX
+	int UpdateIniState;                   //WX
 #if defined(USE_MPI) || defined (USE_PETSC)                                 //WW
 	void Print_CPU_time_byAssembly(std::ostream &os = std::cout) const
 	{

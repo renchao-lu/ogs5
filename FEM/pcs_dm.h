@@ -48,6 +48,8 @@ public:
 	virtual ~CRFProcessDeformation();
 
 	void Initialization();
+	void InitialNodeValueHpcs();//WX:08.2011
+	void CalIniTotalStress();//WX:04.2013
 
 	// Assemble system equation
 	void GlobalAssembly();
@@ -98,6 +100,12 @@ public:
 
 	// Access members
 	CFiniteElementVec* GetFEM_Assembler() const {return fem_dm; }
+
+	//WX:07.2011
+	void PostExcavation();
+	//WX:10.2011
+	void UpdateIniStateValue();
+
 
 private:
 	CFiniteElementVec* fem_dm;

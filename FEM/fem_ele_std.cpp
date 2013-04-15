@@ -1445,10 +1445,42 @@ double CFiniteElementStd::CalCoefMass()
 
 			//WW if(SolidProp->K == 0) //WX: if HM Partitioned, K still 0 here
             if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
+			{
+				if(SolidProp->Youngs_mode<10||SolidProp->Youngs_mode>13)//JM,WX: 2013
 				SolidProp->K = SolidProp->E / 3 / (1 - 2 * SolidProp->PoissonRatio);
+				else
+				{
+					double E_av;  // average Youngs modulus
+					double nu_av; // average Poisson ratio
+					double nu_ai; // Poisson ratio perpendicular to the plane of isotropie, due to strain in the plane of isotropie
+					double nu_ia; // Poisson ratio in the plane of isotropie, due to strain perpendicular to the plane of isotropie
+					double nu_i;  // Poisson ratio in the plane of isotropy
+
+					E_av = 2./3. * (*SolidProp->data_Youngs)(0) + 1./3. * (*SolidProp->data_Youngs)(1);
+
+					nu_ia=(*SolidProp->data_Youngs)(2);
+					nu_ai=nu_ia * (*SolidProp->data_Youngs)(1)/(*SolidProp->data_Youngs)(0);      //  nu_ai=nu_ia*Ea/Ei
+
+					nu_i= SolidProp->Poisson_Ratio();
+					//           12     13    21   23   31    32
+					//           ai     ai    ia   ii   ia    ii
+					nu_av=1./3.*(nu_ai+nu_ia+nu_i); 
+
+					SolidProp->K=E_av/3/(1-2*nu_av);
+				}
+			}
 			val += poro_val * FluidProp->drho_dp \
 			       + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
 			// Will handle the dual porosity version later...
+		}
+		//AS,WX: 08.2012 storage function eff stress
+		if(MediaProp->storage_effstress_model>0)
+		{
+			double storage_effstress = 1.;
+			CFiniteElementStd *h_fem;
+			h_fem=this;
+			storage_effstress = MediaProp->StorageFunctionEffStress(Index, nnodes, h_fem);
+			val *= storage_effstress;
 		}
 		val /= time_unit_factor;
 		break;
@@ -1619,7 +1651,16 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 		// val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) *Sw;
 		// Fluid compressibility
 		// val += poro  *Sw* FluidProp->drho_dp / rhow;
-		val = poro * dSdp;
+		
+		if(SolidProp)
+		{
+			if(SolidProp->Ks > MKleinsteZahl)// Storativity   WX:28.05.2008
+				val -= Sw * (SolidProp->biot_const-poro) / SolidProp->Ks * Sw;
+		}
+		// Fluid compressibility
+		if(fabs(FluidProp->drho_dp)>MKleinsteZahl)
+			val -= poro * Sw * FluidProp->drho_dp;
+		val += poro * dSdp;//WX:04.2013 val = poro * dSdp;
 		// Coupled (T)
 		if(diffusion)
 		{
@@ -1635,6 +1676,19 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 		break;
 	case 1:                               //01
 		val = 0.0;
+		//WX:05.2012 Storgae
+		PG = interpolate(NodalVal1);
+		Sw = MediaProp->SaturationCapillaryPressureFunction(PG);
+		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		if(SolidProp)
+		{
+			if(SolidProp->Ks > MKleinsteZahl)
+				//WX:11.2012
+				val += Sw*(SolidProp->biot_const-poro) / SolidProp->Ks;
+		}
+		//WX:05.2012 Compressibility
+		if(fabs(FluidProp->drho_dp)>MKleinsteZahl)
+			val += poro*Sw*FluidProp->drho_dp;
 		break;
 	case 2:                               //
 		// (1-S)n(d rhop_c/d p_c)
@@ -1652,6 +1706,13 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 		rho_ga = GasProp->Density(dens_arg); //28.05.2008. WW
 		val -= rho_ga * dSdp / rhow;
 		val *= poro;
+		//WX:11.2012.storage
+		if(SolidProp)
+		{
+			if(SolidProp->Ks > MKleinsteZahl)
+				val -= rho_ga / rhow * ( (1-Sw) * (SolidProp->biot_const-poro)\
+				/ SolidProp->Ks * Sw);
+		}
 		break;
 	case 3:                               //
 		// Approximation of d dens_g/dp_g 16.08.2011. WW
@@ -1663,6 +1724,13 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 			val = (1.0 - Sw) * poro * GasProp->rho_0 * GasProp->drho_dp / rhow;
 		else
 			val = (1.0 - Sw) * poro * (GasProp->Density(dens_arg) - rho_ga) / (pert * rhow);
+
+		//Storage WX:11.2012
+		if(SolidProp)
+		{
+			if(SolidProp->Ks > MKleinsteZahl)			
+				val += (SolidProp->biot_const-poro)/SolidProp->Ks * (1-Sw) * GasProp->Density(dens_arg) / rhow;
+		}
 		break;
 	}
 	return val;
@@ -1936,6 +2004,11 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 	ComputeShapefct(1);                   //  12.3.2007 WW
 	double variables[3];                  //OK4709
 	int tr_phase = 0;                     // SB, BG
+	double perm_effstress=1.;//AS:08.2012
+	//WX:12.2012 perm depends on p or strain, same as CalCoefLaplace2
+	CFiniteElementStd *h_fem;
+	h_fem = this;
+	double fac_perm = 1.0;
 
 	// For nodal value interpolation
 	//======================================================================
@@ -1945,6 +2018,13 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		break;
 	case L:                               // Liquid flow
 		tensor = MediaProp->PermeabilityTensor(Index);
+		//AS:08.2012 permeability function eff stress
+		if(MediaProp->permeability_effstress_model>0)
+		{
+			CFiniteElementStd *h_fem;
+			h_fem=this;
+			perm_effstress = MediaProp->PermeabilityFunctionEffStress(Index, nnodes, h_fem);
+		}
 		//if (ele_dim != dim)
         if (dim > MediaProp->geo_dimension)
 		{
@@ -1993,7 +2073,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 				tensor[i * dim + i] *= w[i];
 		}
 		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = tensor[i] / mat_fac;
+			mat[i] = tensor[i] / mat_fac * perm_effstress;//AS:perm. dependent eff stress.
 
 		break;
 	case G:                               // Groundwater flow
@@ -2275,6 +2355,11 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		                             //05.01.07 WW
 		Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);
 
+		if(MediaProp->permeability_pressure_model>0) //12.2012. WX
+			fac_perm = MediaProp->PermeabilityFunctionPressure(Index, PG);
+		if(MediaProp->permeability_strain_model>0) //12.2012 WX
+			fac_perm *= MediaProp->PermeabilityFunctionStrain(Index,nnodes,h_fem);
+
 		tensor = MediaProp->PermeabilityTensor(Index);
 
 		if(MediaProp->unconfined_flow_group == 2) // 3D unconfined GW JOD, 5.3.07
@@ -2296,7 +2381,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		}
 		//
 		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = tensor[i] * mat_fac;
+			mat[i] = tensor[i] * mat_fac *fac_perm;//WX:12.2012
 		if(MediaProp->heat_diffusion_model == 273 && !Gravity)
 		{
 			rhow = FluidProp->Density();
@@ -2321,6 +2406,18 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		dens_arg[2] = Index;
 		mat_fac = FluidProp->Viscosity(dens_arg);
 		tensor = MediaProp->PermeabilityTensor(Index);
+		//WX:09.2011
+		fac_perm=1.;
+		if(MediaProp->permeability_pressure_model>0)
+		{
+			fac_perm = MediaProp->PermeabilityFunctionPressure(Index, dens_arg[0]);
+			mat_fac /= fac_perm;
+		}
+		if(MediaProp->permeability_strain_model>0)
+		{
+			fac_perm = MediaProp->PermeabilityFunctionStrain(Index,nnodes,h_fem);
+			mat_fac /= fac_perm;
+		}
 		for(size_t i = 0; i < dim * dim; i++)
 			mat[i] = tensor[i] / mat_fac;
 		break;
@@ -7699,6 +7796,8 @@ void CFiniteElementStd::Assemble_strainCPL(const int phase)
 	}
 	if(MediaProp->storage_model == 7)     //RW/WW
 		fac *= MediaProp->storage_model_values[0];
+	else
+		fac *= fabs(SolidProp->biot_const);//WX:11.2012. biot coeff is needed, in some case biot is defined negative
 	//
 	for (i = nnodes; i < nnodesHQ; i++)
 		nodes[i] = MeshElement->nodes_index[i];
@@ -9578,6 +9677,8 @@ void CFiniteElementStd::Assemble_RHS_M()
 		{
 			// Material
 			fac = fkt * grad_du * CalCoef_RHS_M_MPhase(ii);
+			//WX:11.2012:biot coef.
+			fac *= SolidProp->biot_const;
 			// Calculate MHS
 			for (i = 0; i < nnodes; i++)
 				NodalVal[i + ii * nnodes] += fac * shapefct[i];

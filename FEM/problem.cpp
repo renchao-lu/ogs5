@@ -58,6 +58,7 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #include "rf_node.h"
 #include "rf_out_new.h"
 #include "tools.h"
+#include "rf_msp_new.h"//WX:01.2013
 //
 #ifdef CHEMAPP
 #include "eqlink.h"
@@ -1325,6 +1326,18 @@ void Problem::PostCouplingLoop()
 	if (total_processes[12])
 	{
 		CRFProcessDeformation* dm_pcs = (CRFProcessDeformation*)(total_processes[12]);
+		
+		bool doPostExcav = false;//WX
+		for(size_t l=0; l<msp_vector.size(); l++)
+		{
+			if (msp_vector[l]->GetBoolExcavated())
+				doPostExcav = true;
+		}
+		if(dm_pcs->ExcavMaterialGroup>=0||doPostExcav)
+			dm_pcs->PostExcavation();//WX:07.2011
+		if(dm_pcs->UpdateIniState==1)//WX:10.2011
+			dm_pcs->UpdateIniStateValue();		
+
 		if (H_Process && dm_pcs->type / 10 != 4) // HM partitioned scheme
 			dm_pcs->ResetTimeStep();
 		dm_pcs->Extropolation_GaussValue();
@@ -1349,7 +1362,8 @@ void Problem::PostCouplingLoop()
 	for (int i = 0; i < (int)pcs_vector.size(); i++)
 	{
 		m_pcs = pcs_vector[i];
-		if (hasAnyProcessDeactivatedSubdomains) //NW
+		if (hasAnyProcessDeactivatedSubdomains&&m_pcs->ExcavMaterialGroup<0) //NW
+			//WX:11.2012 when excavated, not do CheckMarkedElement
 			m_pcs->CheckMarkedElement();
 #if defined(USE_MPI)                        // 18.10.2007 WW
 		if (myrank == 0)

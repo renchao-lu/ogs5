@@ -127,6 +127,7 @@ CBoundaryCondition::CBoundaryCondition() :
 	time_contr_curve = -1;                //WX
 	bcExcav = -1;                         //WX
 	MatGr = -1;                           //WX
+	NoDispIncre = -1;								//WX:12.2012
 }
 
 // KR: Conversion from GUI-BC-object to CBoundaryCondition
@@ -429,6 +430,14 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in >> bcExcav >> MatGr;
 			in.clear();
 		}
+		//....................................................................
+		//NO DISPLACEMENT INCREMENT WX:12.2012
+		if (line_string.find("$NO_DISP_INCREMENT") != std::string::npos)
+		{
+			in.str(readNonBlankLineFromInputStream(*bc_file));
+			in >> NoDispIncre;
+			in.clear();
+	}
 		//....................................................................
 	}
 	return position;
@@ -919,21 +928,23 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 			cont = false;
 
 			//------------------------------------------------------------------
-			if (bc->getExcav() > 0 || bc->geo_type_name.find("MATERIAL_DOMAIN") == 0)
+			if (bc->getExcav()>0||bc->getGeoType()==GEOLIB::GEODOMAIN)
 			//WX: 01.2011. boundary conditions for excavation. 03.2011. Material domain BC
 			{
 				//GEOGetNodesInMaterialDomain(m_msh, m_bc->getExcavMatGr(),nodes_vector, quadratic);
 				size_t ii;
 				long Size;
-				int nn = 0;
+				int nn = 0, Domain_MG = -1;
 				bool exist;
+				if(bc->getGeoType()==GEOLIB::GEODOMAIN)
+					Domain_MG = atoi(bc->geo_name.c_str());
 				MeshLib::CElem* elem = NULL;
 				nodes_vector.resize(0);
 				for (ii = 0; ii < m_msh->ele_vector.size(); ii++)
 				{
 					elem = m_msh->ele_vector[ii];
 					nn = elem->GetNodesNumber(quadratic);
-					if(elem->GetPatchIndex() == static_cast<size_t>(bc->getExcavMatGr()))
+					if(elem->GetPatchIndex()==static_cast<size_t>(bc->getExcavMatGr())||elem->GetPatchIndex()==Domain_MG)
 					{
 						Size = (int)nodes_vector.size();
 						for(i = 0; i < nn; i++)
