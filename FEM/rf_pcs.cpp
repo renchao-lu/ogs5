@@ -5965,6 +5965,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				   }
 				   }
 				 */
+
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//04.3013. WW
 				if(m_bc->getExcav()>0)
 				{
 					if(excavated&&!onExBoundary)
@@ -5979,6 +5981,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					else if (m_bc_node->pcs_pv_name.find("DISPLACEMENT")!=string::npos)
 						continue;//
 				}
+#endif //end defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
+
+				//////////////////////////////////
+
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 				  bc_eqs_id.push_back(static_cast<int>( m_msh->nod_vector[bc_msh_node]->GetEquationIndex()
 									* dof_per_node + shift));
