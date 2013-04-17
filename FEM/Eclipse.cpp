@@ -3981,13 +3981,15 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 	double value = 0.0;
 	//double Molweight_CO2;
 
+	const unsigned long n_unkonwns = m_pcs->m_msh->GetNodesNumber(false); //WW. 18.04.2013 
+
 	// Pressure 1 is the wetting phase, Pressure 2 the non wetting phase
 	//Pressure
 	if (int(this->Phases.size()) == 1)
 	{
 		index_pressure1 = m_pcs->GetNodeValueIndex("PRESSURE1") + 1; //+1... new time level
 		index_water_density = m_pcs->GetNodeValueIndex("DENSITY1");  //DENSITY1 is not a variable for some flow process, e.g. LIQUID_FLOW
-		for(unsigned long i = 0; i < m_pcs->nod_val_vector.size(); i++)
+		for(unsigned long i = 0; i < n_unkonwns; i++)
 		{
 			value = this->NodeData[i]->pressure;
 			m_pcs->SetNodeValue(i, index_pressure1, value);
@@ -4029,7 +4031,7 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 		index_water_density = m_pcs->GetNodeValueIndex("DENSITY1");
 		index_gas_density = m_pcs->GetNodeValueIndex("DENSITY2");
 
-		for(unsigned long i = 0; i < m_pcs->nod_val_vector.size(); i++)
+		for(unsigned long i = 0; i < n_unkonwns; i++)
 		{
 			//if ((this->NodeData[i]->x == 499.85001) && (this->NodeData[i]->y == 599.84998) && (this->NodeData[i]->z == -2875))
 			//	cout << "Punkt 44" << "\n";
@@ -4099,10 +4101,13 @@ void CECLIPSEData::WriteDataToGeoSys(CRFProcess* m_pcs, std::string path)
 			                pcs_vector[
 			                        this
 			                        ->ProcessIndex_CO2inLiquid]->
-			                pcs_primary_function_name[0]) + 1;                                                                                        // +1: new timelevel
-			for(unsigned long i = 0;
-			    i < pcs_vector[this->ProcessIndex_CO2inLiquid]->nod_val_vector.size();
-			    i++)
+			                pcs_primary_function_name[0]) + 1;                
+									// +1: new timelevel
+
+	        const unsigned long n_unkonwns1 = pcs_vector[this->ProcessIndex_CO2inLiquid]->m_msh->GetNodesNumber(false); //WW 18.04.2013
+
+			for(unsigned long i = 0; i<n_unkonwns1; i++)
+	//WW		    i < pcs_vector[this->ProcessIndex_CO2inLiquid]->nod_val_vector.size();			    i++)
 			{
 				//recalculate dissolve gas: c_CO2 [mol/m�] = RS [m�gas/m�water] * gas_density[kg/m�] / (Molweight_CO2 [g/mol] * 1e-3 [kg/g])
 				//value = this->NodeData[i]->Gas_dissolved * this->NodeData[i]->phase_density[phase2] / Molweight_CO2;
@@ -4885,9 +4890,11 @@ int CECLIPSEData::WriteDataBackToEclipse(CRFProcess* m_pcs, std::string folder)
 
 	// get index of species concentration in nodevaluevector of this process
 	indexConcentration = pcs_vector[this->ProcessIndex_CO2inLiquid]->GetNodeValueIndex(
-	        pcs_vector[this->ProcessIndex_CO2inLiquid]->pcs_primary_function_name[0]) + 1;                                                                    // +1: new timelevel
-	for(unsigned long i = 0;
-	    i < pcs_vector[this->ProcessIndex_CO2inLiquid]->nod_val_vector.size(); i++)
+	        pcs_vector[this->ProcessIndex_CO2inLiquid]->pcs_primary_function_name[0]) + 1;
+	// +1: new timelevel
+	const unsigned long n_unkonwns1 = pcs_vector[this->ProcessIndex_CO2inLiquid]->m_msh->GetNodesNumber(false); //WW 18.04.2013
+	for(unsigned long i = 0; i<n_unkonwns1; i++)
+//WW	    i < pcs_vector[this->ProcessIndex_CO2inLiquid]->nod_val_vector.size(); i++)
 	{
 		//Read CO2 density
 		// check if concentration are positive
