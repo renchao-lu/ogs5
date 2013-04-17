@@ -1668,6 +1668,8 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 		{
 		case 0:                   // Liquid flow
 			// For monolithic scheme and liquid flow, the limit of positive pressure must be removed
+			if(pcs->Neglect_H_ini==2)//WX
+				   idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
 			for (i = 0; i < nnodes; i++)
 			{
 				val_n = h_pcs->GetNodeValue(nodes[i],idx_P1);
@@ -1694,7 +1696,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 
 			if(pcs->Neglect_H_ini==2)
 			{
-				idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");				   
+				idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
 			}
 #ifdef DECOVALEX
 			int idv0;
