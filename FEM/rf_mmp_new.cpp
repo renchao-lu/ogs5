@@ -1520,6 +1520,23 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.clear();
 			continue;
 		}
+		//AS:08.2012 storage function eff stress
+		if(line_string.find("$STORAGE_FUNCTION_EFFSTRESS")!=std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> storage_effstress_model;
+			switch(storage_effstress_model)
+			{
+			case 1:
+				in >> storage_effstress_model_value[0];
+				break;
+			default:
+				cout<< "Error in MMPRead: no valid storage stress model" << endl;
+				break;
+			}
+			in.clear();
+			continue;
+		}
 		//------------------------------------------------------------------------
 		//14 MASSDISPERSION_
 		//			(1) LONGITUDINAL
