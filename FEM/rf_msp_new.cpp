@@ -816,7 +816,7 @@ CSolidProperties::CSolidProperties()
 	excavation = -1;                      //12.2009. WW
 	excavated = false;                    //To be .....  12.2009. WW
 	E_Function_Model = -1;						//WX:06.2012 E dependence	  
-	threshold_dev_str = 0.;						//WX:12.2012
+	threshold_dev_str = -1.;						//WX:12.2012
 	Time_Dependent_E_nv_mode = -1;//WX:01.2013
 	Time_Dependent_E_nv_value[0] = -1;//WX:01.2013
 
@@ -7614,15 +7614,15 @@ void CSolidProperties::AddStain_by_HL_ODS(const ElementValue_DM* ele_val, double
 	               * exp((temperature + 273.16) * (*data_Creep)(2, 0));
 	if(max_etr < DBL_EPSILON)
 		return;
+	if(threshold_dev_str>=0)
+		norm_str = min(norm_str,max_etr);
+	//WX:12.2012, change "norm_str" to "min(norm_str,max_etr)"
+	//the norm_str should not be higher than max_etr
 	for(i = 0; i < ns; i++)
 	{
-		//(*data_Creep)(i, 1) += 1.5 * dt * (1 - norm_str / max_etr) * stress_n[i] / eta_k;
-		//dstrain[i] -= 1.5 * dt *
-		//              ((1 - norm_str / max_etr) / eta_k + 1 / eta_m) * stress_n[i];
-		//WX:12.2012, change "norm_str" to "min(norm_str,max_etr)"
-		//the norm_str should not be higher than max_etr
-		(*data_Creep)(i, 1) += 1.5*dt*(1-min(norm_str,max_etr)/max_etr)*stress_n[i]/eta_k;
-		dstrain[i] -= 1.5*dt*((1-min(norm_str,max_etr)/max_etr)/eta_k+1/eta_m)*stress_n[i];
+		(*data_Creep)(i, 1) += 1.5 * dt * (1 - norm_str / max_etr) * stress_n[i] / eta_k;
+		dstrain[i] -= 1.5 * dt *
+		              ((1 - norm_str / max_etr) / eta_k + 1 / eta_m) * stress_n[i];
 	}
 }
 
