@@ -1442,6 +1442,7 @@ double CFiniteElementStd::CalCoefMass()
 		{
 			biot_val = SolidProp->biot_const;
 			poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+			val = 0.;//WX:04.2013
 
 			//WW if(SolidProp->K == 0) //WX: if HM Partitioned, K still 0 here
             if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
