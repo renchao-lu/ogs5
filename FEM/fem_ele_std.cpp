@@ -9596,7 +9596,7 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
         //---------------------------------------------------------
         //  Compute RHS+=int{N^T alpha_T dT/dt}
         //---------------------------------------------------------
-        const double fac = eff_thermal_expansion * dT / dt;
+        const double fac = eff_thermal_expansion * dT / dt / time_unit_factor;//WX:bug fixed
         for (int i = 0; i < nnodes; i++)
             NodalVal[i] += gp_fkt * fac * shapefct[i];
     }
