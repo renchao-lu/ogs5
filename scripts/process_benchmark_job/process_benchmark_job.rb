@@ -170,9 +170,9 @@ class BenchmarkEmail
       end
 
       puts "Sending email to #{author.name} <#{author.email}>"
-      send_email('Hudson Build Server', 'lars.bilke@ufz.de',
-                 author.email, author.name,
-                 'Benchmark report', msg) if $password
+      #send_email('Hudson Build Server', 'lars.bilke@ufz.de',
+      #           author.email, author.name,
+      #           'Benchmark report', msg) if $password
       send_email('Hudson Build Server', 'lars.bilke@ufz.de',
                  'lars.bilke@ufz.de', author.name,
                  'Benchmark report', msg) if $password
