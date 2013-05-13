@@ -1989,7 +1989,7 @@ bool CECLIPSEData::ReplaceASectionInFile(std::string Filename,
 				do {
 					zeilen = zeilen + 1;
 				}
-				while (TextFile->Data[i + zeilen] != "");
+				while (TextFile->Data[i + zeilen].length() > 1);
 				zeilen = zeilen - 1;
 			}
 			else
