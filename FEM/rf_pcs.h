@@ -491,7 +491,12 @@ public:
 	std::string simulator_path;           // path for executable of external simulator
 	std::string simulator_model_path;     // path to exclipse input data file (*.data), with extension
 	bool PrecalculatedFiles;              // defines if Eclipse or dumux is calculated or if precalculated files are used
+	bool SaveEclipseDataFiles;		  // WTP: save Eclipse data input files for benchmarking on systems with no Eclipse licenses; use in combination with Precalculated Files
 	std::string simulator_well_path;      // path to well schedule ( *.well), with extension
+    // SB redo wtp
+	std::string dissolved_co2_pcs_name; // Keyword DISSOLVED_CO2_PCS_NAME; Name of MASS_TRANSPORT Process which is used to store total dissolved CO2 from ECLIPSE
+	std::string dissolved_co2_ingas_pcs_name;
+
 	//....................................................................
 	// Construction / destruction
 	char pcs_name[MAX_ZEILE];             //string pcs_name;

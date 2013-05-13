@@ -437,7 +437,7 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			in >> NoDispIncre;
 			in.clear();
-	}
+		}
 		//....................................................................
 	}
 	return position;

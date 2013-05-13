@@ -101,6 +101,9 @@ public:
 	double CO2inLiquid;
 	double NaClinLiquid;
 	double deltaDIC;
+	double deltaSat;
+	double deltaPress;
+	double VaporComponentMassFraction;
 	std::vector <double> phase_pressure;
 	std::vector <double> phase_saturation;
 	std::vector <double> phase_density;
@@ -159,13 +162,18 @@ public:
 	double Molweight_NaCl; // [g/mol]
 	double SurfaceCO2Density;
 	bool E100;
+	bool phase_shift_flag;
 	double sumCO2removed;
 	int ProcessIndex_CO2inLiquid;
+	int ProcessIndex_CO2inGas; //KB 
 	double actual_time;
 	bool Windows_System;
 	bool existWells;
 	bool UsePrecalculatedFiles;
-
+	bool UseSaveEclipseDataFiles;
+	bool TempIncludeFile;	// WTP bool flag to select temperature exchange with ecl and geosys
+	std::string dissolved_co2_pcs_name_ECL; // Keyword DISSOLVED_CO2_PCS_NAME, Name of MASS_TRANSPORT Process which is used to store total dissolved CO2 from ECLIPSE
+	std::string dissolved_co2_ingas_pcs_name_ECL; // KB
 	std::vector <CECLIPSEBlock*> eclgrid;
 	std::vector <std::string> SplittedString;
 	std::vector <std::string> Variables;
@@ -186,7 +194,8 @@ public:
 	std::vector <std::string> Phases;
 	std::vector <std::string> Components;
 	long a [8][2]; //2D Array um Keywords abzuspeichern
-
+	std::vector <bool> eclipse_ele_active_flag; // CB
+	bool PoroPermIncludeFile;
 	CECLIPSEData();
 	~CECLIPSEData();
 
@@ -207,7 +216,7 @@ public:
 	                           std::string Keyword,
 	                           std::vector <std::string> Data,
 	                           bool CheckLengthOfSection);
-
+	bool WriteIncludeFile(std::string Filename, std::string Keyword, std::vector <std::string> Data, bool append); //CB
 	bool ReplaceWellRate(std::string Filename, std::string Keyword_well);
 
 	int WriteDataBackToEclipse(CRFProcess* m_pcs, std::string projectname);
@@ -227,13 +236,13 @@ public:
 	bool CorrespondingElements(void);
 
 	bool CompareElementsGeosysEclipse(void);
-
+	
 	// TF commented out method since we have already functions for computing the distance
 	// between points
-//	double CalculateDistanceBetween2Points(double Point1[3], double Point2[3]);
+	//double CalculateDistanceBetween2Points(double Point1[3], double Point2[3]);
 
 	bool CreateFaces(void);
-
+	
 	bool ConnectFacesToElements(void);
 
 	//bool MakeNodeVector(CRFProcess *m_pcs, std::string path, int timestep, int phase_index);
@@ -260,10 +269,14 @@ public:
 	void InterpolateGeosysVelocitiesToNodes(CRFProcess* m_pcs, double* vel_nod, long node);
 
 	void WriteDataToGeoSys(CRFProcess* m_pcs, std::string folder);
+	
+	void SaveEclipseDataFile(long Timestep, CRFProcess* m_pcs); // WTP function to save a copy of the .data file 
 
 	bool CleanUpEclipseFiles(std::string folder, std::string projectname);
 
 	int RunEclipse(long Timestep, CRFProcess* m_pcs);
 
 	void ReadWellData(std::string Filename_Wells);
+
+	void WriteOutput_2DSection(long Timestep);
 };

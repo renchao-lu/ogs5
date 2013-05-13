@@ -311,7 +311,12 @@ CRFProcess::CRFProcess(void) :
 	this->simulator_path = "";            // BG, 09/2009, Eclipse or Dumux
 	this->simulator_well_path = "";       //KB 02/2011, Eclipse
 	this->PrecalculatedFiles = false;     // BG, 01/2011, flag for using already calculated files from Eclipse or DuMux
+	this->SaveEclipseDataFiles = false; // Standard case: do not save files
 	this->Phase_Transition_Model = 0;     // BG, 11/2010, flag for using CO2 Phase transition (0...not used, 1...used)
+	// SB redo wtp
+	this->dissolved_co2_pcs_name = ""; // SB, CB 10/2011 Name of MASS_TRANSPORT process used to store dissolved total CO2 in water
+	this->dissolved_co2_ingas_pcs_name = "";
+
 	//----------------------------------------------------------------------
 	m_bCheck = false;                     //OK
 	m_bCheckOBJ = false;                  //OK
@@ -866,7 +871,7 @@ void CRFProcess::Create()
 	for (int i = 0; i < pcs_number_of_secondary_nvals; i++)
 		// new time
 		nod_val_name_vector.push_back(pcs_secondary_function_name[i]);
-	//
+	
 	long m_msh_nod_vector_size = m_msh->NodesNumber_Quadratic;
 	for (long j = 0; j < number_of_nvals; j++) // Swap number_of_nvals and mesh size. WW 19.12.2012
 	{
@@ -1969,6 +1974,12 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 			this->PrecalculatedFiles = true;
 			continue;
 		}
+		// WTP, 04/2013, coupling to Eclipse (save data files)
+		if(line_string.find("$SAVE_ECLIPSE_DATA_FILES") == 0)
+		{
+			this->SaveEclipseDataFiles = true;
+			continue;
+		}
 		// KB, 02/2011, coupling to Eclipse and DuMux
 		if(line_string.find("$SIMULATOR_WELL_PATH") == 0)
 		{
@@ -1984,6 +1995,16 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 				this->Phase_Transition_Model = 1;
 			continue;
 		}
+		// SB redo WTP
+		if(line_string.find("$DISSOLVED_CO2_PCS_NAME")==0){ //SB, CB 10/2011
+	       *pcs_file >> this->dissolved_co2_pcs_name;
+			continue;
+		}
+		if(line_string.find("$DISSOLVED_CO2_INGAS_PCS_NAME")==0){ //SB, CB 10/2011
+			*pcs_file >> this->dissolved_co2_ingas_pcs_name;
+			continue;
+		}
+
 		//WX:07.2011
 		if(line_string.find("$TIME_CONTROLLED_EXCAVATION") == 0)
 		{
@@ -3208,6 +3229,7 @@ void CRFProcess::ConfigUnsaturatedFlow()
 			pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 			pcs_number_of_secondary_nvals++;//WX:08.2011
 		}
+
 		//TEST
 		//#define DECOVALEX
 #ifdef DECOVALEX
@@ -3464,6 +3486,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
+
 	if(Neglect_H_ini==2)
 	{
 		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
@@ -3475,6 +3498,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 		pcs_number_of_secondary_nvals++;//WX:08.2011
 	}
+
 
 	// 1.3 elemental variables								// BG, 04/2012
 	//pcs_number_of_evals = 0;
@@ -3497,7 +3521,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_eval_unit[pcs_number_of_evals] = "m/s";
 	pcs_number_of_evals++;
 
-       if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
+  if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
         {
 	// BG 01/2011, variables necessary for ECLIPSE
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals]      = "DENSITY1";
@@ -3516,6 +3540,13 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals]      = "Pa s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
+
+	//// WTP: Add Temp support
+	//pcs_secondary_function_name[pcs_number_of_secondary_nvals]      = "TEMPERATURE1";
+	//pcs_secondary_function_unit[pcs_number_of_secondary_nvals]      = "K";
+	//pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	//pcs_number_of_secondary_nvals++;
+
         }
 
 }
@@ -3549,6 +3580,7 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
+
 	if(Neglect_H_ini==2)
 	{
 		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
@@ -3556,6 +3588,7 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 		pcs_number_of_secondary_nvals++;				  //WX 08.2011
 	}
+
 
 	// 1.3 elemental variables
 	//pcs_number_of_evals = 0;
@@ -3578,7 +3611,8 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 	pcs_eval_unit[pcs_number_of_evals] = "m2";
 	pcs_number_of_evals++;
 
-        if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
+	// WTP: needed?
+     if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
         {
 	// BG 01/2011, variables necessary for ECLIPSE
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals]      = "DENSITY1";

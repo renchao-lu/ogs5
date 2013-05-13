@@ -1607,6 +1607,10 @@ inline double Problem::MultiPhaseFlow()
 	{
 		if(m_pcs->EclipseData == NULL) //SBG if this is the first call, make a new instance
 			m_pcs->EclipseData = new CECLIPSEData();
+		// redo WTP
+		m_pcs->EclipseData->dissolved_co2_pcs_name_ECL = m_pcs->dissolved_co2_pcs_name; // hand over process name for storing dissolved CO2
+		m_pcs->EclipseData->dissolved_co2_ingas_pcs_name_ECL = m_pcs->dissolved_co2_ingas_pcs_name;
+
 		// call ECLIPSE interface
 		success = m_pcs->EclipseData->RunEclipse(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)

@@ -18,7 +18,7 @@
 #include <vtkUnstructuredGrid.h>
 
 vtkStandardNewMacro(VtkSelectionFilter);
-vtkCxxRevisionMacro(VtkSelectionFilter, "$Revision: 6995 $");
+vtkCxxRevisionMacro(VtkSelectionFilter, "$Revision$");
 
 VtkSelectionFilter::VtkSelectionFilter()
 	: _thresholdLower(0.0), _thresholdUpper(1.0)

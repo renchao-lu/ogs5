@@ -2059,7 +2059,6 @@ void CFiniteElementVec::LocalAssembly_continuum(const int update)
 		else
 			*De = *(smat->getD_tran());  // UJG/WW
 	}
-
 	//WX: 06.2012 E depends on stress, strain ...
 	if(smat->E_Function_Model>0)
 	{
@@ -3706,7 +3705,7 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
 		scalar_aniso_tens = new Matrix(NGPoints);
 		*scalar_aniso_comp = 0.;
 		*scalar_aniso_tens = 0.;
-}
+	}
 }
 // 01/2006 WW
 void ElementValue_DM::Write_BIN(std::fstream& os)
