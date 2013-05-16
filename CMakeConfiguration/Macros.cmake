@@ -179,14 +179,13 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 		-P ${PROJECT_SOURCE_DIR}/CMakeConfiguration/AddBenchmark.cmake
 	)
 
-	# compare file differences with python script only on dev2.intern.ufz.de
-	IF(HOST_IS_DEV2)
-		IF (PYTHONINTERP_FOUND)
-		  FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
-		  FOREACH (entry ${ARGN})
+	# compare file differences with python script
+	IF (PYTHONINTERP_FOUND)
+		FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
+		FOREACH (entry ${ARGN})
 			FILE (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
-		  ENDFOREACH (entry ${ARGN})
-		  ADD_TEST (
+		ENDFOREACH (entry ${ARGN})
+		ADD_TEST (
 			${authorName}_FILECOMPARE_${benchmarkName}
 			${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
 			${PYTHON_EXECUTABLE}
@@ -196,8 +195,7 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 			${authorName}_${benchmarkNameUnderscore}.html
 			../
 		)
-		ENDIF (PYTHONINTERP_FOUND)
-	ENDIF(HOST_IS_DEV2)
+	ENDIF (PYTHONINTERP_FOUND)
 
   # copy benchmark output files to reference directory
   IF (COPY_BENCHMARKS_TO_REF)
