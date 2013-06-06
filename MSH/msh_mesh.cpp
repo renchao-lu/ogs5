@@ -2547,7 +2547,8 @@ void CFEMesh::CreateLayerPolylines(CGLPolyline* m_ply)
 **************************************************************************/
 void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_vector_ply, bool With1DElements)
 {
-	Math_Group::vec<CEdge*> ele_edges_vector(15);
+	//WW EEMath_Group::vec<CEdge*> ele_edges_vector(15);
+	int loc_edge_nidx[3];
 	Math_Group::vec<CNode*> edge_nodes(3);
 
 	std::vector<size_t> nodes_near_ply;
@@ -2561,29 +2562,33 @@ void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_
 	// loop over all elements
 	for (size_t i = 0; i < ele_vector.size(); i++)
 	{
-		ele_vector[i]->GetEdges (ele_edges_vector);
-		size_t n_edges (ele_vector[i]->GetEdgesNumber());
+        CElem *elem = ele_vector[i];	//WW
+		// WW ele_vector[i]->GetEdges (ele_edges_vector);
+		size_t n_edges = elem->GetEdgesNumber();
 		// Add 1D Elements for models with mixed 1D/2D Elements				BG, 11/2011
-		if ((ele_vector[i]->GetDimension() == 1) && (With1DElements == true))
+		if ((elem->GetDimension() == 1) && (With1DElements == true))
 		{
 			for (size_t k = 0; k < nodes_near_ply.size(); k++)
 			{
-				if ((static_cast<size_t>(ele_vector[i]->GetNodeIndex(0)) == nodes_near_ply[k])
-								|| (static_cast<size_t>(ele_vector[i]->GetNodeIndex(1)) == nodes_near_ply[k]))
-					ele_vector_ply.push_back(ele_vector[i]->GetIndex());
+				if ((static_cast<size_t>(elem->GetNodeIndex(0)) == nodes_near_ply[k])
+								|| (static_cast<size_t>(elem->GetNodeIndex(1)) == nodes_near_ply[k]))
+					ele_vector_ply.push_back(elem->GetIndex());
 			}
 		}
 		// loop over all edges of the i-th element
 		for (size_t j = 0; j < n_edges; j++)
 		{
-			ele_edges_vector[j]->GetNodes(edge_nodes);
+			//WWele_edges_vector[j]->GetNodes(edge_nodes);
+			elem->GetLocalIndicesOfEdgeNodes(j, loc_edge_nidx); //WW
 			size_t selected (0);
 			// get all elements having an edge in common with ply
 			for (size_t k = 0; k < nodes_near_ply.size(); k++)
 			{
-				if (edge_nodes[0]->GetIndex() == nodes_near_ply[k])
+				//if (edge_nodes[0]->GetIndex() == nodes_near_ply[k])
+				if (elem->GetNodeIndex(loc_edge_nidx[0]) == nodes_near_ply[k])
 					selected++;
-				if (edge_nodes[1]->GetIndex() == nodes_near_ply[k])
+				//if (edge_nodes[1]->GetIndex() == nodes_near_ply[k])
+				if (elem->GetNodeIndex(loc_edge_nidx[1]) == nodes_near_ply[k])
 					selected++;
 			}
 			if (selected == 2)
