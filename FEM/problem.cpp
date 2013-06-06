@@ -458,6 +458,7 @@ Problem::Problem (char* filename) :
 	if(dm_pcs)
 		dm_pcs->CreateInitialState4Excavation();
 
+#ifdef OGS_DELETE_EDGES_AFTER_INIT
 	// Free memory occupied by edges. 09.2012. WW
 	if(!fluid_mom_pcs)
 	{
@@ -466,6 +467,7 @@ Problem::Problem (char* filename) :
 		  fem_msh_vector[k]->FreeEdgeMemory();
 	   }
 	}
+#endif
 }
 
 /**************************************************************************

@@ -83,8 +83,9 @@ ENDIF() # GCC
 OPTION (OGS_BUILD_TESTS "Enables building of tests." OFF)
 OPTION (OGS_NO_EXTERNAL_LIBS "Builds OGS without any external dependencies."
 OFF)
+OPTION (OGS_DELETE_EDGES_AFTER_INIT "Delete mesh edges after initialization if possible" OFF)
 
-MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_INFO CMAKE_CMD_ARGS)
+MARK_AS_ADVANCED(FORCE OGS_PYTHON OGS_CMAKE_DEBUG OGS_ONE_BIG_GTEST OGS_BUILD_INFO CMAKE_CMD_ARGS OGS_DELETE_EDGES_AFTER_INIT)
 
 ###########################################################################
 ### OGS version information. Adjust these if you release a new version. ###
@@ -230,6 +231,10 @@ ENDIF() # OGS_USE_VRPN
 IF(OGS_USE_QT)
 	ADD_DEFINITIONS(-DOGS_USE_QT)
 ENDIF(OGS_USE_QT)
+
+IF(OGS_DELETE_EDGES_AFTER_INIT)
+	ADD_DEFINITIONS(-DOGS_DELETE_EDGES_AFTER_INIT)
+ENDIF()
 
 # Add subdirectories with the projects
 ADD_SUBDIRECTORY( Base )
