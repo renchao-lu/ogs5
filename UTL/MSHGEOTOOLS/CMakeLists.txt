@@ -115,21 +115,23 @@ IF(QT4_FOUND)
 		${QT_LIBRARIES}
 	)
 
-	ADD_EXECUTABLE( mapGeoToDEM mapGeoToDEM.cpp )
-	TARGET_LINK_LIBRARIES( mapGeoToDEM
-		GEO
-		MSH
-		FEM
-		FileIO
-		VtkVis
-		${QT_LIBRARIES}
-		vtkRendering
-		vtkIO
-	)
-	IF(libgeotiff_FOUND)
-		TARGET_LINK_LIBRARIES( mapGeoToDEM ${libgeotiff_LIBRARIES})
-	ENDIF() # libgeotiff_FOUND
-	SET_TARGET_PROPERTIES(mapGeoToDEM PROPERTIES FOLDER Utilities)
+	IF (OGS_USE_QT)
+		ADD_EXECUTABLE( mapGeoToDEM mapGeoToDEM.cpp )
+		TARGET_LINK_LIBRARIES( mapGeoToDEM
+			GEO
+			MSH
+			FEM
+			FileIO
+			VtkVis
+			${QT_LIBRARIES}
+			vtkRendering
+			vtkIO
+		)
+		IF(libgeotiff_FOUND)
+			TARGET_LINK_LIBRARIES( mapGeoToDEM ${libgeotiff_LIBRARIES})
+		ENDIF() # libgeotiff_FOUND
+		SET_TARGET_PROPERTIES(mapGeoToDEM PROPERTIES FOLDER Utilities)
+	ENDIF()
 
 	ADD_EXECUTABLE( mapGeoToMesh mapGeoToMesh.cpp )
 	TARGET_LINK_LIBRARIES( mapGeoToMesh
@@ -149,18 +151,20 @@ IF(QT4_FOUND)
 		${QT_LIBRARIES}
 	)	
 
-	ADD_EXECUTABLE( createLayeredMesh createLayeredMesh.cpp )
-	TARGET_LINK_LIBRARIES( createLayeredMesh
-		GEO
-		MSH
-		MSHGEOTOOLS
-		FileIO
-		QtDataView
-		VtkVis
-		${QT_LIBRARIES}
-		vtkRendering
-		vtkIO
-	)	
+	IF (OGS_USE_QT)
+		ADD_EXECUTABLE( createLayeredMesh createLayeredMesh.cpp )
+		TARGET_LINK_LIBRARIES( createLayeredMesh
+			GEO
+			MSH
+			MSHGEOTOOLS
+			FileIO
+			QtDataView
+			VtkVis
+			${QT_LIBRARIES}
+			vtkRendering
+			vtkIO
+		)	
+	ENDIF()
 	
 	ADD_EXECUTABLE( removeMeshNodes removeMeshNodes.cpp )
 	TARGET_LINK_LIBRARIES( removeMeshNodes
