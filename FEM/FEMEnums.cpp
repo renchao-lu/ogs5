@@ -51,8 +51,8 @@ ProcessType convertProcessType ( const std::string& pcs_type_string )
 		return PS_GLOBAL;
 	if (pcs_type_string.compare ("NO_PCS") == 0)
 		return NO_PCS;
-	if (pcs_type_string.compare ("PTC_FLOW") == 0)
-		return PTC_FLOW;
+	if (pcs_type_string.compare ("MULTI_COMPONENTIAL_FLOW") == 0)
+		return MULTI_COMPONENTIAL_FLOW;
 	//else
 		//std::cout << "WARNING in convertProcessType: process type #" << pcs_type_string <<
 		//"# unknown" << "\n";
@@ -97,8 +97,8 @@ std::string convertProcessTypeToString ( ProcessType pcs_type )
 		return "FLUX";
 	if (pcs_type ==   PS_GLOBAL)
 		return "PS_GLOBAL";
-	if (pcs_type == PTC_FLOW)
-		return "PTC_FLOW";
+	if (pcs_type == MULTI_COMPONENTIAL_FLOW)
+		return "MULTI_COMPONENTIAL_FLOW";
 	if (pcs_type ==   NO_PCS)
 		return "NO_PCS";
 	return "INVALID_PROCESS";
@@ -111,7 +111,7 @@ bool isFlowProcess (ProcessType pcs_type)
 		|| pcs_type == PS_GLOBAL || pcs_type == MULTI_PHASE_FLOW
 		|| pcs_type == DEFORMATION_FLOW || pcs_type == DEFORMATION_H2
 	    || pcs_type == TWO_PHASE_FLOW || pcs_type == OVERLAND_FLOW 
-	    || pcs_type == AIR_FLOW || pcs_type == PTC_FLOW)
+	    || pcs_type == AIR_FLOW || pcs_type == MULTI_COMPONENTIAL_FLOW)
 		return true;
 	return false;
 }
@@ -217,6 +217,14 @@ PrimaryVariable convertPrimaryVariable ( const std::string& pcs_pv_string )
 		return STRAIN_ZZ;
 	if (pcs_pv_string.compare ("STRAIN_PLS") == 0)
 		return STRAIN_PLS;
+	if (pcs_pv_string.compare ("CARBON1") == 0)
+		return CARBON1;
+	if (pcs_pv_string.compare ("WATER1") == 0)
+		return WATER1;
+		if (pcs_pv_string.compare ("METHANE1") == 0)
+		return METHANE1;
+			if (pcs_pv_string.compare ("NITROGEN1") == 0)
+		return NITROGEN1;
 	//else
 	//{
 		//std::cout << "convertPrimaryVariable #" << pcs_pv_string << "# not found" << "\n";
@@ -231,14 +239,22 @@ std::string convertPrimaryVariableToString ( PrimaryVariable pcs_pv )
 		return "PRESSURE1";
 	if (pcs_pv == PRESSURE2)
 		return "PRESSURE2";
+	if (pcs_pv == TEMPERATURE)
+		return "TEMPERATURE1";
+	if (pcs_pv == CARBON1)
+		return "CARBON1";
+	if (pcs_pv == WATER1)
+		return "WATER1";
+	if (pcs_pv == METHANE1)
+		return "METHANE1";
+	if (pcs_pv == NITROGEN1)
+		return "NITROGEN1";
 	if (pcs_pv == PRESSURE_RATE1)
 		return "PRESSURE_RATE1";
 	if (pcs_pv == SATURATION)
 		return "SATURATION1";
 	if (pcs_pv == SATURATION2)
 		return "SATURATION2";
-	if (pcs_pv == TEMPERATURE)
-		return "TEMPERATURE1";
 	if (pcs_pv == DISPLACEMENT_X)
 		return "DISPLACEMENT_X1";
 	if (pcs_pv == DISPLACEMENT_Y)

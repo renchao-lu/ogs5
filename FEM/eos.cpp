@@ -694,55 +694,55 @@ double co2_viscosity (double rho, double T)
  ***********************************************************************/
 double co2_heat_conductivity (double rho, double T)
 {
-	double b[8],c[6],d[5];
-	double G_fn = 0,T_r,r,c_int_k,sum_c = 0;
-	int i;
-	double lamda_0,delta_lamda = 0,lamda;
+	double    Tc = 304.1282;
+    double    pc = 7377300;
+    double rho_c = 467.6;
+    double     M = 0.044098;
+    double     R = 8.314472;
+    double    NA = 6.0221353e23;
+    double rho_r = rho/rho_c;
+    double    Tr = T/Tc;
+    double lamda_r;
+	 double lamda;
 
-	b[0] = 0.4226159;
-	b[1] = 0.6280115;
-	b[2] = -0.5387661;
-	b[3] = 0.6735941;
-	b[4] = 0;
-	b[5] = 0;
-	b[6] = -0.4362677;
-	b[7] = 0.2255338;
+    double a[13] = {0, 3, 6.70697, 0.94604, 0.3, 0.3, 0.39751, 0.33791,    0.77963, 0.79857, 0.9, 0.02, 0.2};
+    double g[11] = {0, 0, 0, 1.5, 0, 1, 1.5, 1.5, 1.5, 3.5, 5.5};
+    double h[11] = {0, 1, 5, 1, 1, 2, 0, 5, 9, 0, 0};
+    double n[11] = {0, 7.69857587E+00, 1.59885811E-01, 1.56918621E+00, -6.73400790E+00, 1.63890156E+01, 3.69415242E+00, 2.23205514E+01, 6.61420950E+01, -1.71779133E-01, 4.33043347E-03};
+    double    nc = 0.775547504;
+    double lamda_r_ce;
+    double temp1,temp2,temp3;
 
-	c[1] = 0.02387869;
-	c[2] = 4.35079400;
-	c[3] = -10.33404000;
-	c[4] = 7.98159000;
-	c[5] = -1.94055800;
+	double   var = 1.0+a[11]*pow(pow(1-Tr,2),a[12]);
+    double alpha = 1-a[10]*log(var+sqrt(var*var-1.0));
+		   temp1 = rho_r*exp(-pow(rho_r,a[1])/a[1]-pow(a[2]*(Tr-1),2)-pow(a[3]*(rho_r-1),2));
+	       temp2 = pow(pow((1-1/Tr)+a[4]*pow(pow(rho_r-1,2),1./(2.*a[5])),2),a[6]);
+		   temp3 = pow(pow(a[7]*(rho_r-alpha),2),a[8]);
+	  lamda_r_ce = temp1/pow(temp2+temp3,a[9]);
+		   temp1 = 0;
+           temp2 = 0;
 
-	d[1] = 2.4471640E-02;
-	d[2] = 8.7056050E-05;
-	d[3] = -6.5479500E-08;
-	d[4] = 6.5949190E-11;
+    for (int i=1;i<4;i++)
+    {
+        temp1 += n[i]*pow(Tr,g[i])*pow(rho_r,h[i]);
+    }
+    for (int i=4;i<11;i++)
+    {
+        temp2 += n[i]*pow(Tr,g[i])*pow(rho_r,h[i]);
+    }
 
-	for (i = 1; i < 6; i++)
-		sum_c = sum_c + c[i] * pow((T / 100),(2 - i));
+    temp2 *= exp(-5.*rho_r*rho_r);
 
-	c_int_k = (1 + exp(-183.5 / T)) * sum_c;
+    lamda_r = temp1 + temp2 + nc*lamda_r_ce;
 
-// TF  r = pow((2*c_int_k/5),(0.5));
-	r = sqrt(2 * c_int_k / 5);
+//    double Lamda_C=pow(R,5./6.)*pow(pc,2./3.)/pow(Tc,1./6.)/pow(M,0.5)/pow(NA,1./3.);
+    double Lamda_C=0.00481384;  // W/m/K
 
-	T_r = T / 251.196;
 
-	for (i = 0; i < 8; i++)
-		G_fn = G_fn + (b[i] / MathLib::fastpow(T_r,i));
+    lamda = lamda_r * Lamda_C;
 
-	r =
 
-// TF      lamda_0 = (0.475598*pow(T,0.5)*(1+pow(r,2)))/G_fn;
-	        lamda_0 = (0.475598 * sqrt(T) * (1 + r * r)) / G_fn;
-
-	for (i = 1; i < 5; i++)
-		delta_lamda = delta_lamda + d[i] * MathLib::fastpow(rho,i);
-
-	lamda = (lamda_0 + delta_lamda) / 1000;
-
-	return lamda;
+    return lamda; 
 }
 
 /**********************************************************************
@@ -1140,8 +1140,8 @@ double h2o_heat_conductivity_IAPWS_ind (double rho, double T)
 	double a[4],b[3],B[2],d[4],C[6];
 	int i;
 
-	T = T / 647.26;
-	rho = rho / 317.7;
+	T = T / 647.096;
+	rho = rho / 317.11;
 
 	a[0] =  0.0102811;
 	a[1] =  0.0299621;
@@ -2212,7 +2212,11 @@ void CFluidProperties::therm_prop (string caption)
 		Zc = 0.27468;	//critical super-compressibility, see PREOS
 		n0=0.11333;
 		k3=0.28996;
-
+		m0 = 0.38493912223725674;
+		a = 383766.38336903340;
+		b = 0.026666761740035457;
+		k1 = 0.012304583901235679;
+		k2 = -0.14826846628826726;
 		// Limits sums in FHE-derivations
 
 		limit[0] = 7;
@@ -2459,11 +2463,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][36] = 1;
 		K[13][37] = 1;
 		K[13][38] = 1;
-	    //poly coef
-		KP[0]= -1.21;
-		KP[1]=  7.4643e-07;
-		KP[2]= -6.622e-14;
-		KP[3]=  1.6187e-021;
 
 		break;
 	}
@@ -2479,9 +2478,14 @@ void CFluidProperties::therm_prop (string caption)
 		molar_mass = 18.01528;    //  [g/mol]
 		omega = 0.344;            // azentric factor, see PREOS
 		Vd = 25.14;
-		Zc = 0.2909;//0.22944;	//critical super-compressibility, see PREOS
+		Zc = 0.22944;	//critical super-compressibility, see PREOS
 		n0=0.1156;
 		k3=0.0471;
+		m0 = 0.47568277359898614;
+		a = 943391.02482869523;
+		b = 0.018971230469153735;
+		k1 = 0.017189421358489602;
+		k2 = -0.029385598856191408;
 
 
 		// Limits for Sums in FHE-derivations
@@ -2765,11 +2769,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][51] = 1;
 		K[13][52] = 1;
 		K[13][53] = 1;
-		//poly coef
-		KP[0]= 1.0777;
-		KP[1]= 1.4370e-09;
-		KP[2]= 7.9678e-18;
-		KP[3]= -3.2289e-025;
 
 		break;
 	}
@@ -2788,6 +2787,11 @@ void CFluidProperties::therm_prop (string caption)
 		Zc = 0.286060;	//critical super-compressibility, see PREOS
 		n0=0.08248;
 		k3=0.20978;
+		m0 = 0.21389815179757277;
+		a = 206793.24123880462;
+		b = 0.026800319421855536;
+		k1 = 0.0019409288415128503;
+		k2 = -0.11003457942904071;
 		// Limits sums in FHE-derivations
 
 		limit[0] = 13;
@@ -2989,11 +2993,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][37] = 1;
 		K[13][38] = 1;
 		K[13][39] = 1;
-		//poly coef TODO
-		KP[0]= 1.0;
-		KP[1]= 0.0;
-		KP[2]= 0.0;
-		KP[3]= 0.0;
 		break;
 	}
 	case 'N':                             // Nitrogen
@@ -3011,6 +3010,11 @@ void CFluidProperties::therm_prop (string caption)
 		Zc = 0.287634;	//critical super-compressibility, see PREOS
 		n0=0.09967;
 		k3=0.24086;
+		m0 = 0.23704245415214481;
+		a = 0.91551836047871149;
+		b = 0.024130615006680459;
+		k1 = 0.0025206904456128499;
+		k2 = -0.12498696464510012;
 		// Limits sums in FHE-derivations
 		limit[0] = 6;
 		limit[1] = 32;
@@ -3202,11 +3206,6 @@ void CFluidProperties::therm_prop (string caption)
 		K[13][33] = 1;
 		K[13][34] = 1;
 		K[13][35] = 1;
-		//poly coef TODO
-		KP[0]= 1.0;
-		KP[1]= 0.0;
-		KP[2]= 0.0;
-		KP[3]= 0.0;
 		break;
 	}
 
@@ -3219,6 +3218,7 @@ void CFluidProperties::therm_prop (string caption)
 		omega = -0.215;           // azentric factor, see PREOS
 		molar_mass = 2.015894;
 		// Limits sums in FHE-derivations
+		break;
 	}
 
 	default: cout << "Error in eos.cpp: no fluid name specified!" << "\n";

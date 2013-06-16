@@ -342,6 +342,15 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			continue;
 		}
 		//------------------------------------------------------------------------
+		//subkeyword found
+		if(line_string.find("$GEOMETRY_INCLINATION") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> geo_inclination;
+			in.clear();
+			continue;
+		}
+		//------------------------------------------------------------------------
 		// ToDo to GeoLib
 		//2ii..GEOMETRY_AREA
 		//------------------------------------------------------------------------
@@ -2578,17 +2587,6 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 	CFluidProperties* m_mfp;              //WW
 	// long group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
 	m_mfp = Fem_Ele_Std->FluidProp;       //WW
-
-	if (Fem_Ele_Std->PcsType == S) // Multi-phase WW
-	{
-		m_mfp = mfp_vector[0];
-		dens_arg[0] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal0);
-		dens_arg[1] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal_t0);
-		dens_arg[2] = Fem_Ele_Std->Index;
-		heat_conductivity_fluids = m_mfp->HeatConductivity(dens_arg);
-	}
-	else
-	{
 		for (size_t ii = 0; ii < pcs_vector.size(); ii++)
 			//		if (pcs_vector[ii]->pcs_type_name.find("FLOW") != string::npos) TF
 			if (isFlowProcess (pcs_vector[ii]->getProcessType ()))
@@ -2654,7 +2652,8 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 			heat_conductivity_fluids = 0.0;
 			porosity = 0.0;
 		}
-	}
+
+
 	dimen = m_pcs->m_msh->GetCoordinateFlag() / 10;
 	int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
 
@@ -2744,8 +2743,7 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
 {
 	static double heat_dispersion_tensor[9];
 	double* heat_conductivity_porous_medium;
-	double vg, D[9];
-	double dens_arg[3];                   //AKS
+	double vg, D[9];         
 	double heat_capacity_fluids = 0.0;
 	double fluid_density;
 	double alpha_t, alpha_l;
@@ -2759,14 +2757,6 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
 	//MX, add index
 	heat_conductivity_porous_medium = HeatConductivityTensor(index);
 	m_mfp = Fem_Ele_Std->FluidProp;
-	if(Fem_Ele_Std->FluidProp->density_model == 14 ) //used density changing with p, T
-	{
-		dens_arg[0] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal0);
-		dens_arg[1] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal_t0);
-		dens_arg[2] = Fem_Ele_Std->Index;
-		fluid_density = Fem_Ele_Std->FluidProp->Density(dens_arg);
-	}
-	else
 		fluid_density = m_mfp->Density();
 	heat_capacity_fluids = m_mfp->getSpecificHeatCapacity();
 
@@ -2852,7 +2842,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	int i;
 	long index = Fem_Ele_Std->GetMeshElement()->GetIndex();
 	double molecular_diffusion[9], molecular_diffusion_value;
-	double vg, PG, TG;
+	double vg;
 	double D[9];
 	double alpha_l,alpha_t;
 	double theta = Fem_Ele_Std->pcs->m_num->ls_theta;
@@ -2868,14 +2858,9 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	int Dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
 	//----------------------------------------------------------------------
 	// Materials
+	
 	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index,theta, m_pcs) * TortuosityFunction(index,g, theta);
-	if(Fem_Ele_Std->FluidProp->density_model == 14)
-	{
- 	m_mfp = mfp_vector[0];
-	PG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalValC);
-	TG = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal_t0);
-	molecular_diffusion_value = m_mfp->MaxwellStefanDiffusionCoef(index, PG, TG, component)* TortuosityFunction(index,g, theta);
-	}
+
 	molecular_diffusion_value *= Porosity(index,theta);
 	//CB, SB
 	saturation = PCSGetEleMeanNodeSecondary_2(index,
@@ -3063,6 +3048,135 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	return advection_dispersion_tensor;
 }
 
+/**************************************************************************
+   FEMLib-Method:
+   Task: Material tensor calculation for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
+**************************************************************************/
+double* CMediumProperties::DispersionTensorMCF(int ip, int PCSIndex, int CIndex, double* variables)
+{
+	int k;
+	double Material[9], D[9], multiplier=1.0;
+	double set, vg, fac, alpha_l,alpha_t, g[3] = {0.,0.,0.}, l_char = 0.0, theta = Fem_Ele_Std->pcs->m_num->ls_theta; 
+	static double tensor[9];
+	CFluidProperties* m_mfp;
+	SolidProp::CSolidProperties* m_msp = NULL;
+	int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
+	m_msp = msp_vector[group];
+	MshElemType::type eleType = m_pcs->m_msh->ele_vector[number]->GetElementType();
+	long index = Fem_Ele_Std->GetMeshElement()->GetIndex();
+	ElementValue* gp_ele = ele_gp_value[index];
+	m_mfp = Fem_Ele_Std->FluidProp;
+	m_mfp = mfp_vector[0];
+	porosity = this->porosity_model_values[0];
+	int Dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
+	for (k = 0; k < Dim * Dim; k++)   
+		{
+		tensor[k] = 0.0;
+	  Material[k] = 0.0;
+		}
+	switch (PCSIndex)
+	{
+    case 0://FLOW
+	fac = permeability_tensor[0]/m_mfp->Viscosity(variables);
+	multiplier =  0.0;
+	break;
+
+	case 1: //HEAT
+	fac = porosity*m_mfp->HeatConductivity(variables) + (1.0 - porosity)*m_msp->Heat_Conductivity(0);
+	multiplier =  m_mfp->Density(variables)* m_mfp->SpecificHeatCapacity(variables);
+	break;
+
+	case 2://MASS
+	fac = porosity*TortuosityFunction(index, g, theta)*m_mfp->EffectiveDiffusionCoef(CIndex, variables);
+	multiplier =  1.0;
+	break;
+	}
+
+	for (k = 0; k < Dim; k++) Material[k*Dim + k] = fac;
+
+	//Global Velocity
+	double velocity[3] = {0.,0.,0.};
+	gp_ele->getIPvalue_vec_phase(ip, 0, velocity); //gp velocities // SB
+	vg = MBtrgVec(velocity, 3);
+
+	alpha_l = mass_dispersion_longitudinal;
+	alpha_t = mass_dispersion_transverse;
+
+	// hard stabilization
+	if(this->lgpn > 0.0)
+	{
+	MeshLib::CElem* m_ele = NULL;
+	m_ele = m_pcs->m_msh->ele_vector[index];
+	if(eleType == 2)
+	l_char = sqrt(m_ele->GetVolume());
+	if(eleType == 4)
+	l_char = sqrt(m_ele->GetVolume());
+	// cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << endl;
+	set = 0;
+	if(alpha_l < l_char / lgpn)
+	{
+	set = 1;      //flag for output
+	alpha_l = l_char / lgpn;
+	}
+	if(alpha_t < l_char / lgpn)
+	{
+	set = 1;
+	alpha_t = l_char / lgpn;
+	}
+
+	//cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << endl;
+	if((set > 0) & (aktueller_zeitschritt == 1) & (CIndex < 2) & (ip < 1))
+	std::cout << "element " << index << " " << l_char << " " << alpha_l <<
+	" " << alpha_t <<  std::endl;
+	}
+	//----------------------------------------------------------------------
+
+	if (abs(vg) > MKleinsteZahl && PCSIndex > 0)          //For the case of diffusive transport only.
+	{
+	switch (Dim)
+	{
+	//--------------------------------------------------------------------
+	case 1:
+	tensor[0] = Material[0] + alpha_l*vg*multiplier;
+	break;
+	//--------------------------------------------------------------------
+	case 2:
+	D[0] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[0]*velocity[0])/vg;
+	D[1] = ((alpha_l - alpha_t)*(velocity[0]*velocity[1]))/vg;
+	D[2] = ((alpha_l - alpha_t)*(velocity[1]*velocity[0]))/vg;
+	D[3] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[1]*velocity[1])/vg;
+	for (k = 0; k<Dim*Dim; k++) tensor[k] = D[k]*multiplier;
+	tensor[0] += Material[0];
+	tensor[3] += Material[3];
+	break;
+	//--------------------------------------------------------------------
+	case 3:
+	D[0] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[0] * velocity[0]) / vg;
+	D[1] = ((alpha_l - alpha_t) * (velocity[0] * velocity[1])) / vg;
+	D[2] = ((alpha_l - alpha_t) * (velocity[0] * velocity[2])) / vg;
+	D[3] = ((alpha_l - alpha_t) * (velocity[1] * velocity[0])) / vg;
+	D[4] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[1] * velocity[1]) / vg;
+	D[5] = ((alpha_l - alpha_t) * (velocity[1] * velocity[2])) / vg;
+	D[6] = ((alpha_l - alpha_t) * (velocity[2] * velocity[0])) / vg;
+	D[7] = ((alpha_l - alpha_t) * (velocity[2] * velocity[1])) / vg;
+	D[8] =(alpha_t * vg) + (alpha_l - alpha_t) * (velocity[2] * velocity[2]) / vg;
+	for (k = 0; k<Dim*Dim; k++) tensor[k] =  D[k]*multiplier;
+	tensor[0] += Material[0];
+	tensor[4] += Material[4];
+	tensor[8] += Material[8];
+	break;
+	}
+	}
+	else
+	{
+	for (k = 0; k<Dim*Dim; k++) tensor[k] = Material[k];
+	}
+	return tensor;
+
+}
 ////////////////////////////////////////////////////////////////////////////
 // DB functions
 ////////////////////////////////////////////////////////////////////////////

@@ -85,7 +85,7 @@ private:
 	double Ru;                            //universal_gas_constant;
 	double omega;                         // azentric factor for Peng-Robinson EOS
 	double molar_mass;
-	double Vd, Zc, n0, k3;
+	double Vd, Zc, n0, m0, a, b, k1, k2, k3;//constants are used in VTPR
 	/**
 	 * density
 	 */
@@ -104,14 +104,17 @@ private:
 	double drho_dC;
 
 	double diffusion; /*SB:2p */
-
+	double diffusion_coef; //AKS
 	// Viscosity
 	double viscosity;
 	double my_0;
 	double dmy_dp;
 	double dmy_dT;
 	double dmy_dC;
-
+	//Multi_componential flow
+	   int decay_model, isotherm_model;
+	double rho[4], mu[4], cp[4], kappa[4], lambda[4], Kd[4], D0[4], alpha_T[4], beta_p[4];
+	std::string eos_name, mu_JT;
 	// Thermal properties
 	double specific_heat_capacity;
 	double heat_conductivity;
@@ -132,15 +135,17 @@ private:
 public:
 	int fluid_id;                         // specification of substance (NB JUN 09)
 	std::string name;
+	std::string cmpNm1, cmpNm2, cmpNm3, cmpNm4; // component name 
+	int cmpN; //components number
 private:
 	std::string fluid_name;               //NB4801
-
 	// compressibility
 	int compressibility_model_pressure;   //NB
 	int compressibility_model_temperature; //NB
+		int solutal_expansivity_model; //NB
 	double compressibility_pressure;         //NB
 	double compressibility_temperature;      //NB
-		int JTC;      //NB
+		double solutal_expansivity; //AKS
 
 	int phase;
 
@@ -208,13 +213,14 @@ public:
 	void CalPrimaryVariable(std::vector<std::string>& pcs_name_vector);
 	// Add an argument: double* variables = NULL. 28.05.2008 WW
 	double Density(double* variables = NULL);
-	double drhodP (int idx_elem, double P, double T);
-	//AKS
 	double GetElementValueFromNodes(long ElementIndex,
 	                                int GPIndex,
 	                                int PhaseIndex,
-	                                int Variable);                                           // BG 11/2010
-	double drhodT (int idx_elem, double P, double T);
+	                                int Variable);  
+    double drhodP(double* variables = NULL);
+	double drhodT(double* variables = NULL);
+	double drhodX(int CIndex, double* variables = NULL);
+	double ComponentDensity(int CIndex, double* variables = NULL);//AKS
 	double Viscosity(double* variables = NULL); //OK4709
 	                                            //NB Jan09
 	double SpecificHeatCapacity(double* variables = NULL);
@@ -243,7 +249,7 @@ public:
 	double phi_r_dt (double rho, double T) const;
 	double phi_r_dd (double rho, double T) const;
 	double phi_0_tt (double T) const;
-	double MaxwellStefanDiffusionCoef(int idx_elem, double p, double T, int CNm); //AKS
+	double EffectiveDiffusionCoef(int CIndex, double* variables = NULL); //AKS
 
 private:
 	// State variables

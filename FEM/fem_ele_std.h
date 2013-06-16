@@ -75,15 +75,16 @@ public:
 	// 1. Mass matrix
 	void CalcMass();
 	void CalcMass2();
-	void CalcMassPTC();                   //AKS/NB
+	void CalcMassMCF();                   //AKS/NB
 	void CalcMassPSGLOBAL();              // PCH
 	// 2. Lumped mass matrix
 	void CalcLumpedMass();
 	void CalcLumpedMass2();
-    void CalcLumpedMassPTC();  //AKS
+    void CalcLumpedMassMCF();  //AKS
 	void CalcLumpedMassPSGLOBAL();        // PCH
 	// 3. Laplace matrix
 	void CalcLaplace();
+	void CalcLaplaceMCF();//AKS
 	// 4. Gravity term
 	void CalcGravity();
 	// 5. Strain coupling matrix
@@ -92,7 +93,7 @@ public:
 	void CalcRHS_by_ThermalDiffusion();
 	// 7. Advection matrix
 	void CalcAdvection();
-	void CalcAdvectionPTC();
+	void CalcAdvectionMCF();
 	// 8. Storage matrix
 	void CalcStorage();
 	// 9. Content matrix
@@ -112,8 +113,9 @@ public:
 	void Assembly();
 	void Assembly(int option, int dimension); // PCH for Fluid Momentum
 	void Cal_Velocity();
+	void Cal_VelocityMCF();//AKS
 	void Cal_Velocity_2();                //CB this is to provide velocity only at the element center of gravity
-	void  Cal_GP_Velocity_FM(int* i_ind); //SB 4900 interpolate node velocities to Gauss point velocities
+	void Cal_GP_Velocity_FM(int* i_ind); //SB 4900 interpolate node velocities to Gauss point velocities
 	                                      //BG
 	std::string Cal_GP_Velocity_ECLIPSE(std::string tempstring,
 	                                    bool output_average,
@@ -187,7 +189,7 @@ private:
 	long index;
 	int dof_index;                        //24.02.2007 WW
 	// Column index in the node value table
-	int idx0, idx1, idxS, idxSn0, idxSn1, idx3;
+	int idx0, idx1, idxS, idxSn0, idxSn1, idx3, idxMCF[12];
 	int idxp0,idxp1, idxp20, idxp21, idxt0, idxt1;
 	int phase;
 	int comp;                             // Component
@@ -198,6 +200,10 @@ private:
 	int* idx_vel;                         //WW
 	// Material properties
 	double* mat;
+    double MassMatrixElements[36];
+	double AdvectionMatrixElements[36];
+	double ContentMatrixElements[36];
+	double LaplaceMatrixElements[36][9];
 	double* eqs_rhs;                      //For DDC WW
 	bool heat_phase_change;
 
@@ -254,19 +260,21 @@ private:
 	double CalCoefMass();
 	// 25.2.2007 WW
 	double CalCoefMass2(int dof_index);
-	double CalCoefMassPTC(int dof_index);
 	// 03.3.2009 PCH
 	double CalCoefMassPSGLOBAL(int dof_index);
 	void CalCoefLaplace(bool Gravity, int ip = 0);
 	// 10 2008 PCH
 	void CalCoefLaplaceMultiphase(int phase, int ip = 0);
 	void CalCoefLaplace2(bool Gravity, int dof_index);
-	// AKS/NB
-	void CalCoefLaplacePTC(int dof_index);
 	void CalCoefLaplacePSGLOBAL(bool Gravity, int dof_index);
 	double CalCoefAdvection();     //SB4200 OK/CMCD
-	//AKS/NB
-	double CalCoefAdvectionPTC(int dof_index);
+	//AKS
+	void CalCoefMassMCF();
+	void CalCoefAdvectionMCF();
+	void CalCoefLaplaceMCF(int ip);
+	void CalcContentMCF();
+	void CalCoefContentMCF();
+
 	double CalCoefStorage();       //SB4200
 	double CalCoefContent();
 	double CalCoefStrainCouping(const int phase = 0);
@@ -329,6 +337,7 @@ private:
 	void AssembleMassMatrix(int option);  // PCH
 	// Assembly of RHS by Darcy's gravity term
 	void Assemble_Gravity();
+		void Assemble_GravityMCF();//AKS
 	void Assemble_Gravity_Multiphase();
 	// Assembly of RHS by temperature for m-phase flow 27.2.2007 WW
 	void Assemble_RHS_T_MPhaseFlow();
@@ -363,6 +372,7 @@ private:
 	// Vector of local node values, e.g. pressure, temperature.
 	// Assume maximium element nodes is 20
 	//double OldMatrix[64]; // For grid adapting
+    double NodalValue[12][40];
 	double* NodalVal;
 	double* NodalVal0;                    //?? NodalValueSaturation, NodalValueTemperature; ...
 	double* NodalVal1;
@@ -375,8 +385,6 @@ private:
 	double* NodalVal_SatNW;
 	double* NodalVal_p2;
 	double* NodalVal_p20;                 //AKS
-	double* NodalVal_t0;
-	double* NodalVal_t1;                  //AKS
 	//
 	double* weight_func;                  //NW
 	void CalcFEM_FCT();                   //NW

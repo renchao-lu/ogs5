@@ -44,7 +44,7 @@ enum ProcessType
 	/// H process, incompressible flow
 	OVERLAND_FLOW,                        //!< OVERLAND_FLOW
 	PS_GLOBAL,                            //!< PS_GLOBAL
-	PTC_FLOW,                             // Fluid flow coupled with heat transport
+	MULTI_COMPONENTIAL_FLOW,                             // Fluid flow coupled with heat transport
 	RANDOM_WALK,                          //!< RANDOM_WALK
 	/// H process, incompressible flow
 	RICHARDS_FLOW,                        //!< RICHARDS_FLOW
@@ -138,6 +138,11 @@ enum PrimaryVariable
 	VELOCITY1_X,
 	VELOCITY1_Y,
 	VELOCITY1_Z,
+	CARBON1,
+	WATER1,
+	METHANE1,
+	NITROGEN1,
+
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
 	PV_END
 };

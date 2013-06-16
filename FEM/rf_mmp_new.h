@@ -60,6 +60,7 @@ private:
 	// Permeabilty stress corrector WW
 	double* c_coefficient;
 	unsigned geo_dimension;
+	unsigned geo_inclination; //inclination of domain/sub domain from horizontal anticloclwise: AKS
 	int permeability_stress_mode;
 	//
 	//CMCD 9/2004 GeoSys 4
@@ -123,6 +124,7 @@ public:
 	double* HeatConductivityTensor(int number); //MX
 	double* HeatDispersionTensorNew(int ip); //CMCD
 	double* MassDispersionTensorNew(int ip, int phase); //CMCD, SB, BG
+	double* DispersionTensorMCF(int ip, int PCSIndex, int CIndex, double* variables = NULL);
 	//OK
 	double Density(long number,double* gp,double theta);
 	// Capillary pressure functions

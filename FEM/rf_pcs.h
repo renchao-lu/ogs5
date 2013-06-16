@@ -528,8 +528,8 @@ public:
 	int number_of_nvals;
 	int pcs_number_of_primary_nvals;
 	size_t GetPrimaryVNumber() const {return static_cast<size_t>(pcs_number_of_primary_nvals); }
-	const char* pcs_primary_function_unit[4];
-	const char* pcs_primary_function_name[4];
+	const char* pcs_primary_function_unit[7];
+	const char* pcs_primary_function_name[7];
 	const char* GetPrimaryVName(const int index) const {return pcs_primary_function_name[index]; }
 	std::string primary_variable_name;    //OK
 	int pcs_number_of_secondary_nvals;
@@ -627,7 +627,7 @@ public:
 	void ConfigRandomWalk();
 	void ConfigMultiPhaseFlow();
 	void ConfigPS_Global();               // PCH
-	void ConfigPTC_FLOW();                // AKS/NB
+	void ConfigMULTI_COMPONENTIAL_FLOW();                // AKS/NB
 	// Configuration 1 - NOD
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
         void setSolver( petsc_group::PETScLinearSolver *petsc_solver );
@@ -1022,7 +1022,7 @@ extern bool MH_Process;					// MH monolithic scheme
 extern bool MASS_TRANSPORT_Process;		// Mass transport
 extern bool FLUID_MOMENTUM_Process;		// Momentum
 extern bool RANDOM_WALK_Process;		// RWPT
-extern bool PTC_FLOW_Process;			// PTC
+extern bool MULTI_COMPONENTIAL_FLOW_Process;			//MCF
 //
 extern int pcs_number_deformation;				// JT2012
 extern int pcs_number_flow;						// JT2012

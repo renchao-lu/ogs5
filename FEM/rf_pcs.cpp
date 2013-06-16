@@ -167,7 +167,7 @@ bool MH_Process = false;				// MH monolithic scheme
 bool MASS_TRANSPORT_Process = false;	// Mass transport
 bool FLUID_MOMENTUM_Process = false;	// Momentum
 bool RANDOM_WALK_Process = false;		// RWPT
-bool PTC_FLOW_Process = false;			// PTC
+bool MULTI_COMPONENTIAL_FLOW_Process = false;			// MCF
 bool pcs_created = false;
 //
 int pcs_number_deformation = -1;				// JT2012
@@ -1764,8 +1764,8 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 					pcs_no_components++;
 					this->setProcessPrimaryVariable(FiniteElement::CONCENTRATION);
 				}
-				if (this->getProcessType() == FiniteElement::PTC_FLOW){
-					PTC_FLOW_Process = true;
+				if (this->getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW){
+					MULTI_COMPONENTIAL_FLOW_Process = true;
 				}
 				if (this->getProcessType() == FiniteElement::HEAT_TRANSPORT){
 					T_Process = true;
@@ -2319,10 +2319,10 @@ void CRFProcess::Config(void)
 		type = 1313;
 		ConfigPS_Global();
 	}
-	if (this->getProcessType() == FiniteElement::PTC_FLOW) //24.02.2007 WW
+	if (this->getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW) //24.02.2007 WW
 	{
 		type = 1111;
-		ConfigPTC_FLOW();
+		ConfigMULTI_COMPONENTIAL_FLOW();
 	}
 }
 
@@ -3723,15 +3723,22 @@ void CRFProcess::ConfigPS_Global()
    Programing:
    02/2011 AKS/NB Implementation
 **************************************************************************/
-void CRFProcess::ConfigPTC_FLOW()
+void CRFProcess::ConfigMULTI_COMPONENTIAL_FLOW()
 {
-	dof = 2;
+	const char* CmpName[6];
+		CFluidProperties* m_mfp = NULL;
+	  m_mfp = mfp_vector[0];
+	    dof = 2 + m_mfp->cmpN;
+	CmpName[2] = (char*) m_mfp->cmpNm1.data();
+	CmpName[3] = (char*) m_mfp->cmpNm2.data();
+	CmpName[4] = (char*) m_mfp->cmpNm3.data();
+	CmpName[5] = (char*) m_mfp->cmpNm4.data();
 	// 1.1 primary variables
-	pcs_number_of_primary_nvals = 2;
+	pcs_number_of_primary_nvals = dof;
 	pcs_primary_function_name[0] = "PRESSURE1";
-	pcs_primary_function_unit[0] = "Pa";
 	pcs_primary_function_name[1] = "TEMPERATURE1";
-	pcs_primary_function_unit[1] = "K";
+	for(int CIndex=2; CIndex < m_mfp->cmpN+2; CIndex++) pcs_primary_function_name[CIndex] = CmpName[CIndex];
+
 	// 1.2 secondary variables
 	pcs_number_of_secondary_nvals = 0;
 	// Nodal velocity.
@@ -5124,7 +5131,7 @@ void CRFProcess::CalIntegrationPointValue()
 	    || getProcessType() == FiniteElement::DEFORMATION_H2 // 07.2011. WW
 	    || getProcessType() == FiniteElement::AIR_FLOW
 	    || getProcessType() == FiniteElement::PS_GLOBAL
-	    || getProcessType() == FiniteElement::PTC_FLOW  //AKS/NB
+	    || getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW  //AKS/NB
 	    || getProcessType() == FiniteElement::DEFORMATION_FLOW //NW
 	    )
 		cal_integration_point_value = true;
@@ -5139,6 +5146,8 @@ void CRFProcess::CalIntegrationPointValue()
 			fem->ConfigElement(elem);
 			fem->Config(); //OK4709
 			// fem->m_dom = NULL; // To be used for parallization
+			if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW) fem->Cal_VelocityMCF();
+			else 
 			fem->Cal_Velocity();
 		}
 	}
@@ -6848,6 +6857,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						if (elem->GetMark())
 						{
 							fem->ConfigElement(elem);
+							if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW)	fem->Cal_VelocityMCF();
+							else
 							fem->Cal_Velocity();
 						}
 						gp_ele = ele_gp_value[ele_index];

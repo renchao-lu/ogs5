@@ -101,9 +101,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	NodalVal_SatNW = new double[size_m];
 	NodalVal_p2 = new double[size_m];
 	NodalVal_p20 = new double [size_m];   //AKS
-	NodalVal_t0 = new double [size_m];    //AKS/NB
-	NodalVal_t1 = new double [size_m];    //AKS/NB
-	mat = new double[9];                  // WW
+	mat = new double[9];    
 	//NW
 	switch (C_Sys_Flad / 10)
 	{
@@ -157,7 +155,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	//	if (pcs->pcs_type_name.find("AIR") != string::npos) //OK // TF commented out
 	if (pcs->getProcessType () == AIR_FLOW) //OK
 		pcsT = 'A';
-	else if (pcs->getProcessType () == PTC_FLOW) //OK
+	else if (pcs->getProcessType () == MULTI_COMPONENTIAL_FLOW) //OK
 		pcsT = 'S';
 	//	if (pcs->pcs_type_name.find("MULTI") != string::npos) // 24.02.2007 WW
 	// 24.02.2007 WW
@@ -309,19 +307,19 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		PcsType = P;
 		size_m = 40;
 		break;
-	case 'S':                             // PTCoupled-Flow //AKS/NB Mar2011
-		for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
-			NodeShift[i] = i * pcs->m_msh->GetNodesNumber(false);
-		idx0 = pcs->GetNodeValueIndex("PRESSURE1");
-		idx1 = idx0 + 1;
-		idxt0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-		idxt1 = idxt0 + 1;
+	case 'S':// MULTI_COMPONENTIAL_FLOW
+		for (int in = 0; in < pcs->pcs_number_of_primary_nvals; in++)
+		{
+		NodeShift[in] = in * pcs->m_msh->GetNodesNumber(false);
+		idxMCF[in] = pcs->GetNodeValueIndex(pcs->pcs_primary_function_name[in]);
+		idxMCF[in + pcs->pcs_number_of_primary_nvals] = idxMCF[in] + 1;
+		}
 		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
 		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
 		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
 		PcsType = S;
-		size_m = 40;              // todo: change???
-		break;
+		size_m = 40;    
+	break;
 	}
 	if (pcs->Memory_Type == 0)            // Do not store local matrices
 	{
@@ -456,8 +454,10 @@ CFiniteElementStd::~CFiniteElementStd()
 void CFiniteElementStd::SetMemory()
 {
 	int Size = nnodes;
-	if(PcsType == V || PcsType == P || PcsType == S) //4.3.2009 PCH
+	if(PcsType == V || PcsType == P) //4.3.2009 PCH
 		Size *= 2;
+	if(PcsType == S) Size *= pcs->dof;//AKS
+
 	ElementMatrix* EleMat = NULL;
 	// Prepare local matrices
 	// If local matrices are not stored, resize the matrix
@@ -489,7 +489,7 @@ void CFiniteElementStd::SetMemory()
 		Mass = EleMat->GetMass();
 		Laplace = EleMat->GetLaplace();
 		// Advection, Storage, Content SB4200
-		if(PcsType == M || PcsType == H)
+		if(PcsType == M || PcsType == H || PcsType == S)
 		{
 			Advection = EleMat->GetAdvection();
 			Storage = EleMat->GetStorage();
@@ -536,9 +536,6 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		pcsT = 'A';
 	if(pcs_type == MULTI_PHASE_FLOW)      //24.2.2007 WW
 		pcsT = 'V';
-	if(pcs_type == PTC_FLOW)              //Feb 2011 AKS/NB
-		pcsT = 'S';
-
 	if (D_Flag > 0)
 	{
 		for (size_t i = 0; i < pcs_vector.size(); i++)
@@ -616,14 +613,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'S':                             // Multi-phase flow. 24.2.2007 WW
-		if(C_Flag)                //if(PCSGet("HEAT_TRANSPORT"))
-		{
-			cpl_pcs = PCSGet("MASS_TRANSPORT");
-			idx_c0 = cpl_pcs->GetProcessComponentNumber();
-			idx_c1 = idx_c0 + 1;
-		}
-		break;
+
 	case 'C':                             // Componental flow
 		break;
 	case 'H':                             // heat transport
@@ -671,17 +661,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 	case 'M':                             // Mass transport
-		if((PTC_Flag)||(C_Flag && T_Flag))
-		{
-			if(cpl_pcs == NULL)
-			{
-				cpl_pcs = PCSGet("PTC_FLOW");
-				if(cpl_pcs)
-					idx_c0 = cpl_pcs->GetNodeValueIndex("PRESSURE1");
-				idx_c1 = idx_c0 + 1;
-			}
-		}                         // Mass transport
-		else if(T_Flag)
+	 if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
 			idx_c0 = cpl_pcs->GetNodeValueIndex("TEMPERATURE1");
@@ -1742,39 +1722,36 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 /**************************************************************************
    FEMLib-Method:
    Task: Calculate material coefficient for mass matrix for
-   Pressure-Temperature Coupled global approach
+   MULTI COMPONENTIAL FLOW Global Approach
    Implementaion:
-   03/2011 AKS /  NB
+   03/2011 AKS
 **************************************************************************/
-double CFiniteElementStd::CalCoefMassPTC(int dof_index)
+void CFiniteElementStd::CalCoefMassMCF()
 {
-	int Index = MeshElement->GetIndex();
-	if(pcs->m_num->ele_mass_lumping)
-	ComputeShapefct(1);
-	double val = 0.0;
-    PG = interpolate(NodalVal1);
-    TG = interpolate(NodalVal_t1);
-	poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-	switch(dof_index)
+	int in, nDF = pcs->dof, Index = MeshElement->GetIndex();
+    double arg_PV[6], retardation_factore[4], rho, beta_T, beta_p; 
+    for(in = 0; in<nDF*nDF; in++) MassMatrixElements[in] = 0.0;
+	//ComputeShapefct(1);
+	for(in = 0; in<nDF; in++) arg_PV[in] = interpolate(NodalValue[in]);
+	rho = FluidProp->Density(arg_PV);
+    poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta); 
+	beta_T = FluidProp->drhodT(arg_PV);
+	beta_p = FluidProp->drhodP(arg_PV);
+	//Mass Matrix Elements value--start
+	MassMatrixElements[0] = rho*(poro*beta_p + MediaProp->StorageFunction(Index, unit, pcs->m_num->ls_theta));               
+	MassMatrixElements[1] = poro*rho*beta_T;
+	if(FluidProp->mu_JT == "ON") 
+	MassMatrixElements[nDF] = poro*arg_PV[1]*beta_T;
+	MassMatrixElements[nDF + 1] = poro*rho*FluidProp->SpecificHeatCapacity(arg_PV) + (1.0 - poro)*SolidProp->Density(0)*SolidProp->Heat_Capacity();
+	if(FluidProp->cmpN > 0)
 	{
-	case 0:
-	val = poro*FluidProp->drhodP(Index, PG, TG);
-	break;
-
-	case 1:
-	val = poro*FluidProp->drhodT(Index, PG, TG);
-	break;
-
-	case 2:
-	if(FluidProp->JTC==1)
-	val = -poro*TG*FluidProp->drhodT(Index, PG, TG);
-	break;
-
-	case 3:
-	val = MediaProp->HeatCapacity(Index,pcs->m_num->ls_theta,this);
-	break;
+	for(in = 0; in<nDF-2; in++) retardation_factore[in] = 1.0 + (1.0 - poro)*SolidProp->Density(0)*FluidProp->Kd[in]*pow(poro, -1.0);
+	for(in = 2; in < nDF; in++)             
+	MassMatrixElements[in] = poro*rho*FluidProp->drhodX(in, arg_PV);
+	for(in = 2; in <nDF; in++) 
+	MassMatrixElements[(nDF + 1)*in] = poro*retardation_factore[in -2]*rho;
 	}
-	return val;
+	//Mass Matrix Elements value--end
 }
 
 /**************************************************************************
@@ -1786,7 +1763,7 @@ double CFiniteElementStd::CalCoefMassPTC(int dof_index)
 double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 {
 	int Index = MeshElement->GetIndex();
-	double val = 0.0;
+	double val = 0.0, variables[3];
 	double P,T;
 	//OK411 double expfactor = 0.0;
 	//WW bool diffusion = false;                     //08.05.2008 WW
@@ -1804,8 +1781,9 @@ double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 		Sw = 1.0 - interpolate(NodalVal_SatNW); //Sw = 1-Snw
 		P  = interpolate(NodalVal1); //Pw
 		T = interpolate(NodalValC1);
-
-		val = poro * (Sw) * FluidProp->drhodP(0, P,T) / FluidProp->Density();
+		variables[0]=P;
+		variables[1]=T;
+		val = poro * (Sw) * FluidProp->drhodP(variables) / FluidProp->Density();
 		//		cout << FluidProp->fluid_name << " Pressure: " << P << " Temp: " << ": drhodP: " << FluidProp->drhodP(P,T) << " density: " << FluidProp->Density() << "\n";
 		break;
 	case 1:                               // Snw in the wetting equation
@@ -1818,8 +1796,9 @@ double CFiniteElementStd::CalCoefMassPSGLOBAL(int dof_index)
 		P = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(Sw);
 		//      P = interpolate(NodalVal1);  // Pw
 		T = interpolate(NodalValC1);
-
-		val = poro * (1. - Sw) * GasProp->drhodP(0, P,T) / GasProp->Density();
+		variables[0]=P;
+		variables[1]=T;
+		val = poro * (1. - Sw) * GasProp->drhodP(variables) / GasProp->Density();
 
 		break;
 	case 3:                               // Snw in the non-wetting equation
@@ -2697,52 +2676,46 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 
 ///////
 /**************************************************************************
-   FEMLib-Method:
-   Task: Calculate material coefficient for Laplacian matrix for
-   Pressure-Temperature Coupled global approach
-   Implementaion:
-   03/2011 AKS /  NB
-   last modification:
+	FEMLib-Method:
+	Task: Calculate material coefficient for the Laplace matrix for
+	MULTI COMPONENTIAL FLOW Global Approach
+	Implementaion:
+	03/2011 AKS
 **************************************************************************/
-void CFiniteElementStd::CalCoefLaplacePTC(int dof_index)
+void CFiniteElementStd::CalCoefLaplaceMCF(int ip)
 {
-	    ComputeShapefct(1); 
+	int i, in, k, nDF=pcs->dof, Index = MeshElement->GetIndex();
 	double* tensor = NULL;
-	double mat_fac = 1.0;
-
-	double dens_arg[3];
-
-	int Index = MeshElement->GetIndex();
-
-	for(size_t i = 0; i < dim * dim; i++)
-		mat[i] = 0.0;
-
-	switch(dof_index)
+	double arg_PV[6], rho; 
+	poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta); 
+	ComputeShapefct(1);
+	for(i = 0; i <nDF; i++) arg_PV[i] = interpolate(NodalValue[i]);
+	rho = FluidProp->Density(arg_PV);
+	for(in = 0; in <nDF *nDF; in++) 
 	{
-	case 0:
-		dens_arg[0] = interpolate(NodalVal1);
-		dens_arg[1] = interpolate(NodalVal_t1);
-		dens_arg[2] = Index;
-		tensor = MediaProp->PermeabilityTensor(Index);
-		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = tensor[i] / FluidProp->Viscosity(dens_arg);
-		break;
-	case 1:
-		mat_fac = 0;
-		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = mat_fac;
-		break;
-	case 2:
-		mat_fac = 0;
-		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = mat_fac;
-		break;
-	case 3:
-		tensor = MediaProp->HeatConductivityTensor(Index);
-		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = tensor[i];
-		break;
+	for(k = 0; k < dim*dim;  k++)
+	{
+	LaplaceMatrixElements[in][k] = 0.0;
 	}
+	}
+	tensor = MediaProp->DispersionTensorMCF(ip, 0, 0, arg_PV);
+	for(k = 0; k < dim; k++)   
+	LaplaceMatrixElements[0][k*dim + k] = tensor[k*dim + k]*rho;
+
+    tensor = MediaProp->DispersionTensorMCF(ip, 1, 0, arg_PV);
+	for(k = 0; k < dim; k++)   
+	LaplaceMatrixElements[nDF + 1][k*dim + k] = tensor[k*dim + k];
+	
+	if(FluidProp->cmpN > 0)
+	{
+	for(int CIndex = 2; CIndex < FluidProp->cmpN + 2; CIndex++) 
+	{
+	tensor = MediaProp->DispersionTensorMCF(ip, 2, CIndex, arg_PV);
+	for(k = 0; k < dim; k++)   
+	LaplaceMatrixElements[(nDF + 1)*CIndex][k*dim + k] = tensor[k*dim + k]*rho; 
+	}
+	}
+
 }
 /**************************************************************************
    FEMLib-Method:
@@ -3345,43 +3318,27 @@ double CFiniteElementStd::CalCoefAdvection()
 }
 /**************************************************************************
    FEMLib-Method:
-   Task: Calculate material coefficient for advection matrix
-   Programing:
-   01/2005 WW/OK Implementation
-   03/2005 WW Heat transport
-   07/2005 WW Change for geometry element object
-   09/2005 SB
-   last modification:
+   Task: Calculate material coefficient for advection matrix for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
 **************************************************************************/
-double CFiniteElementStd::CalCoefAdvectionPTC(int dof_index)
+void CFiniteElementStd::CalCoefAdvectionMCF()
 {
-	int Index = MeshElement->GetIndex();
-	double val = 0.0, dens_arg[3];
-    PG = interpolate(NodalVal1);
-    TG = interpolate(NodalVal_t1);
-	switch(dof_index)
-	{
-	case 0:
-	val = FluidProp->drhodP(Index, PG, TG);
-	break;
-
-	case 1:
-	val = FluidProp->drhodT(Index, PG, TG);
-	break;
-
-	case 2:
-	if(FluidProp->JTC==1)
-	val = -1.0 - TG*FluidProp->drhodT(Index, PG, TG);
-	break;
-
-	case 3:
-	dens_arg[0] = PG;
-	dens_arg[1] = TG;
-	dens_arg[2] = Index;
-	val = FluidProp->Density(dens_arg) * FluidProp->SpecificHeatCapacity(dens_arg);
-		break;
-	}
-	return val;
+	int i, nDF = pcs->dof;
+    double arg_PV[6], rho; 
+    for(i = 0; i < nDF*nDF; i++) AdvectionMatrixElements[i] = 0.0;
+	ComputeShapefct(1);
+	for(i = 0; i<nDF; i++) arg_PV[i] = interpolate(NodalValue[i]);
+	rho = FluidProp->Density(arg_PV);
+	//Advection Matrix Elements value---start
+	if(FluidProp->mu_JT == "ON") 
+	AdvectionMatrixElements[nDF] = 1.0 + arg_PV[1]*FluidProp->drhodT(arg_PV);
+    AdvectionMatrixElements[nDF + 1] =  rho*FluidProp->SpecificHeatCapacity(arg_PV);
+	if(FluidProp->cmpN > 0)
+	for(i = 2; i<nDF; i++) 
+    AdvectionMatrixElements[(nDF+1)*i] = rho;
+	//Advection Matrix Elements value---end
 }
 /***************************************************************************
    GeoSys - Function: CalCoefStrainCouping
@@ -3650,22 +3607,6 @@ double CFiniteElementStd::CalcSUPGCoefficient(double* vel,int ip)
 				max_diff = dispersion_tensor[i];
 		diff = max_diff;
 	}
-	}
-	if (PcsType == H)                     //heat
-	{
-		if (FluidProp->density_model == 14)
-		{
-			double dens_arg[3]; //AKS
-			int Index = MeshElement->GetIndex();
-			dens_arg[0] = interpolate(NodalValC1);
-			dens_arg[1] = interpolate(NodalVal1) + T_KILVIN_ZERO;
-			dens_arg[2] = Index;
-			diff /=
-			        (FluidProp->SpecificHeatCapacity(dens_arg) *
-			         FluidProp->Density(dens_arg));
-		}
-		else
-			diff /= (FluidProp->SpecificHeatCapacity() * FluidProp->Density());
 	}
 
 	//--------------------------------------------------------------------
@@ -4199,46 +4140,34 @@ void CFiniteElementStd::CalcMass2()
 	  }
 }
 /***************************************************************************
-   GeoSys - Funktion:
-           CFiniteElementStd:: CalcMassPTC
-   Programming:
-   02/2007   WW
+   FEMLib-Method:
+   Task: Assembly of MassMatrixElements for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
  **************************************************************************/
-void CFiniteElementStd::CalcMassPTC()
+void CFiniteElementStd::CalcMassMCF()
 {
-	int i, j,in,jn;
-	// ---- Gauss integral
-	int gp_r = 0,gp_s = 0,gp_t = 0;
-	double fkt,mat_fac;
-	// Material
-	int dof_n = 2;
-	mat_fac = 1.0;
-	//----------------------------------------------------------------------
-	//======================================================================
-	// Loop over Gauss points
+	int gp_r = 0, gp_s = 0, gp_t = 0, i, j, in, jn, nDF=pcs->dof;
+	double fkt;
+	CalCoefMassMCF(); //Calculate mass matrix
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
-		//---------------------------------------------------------
-		//  Get local coordinates and weights
-		//  Compute Jacobian matrix and its determinate
-		//---------------------------------------------------------
-		fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-		// Compute geometry
-		ComputeShapefct(1);       // Linear interpolation function
-		for(in = 0; in < dof_n; in++)
-		{
-			for(jn = 0; jn < dof_n; jn++)
-			{
-				// Material
-				mat_fac = fkt * CalCoefMassPTC(in * dof_n + jn);
-				// Calculate mass matrix
-				for (i = 0; i < nnodes; i++)
-				{
-					for (j = 0; j < nnodes; j++)
-						(*Mass2)(i + in * nnodes,j + jn *nnodes) += mat_fac * shapefct[i] *shapefct[j];
-			}
-			}
-		}
+	fkt = GetGaussData(gp, gp_r, gp_s, gp_t); //Compute Jacobian matrix and its determinate
+	ComputeShapefct(1); //Linear interpolation function
+	for(in = 0; in < nDF; in++)
+	{
+	const int ish = in * nnodes;
+	for(jn = 0; jn < nDF; jn++)
+	{
+	const int jsh = jn * nnodes;
+	for (i = 0; i < nnodes; i++)
+	{
+	for (j = 0; j < nnodes; j++)
+	(*Mass2)(i + ish, j + jsh) +=  fkt*MassMatrixElements[in*nDF + jn]*shapefct[i] *shapefct[j];
+	}
+	}
+	}
 	}
 }
 
@@ -4430,16 +4359,16 @@ void CFiniteElementStd::CalcLumpedMass2()
 	// Mass2->Write();
 }
 /***************************************************************************
-   GeoSys - Funktion:
-   CFiniteElementStd:: CalcLumpedMassPTC
-   Programming:
-   07/2012   AKS Compositional gas flow
+   FEMLib-Method:
+   Task: Assembly of LumpedMassMatrixElements for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
  **************************************************************************/
-void CFiniteElementStd::CalcLumpedMassPTC()
+void CFiniteElementStd::CalcLumpedMassMCF()
 {
-	int i, in, jn, gp_r, gp_s, gp_t;
-	double factor, vol = 0.0;
-	int dof_n = 2;
+	int i, in, jn, gp_r, gp_s, gp_t, nDF=pcs->dof;
+	double factor=0.0, vol = 0.0;
 	//----------------------------------------------------------------------
 	// Volume
 	if(axisymmetry)
@@ -4448,32 +4377,38 @@ void CFiniteElementStd::CalcLumpedMassPTC()
 		// it is put here. Anyway it is computational cheap. WW
 		vol = 0.0;
 		for (gp = 0; gp < nGaussPoints; gp++)
-			//---------------------------------------------------------
-			//  Get local coordinates and weights
-			//  Compute Jacobian matrix and its determinate
-			//---------------------------------------------------------
-			vol += GetGaussData(gp, gp_r, gp_s, gp_t);
+		//---------------------------------------------------------
+		//  Get local coordinates and weights
+		//  Compute Jacobian matrix and its determinate
+		//---------------------------------------------------------
+		vol += GetGaussData(gp, gp_r, gp_s, gp_t);
 	}
 	else
-		vol = MeshElement->GetVolume();
+	vol = MeshElement->GetVolume();//* MeshElement->area;
 	//----------------------------------------------------------------------
 	// Initialize
 	(*Mass2) = 0.0;
 	// Center of the reference element
 	SetCenterGP();
-	for(in = 0; in < pcs->dof; in++)
-		for(jn = 0; jn < pcs->dof; jn++)
-		{
-			// Factor
-			factor = CalCoefMassPTC(in * pcs->dof + jn);
-			pcs->timebuffer = factor; // Tim Control "Neumann"
-			// Volume
-			factor *= vol / (double)nnodes;
-			for (i = 0; i < nnodes; i++)
-				(*Mass2)(i + in * nnodes,i + jn * nnodes) = factor;
-		}
+	ComputeShapefct(1);
+	CalCoefMassMCF();
+	for(in = 0; in < nDF; in++)
+	{
+	const int ish = in * nnodes;
+	for(jn = 0; jn < nDF; jn++)
+	{ 
+	const int jsh = jn * nnodes;
+	factor = MassMatrixElements[in*nDF + jn];
+	pcs->timebuffer = factor; // Tim Control "Neumann"
+	factor *= vol;
+	for (i = 0; i < nnodes; i++)
+	{
+	(*Mass2)(i + ish, i + jsh) = shapefct[i]*factor;
+	}
 	//TEST OUT
 	// Mass2->Write();
+	}
+	}
 }
 /***************************************************************************
    GeoSys - Funktion:
@@ -4665,7 +4600,7 @@ void CFiniteElementStd::CalcLaplace()
   
    
   // 03.03 2009 PCH
-  if(PcsType == V || PcsType == P || PcsType == S)
+  if(PcsType == V || PcsType == P)
     dof_n = 2;
   
   //----------------------------------------------------------------------
@@ -4709,8 +4644,6 @@ void CFiniteElementStd::CalcLaplace()
 		    CalCoefLaplace2(false, ishd + jn);
 		  else if (PcsType == P)
 		    CalCoefLaplacePSGLOBAL(false,ishd + jn);
-		  else if (PcsType == S)
-		    CalCoefLaplacePTC(ishd + jn);
 		}
 	      const int jsh = jn*nnodes;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -4764,6 +4697,42 @@ void CFiniteElementStd::CalcLaplace()
     } //	//TEST OUTPUT
   // Laplace->Write();
 }
+/***************************************************************************
+   FEMLib-Method:
+   Task: Assembly of LaplaceMatrix for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
+ **************************************************************************/
+void CFiniteElementStd::CalcLaplaceMCF()
+{
+	int gp_r = 0, gp_s = 0, gp_t, i, j, k, in, nDF=pcs->dof;
+	gp_t = 0;
+	double fkt;
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+	fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	ComputeGradShapefct(1);   // Linear interpolation function
+	CalCoefLaplaceMCF(gp);
+	for(in = 0; in < nDF; in++)
+	{
+	const int ish = in * nnodes;
+	for(i = 0; i < nnodes; i++) 
+	{
+	for(j = 0;  j< nnodes; j++)
+	{
+	for(k = 0; k < dim; k++) 
+	{
+	(*Laplace)(i + ish, j + ish) += fkt*LaplaceMatrixElements[in*nDF + in][dim*k + k] *dshapefct[k*nnodes + i]*dshapefct[k*nnodes + j];		
+	}
+	}
+	}
+	}
+	}
+	//TEST OUTPUT
+	// Laplace->Write();
+}
+
 /**************************************************************************
    FEMLib-Method:
    10/2006 YD Implementation
@@ -5068,55 +5037,100 @@ void CFiniteElementStd::CalcAdvection()
 }
 
 /***************************************************************************
-      GeoSys - Funktion:
-              CFiniteElementStd:: CalcAdvection
-      Aufgabe:  Calculate the advection matrix
-
-      Programming:
-      01/2005   WW
-      02/2005   OK GEO factor
-      09/2005   SB - adapted to advection
-      03/2007   WW - Fluid advection with multiphase flow
-      05/2008   WW - General densty for multiphase flow
-   01/2010   NW - SUPG
+   FEMLib-Method:
+   Task: Assembly of AdvectionMatrix for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
  **************************************************************************/
-void CFiniteElementStd::CalcAdvectionPTC()
+void CFiniteElementStd::CalcAdvectionMCF()
 {
-	int i, j, in, jn;
-	int gp_r = 0, gp_s = 0, gp_t = 0;
-	double fkt, mat_fac;
-	double vel[3];
-	int dof_n = 2;
+	int gp_r = 0, gp_s = 0, gp_t = 0, i, j, k, in, jn, nDF=pcs->dof, Index = MeshElement->GetIndex();
+	double fkt, vel[3];
 	ElementValue* gp_ele = ele_gp_value[Index];
+	CalCoefAdvectionMCF();
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
-		fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-		ComputeGradShapefct(1);
-		ComputeShapefct(1);
-		//Velocity
-		vel[0] = gp_ele->Velocity(0, gp);
-		vel[1] = gp_ele->Velocity(1, gp);
-		vel[2] = gp_ele->Velocity(2, gp);
+	fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	ComputeGradShapefct(1);
+	ComputeShapefct(1);
+	vel[0] = gp_ele->Velocity(0, gp);
+	vel[1] = gp_ele->Velocity(1, gp);
+	vel[2] = gp_ele->Velocity(2, gp);
 
-		for (in = 0; in < dof_n; in++)
-		{
-			for (jn = 0; jn < dof_n; jn++)
-			{
-				mat_fac = fkt * CalCoefAdvectionPTC(in * dof_n + jn);
-				for (i = 0; i < nnodes; i++)
-				{
-					for (j = 0; j < nnodes; j++)
-					{
-						for (size_t k = 0; k < dim; k++)
-						{
-							(*Advection)(i + in * nnodes, j + jn * nnodes) += mat_fac * shapefct[i]* vel[k] * dshapefct[k * nnodes + j];
-                     }
-                  }
-               }
-            }
-         }
-      }
-   }
+	for (in = 0; in < nDF; in++)
+	{
+	const int ish = in * nnodes;
+	for (jn = 0; jn < nDF; jn++) 
+	{
+	const int jsh = jn * nnodes;
+	for (i = 0; i < nnodes; i++)
+	{
+	for (j = 0; j < nnodes; j++)
+	{
+	for (k = 0; k < dim; k++)
+	{
+	(*Advection)(i + ish, j + jsh) += fkt*AdvectionMatrixElements[in*nDF + jn]*shapefct[i]*vel[k]*dshapefct[k*nnodes + j];
+	}
+	}
+	}
+	}
+	}
+	}
+}
+/***************************************************************************
+   FEMLib-Method:
+   Task: Assembly of ContentMatrix for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
+ **************************************************************************/
+void CFiniteElementStd::CalcContentMCF()
+{
+	int gp_r = 0, gp_s = 0, gp_t = 0, in, i, j, nDF=pcs->dof;
+	double fkt;
+	CalCoefContentMCF();
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+	fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	ComputeShapefct(1);
+	for (in = 0; in < nDF; in++)
+	{
+	const int ish = in * nnodes;
+	for (i = 0; i< nnodes; i++)
+	{
+	for (j = 0; j< nnodes; j++)
+	{
+	(*Content)(i + ish, j + ish) += fkt*ContentMatrixElements[in*nDF + in]*shapefct[i]*shapefct[j];
+	}
+	}
+	}
+	}
+}
+   /**************************************************************************
+   FEMLib-Method:
+   Task: Calculate material coefficient for contant matrix for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
+    **************************************************************************/
+void CFiniteElementStd::CalCoefContentMCF()
+{
+	int in, nDF=pcs->dof, Index = MeshElement->GetIndex();
+	double retardation_factore[4], arg_PV[6], rho;
+	for(in = 0; in < nDF * nDF; in++) ContentMatrixElements[in] = 0.0;
+	if(FluidProp->cmpN > 0)
+	{
+	ComputeShapefct(1);
+	for(in = 0; in < nDF; in++) arg_PV[in] = interpolate(NodalValue[in]);
+	rho = FluidProp->Density(arg_PV);
+	poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
+	for(in = 0; in<nDF-2; in++) retardation_factore[in] = 1.0 + (1.0 - poro)*SolidProp->Density(0)*FluidProp->Kd[in]*pow(poro, -1.0);
+	for(in = 2; in < nDF; in++) 
+	ContentMatrixElements[(nDF + 1)*in] = poro*rho*retardation_factore[in - 2]*FluidProp->lambda[in-2]; 
+	}
+
+}
 /***************************************************************************
    GeoSys - Funktion:
            CFiniteElementStd:: CalcAdvection
@@ -5367,7 +5381,7 @@ void CFiniteElementStd::Assemble_Gravity()
 	// ---- Gauss integral
 	int gp_r = 0, gp_s = 0, gp_t;
 	gp_t = 0;
-	double fkt, rho, dens_arg[3];         //, rich_f;
+	double fkt, rho;         //, rich_f;
 	double k_rel_iteration;
 	// GEO
 	//NW  double geo_fac = MediaProp->geo_area;
@@ -5377,7 +5391,7 @@ void CFiniteElementStd::Assemble_Gravity()
 	//
 	//
 	int dof_n = 1;                        // 27.2.2007 WW
-	if(PcsType == V || PcsType == P|| PcsType == S)
+	if(PcsType == V || PcsType == P)
 		dof_n = 2;
 
 	//WW 05.01.07
@@ -5408,14 +5422,6 @@ void CFiniteElementStd::Assemble_Gravity()
 		ComputeGradShapefct(1);   // Linear interpolation function
 		ComputeShapefct(1);       // Moved from CalCoefLaplace(). 12.3.2007 WW
 		// Material
-		if(PcsType == S)
-		{
-			dens_arg[0] = interpolate(NodalVal0); // pressure
-			dens_arg[1] = interpolate(NodalVal_t0); // temperature
-			dens_arg[2] = Index;
-			rho = FluidProp->Density(dens_arg);
-		}
-		else
 			rho = FluidProp->Density();
 		if(gravity_constant < MKleinsteZahl) // HEAD version
 			rho = 1.0;
@@ -5441,8 +5447,6 @@ void CFiniteElementStd::Assemble_Gravity()
 					CalCoefLaplace2(true, ii * dof_n + 1);
 				else if(PcsType == P)
 					CalCoefLaplacePSGLOBAL(true, ii * dof_n);
-				else if(PcsType == S)
-					CalCoefLaplacePTC(ii);
 			}
 			// Calculate mass matrix
 			const int iinn =  ii * nnodes; //19.06.2012. WW
@@ -5491,6 +5495,74 @@ void CFiniteElementStd::Assemble_Gravity()
 	//TEST OUTPUT
 	//RHS->Write();
 }
+/***************************************************************************
+	FEMLib-Method:
+	Task: Calculation of bouyancy for
+	MULTI COMPONENTIAL FLOW Global Approach
+	Implementaion:
+	03/2011 AKS
+ **************************************************************************/
+void CFiniteElementStd::Assemble_GravityMCF()
+{	
+	if((coordinate_system) % 10 != 2 && (!axisymmetry))
+	return;
+	int i, j, in, k, nDF=pcs->dof, in_sh = 0;
+	// ---- Gauss integral
+	int gp_r = 0, gp_s = 0, gp_t;
+	gp_t = 0;
+	double* tensor = NULL;
+	double fkt, mat_fac, arg_PV[6], gravity_vector[3], rho;   
+	long cshift = 0;               
+	for (in = 0; in < nDF*nnodes; in++) NodalVal[in] = 0.0;
+	cshift = 0;
+	if(nDF > 1)
+	cshift = NodeShift[pcs->continuum];
+	for(k = 0; k < dim; k++) gravity_vector[k] = 0.0;
+	if((coordinate_system) % 10 == 2 && (!HEAD_Flag))
+	{
+	gravity_vector[dim - 1] = gravity_constant;
+	if(dim == 3 && ele_dim == 1 && MediaProp->geo_inclination > 0)//1D fractured media
+	{
+	      gravity_vector[0] = gravity_constant*cos(PI*MediaProp->geo_inclination/180)*sin(PI*MediaProp->geo_inclination/180);
+	gravity_vector[dim - 1] = gravity_constant*sin(PI*MediaProp->geo_inclination/180)*sin(PI*MediaProp->geo_inclination/180);
+	}
+	}
+	ComputeShapefct(1);  
+	for(in = 0; in < nDF; in++) arg_PV[in] = interpolate(NodalValue[in]);
+	mat_fac = FluidProp->Density(arg_PV);
+	// Loop over Gauss points
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+	fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+	//---------------------------------------------------------
+	ComputeGradShapefct(1);   // Linear interpolation function
+	ComputeShapefct(1);  
+	tensor = MediaProp->DispersionTensorMCF(gp, 0,  0, arg_PV);
+	for (j = 0; j < nnodes; j++)
+	{
+	for(in = 0; in <nDF; in++) arg_PV[in] = pcs->GetNodeValue(nodes[j], idxMCF[in + nDF]);//current PV
+	//
+	rho = FluidProp->Density(arg_PV);
+	//
+	for (i = 0; i < nnodes; i++) 
+	{
+	for (k = 0; k < dim; k++)
+	{
+	NodalVal[i] -= fkt*mat_fac*tensor[dim*k + dim - 1]*dshapefct[k* nnodes + i]*shapefct[j]*rho*gravity_vector[k];
+	}
+	}
+	}
+	}
+	cshift += NodeShift[problem_dimension_dm]; 
+	cshift += NodeShift[0];
+	for (i = 0; i < nnodes; i++)
+	{
+	eqs_rhs[cshift + eqs_number[i]] += NodalVal[i];
+	(*RHS)(i + LocalShift) += NodalVal[i];
+	}
+	//RHS->Write();
+}
+
 /***************************************************************************
    GeoSys - Funktion:
            CFiniteElementStd:: Assemby_Gravity
@@ -5748,12 +5820,11 @@ void CFiniteElementStd::Cal_Velocity()
 {
 	int k;
 	static double vel[3], vel_g[3];
-	double dens_arg[3];                   //AKS
 	// ---- Gauss integral
 	int gp_r = 0, gp_s = 0, gp_t;
 	double coef = 0.0;
 	int dof_n = 1;
-	if(PcsType == V || PcsType == P || PcsType == S)
+	if(PcsType == V || PcsType == P)
 		dof_n = 2;
 	//
 	gp_t = 0;
@@ -5838,8 +5909,6 @@ void CFiniteElementStd::Cal_Velocity()
 		// Material
 		if(dof_n == 1)
 			CalCoefLaplace(true);
-		else if (PcsType == S)
-			CalCoefLaplacePTC(0);
 		else if (dof_n == 2 && PcsType == V) // PCH 05.2009
 			CalCoefLaplace2(true,0);
 		else if (dof_n == 2 && PcsType == P) // PCH 05.2009
@@ -5868,21 +5937,6 @@ void CFiniteElementStd::Cal_Velocity()
 		//NW
 		if(k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
 		{
-			if((FluidProp->density_model == 14))
-			{
-				dens_arg[0] = interpolate(NodalVal1);
-				dens_arg[1] = interpolate(NodalValC) + T_KILVIN_ZERO;
-				dens_arg[2] = Index;
-				coef  =  gravity_constant * FluidProp->Density(dens_arg);
-			}
-				if(PcsType==S)
-			{
-			dens_arg[0] = interpolate(NodalVal0);
-			dens_arg[1] = interpolate(NodalVal_t0);
-				dens_arg[2] = Index;
-			coef  =  gravity_constant*FluidProp->Density(dens_arg);
-            }
-			else
 				coef  =  gravity_constant * FluidProp->Density();
 			if(dim == 3 && ele_dim == 2)
 			{
@@ -5984,6 +6038,66 @@ void CFiniteElementStd::Cal_Velocity()
 		}
 	}
 	// gp_ele->Velocity.Write();
+}
+/***************************************************************************
+   FEMLib-Method:
+   Task: Velocity calculation for
+   MULTI COMPONENTIAL FLOW Global Approach
+   Implementaion:
+   03/2011 AKS
+ **************************************************************************/
+void CFiniteElementStd::Cal_VelocityMCF()
+{
+	int j, in, k, nDF=pcs->dof;
+	static double vel[3];
+	double* tensor = NULL;
+	double arg_PV[6], gravity_vector[3], rho, fkt;     
+	int gp_r = 0, gp_s = 0, gp_t;
+	double coef = 0.0;
+	gp_t = 0;
+	SetMemory();
+	SetMaterial();
+	ElementValue* gp_ele = ele_gp_value[Index];
+	for(k = 0; k < dim; k++) gravity_vector[k] = 0.0;
+	if((coordinate_system) % 10 == 2 && (!HEAD_Flag))
+	{
+	gravity_vector[dim - 1] = gravity_constant;
+	if(dim == 3 && ele_dim == 1 && MediaProp->geo_inclination > 0)
+	{
+	gravity_vector[0] = gravity_constant*cos(PI*MediaProp->geo_inclination/180)*sin(PI*MediaProp->geo_inclination/180);
+	gravity_vector[dim - 1] = gravity_constant*sin(PI*MediaProp->geo_inclination/180)*sin(PI*MediaProp->geo_inclination/180);
+	}
+	}
+	ComputeShapefct(1);  
+	for(in = 0; in < nDF; in++) arg_PV[in] = interpolate(NodalValue[in]);
+	gp_ele->Velocity = 0.0;  
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+	fkt=GetGaussData(gp, gp_r, gp_s, gp_t);
+	ComputeGradShapefct(1);
+	ComputeShapefct(1); 
+	tensor = MediaProp->DispersionTensorMCF(gp, 0, 0, arg_PV);
+	for(j = 0; j<nnodes; j++)
+	{
+	for(in = 0; in<nDF; in++) arg_PV[in] = pcs->GetNodeValue(nodes[j], idxMCF[in + nDF]); 
+	//
+	rho = FluidProp->Density(arg_PV);
+	//
+	for (k = 0; k<dim; k++)
+	{
+	gp_ele->Velocity(k, gp) -= tensor[dim*k + k]*(dshapefct[k*nnodes + j]*pcs->GetNodeValue(nodes[j], idxMCF[0 + nDF]) + shapefct[j]*rho*gravity_vector[k]);
+	}
+	}
+
+	//
+	if(pcs->Write_Matrix)
+	{
+	(*pcs->matrix_file) << "### Element: " << Index << endl;
+	(*pcs->matrix_file) << "---Velocity of fluid " << endl;
+	gp_ele->Velocity.Write(*pcs->matrix_file);
+	}
+	// gp_ele->Velocity.Write();
+    }
 }
 
 /***************************************************************************
@@ -6783,8 +6897,12 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 		(*Mass) = 0.0;
 	(*Laplace) = 0.0;
-	if(PcsType == S)
+    if (PcsType==S) 
+	{
 		(*Advection) = 0.0;
+		  (*Content) = 0.0;
+    }
+	   
 	//----------------------------------------------------------------------
 	// GEO
 	// double geo_fac = MediaProp->geo_area;
@@ -6808,9 +6926,9 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else if(PcsType == S)                 //AKS
 	{
 		if(pcs->m_num->ele_mass_lumping)
-			CalcLumpedMassPTC();
+			CalcLumpedMassMCF();
 		else
-			CalcMassPTC();
+			CalcMassMCF();
 	}
 	else
 	{
@@ -6820,9 +6938,15 @@ void CFiniteElementStd::AssembleParabolicEquation()
 			CalcMass();
 	}
 	// Laplace matrix.......................................................
-	CalcLaplace();
-	if(PcsType == S)                      //AKS/NB
-		CalcAdvectionPTC();
+	     if (PcsType==S) 
+		   CalcLaplaceMCF(); //AKS
+		 else
+	          CalcLaplace();
+      if (PcsType==S) 
+	  {                             
+         CalcAdvectionMCF();
+         CalcContentMCF();
+      }
 	if(RD_Flag)                           //YD /WW
 		Assemble_DualTransfer();
 	if(pcs->Tim->time_control_name.find("NEUMANN") != string::npos)
@@ -6863,7 +6987,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	{
 		*AuxMatrix      = *Laplace;
 		if(PcsType == S)
-			*AuxMatrix     += *Advection;
+ {
+         *AuxMatrix += *Advection;
+         *AuxMatrix += *Content;
+         }
 	}
 
 	(*AuxMatrix)   *= fac2;
@@ -6882,7 +7009,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	if(PcsType == V)                      // For DOF>1: 27.2.2007 WW
 		for (i = 0; i < nnodes; i++)
 			NodalVal[i + nnodes] = 0.0;
-	  if(PcsType==S)                              // For DOF>1: 27.2.2007 WW
+	  if(PcsType==S)
       {
 	  for (int in = 0; in < pcs->dof; in++)
 	  {
@@ -6994,34 +7121,43 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		*AuxMatrix      = *Laplace;
-		if(PcsType == S)
-			*AuxMatrix     += *Advection;
+	if(PcsType==S)
+	{
+	*AuxMatrix     += *Advection;
+	*AuxMatrix     += *Content;
+	}
 	}
 	(*AuxMatrix)  *= fac2;
 	*AuxMatrix1   -= *AuxMatrix;
 	// 07.01.07 WW
+	
+	if(PcsType == S)// For DOF>1: 27.2.2007 WW
+	{
+	for (int in = 0; in < pcs->dof; in++)
+	{
+	for (i = 0; i < nnodes; i++)
+	{
+	NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
+	NodalVal[i + in*nnodes] = 0.0;
+	}
+	}
+	}
+	else
+	{
 	int idx = idx0;
 	if(pcs->continuum == 1)
-		idx = idxp20;
+	idx = idxp20;
 	for (i = 0; i < nnodes; i++)
-		NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
+	NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
 
-	if(PcsType == S)                      // For DOF>1: 27.2.2007 WW
-
-		for (i = 0; i < nnodes; i++)
-		{
-			NodalVal[i] = 0.0;
-			NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxt0);
-			NodalVal[i + nnodes] = 0.0;
-		}
-	else if(PcsType == P)                 // For DOF>1:
-
-		for (i = 0; i < nnodes; i++)
-		{
-			NodalVal[i] = 0.0;
-			NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxSn0);
-			NodalVal[i + nnodes] = 0.0;
-		}
+	if(PcsType == P)                 // For DOF>1:
+	for (i = 0; i < nnodes; i++)
+	{
+	NodalVal[i] = 0.0;
+	NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxSn0);
+	NodalVal[i + nnodes] = 0.0;
+	}
+	}
 	AuxMatrix1->multi(NodalVal0, NodalVal);
 	// PCH: Type III (Cauchy boundary conditions) in need, it should be added here.
 
@@ -7044,7 +7180,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 
 	//
 	if(H2_mono)
-		for(ii = 0; ii < 2; ii++)
+		for(ii = 0; ii < pcs->dof; ii++)
 		{
 			i_sh = NodeShift[ii + dm_shift];
 			ii_sh = ii * nnodes;
@@ -7239,9 +7375,12 @@ void CFiniteElementStd::add2GlobalMatrixII(int block_cols)
 	// For DOF>1:
 	if(PcsType == V || PcsType == P || PcsType == S)
 	{
+		int nDF = 2;
+		if(PcsType == S) nDF=pcs->dof;
+
 		int jj_sh;
 		long j_sh = 0;
-		for(ii = 0; ii < 2; ii++)
+		for(ii = 0; ii < nDF; ii++)
 		{
 			i_sh = NodeShift[ii + dm_shift];
 			ii_sh = ii * nnodes;
@@ -8175,13 +8314,15 @@ void CFiniteElementStd::Config()
 			NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxp20);
 			NodalVal1[i + nnodes] = pcs->GetNodeValue(nodes[i],idxp21);
 		}
-	if(PcsType == S)                      // 25.2.2007
 
-		for(i = 0; i < nnodes; i++)
-		{
-			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
-			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
-		}
+	if(PcsType == S)  
+	for(i = 0; i < nnodes; i++)
+	{
+	for(int in = 0; in < pcs->dof; in++)         NodalValue[in][i] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
+	for(int in = 0; in < pcs->dof; in++)  NodalVal1[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
+	for(int in = 0; in < pcs->dof; in++)  NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
+	}
+
 	if(PcsType == P)
 		for(i = 0; i < nnodes; i++)
 			NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
@@ -8197,11 +8338,6 @@ void CFiniteElementStd::Config()
 				NodalVal_p2[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1 + 2);
 			NodalVal_p20[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0 + 2);
 		}
-		if(cpl_pcs->type == 1111)
-			{
-			NodalVal_t0[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0 + 2);
-			NodalVal_t1[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1 + 2);
-			}
 		}
 }
 /**************************************************************************
@@ -8393,8 +8529,8 @@ void CFiniteElementStd::Assembly()
 		break;
 	case S:
 		AssembleParabolicEquation();
-		Assemble_Gravity();
-		add2GlobalMatrixII();
+		Assemble_GravityMCF();
+		add2GlobalMatrixII(pcs->dof);
 		break;
 	//....................................................................
 	default:
@@ -9169,7 +9305,7 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 **************************************************************************/
 double CFiniteElementStd::CalCoef_RHS_T_PSGlobal(int dof_index)
 {
-	double val = 0.0;                     //OK411 D_gw=0.0, D_ga=0.0;
+	double val = 0.0, variables[3];                     //OK411 D_gw=0.0, D_ga=0.0;
 	//OK411 double expfactor=0.0;
 	double P,T;
 	int Index = MeshElement->GetIndex();
@@ -9187,8 +9323,9 @@ double CFiniteElementStd::CalCoef_RHS_T_PSGlobal(int dof_index)
 		P  = interpolate(NodalVal1) + MediaProp->CapillaryPressureFunction(Sw);
 		//      P  = interpolate(NodalVal1);  // Pw
 		T  = interpolate(NodalValC1);
-
-		val = -(1. - Sw) * poro * GasProp->drhodT(0, P,T) / GasProp->Density();
+		variables[0]=P;
+		variables[1]=T;
+		val = -(1. - Sw) * poro * GasProp->drhodT(variables) / GasProp->Density();
 		break;
 	case 2:
 		val = 0.;
