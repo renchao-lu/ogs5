@@ -8530,7 +8530,11 @@ void CFiniteElementStd::Assembly()
 	case S:
 		AssembleParabolicEquation();
 		Assemble_GravityMCF();
+#if defined(USE_PETSC)
+		add2GlobalMatrixII();
+#else
 		add2GlobalMatrixII(pcs->dof);
+#endif
 		break;
 	//....................................................................
 	default:
