@@ -1726,7 +1726,7 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 	double heat_capacity_fluids = 0.0;
 	double PG = 0.0, Sw = 0.0,TG,rhow,rho_gw,p_gw,dens_aug[3],rho_g;
 	CFluidProperties* m_mfp = NULL;
-	CRFProcess* m_pcs = assem->pcs;
+	CRFProcess* m_pcs = assem->cpl_pcs;
 		//if (m_pcs->pcs_type_name.find("MULTI_PHASE_FLOW")!=string::npos)
 		if (m_pcs->type == 1212)  // non-isothermal multi-phase flow
 		{
@@ -3366,7 +3366,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 		drhodT = (rho1 - rho2) / compressibility_temperature;
 		break;
 			case 7:                               // use of fct file
-		drhodT = 1.0/T;               // to be done
+	drhodT = 1.0/T; 
 	break;
 
 	case 15: //volume translated Peng-Robinson
