@@ -3608,7 +3608,10 @@ double CFiniteElementStd::CalcSUPGCoefficient(double* vel,int ip)
 		diff = max_diff;
 	}
 	}
-			diff /= (FluidProp->SpecificHeatCapacity() * FluidProp->Density());
+	if (PcsType == H)                     //heat
+	{
+		diff /= (FluidProp->SpecificHeatCapacity() * FluidProp->Density());
+	}
 
 	//--------------------------------------------------------------------
 	// Here calculates SUPG coefficient (tau)
