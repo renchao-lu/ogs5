@@ -3608,6 +3608,7 @@ double CFiniteElementStd::CalcSUPGCoefficient(double* vel,int ip)
 		diff = max_diff;
 	}
 	}
+			diff /= (FluidProp->SpecificHeatCapacity() * FluidProp->Density());
 
 	//--------------------------------------------------------------------
 	// Here calculates SUPG coefficient (tau)
@@ -7180,7 +7181,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 
 	//
 	if(H2_mono)
-		for(ii = 0; ii < pcs->dof; ii++)
+	{
+		int nDF = 2;
+		if(PcsType == S) nDF=pcs->dof;
+		for(ii = 0; ii < nDF; ii++)
 		{
 			i_sh = NodeShift[ii + dm_shift];
 			ii_sh = ii * nnodes;
@@ -7192,6 +7196,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 				(*RHS)(i + LocalShift + ii_sh) +=  NodalVal[i + ii_sh];
 			}
 		}
+	}
 	else
 	{
 		cshift += NodeShift[dm_shift];
