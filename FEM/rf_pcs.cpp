@@ -232,6 +232,7 @@ CRFProcess::CRFProcess(void) :
 	cpl_type_name = "PARTITIONED";        //OK
 	num_type_name = "FEM";                //OK
 	rwpt_app = 0;                         // PCH Application types for RWPT such as Cell Dynamics, Crypto, etc.
+	rwpt_count = 0;                       // YS 05.2013
 	//
 	for(size_t i=0; i<DOF_NUMBER_MAX; i++)
 		pcs_number_mass.push_back(-1);		// JT2012 (allow DOF_NUMBER_MAX potential components)
@@ -1813,6 +1814,14 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		if (line_string.find("$APP_TYPE") != string::npos)
 		{
 			*pcs_file >> rwpt_app;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// YS 05/2013
+		if (line_string.find("$COUNT") != string::npos)
+		{
+			*pcs_file >> rwpt_count;
 			pcs_file->ignore(MAX_ZEILE, '\n');
 			continue;
 		}
@@ -3429,6 +3438,15 @@ void CRFProcess::ConfigRandomWalk()
 	pcs_number_of_evals = 1;
 	pcs_eval_name[0] = "CONCENTRATION0";
 	pcs_eval_unit[0]  = "kg/m3";
+
+    for(size_t e = 0; e<m_msh->ele_vector.size(); e++)
+	{    
+        m_msh->ele_vector[e]->AllocateMeomoryforAngle();
+        m_msh->ele_vector[e]->SetAngle(0, 0.); 
+        m_msh->ele_vector[e]->SetAngle(1, 0.); 
+        m_msh->ele_vector[e]->SetAngle(2, 0.); 
+	}
+
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -5137,6 +5155,16 @@ void CRFProcess::CalIntegrationPointValue()
 		cal_integration_point_value = true;
 	if (!cal_integration_point_value)
 		return;
+    std::cout << "->Calculate velocity" << std::endl;
+   //check linear flow or not
+   bool isLinearFlow = true;
+   for (size_t i=0; i<mmp_vector.size(); i++) {
+       if (mmp_vector[i]->flowlinearity_model > 1) {
+           isLinearFlow = false;
+           break;
+       }
+   }
+   if (isLinearFlow) {
 	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
 	for (size_t i = 0; i < mesh_ele_vector_size; i++)
 	{
@@ -5151,6 +5179,44 @@ void CRFProcess::CalIntegrationPointValue()
 			fem->Cal_Velocity();
 		}
 	}
+   } else { //NW
+       const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
+       const size_t v_itr_max(this->m_num->local_picard1_max_iterations);
+       double pre_v[3] = {};
+       double new_v[3] = {};
+       //std::cout << "  Start local Picard iteration: tolerance = " << this->m_num->local_picard1_tolerance << std::endl;
+       size_t i_itr = 0;
+       double vel_error = .0;
+       for (i_itr=0; i_itr<v_itr_max; ++i_itr) 
+       {
+           //std::cout << "  non-linear iteration: " << i_itr << "/" << v_itr_max << std::endl;
+           vel_error = .0;
+           for (size_t i = 0; i < mesh_ele_vector_size; i++)
+           {
+               elem = m_msh->ele_vector[i];
+               if (elem->GetMark())                        // Marked for use
+               {
+                   ElementValue* gp_ele = ele_gp_value[i];
+                   gp_ele->GetEleVelocity(pre_v);
+                   
+                   fem->ConfigElement(elem);
+                   fem->Config();                           //OK4709
+                   // fem->m_dom = NULL; // To be used for parallization
+                   
+                   fem->Cal_Velocity();
+
+                   gp_ele->GetEleVelocity(new_v);
+                   vel_error = max(vel_error, fabs(new_v[0]-pre_v[0]));
+                   vel_error = max(vel_error, fabs(new_v[1]-pre_v[1]));
+                   vel_error = max(vel_error, fabs(new_v[2]-pre_v[2]));
+               }
+           }
+           //std::cout << "  error (max. norm): " << vel_error << std::endl;
+           bool isConverged = (vel_error < this->m_num->local_picard1_tolerance);
+           if (isConverged) break;
+       }
+       std::cout << "  Local Picard iteration: itr. count = " << i_itr << "/" << v_itr_max << ", error(max. norm)=" << vel_error << std::endl;
+   }
 	//	if (_pcs_type_name.find("TWO_PHASE_FLOW") != string::npos) //WW/CB
 	if (getProcessType() == FiniteElement::TWO_PHASE_FLOW) //WW/CB
 		cal_integration_point_value = false;

@@ -274,6 +274,10 @@ public:
 	/**
 	 * @{
 	 * */
+    /*!
+		brief Find the element by a point
+	*/
+     size_t FindElementByPoint(const double* xyz);
 
 	/**
 	 * \brief depreciated method - uses old surface class

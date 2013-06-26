@@ -94,7 +94,7 @@ public:
 	                          double theta,
 	                          CFiniteElementStd* assem = NULL);
 	//CMCD 9/2004 GeoSys 4
-	double NonlinearFlowFunction(long number, double* gp, double theta);
+    double NonlinearFlowFunction(long number, int gp, double theta, CFiniteElementStd* assem=NULL);
 	//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunction(long index,double* gp,double theta);
 	//CMCD 9/2004 GeoSys 4
@@ -144,6 +144,7 @@ public:
 	void SetDistributedELEProperties(std::string);
 
 	void WriteTecplotDistributedProperties(); //OK
+    double ParticleDiameter();
 
 	/**
 	 * the type of the geometric entity, the material property is assigned to
@@ -263,6 +264,12 @@ public:
 	int vol_bio_model;                    // CB
 	double vol_bio;                       //SB
 	double foc;                           // organic carbon content
+    double forchheimer_cf; //NW geometric constant for Forchheimer equation
+    double forchheimer_De; //NW equivalent diameter of the bed
+    double forchheimer_a1; //NW
+    double forchheimer_a2; //NW
+    int particle_diameter_model;
+    double particle_diameter_model_value;
 };
 
 class CMediumPropertiesGroup                      //YD

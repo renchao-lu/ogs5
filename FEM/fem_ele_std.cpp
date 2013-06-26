@@ -2080,7 +2080,11 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		            mat[i*dim+i] = mat_fac;
 		   }
 		   else{
-		 */
+           */
+           k_rel = 1.0;
+           if (MediaProp->flowlinearity_model>0)
+              k_rel = MediaProp->NonlinearFlowFunction(index, gp, pcs->m_num->ls_theta, this); //NW
+
 		tensor = MediaProp->PermeabilityTensor(Index);
             //TK/NW 10.10.2011
             if (dim > MediaProp->geo_dimension)
@@ -2124,7 +2128,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
             //TK/NW 10.10.2011
             for(size_t i = 0; i < dim * dim; i++)
 				//16.10.2009 .WW
-				mat[i] = tensor[i] * time_unit_factor;
+                mat[i] = tensor[i]*time_unit_factor*k_rel;
 		break;
 	//..................................................................
 	case T:                               // Two-phase flow
@@ -2396,8 +2400,13 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		dens_arg[0] = interpolate(NodalVal1);
 		dens_arg[1] = interpolate(NodalValC1) + T_KILVIN_ZERO;
 		dens_arg[2] = Index;
-		mat_fac = FluidProp->Viscosity(dens_arg);
+        double vis = FluidProp->Viscosity(dens_arg);
+        mat_fac = vis;
 		tensor = MediaProp->PermeabilityTensor(Index);
+        k_rel = 1.0;
+        if (MediaProp->flowlinearity_model>0)
+            k_rel = MediaProp->NonlinearFlowFunction(index, gp, pcs->m_num->ls_theta, this); //NW
+
 		//WX:09.2011
 		fac_perm=1.;
 		if(MediaProp->permeability_pressure_model>0)
@@ -2412,7 +2421,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		}
 
 		for(size_t i = 0; i < dim * dim; i++)
-			mat[i] = tensor[i] / mat_fac;
+            mat[i] = tensor[i]/mat_fac*k_rel;
 		break;
 		//------------------------------------------------------------------
 	}
@@ -5893,7 +5902,9 @@ void CFiniteElementStd::Cal_Velocity()
 		for(int i = 0; i < nnodes; i++)
 			NodalVal1[i] = pcs->GetNodeValue(nodes[i], idx_pn);
 	}
-	gp_ele->Velocity = 0.0;               // CB inserted here and commented above due to conflict with transport calculation, needs
+      Matrix tmp_gp_velocity(gp_ele->Velocity);
+      tmp_gp_velocity = 0.0;
+      //gp_ele->Velocity = 0.0;                     // CB inserted here and commented above due to conflict with transport calculation, needs
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		//---------------------------------------------------------
@@ -5990,11 +6001,11 @@ void CFiniteElementStd::Cal_Velocity()
 		if(PcsType == V)
 		{
 			for (size_t i = 0; i < dim; i++) // 02.2010. WW
-
+            {
 				for(size_t j = 0; j < dim; j++)
-					gp_ele->Velocity(i,
-					                 gp) +=
-					        mat[dim * i + j] * vel[j] / time_unit_factor;
+                 tmp_gp_velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
+                 //gp_ele->Velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
+            }
 			CalCoefLaplace2(true,3);
 			double coef_tmp; //WX:08.2010.
 			coef_tmp = rhow / rho_ga;
@@ -6008,15 +6019,17 @@ void CFiniteElementStd::Cal_Velocity()
 			//WX:modified.08.2010
 		}
 		else                      // 02.2010. WW
-
+         {
 			for (size_t i = 0; i < dim; i++)
+            {
 				for(size_t j = 0; j < dim; j++)
 					//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 					//SI Unit
-					gp_ele->Velocity(i,
-					                 gp) -=
-					        mat[dim * i + j] * vel[j] / time_unit_factor;
+                  tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+                  //gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+            }
 
+         }
 		if(PcsType == P)          // PCH 05.2009
 		{
 			// Juse use the coefficient of PSGLOBAL Pressure-based velocity (4)
@@ -6029,6 +6042,7 @@ void CFiniteElementStd::Cal_Velocity()
 		}
 		//
 	}
+      gp_ele->Velocity = tmp_gp_velocity;
 	//
 	if(pcs->Write_Matrix)
 	{

@@ -4245,6 +4245,219 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 }
 #endif
 
+/*!
+   brief Find the element by a point
+   YS/WW 05/2012
+*/
+size_t CFEMesh::FindElementByPoint(const double* xyz)
+{
+   double x1[3], x2[3], x3[3], x4[3], x5[3], x6[3], x7[3], x8[3];
+   double a, a_sub[12];
+   CNode *a_node;
+   CElem *n_ele;
+   double tol = 1e-9;
+
+   const size_t ne = ele_vector.size(); 		
+   for(size_t i=0; i<ne; i++)
+   {
+	 n_ele = ele_vector[i];
+     a = n_ele->GetVolume();
+
+     a_node = n_ele->GetNode(0);
+     x1[0] = a_node->X();
+     x1[1] = a_node->Y();
+     x1[2] = a_node->Z();
+     a_node = n_ele->GetNode(1);
+     x2[0] = a_node->X();
+     x2[1] = a_node->Y();
+     x2[2] = a_node->Z();
+
+     if(n_ele->GetElementType()!=MshElemType::LINE )
+	 {
+     a_node = n_ele->GetNode(2);
+     x3[0] = a_node->X();
+     x3[1] = a_node->Y();
+     x3[2] = a_node->Z();
+	 }
+
+     if(n_ele->GetElementType()==MshElemType::QUAD || n_ele->GetElementType()==MshElemType::TETRAHEDRON)
+     {
+       a_node = n_ele->GetNode(3);
+       x4[0] = a_node->X();
+       x4[1] = a_node->Y();
+       x4[2] = a_node->Z();
+     }
+
+     if(n_ele->GetElementType()==MshElemType::PYRAMID)
+     {
+	   a_node = n_ele->GetNode(3);
+       x4[0] = a_node->X();
+       x4[1] = a_node->Y();
+       x4[2] = a_node->Z();
+       a_node = n_ele->GetNode(4);
+       x5[0] = a_node->X();
+       x5[1] = a_node->Y();
+       x5[2] = a_node->Z();
+     }
+
+     if(n_ele->GetElementType()==MshElemType::PRISM)
+     {
+	   a_node = n_ele->GetNode(3);
+       x4[0] = a_node->X();
+       x4[1] = a_node->Y();
+       x4[2] = a_node->Z();
+       a_node = n_ele->GetNode(4);
+       x5[0] = a_node->X();
+       x5[1] = a_node->Y();
+       x5[2] = a_node->Z();
+	   a_node = n_ele->GetNode(5);
+       x6[0] = a_node->X();
+       x6[1] = a_node->Y();
+       x6[2] = a_node->Z();
+     }
+
+	 if(n_ele->GetElementType()==MshElemType::HEXAHEDRON)
+     {
+  	  a_node = n_ele->GetNode(3);
+        x4[0] = a_node->X();
+        x4[1] = a_node->Y();
+        x4[2] = a_node->Z();
+      a_node = n_ele->GetNode(4);
+        x5[0] = a_node->X();
+        x5[1] = a_node->Y();
+        x5[2] = a_node->Z();
+  	  a_node = n_ele->GetNode(5);
+        x6[0] = a_node->X();
+        x6[1] = a_node->Y();
+        x6[2] = a_node->Z();
+  	  a_node = n_ele->GetNode(6);
+        x7[0] = a_node->X();
+        x7[1] = a_node->Y();
+        x7[2] = a_node->Z();
+      a_node = n_ele->GetNode(7);
+        x8[0] = a_node->X();
+        x8[1] = a_node->Y();
+        x8[2] = a_node->Z();
+     }
+
+     switch(n_ele->GetElementType())
+     {
+       case  MshElemType::LINE:
+       double d1, d2, d3;	    
+       d1 = 0.;
+       d2 = 0.;
+	   d3 = 0.;
+       for(int kk=0; kk<3; kk++)
+	   {
+          d1 += (x1[kk] - xyz[kk]) * (x1[kk] - xyz[kk]);
+          d2 += (x2[kk] - xyz[kk]) * (x2[kk] - xyz[kk]);
+          d3 += (x1[kk] - x2[kk]) * (x1[kk] - x2[kk]);
+	   }  
+       d1 = sqrt(d1);
+       d2 = sqrt(d2);
+       d3 = sqrt(d3);
+
+	   if(fabs((d1+d2-d3)/d3)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+       case  MshElemType::TRIANGLE:
+	   a_sub[0] =  ComputeDetTri(x1, x2, xyz);
+	   a_sub[1] =  ComputeDetTri(x2, x3, xyz);
+       a_sub[2] =  ComputeDetTri(x3, x1, xyz);
+
+	   if(fabs((a_sub[0]+a_sub[1]+a_sub[2]-a)/a)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+	   case  MshElemType::QUAD:
+       a_sub[0] =  ComputeDetTri(x1, x2, xyz);
+	   a_sub[1] =  ComputeDetTri(x2, x3, xyz);
+       a_sub[2] =  ComputeDetTri(x3, x4, xyz);
+       a_sub[3] =  ComputeDetTri(x4, x1, xyz);
+
+       if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]-a)/a)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+	   case MshElemType::TETRAHEDRON:
+       a_sub[0] =  ComputeDetTex(x2, x4, x3, xyz);
+	   a_sub[1] =  ComputeDetTex(x1, x3, x4, xyz);
+       a_sub[2] =  ComputeDetTex(x2, x1, x4, xyz);
+       a_sub[3] =  ComputeDetTex(x2, x3, x1, xyz);
+
+       if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]-a)/a)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+       case MshElemType::PYRAMID:
+       a_sub[0] =  ComputeDetTex(x1, x2, x4, xyz);
+	   a_sub[1] =  ComputeDetTex(x2, x3, x4, xyz);
+       a_sub[2] =  ComputeDetTex(x1, x5, x2, xyz);
+       a_sub[3] =  ComputeDetTex(x2, x5, x4, xyz);
+	   a_sub[4] =  ComputeDetTex(x3, x5, x4, xyz);
+	   a_sub[5] =  ComputeDetTex(x4, x5, x1, xyz);
+
+       if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]+a_sub[4]+a_sub[5]-a)/a)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+	   case MshElemType::PRISM:
+       a_sub[0] =  ComputeDetTex(x1, x2, x3, xyz);
+	   a_sub[1] =  ComputeDetTex(x4, x6, x5, xyz);
+       a_sub[2] =  ComputeDetTex(x1, x4, x2, xyz);
+       a_sub[3] =  ComputeDetTex(x2, x4, x5, xyz);
+	   a_sub[4] =  ComputeDetTex(x2, x5, x3, xyz);
+	   a_sub[5] =  ComputeDetTex(x3, x5, x6, xyz);
+       a_sub[6] =  ComputeDetTex(x3, x6, x1, xyz);
+       a_sub[7] =  ComputeDetTex(x1, x6, x4, xyz);
+
+       if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]+a_sub[4]+a_sub[5]+a_sub[6]+a_sub[7]-a)/a)<tol)
+       {
+		 return i;
+       }
+	   break;
+
+	   case MshElemType::HEXAHEDRON:
+       a_sub[0] =  ComputeDetTex(x1, x2, x4, xyz);
+  	   a_sub[1] =  ComputeDetTex(x4, x2, x3, xyz);
+       a_sub[2] =  ComputeDetTex(x2, x6, x3, xyz);
+       a_sub[3] =  ComputeDetTex(x3, x6, x7, xyz);
+  	   a_sub[4] =  ComputeDetTex(x3, x7, x4, xyz);
+  	   a_sub[5] =  ComputeDetTex(x4, x7, x8, xyz);
+       a_sub[6] =  ComputeDetTex(x4, x8, x1, xyz);
+       a_sub[7] =  ComputeDetTex(x1, x8, x5, xyz);
+  	   a_sub[8] =  ComputeDetTex(x1, x5, x2, xyz);
+  	   a_sub[9] =  ComputeDetTex(x2, x5, x6, xyz);
+       a_sub[10] =  ComputeDetTex(x5, x8, x6, xyz);
+       a_sub[11] =  ComputeDetTex(x6, x8, x7, xyz);
+  
+       if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]+a_sub[4]+a_sub[5]+a_sub[6]+a_sub[7]+a_sub[8]
+  	   +a_sub[9]+a_sub[10]+a_sub[11]-a)/a)<tol)
+       {
+  		 return i;
+       }
+  	   break;  
+
+	   default:
+		 // do nothing with other elements
+		 break;
+	 }
+   }
+   // Not find
+   return -1;
+}
+
 // 09. 2012 WW
 /// Free the memory occupied by edges
 void CFEMesh::FreeEdgeMemory()

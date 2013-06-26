@@ -7,6 +7,7 @@
 #ifndef break_RWPT                                //OK
 #define break_RWPT                                //OK
 
+#include "Configure.h"
 //#include <math.h>
 //#include "mathlib.h"
 //#include "fem_ele.h"
@@ -22,6 +23,7 @@ public:
 	double x;
 	double y;
 	double z;
+	int on_boundary; //YS
 
 	// Velocity Vector
 	double Vx;
@@ -70,6 +72,7 @@ public:
 		dVxdx = B.dVxdx;
 		dVydy = B.dVydy;
 		dVzdz = B.dVzdz;
+        on_boundary = B.on_boundary;
 
 		for(int i = 0; i < 9; ++i)
 			D[i] = B.D[i];
@@ -184,6 +187,8 @@ public:
 
 	int GetTheElementOfTheParticleFromNeighbor(Particle* A);
 	int GetTheElementOfTheParticle(Particle* Pold, Particle* Pnew);
+	int SearchElementFromNeighbor(Particle* A);
+	int CheckElementIndex(Particle* A);
 
 	int IsParticleOnTheEdge(Particle* A);
 
@@ -212,12 +217,14 @@ public:
 
 	// Rate-limited reaction - sorption and desorption
 	double Two_rateModel(double A, double k1, double k2, double t);
+	CRFProcess *getFlowPCS() const {return flow_pcs;}
 
 protected:
 	FiniteElement::CFiniteElementStd* fem;
 
 private:
 	CRFProcess* m_pcs;
+    CRFProcess* flow_pcs; //FM_TEST
 	CFEMesh* m_msh;
 
 	std::vector<FDMIndex> indexFDM;
@@ -244,6 +251,8 @@ private:
 	void GetNodeOfMiniFEMforTheEdge(MeshLib::CNode* theNode,
 	                                MeshLib::CEdge* theEdge,
 	                                Particle* A);
+	  void CheckBoundary2D(Particle* A, Particle* B);
+	  void CheckBoundary3D(Particle* A, Particle* B);
 
 	int G_intersect_line_segments (
 	        double ax1,double ay1, double ax2,double ay2,
@@ -263,5 +272,5 @@ private:
 };
 
 extern void PCTRead(std::string);
-void DATWriteParticleFile(int);
+extern void DATWriteParticleFile(int);
 #endif                                            //OK

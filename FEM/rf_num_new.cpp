@@ -92,6 +92,11 @@ CNumerics::CNumerics(string name)
 	cpl_variable_JOD = "FLUX";
 	cpl_max_iterations = 1;					//OK
 	cpl_min_iterations = 1;					//JT2012
+    //Local picard1                                //NW
+    local_picard1_tolerance = 1.0e-3;
+    local_picard1_max_iterations = 1;
+    update_velocity_within_nonlinear = 0; 
+
 	for(size_t i=0; i<DOF_NUMBER_MAX; i++)	//JT2012
 		cpl_error_tolerance[i] = -1.0;			//JT2012: should not default this. Should always be entered by user!
 	//
@@ -608,6 +613,21 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 			continue;
 		}
 		//Flux corrected transport by Kuzmin (2009)
+        if(line_string.find("$LOCAL_PICARD1")!=string::npos) //NW
+        {
+          line.str(GetLineFromFile1(num_file));
+          line >> local_picard1_max_iterations;
+          line >> local_picard1_tolerance;
+          line.clear();
+          continue;
+        }
+        if(line_string.find("$NON_LINEAR_UPDATE_VELOCITY")!=string::npos) //NW
+        {
+          line.str(GetLineFromFile1(num_file));
+          line >> update_velocity_within_nonlinear;
+          line.clear();
+          continue;
+        }
 		// NW
 		if(line_string.find("$FEM_FCT") != string::npos)
 		{

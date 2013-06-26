@@ -109,6 +109,25 @@ double CFluidMomentum::Execute(int loop_process_number)
 	cout << "      Solving for nodal velocity..." << "\n";
 	cpl_max_relative_error = pcs_error;
 
+    bool isFlow = false;
+    CRFProcess *a_pcs = NULL; 
+    CRFProcess *f_pcs = NULL; 
+    for(int k=0; k<no_processes; k++ )
+    {
+	   a_pcs = pcs_vector[k];
+       if(!a_pcs)
+         continue;
+       if(   a_pcs->getProcessType () == FiniteElement::RICHARDS_FLOW 
+	        || a_pcs->getProcessType () == FiniteElement::LIQUID_FLOW
+	        || a_pcs->getProcessType () == FiniteElement::GROUNDWATER_FLOW
+	        || a_pcs->getProcessType () == FiniteElement::TWO_PHASE_FLOW
+	        || a_pcs->getProcessType () == FiniteElement::MULTI_PHASE_FLOW	   
+	     )
+       {
+         isFlow = true;
+         break;
+       }  
+    }
 	for(int i = 0; i < no_processes; ++i)
 	{
 		m_pcs = pcs_vector[i];
@@ -126,8 +145,31 @@ double CFluidMomentum::Execute(int loop_process_number)
 
 		//		if(m_pcs->pcs_type_name.find("FLUID_MOMENTUM")!=string::npos) TF
 		if(m_pcs->getProcessType () == FiniteElement::FLUID_MOMENTUM)
-			SolveDarcyVelocityOnNode();
-	}
+	    {
+           if( isFlow )
+              SolveDarcyVelocityOnNode();
+		   else  
+		   {
+             m_msh = FEMGet("FLUID_MOMENTUM");
+             string vel_file = FileName+".vel";
+             ifstream ins(vel_file.c_str());
+             double vx, vy, vz;
+			 
+			 int  nidx = m_pcs->GetNodeValueIndex("VELOCITY1_X")+1;
+             int  nidy = m_pcs->GetNodeValueIndex("VELOCITY1_Y")+1;
+             int  nidz = m_pcs->GetNodeValueIndex("VELOCITY1_Z")+1;
+
+             for (size_t i = 0; i < m_pcs->m_msh->nod_vector.size(); i++)
+             {
+               ins>>vx>>vy>>vz>>ws;
+               m_pcs->SetNodeValue(i,nidx,vx);
+               m_pcs->SetNodeValue(i,nidy,vy);
+               m_pcs->SetNodeValue(i,nidz,vz);
+             }
+		   }
+
+		 } 
+    }
 
 	// Just one time execution. Needs improvement later on.
 	m_pcs = PCSGet("RANDOM_WALK");
@@ -154,6 +196,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 	long i;
 	MeshLib::CElem* elem = NULL;
 
+    CheckMarkedElement();
 	fem = new CFiniteElementStd(m_pcs, m_msh->GetCoordinateFlag());
 
 	// Checking the coordinateflag for proper solution.
@@ -432,6 +475,8 @@ void CFluidMomentum::ConstructFractureNetworkTopology()
 			m_msh = FEMGet("GROUNDWATER_FLOW");
 	}
 	m_pcs = PCSGet("FLUID_MOMENTUM");
+   if(!m_msh)
+	   m_msh = m_pcs->m_msh;
 	// Something must be done later on here.
 	double tolerance = 1e-12;
 

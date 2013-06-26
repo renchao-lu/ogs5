@@ -120,6 +120,11 @@ CMediumProperties::CMediumProperties() :
 
 	permeability_pressure_model = -1; //01.09.2011. WW
 	permeability_strain_model = -1; //01.09.2011. WW
+    forchheimer_cf = 0.0; //NW
+    forchheimer_De = .0;
+    forchheimer_a1 = .0;
+    forchheimer_a2 = .0;
+    particle_diameter_model = .0;
 	storage_effstress_model = 0;
 	permeability_effstress_model = 0;
 }
@@ -672,6 +677,19 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				in >> flowlinearity_model_values[2];
 				pcs_name_vector.push_back("PRESSURE1");
 				break;
+            case 3: // EE formulation for Forchheimer
+                in >> forchheimer_cf;
+                std::cout << "->Forchheimer nonlinear flow for EE" << std::endl;
+                break;
+            case 4: // GW formulation for Forchheimer
+                in >> forchheimer_a1 >> forchheimer_a2;
+                std::cout << "->Forchheimer nonlinear flow with given a1, a2" << std::endl;
+                break;
+            case 5: // GW formulation for Forchheimer if a1=1/k0
+              in >> forchheimer_a2;
+              forchheimer_a1 = .0;
+              std::cout << "->Forchheimer nonlinear flow assuming a1=1/K0" << std::endl;
+              break;
 			default:
 				std::cout << "Error in MMPRead: no valid flow linearity model" <<
 				"\n";
@@ -6860,13 +6878,82 @@ double CMediumProperties::TortuosityFunction(long number,
    09/2004   CMCD In GeoSys 4
  */
 /**************************************************************************/
-double CMediumProperties::NonlinearFlowFunction(long index, double* gp, double theta)
+double CMediumProperties::NonlinearFlowFunction(long index, int gp, double theta, CFiniteElementStd* assem)
 {
 	double k_rel = 1.0;
 	//OK411
-	theta = theta;
-	gp = gp;
-	index = index;
+    /*
+	if (flowlinearity_model==3 || flowlinearity_model==6) // Forchheimer for DLR
+    {
+       assert (assem->PcsType==EnumProcessType::A || assem->PcsType==EnumProcessType::S);
+       ElementValue* gp_ele = ele_gp_value[index];
+       //Velocity
+       double vel[3] = {};
+       vel[0] = gp_ele->Velocity(0, gp);
+       vel[1] = gp_ele->Velocity(1, gp);
+       vel[2] = gp_ele->Velocity(2, gp);
+       double v_mag = sqrt(vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]);
+       if (v_mag != 0.0) {
+           double* k = PermeabilityTensor(index); //temporary assuming isotropic
+           double dens_arg[3] = {};
+           dens_arg[0] = (1.0-theta)*assem->interpolate(assem->NodalVal0) + theta*assem->interpolate(assem->NodalVal1);
+           dens_arg[1] = (1.0-theta)*assem->interpolate(assem->NodalVal_t0) + theta*assem->interpolate(assem->NodalVal_t1);
+           //dens_arg[1] = assem->interpolate(assem->NodalValC1)+T_KILVIN_ZERO;
+           dens_arg[2] = (1.0-theta)*assem->interpolate(assem->NodalVal_X0) + theta*assem->interpolate(assem->NodalVal_X1);
+           //dens_arg[2] = index;
+           double vis = assem->FluidProp->Viscosity(dens_arg);
+           double rhog = assem->FluidProp->Density(dens_arg); // which model?
+           if (flowlinearity_model==6) {
+               if (ParticleDiameter()==.0) {
+                   std::cout << "***Error: dp = .0" << std::endl;
+                   exit(0);
+               }
+               forchheimer_cf = 0.55*(1.-5.5*ParticleDiameter()/forchheimer_De);
+           }
+           k_rel = 1.0/(1.0+forchheimer_cf*rhog*sqrt(k[0])/vis*v_mag);
+       }
+    }
+	*/ 
+    if (flowlinearity_model==4) // general Forchheimer, -dp/dx = a1 q + a2 q^2
+    {
+       assert (gp!=-1);
+       ElementValue* gp_ele = ele_gp_value[index];
+       //Velocity
+       double vel[3] = {};
+       vel[0] = gp_ele->Velocity(0, gp);
+       vel[1] = gp_ele->Velocity(1, gp);
+       vel[2] = gp_ele->Velocity(2, gp);
+       //double v_mag = sqrt(vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]);
+       double v_mag = MBtrgVec(vel, 3);
+#ifdef STATIC_K1
+       k_rel = 1.0/(1.0+forchheimer_a2/forchheimer_a1*v_mag); //k0=1/a1
+#else
+       k_rel = 1.0/(forchheimer_a1+forchheimer_a2*v_mag); //k0=1.0
+#endif
+       //if (k_rel!=1.0)
+       //    std::cout << index << "-" << gp << ": k_rel=" << k_rel << endl;
+   }
+   else if (flowlinearity_model==5) // general Forchheimer, -dp/dx = a1 q + a2 q^2
+   {
+     assert (gp!=-1);
+     ElementValue* gp_ele = ele_gp_value[index];
+     //Velocity
+     double vel[3] = {};
+     vel[0] = gp_ele->Velocity(0, gp);
+     vel[1] = gp_ele->Velocity(1, gp);
+     vel[2] = gp_ele->Velocity(2, gp);
+     //double v_mag = sqrt(vel[0]*vel[0]+vel[1]*vel[1]+vel[2]*vel[2]);
+     double v_mag = MBtrgVec(vel, 3);
+     if (v_mag != 0.0) {
+         double *k_tensor = assem->MediaProp->PermeabilityTensor(index);
+         double k0 = k_tensor[0];
+         k_rel = 1.0/(1.0+forchheimer_a2*k0*v_mag);
+     }
+   }
+   else
+   {
+       std::cout << "***ERROR: not supported flow linearity model " << flowlinearity_model << std::endl;
+   }
 
 	/*OK411
 	   //Pressure variable name (PRESSURE 1) not used as yet in this function
@@ -8191,4 +8278,19 @@ double CMediumProperties::PermeabilityPorosityFunction(long number,double* gp,do
 	}
 #endif
 	return k_rel;
+}
+double CMediumProperties::ParticleDiameter()
+{
+    double val = .0;
+    switch (particle_diameter_model) {
+    case 0:
+        break;
+    case 1:
+        val = particle_diameter_model_value;
+        break;
+    default:
+        break;
+    }
+
+    return val;
 }

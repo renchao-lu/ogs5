@@ -637,6 +637,7 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 			return 10;
 		total_processes[10] = m_pcs;
 		active_processes[10] = &Problem::RandomWalker;
+	    DATWriteParticleFile(0); //YS
 		return 10;
 		//	} else if (m_pcs->pcs_type_name.compare("MASS_TRANSPORT") == 0) {
 	}
@@ -3061,8 +3062,15 @@ inline double Problem::RandomWalker()
 				m_msh = FEMGet("GROUNDWATER_FLOW");
 		}
 
+        if(!m_msh)
+           m_msh = FEMGet("FLUID_MOMENTUM");
 		RandomWalk* rw_pcs = NULL; // By PCH
 		rw_pcs = m_msh->PT;
+		if(rw_pcs->getFlowPCS())
+	    { 
+		    if (rw_pcs->getFlowPCS()->cal_integration_point_value) //WW
+			    rw_pcs->getFlowPCS()->Extropolation_GaussValue();
+	    }
 
 		// Do I need velocity fileds solved by the FEM?
 		if(m_pcs->tim_type_name.compare("PURERWPT") == 0)

@@ -385,6 +385,8 @@ private:
 	double* NodalVal_SatNW;
 	double* NodalVal_p2;
 	double* NodalVal_p20;                 //AKS
+    double *NodalVal_X0;                     // for CONCENTRATION previous time step
+    double *NodalVal_X1;                     // for CONCENTRATION current time step
 	//
 	double* weight_func;                  //NW
 	void CalcFEM_FCT();                   //NW

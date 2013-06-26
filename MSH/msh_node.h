@@ -76,9 +76,9 @@ public:
 		os << coordinate[0] << " " << coordinate[1] << " " << coordinate[2] << std::flush;
 	}
 
-//	 double X() const { return coordinate[0]; };
-//	 double Y() const { return coordinate[1]; };
-//	 double Z() const { return coordinate[2]; };
+	 double X() const { return coordinate[0]; };
+	 double Y() const { return coordinate[1]; };
+	 double Z() const { return coordinate[2]; };
 
 //	 void Coordinates(double *xyz) const
 //	 {

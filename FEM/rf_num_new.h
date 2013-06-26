@@ -80,7 +80,11 @@ public:
 	bool cpl_master_process;
 	void setCouplingErrorMethod (FiniteElement::ErrorMethod cpl_method) { _pcs_cpl_error_method = cpl_method; }
 	FiniteElement::ErrorMethod getCouplingErrorMethod () const { return _pcs_cpl_error_method; }
-	//
+    // local_picard1
+    double local_picard1_tolerance;
+    int local_picard1_max_iterations;
+    // velocity update within picard
+    int update_velocity_within_nonlinear;
 	// ELE
 	int ele_gauss_points;                 // probably element-type-wise
 	int ele_mass_lumping;
