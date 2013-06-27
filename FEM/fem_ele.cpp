@@ -334,8 +334,7 @@ void CElement::ConfigNumerics(MshElemType::type ele_type)
 		extrapo_method = ExtrapolationMethod::EXTRAPO_LINEAR;
 		return;
 	case MshElemType::HEXAHEDRON:
-		ele_dim = 3;
-        nGauss = 2;
+		ele_dim = 3;        
 		nGaussPoints = nGauss * nGauss * nGauss;
 		ShapeFunction = ShapeFunctionHex;
 		ShapeFunctionHQ = ShapeFunctionHexHQ;
