@@ -135,7 +135,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	eqs_rhs = NULL;                       //08.2006 WW
 	//
 	// 12.12.2007 WW
-      for (i = 0; i < pcs->dof; i++)
+	for (i = 0; i < 4; i++)
 		NodeShift[i] = 0;
 	//
 	dynamic = false;
@@ -6005,6 +6005,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 			(*Laplace)(i,j) = (*Laplace)(j,i);
 		}
 	cshift += NodeShift[problem_dimension_dm];
+
 	for (i = 0; i < nnodes; i++)
 	{
 		for (j = 0; j < nnodes; j++)
