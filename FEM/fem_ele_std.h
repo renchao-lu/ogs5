@@ -18,6 +18,8 @@
 //#include "rf_msp_new.h"
 #include "rf_out_new.h"                           //OK
 
+#include "Eigen/Eigen"
+
 //-----------------------------------------------------
 // Process type
 //L: Liquid flow

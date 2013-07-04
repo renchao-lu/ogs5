@@ -23,6 +23,8 @@
 //#include "Stiff_Bulirsch-Stoer.h"   // HS, 10.2011
 #include "StepperBulischStoer.h"   // HS, 10.2011
 
+#include "Eigen/Eigen"
+
 //#include "rf_st_new.h"//CMCD 02_06
 // C++ STL
 //#include <fstream>
