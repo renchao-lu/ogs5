@@ -1,9 +1,9 @@
 /**************************************************************************
-   FEMLib - Object: MAT-SP
-   Task: class implementation
-   Programing:
-   08/2004 WW Implementation
-   last modified:
+FEMLib - Object: MAT-SP
+Task: class implementation
+Programing:
+08/2004 WW Implementation
+last modified:
 **************************************************************************/
 #ifndef rf_msp_new_INC
 #define rf_msp_new_INC
@@ -35,21 +35,22 @@ class CMATGroupEditorDataEdit;                    //WW
 #endif
 namespace SolidProp
 {
-using FiniteElement::CFiniteElementVec;
-using FiniteElement::ElementValue_DM;
-using FiniteElement::CFiniteElementStd;
-using FiniteElement::ElementValue;
-using Math_Group::Matrix;
-using process::CRFProcessDeformation;
-using ::CRFProcess;
-/*---------------------------------------------------------------*/
-class CSolidProperties
-{
-private:
-	// Material parameters
-	double PoissonRatio;
-	int Youngs_mode;
-	int excavation;                       //12.2009. WW
+
+   using FiniteElement::CFiniteElementVec;
+   using FiniteElement::ElementValue_DM;
+   using FiniteElement::CFiniteElementStd;
+   using FiniteElement::ElementValue;
+   using Math_Group::Matrix;
+   using process::CRFProcessDeformation;
+   using ::CRFProcess;
+   /*---------------------------------------------------------------*/
+   class CSolidProperties
+   {
+      private:
+         // Material parameters
+         double PoissonRatio;
+         int Youngs_mode;
+         int excavation;                          //12.2009. WW
 	bool excavated;                       //12.2009. To be ..... WW
 	Matrix* data_Youngs;
 	double ThermalExpansion;
@@ -70,29 +71,29 @@ private:
 	Matrix* data_Creep;
 	//
 	int Density_mode;
-	//
-	int Capacity_mode;
-	int Conductivity_mode;
-	int Plasticity_type;
-	double primary_variable[10];          //CMCD
-	double primary_variable_t0[10];       //CMCD
-	double primary_variable_t1[10];       //CMCD
-	// Creep property
-	// 1. Stationary Norton model
-	int Creep_mode;
-	//
-	bool axisymmetry;
+         //
+         int Capacity_mode;
+         int Conductivity_mode;
+         int Plasticity_type;
+         double primary_variable[10];             //CMCD
+         double primary_variable_t0[10];          //CMCD
+         double primary_variable_t1[10];          //CMCD
+         // Creep property
+         // 1. Stationary Norton model
+         int Creep_mode;
+         //
+         bool axisymmetry;
 
-	int mode;                             //CMCD
-	// Swelling pressure
-	int SwellingPressureType;
-	double Max_SwellingPressure;
-	//
-	std::string CurveVariable_Conductivity;
-	int CurveVariableType_Conductivity;
-	// Secondary data
-	// Elasticity
-	double E;                             // Youngs moduls calculated from data_Youngs
+         int mode;                                //CMCD
+         // Swelling pressure
+         int SwellingPressureType;
+         double Max_SwellingPressure;
+         //
+         std::string CurveVariable_Conductivity;
+         int CurveVariableType_Conductivity;
+         // Secondary data
+         // Elasticity
+         double E;                                // Youngs moduls calculated from data_Youngs
 	double Lambda;
 	double G;                             // Shear stress modulus
 	double K;                             // Bulk modulus
@@ -108,27 +109,26 @@ private:
 
 	// Plasticity
 	double dl2;
-	// 2. Single yield surface
-	Matrix* d2G_dSdS;
-	Matrix* d2G_dSdM;
-	Matrix* LocalJacobi;                  // To store local Jacobi matrix
-	Matrix* inv_Jac;                      // To store the inverse of the  Jacobi matrix
-	Matrix* sumA_Matrix;
-	double* rhs_l;                        // To store local unknowns of 15
-	double* x_l;                          // To store local unknowns of 15
-	int* Li;
-	void AllocateMemoryforSYS();
-	void ResizeMatricesSYS(const int Dim);
+         // 2. Single yield surface
+         Matrix *d2G_dSdS;
+         Matrix *d2G_dSdM;
+         Matrix *LocalJacobi;                     // To store local Jacobi matrix
+         Matrix *inv_Jac;                         // To store the inverse of the  Jacobi matrix
+         Matrix *sumA_Matrix;
+         double *rhs_l;                           // To store local unknowns of 15
+         double *x_l;                             // To store local unknowns of 15
+         int  *Li;
+         void AllocateMemoryforSYS();
+         void ResizeMatricesSYS(const int Dim);
 
-	// Direct stress integration for Drucker-Prager
-	double* devS;
-	double* dFds;
-	double* dGds;
-	double* D_dFds;
-	double* D_dGds;
-	double* dFtds;                        //WX: 08.2010
-	double* dGtds;                        //WX: 08.2010
-	
+         // Direct stress integration for Drucker-Prager
+         double *devS;
+         double *dFds;
+         double *dGds;
+         double *D_dFds;
+         double *D_dGds;
+         double *dFtds;                           //WX: 08.2010
+         double *dGtds;                           //WX: 08.2010
 	//Direct stress integration for Mohr-Coulomb.	WX:08.11.2010.
 	Matrix *TransMatrixA;
 	Matrix *TransMatrixA_T;
@@ -158,80 +158,94 @@ private:
 	int thermal_conductivity_tensor_dim;
 	double thermal_conductivity_tensor[9];
 	std::string thermal_conductivity_tensor_type_name;
+         // Handles. May be used by GUI
+         std::string solid_name;
 
-	//-------------------------------------------------------------
-	// Numeric
-	double CalulateValue(const Matrix* data, const double x) const;
-	double Kronecker(const int ii, const int jj);
+		 //Solid reactive system properties - TN
+		 std::string reaction_system;
+		 double lower_solid_density_limit; 
+		 double upper_solid_density_limit;
+		 double reaction_enthalpy;
+		 double reaction_entropy;
+		 double non_reactive_solid_volume_fraction;
+		 double non_reactive_solid_density;
 
-	// Friends that can access to this data explicitly
-	friend bool MSPRead(std::string file_base_name);
-	friend void MSPWrite(std::string);
-	//WW
-	friend class FiniteElement::CFiniteElementVec;
-	friend class FiniteElement::CFiniteElementStd;
-	friend class FiniteElement::ElementValue;
-	friend class process::CRFProcessDeformation;
-	friend class ::CRFProcess;
+		 double specific_heat_source;
+
+         //-------------------------------------------------------------
+         // Numeric
+         double CalulateValue(const Matrix *data, const double x) const;
+         double Kronecker(const int ii, const int jj);
+
+         // Friends that can access to this data explicitly
+         friend bool MSPRead(std::string file_base_name);
+         friend void MSPWrite(std::string);
+         //WW
+         friend class FiniteElement::CFiniteElementVec;
+         friend class FiniteElement::CFiniteElementStd;
+         friend class FiniteElement::ElementValue;
+         friend class process::CRFProcessDeformation;
+         friend class ::CRFProcess;
+
 #if defined(WIN32)                          //15.03.2008 WW
-	friend class ::CMATGroupEditorDataEdit;
+         friend class ::CMATGroupEditorDataEdit;
 #endif
-	//WW
-public:
-	//
-	CSolidProperties();
-	~CSolidProperties();
+         //WW
+      public:
+         //
+         CSolidProperties();
+         ~CSolidProperties();
 
-	std::ios::pos_type Read(std::ifstream*);
-	//CMCD
-	FiniteElement::CFiniteElementStd* Fem_Ele_Std;
-	std::string name;
-	// IO
-	std::string file_base_name;
-	// Output
-	void Write(std::fstream*);
-	//CMCD
-	void CalPrimaryVariable(std::vector<std::string>& pcs_name_vector);
+         std::ios::pos_type Read(std::ifstream*);
+                                                  //CMCD
+         FiniteElement::CFiniteElementStd *Fem_Ele_Std;
+         std::string name;
+         // IO
+         std::string file_base_name;
+         // Output
+         void Write(std::fstream*);
+                                                  //CMCD
+         void CalPrimaryVariable(std::vector<std::string>& pcs_name_vector);
 
-	//-------------------------------------------------------------
-	// Access to data
-	//-------------------------------------------------------------
-	// 1. Density
-	double Density(double refence = 0.0);
-	// 2. Thermal
-	double Heat_Capacity(double refence = 0.0);
-	// Boiling model
-	double Heat_Capacity(double temperature, double porosity, double Sat);
-	int GetCapacityModel() const {return Capacity_mode; }
-	int GetConductModel() const {return Conductivity_mode; }
-	bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
-	double Enthalpy(double temperature, const double latent_factor );
-	double Heat_Conductivity(double refence = 0.0);
-	void HeatConductivityTensor(const int dim, double* tensor, int group);
-	//   int GetCapacityMode() {return Capacity_mode;};  ??
-	// 3. Elasticity
+         //-------------------------------------------------------------
+         // Access to data
+         //-------------------------------------------------------------
+         // 1. Density
+         double Density(double refence = 0.0);
+         // 2. Thermal
+         double Heat_Capacity(double refence = 0.0);
+         // Boiling model
+         double Heat_Capacity(double temperature, double porosity, double Sat);
+         int GetCapacityModel() const {return Capacity_mode;}
+         int GetConductModel() const {return Conductivity_mode;}
+         bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
+         double Enthalpy(double temperature, const double latent_factor );
+         double Heat_Conductivity(double refence = 0.0);
+         void HeatConductivityTensor(const int dim, double* tensor, int group);
+         //   int GetCapacityMode() {return Capacity_mode;};  ??
+         // 3. Elasticity
 #ifdef RFW_FRACTURE
-	double Youngs_Modulus(CElem* elem, double refence = 0.0);
-	//RFW, for fracture calc
-	double Get_Youngs_Min_Aperture(CElem* elem);
+         double Youngs_Modulus(CElem* elem, double refence = 0.0);
+                                                  //RFW, for fracture calc
+         double Get_Youngs_Min_Aperture(CElem *elem);
 #endif
 #ifndef RFW_FRACTURE
-	double Youngs_Modulus(double refence = 0.0);
+         double Youngs_Modulus(double refence = 0.0);
 #endif
-	void SetYoungsModulus(const double El)  {(*data_Youngs)(0) = El; }
-	double Poisson_Ratio() const {return PoissonRatio; }
-	void CalcYoungs_SVV(const double strain_v);
-	double Thermal_Expansion() const {return ThermalExpansion; }
-	// 4. Plasticity
-	int Plastictity() const {return Plasticity_type; }
-	double GetPlasticParameter(const int index) {return (*data_Plasticity)(index); }
-	// 5. Creep
-	int CreepModel() const {return Creep_mode; }
-	double GetCreepParameter(const int index) {return (*data_Creep)(index); }
-	// Initilize density
-	void NullDensity();
+         void SetYoungsModulus(const double El)  {(*data_Youngs)(0)=El;}
+         double Poisson_Ratio() const {return PoissonRatio;}
+         void CalcYoungs_SVV(const double strain_v);
+         double Thermal_Expansion() const {return ThermalExpansion;}
+         // 4. Plasticity
+         int Plastictity() const {return Plasticity_type;}
+         double GetPlasticParameter(const int index) {return (*data_Plasticity)(index);}
+         // 5. Creep
+         int CreepModel() const {return Creep_mode;}
+         double GetCreepParameter(const int index) {return (*data_Creep)(index);}
+         // Initilize density
+         void NullDensity();
 
-	//-------------------------------------------------------------
+         //-------------------------------------------------------------
 	// Manipulators of data
 	//-------------------------------------------------------------
 	// 1. Elasticity
@@ -244,10 +258,10 @@ public:
 	void CalculateTransformMatrixFromNormalVector(const int Dimension);
 	double E_Function(int dim, const ElementValue_DM *ele_val, int ngp);//WX:06.2012
 	// 2. Plasticity
-	// 2.1 Drucker-Prager
-	double GetAngleCoefficent_DP(const double Angle);
-	double GetYieldCoefficent_DP(const double Angle);
-	void CalulateCoefficent_DP();
+         // 2.1 Drucker-Prager
+         double GetAngleCoefficent_DP(const double Angle);
+         double GetYieldCoefficent_DP(const double Angle);
+         void CalulateCoefficent_DP();
 	bool StressIntegrationDP(const int GPiGPj, const ElementValue_DM* ele_val,
 	                         double* TryStress, double& dPhi, const int Update);
 	void ConsistentTangentialDP(Matrix* Dep, const double dPhi, const int Dim);
@@ -377,23 +391,23 @@ public:
 	//WW
 	std::vector<std::string>  conductivity_pcs_name_vector;
 	bool GetBoolExcavated() {return excavated;}//WX:01.2013
-};
+		 //Solid Chemical Reactive System
+		 void SetSolidReactiveSystemProperties();
+   };
+
 }                                                 // end namespace
 extern std::vector<SolidProp::CSolidProperties*> msp_vector;
 extern bool MSPRead(std::string file_base_name);
 extern void MSPWrite(std::string);
 extern void MSPDelete();
-//OK
+                                                  //OK
 extern std::vector<std::string> msp_key_word_vector;
 extern void MSPStandardKeywords();                //OK
                                                   //OK
 extern SolidProp::CSolidProperties* MSPGet(std::string);
 
-extern double StressNorm(const double* s, const int Dim);
-extern double TensorMutiplication2(const double* s1, const double* s2, const int Dim);
-extern double TensorMutiplication3(const double* s1,
-                                   const double* s2,
-                                   const double* s3,
-                                   const int Dim);
-extern double DeviatoricStress(double* Stress);
+extern double StressNorm(const double *s, const int Dim);
+extern double TensorMutiplication2(const double *s1, const double *s2, const int Dim);
+extern double TensorMutiplication3(const double *s1, const double *s2, const double *s3, const int Dim);
+extern double DeviatoricStress(double *Stress);
 #endif

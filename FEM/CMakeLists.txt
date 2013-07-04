@@ -2,8 +2,10 @@
 
 set( SOURCES
 	Stiff_Bulirsch-Stoer.h
+  StepperBulischStoer.h
 	BoundaryCondition.h
 	break.h
+	ca_hydration.h
 	display.h
 	eos.h
 	fem_ele.h
@@ -59,6 +61,7 @@ set( SOURCES
 	Stiff_Bulirsch-Stoer.cpp
 	BoundaryCondition.cpp
 	break.cpp
+	ca_hydration.cpp
 	display.cpp
 	eos.cpp
 	fem_ele.cpp
@@ -72,7 +75,7 @@ set( SOURCES
 	InitialCondition.cpp
 	mathlib.cpp
 	matrix_class.cpp
-	SparseMatrixDOK.cpp
+  SparseMatrixDOK.cpp
 	memory.cpp
 	pcs_dm.cpp
 	problem.cpp
@@ -92,7 +95,7 @@ set( SOURCES
 	rf_react.cpp
 	rf_st_new.cpp
 	rf_tim_new.cpp
-	rfmat_cp.cpp
+	rfmat_cp.cpp	
 	SourceTerm.cpp
 	timer.cpp
 	tools.cpp
@@ -110,22 +113,23 @@ ELSE(OGS_FEM_PETSC)
 IF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK )
 	SET( SOURCES ${SOURCES} equation_class.h equation_class.cpp )
     IF(OGS_FEM_JFNK)
-       SET( SOURCES ${SOURCES} rf_pcs1.cpp )
-    ENDIF(OGS_FEM_JFNK)
+       SET( SOURCES ${SOURCES} rf_pcs1.cpp ) 
+    ENDIF(OGS_FEM_JFNK)	
 ELSE(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK)
 	SET( SOURCES ${SOURCES} solver.h solver.cpp matrix_routines.h matrix_routines.cpp)
 ENDIF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK)
 ENDIF()
 
 IF(OGS_FEM_GEMS)
-	SET( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp )
+	SET( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp ) 
 ENDIF( OGS_FEM_GEMS )
 
 IF(OGS_FEM_BRNS)
-	SET( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp )
+	SET( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp ) 
 ENDIF(OGS_FEM_BRNS)
 
 include_directories(
+	${CMAKE_SOURCE_DIR}/FEM/Eigen
 	${CMAKE_SOURCE_DIR}/FEM
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/MathLib
@@ -153,12 +157,12 @@ ENDIF (PARALLEL_USE_MPI)
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
 
-target_link_libraries(
+target_link_libraries( 
 	FEM
 	Base
 	FileIO
-	GEO
-	MSH
+ 	GEO
+ 	MSH
 	OGSProject
 )
 

@@ -157,7 +157,7 @@ bool CPRead(std::string file_base_name)
 	}
 	if ( pcs_rwpt_count == 0) // HS, no random walk detected.
 	{
-		if ( pcs_mt_count != cp_vec.size() || pcs_mt_count != cp_name_2_idx.size() )
+		if ( (pcs_mt_count != cp_vec.size() || pcs_mt_count != cp_name_2_idx.size()) && !pcs_vector[0]->getProcessType() == FiniteElement::TNEQ)
 		{
 			DisplayMsgLn(
 			        "Mass transport components and Mass transport processes do not fit!");

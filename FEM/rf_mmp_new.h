@@ -72,20 +72,21 @@ private:
 	//CMCD 9/2004 GeoSys 4
 	double PermeabilityPressureFunctionMethod4(long,double, double );
 	friend class CMediumPropertiesGroup;
-public:
-	// Methods
-	CMediumProperties(void);              // constructor
-	~CMediumProperties(void);             // destructor
-	CMediumProperties* Get(std::string);
-	CMediumProperties* GetDB(std::string);
-	CMediumProperties* GetByGroupNumber(int);
-	void Set(std::string,std::string,double);
-	void SetDB(std::string,std::string,double);
-	int GetPropertyType(std::string);
-	std::ios::pos_type Read(std::ifstream*);
-	void Write(std::fstream*);
-	void WriteTecplot(std::string);
-	double* PermeabilityTensor(long index);
+   public:
+      //-------------------------------------------
+      // Methods
+      CMediumProperties(void);                    // constructor
+      ~CMediumProperties(void);                   // destructor
+      CMediumProperties* Get(std::string);
+      CMediumProperties* GetDB(std::string);
+      CMediumProperties* GetByGroupNumber(int);
+      void Set(std::string,std::string,double);
+      void SetDB(std::string,std::string,double);
+      int GetPropertyType(std::string);
+      std::ios::pos_type Read(std::ifstream*);
+      void Write(std::fstream*);
+      void WriteTecplot(std::string);
+      double* PermeabilityTensor(long index);
 	//CMCD 9/2004 GeoSys 4
 	double Porosity(FiniteElement::CElement* assem = NULL);
 	//CMCD 9/2004 GeoSys 4
@@ -144,6 +145,7 @@ public:
 	void SetDistributedELEProperties(std::string);
 
 	void WriteTecplotDistributedProperties(); //OK
+      double HeatTransferCoefficient(long number,double theta, CFiniteElementStd* assem); //NW
     double ParticleDiameter();
 
 	/**
@@ -203,6 +205,8 @@ public:
 	std::string tortuosity_tensor_type_name;
 	int permeability_tensor_type;
 	int tortuosity_tensor_type;
+
+	  std::string PhaseHeatedByFriction; //In TNEQ models: dissipated heat due to friction into solid or fluid energy balance
 
 	int permeability_pressure_model;
 	double permeability_pressure_model_values[10];
@@ -268,26 +272,31 @@ public:
     double forchheimer_De; //NW equivalent diameter of the bed
     double forchheimer_a1; //NW
     double forchheimer_a2; //NW
-    int particle_diameter_model;
-    double particle_diameter_model_value;
+
+      int heat_transfer_model; //NW
+      int effective_heat_transfer_model; //NW
+      double heat_transfer_model_value; //NW
+      
+      int particle_diameter_model;
+      double particle_diameter_model_value;
 };
 
 class CMediumPropertiesGroup                      //YD
 {
-public:
-	CMediumPropertiesGroup() {OrigSize = 0; }
-	void Set(CRFProcess* m_pcs);
-	std::string pcs_name;
-	std::string pcs_type_name;
-	CFEMesh* m_msh;
-	std::vector<CMediumProperties*>mmp_group_vector;
-private:
-	int OrigSize;                         // For excavation simulation.
+   public:
+      CMediumPropertiesGroup() {OrigSize=0;}
+      void Set(CRFProcess* m_pcs);
+      std::string pcs_name;
+      std::string pcs_type_name;
+      CFEMesh* m_msh;
+      std::vector<CMediumProperties*>mmp_group_vector;
+   private:
+      int OrigSize;                               // For excavation simulation.
 };
 
-//YD
+                                                  //YD
 extern CMediumPropertiesGroup* MMPGetGroup(const std::string &pcs_type_name);
-//YD
+                                                  //YD
 extern std::list<CMediumPropertiesGroup*>mmp_group_list;
 extern void MMPGroupDelete(/*string pcs_type_name*/);
 

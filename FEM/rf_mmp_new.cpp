@@ -57,7 +57,7 @@ using FiniteElement::ElementValue_DM;
 #define GAS_CONSTANT      8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
-#define T_KILVIN_ZERO  273.15                     //AKS
+#define T_KILVIN_ZERO  273.15                   //AKS
 /**************************************************************************
    FEMLib-Method: CMediumProperties
    Task: constructor
@@ -124,7 +124,13 @@ CMediumProperties::CMediumProperties() :
     forchheimer_De = .0;
     forchheimer_a1 = .0;
     forchheimer_a2 = .0;
-    particle_diameter_model = .0;
+   heat_transfer_model = 0;
+   effective_heat_transfer_model = 0;
+   heat_transfer_model_value = .0;
+   particle_diameter_model = .0;
+   particle_diameter_model_value = .0;
+
+   PhaseHeatedByFriction = "SOLID";
 	storage_effstress_model = 0;
 	permeability_effstress_model = 0;
 }
@@ -690,6 +696,10 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
               forchheimer_a1 = .0;
               std::cout << "->Forchheimer nonlinear flow assuming a1=1/K0" << std::endl;
               break;
+            case 6: // EE formulation 2 for Forchheimer
+                in >> forchheimer_De;
+                std::cout << "->Forchheimer nonlinear flow for EE" << '\n';
+                break;
 			default:
 				std::cout << "Error in MMPRead: no valid flow linearity model" <<
 				"\n";
@@ -1172,7 +1182,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			}
 			continue;
 		}
-
 		//------------------------------------------------------------------------
 		//12.4 PERMEABILITY_FUNCTION_STRESS
 		//------------------------------------------------------------------------
@@ -1778,9 +1787,77 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.clear();
 			continue;
 		}
-	}
-	return position;
+
+      //------------------------------------------------------------------------
+      // HEAT_TRANSFER
+      //------------------------------------------------------------------------
+      if(line_string.find("$HEAT_TRANSFER")!=std::string::npos) //NW
+      {
+          in.str(GetLineFromFile1(mmp_file));
+          in >> heat_transfer_model;
+          switch(heat_transfer_model)
+          {
+          case 0:                               // f(x)
+              break;
+          case 1:                               // Constant value
+              in >> heat_transfer_model_value;
+              break;
+          case 2:                               // Effective heat transfer coefficient between fluid and particles
+              in >> effective_heat_transfer_model;
+              if (effective_heat_transfer_model==1) {
+                  std::cout << "-> Heat transfer model: Schaube11 with given h" << '\n';
+                  in >> heat_transfer_model_value;
+              } else if (effective_heat_transfer_model==2) {
+                  std::cout << "-> Heat transfer model: Schaube11 with h by Gnielinskl" << '\n';
+              } else {
+                  std::cout << "Error in CMediumProperties::Read: no valid effective heat transfer model" << '\n';
+              }
+              break;
+          default:
+              std::cout << "Error in CMediumProperties::Read: no valid heat transfer model" << '\n';
+              break;
+          }
+          in.clear();
+          continue;
+      }
+
+      //------------------------------------------------------------------------
+      // Particle diameter
+      //------------------------------------------------------------------------
+      if(line_string.find("$PARTICLE_DIAMETER")!=std::string::npos) //NW
+      {
+          in.str(GetLineFromFile1(mmp_file));
+          in >> particle_diameter_model;
+          switch(particle_diameter_model)
+          {
+          case 0:                               // f(x)
+              break;
+          case 1:                               // Constant value
+              std::cout << "-> Particle dimaeter is set" << '\n';
+              in >> particle_diameter_model_value;
+              break;
+          default:
+              std::cout << "Error in CMediumProperties::Read: no valid heat transfer model" << '\n';
+              break;
+          }
+          in.clear();
+          continue;
+      }
+
+	  if(line_string.find("$INTERPHASE_FRICTION")!=std::string::npos)
+      {
+         in.str(GetLineFromFile1(mmp_file));
+         in >> PhaseHeatedByFriction;
+		 if (PhaseHeatedByFriction.compare("SOLID") != 0 && PhaseHeatedByFriction.compare("FLUID") != 0)
+			 std::cout << "Error in CMediumProperties::Read: $INTERPHASE_FRICTION must be either SOLID or FLUID";
+         in.clear();
+         continue;
+      }
+
+   }
+   return position;
 }
+
 
 /**************************************************************************
    FEMLib-Method: MMPWrite
@@ -2031,32 +2108,33 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 }
 
 /**************************************************************************
-   FEMLib-Method:
-   Task:
-   Programing:
-   03/2004 OK Implementation
-   last modification:
+FEMLib-Method:
+Task:
+Programing:
+03/2004 OK Implementation
+last modification:
 **************************************************************************/
 void MMPWriteTecplot(std::string msh_name)
 {
-	CMediumProperties* m_mmp = NULL;
-	int i;
-	int no_mat = (int)mmp_vector.size();
-	for(i = 0; i < no_mat; i++)
-	{
-		m_mmp = mmp_vector[i];
-		m_mmp->WriteTecplot(msh_name);
-	}
+   CMediumProperties *m_mmp = NULL;
+   int i;
+   int no_mat =(int)mmp_vector.size();
+   for(i=0;i<no_mat;i++)
+   {
+      m_mmp = mmp_vector[i];
+      m_mmp->WriteTecplot(msh_name);
+   }
 }
 
+
 /**************************************************************************
-   FEMLib-Method:
-   Task:
-   Programing:
-   01/2005 OK Implementation
-   09/2005 OK MSH
-   10/2005 OK OO-ELE
-   last modification:
+FEMLib-Method:
+Task:
+Programing:
+01/2005 OK Implementation
+09/2005 OK MSH
+10/2005 OK OO-ELE
+last modification:
 **************************************************************************/
 void CMediumProperties::WriteTecplot(std::string msh_name)
 {
@@ -2179,46 +2257,48 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 ////////////////////////////////////////////////////////////////////////////
 
 /**************************************************************************
-   FEMLib-Method: CMediumProperties
-   Task: get instance by name
-   Programing:
-   02/2004 OK Implementation
-   last modification:
+FEMLib-Method: CMediumProperties
+Task: get instance by name
+Programing:
+02/2004 OK Implementation
+last modification:
 **************************************************************************/
 CMediumProperties* MMPGet(const std::string &mat_name)
 {
-	CMediumProperties* m_mat = NULL;
-	int no_mat = (int)mmp_vector.size();
-	int i;
-	for(i = 0; i < no_mat; i++)
-	{
-		m_mat = mmp_vector[i];
-		if(mat_name.compare(m_mat->name) == 0)
-			return m_mat;
-	}
-	return NULL;
+   CMediumProperties *m_mat = NULL;
+   int no_mat =(int)mmp_vector.size();
+   int i;
+   for(i=0;i<no_mat;i++)
+   {
+      m_mat = mmp_vector[i];
+      if(mat_name.compare(m_mat->name)==0)
+         return m_mat;
+   }
+   return NULL;
 }
 
+
 /**************************************************************************
-   FEMLib-Method: CMediumProperties
-   Task: get instance by name
-   Programing:
-   02/2004 OK Implementation
-   last modification:
+FEMLib-Method: CMediumProperties
+Task: get instance by name
+Programing:
+02/2004 OK Implementation
+last modification:
 **************************************************************************/
 CMediumProperties* CMediumProperties::GetByGroupNumber(int group_number)
 {
-	CMediumProperties* m_mat = NULL;
-	int no_mat = (int)mmp_vector.size();
-	int i;
-	for(i = 0; i < no_mat; i++)
-	{
-		m_mat = mmp_vector[i];
-		if(m_mat->number == group_number)
-			return m_mat;
-	}
-	return NULL;
+   CMediumProperties *m_mat = NULL;
+   int no_mat =(int)mmp_vector.size();
+   int i;
+   for(i=0;i<no_mat;i++)
+   {
+      m_mat = mmp_vector[i];
+      if(m_mat->number==group_number)
+         return m_mat;
+   }
+   return NULL;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Properties functions
@@ -2605,6 +2685,17 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 	CFluidProperties* m_mfp;              //WW
 	// long group = Fem_Ele_Std->GetMeshElement()->GetPatchIndex();
 	m_mfp = Fem_Ele_Std->FluidProp;       //WW
+
+	//if (Fem_Ele_Std->PcsType==S)     // Multi-phase WW
+	//{
+	///*m_mfp = mfp_vector[0];
+	//eos_arg[0] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal0);
+	//eos_arg[1] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal_t0);
+	//eos_arg[2] = Fem_Ele_Std->interpolate(Fem_Ele_Std->NodalVal_X0);
+	//heat_conductivity_fluids = m_mfp->HeatConductivity(eos_arg);*/
+	//}
+	//else
+//	{
 		for (size_t ii = 0; ii < pcs_vector.size(); ii++)
 			//		if (pcs_vector[ii]->pcs_type_name.find("FLOW") != string::npos) TF
 			if (isFlowProcess (pcs_vector[ii]->getProcessType ()))
@@ -2670,7 +2761,7 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 			heat_conductivity_fluids = 0.0;
 			porosity = 0.0;
 		}
-
+//}
 
 	dimen = m_pcs->m_msh->GetCoordinateFlag() / 10;
 	int group = m_pcs->m_msh->ele_vector[number]->GetPatchIndex();
@@ -3195,6 +3286,7 @@ double* CMediumProperties::DispersionTensorMCF(int ip, int PCSIndex, int CIndex,
 	return tensor;
 
 }
+
 ////////////////////////////////////////////////////////////////////////////
 // DB functions
 ////////////////////////////////////////////////////////////////////////////
@@ -4411,92 +4503,92 @@ double* CMediumProperties::PermeabilityTensor(long index)
 	}
 	// end of K-C relationship-----------------------------------------------------------------------------------
 
-	switch(geo_dimension)
-	{
-	case 1:                               // 1-D
-		// HS: tensor[0] already set, doing nothing here;
-		break;
-	case 2:                               // 2-D
-		if(permeability_tensor_type == 0)
-		{
-			// tensor[0] = permeability_tensor[0]; // HS: done already;
-			tensor[1] = 0.0;
-			tensor[2] = 0.0;
-			// tensor[3] = permeability_tensor[0];
-			tensor[3] = tensor[0]; // HS: use the existing value;
+   switch(geo_dimension)
+   {
+      case 1:                                     // 1-D
+         // HS: tensor[0] already set, doing nothing here;
+         break;
+      case 2:                                     // 2-D
+         if(permeability_tensor_type==0)
+         {
+            // tensor[0] = permeability_tensor[0]; // HS: done already;
+            tensor[1] = 0.0;
+            tensor[2] = 0.0;
+            // tensor[3] = permeability_tensor[0];
+            tensor[3] = tensor[0];                // HS: use the existing value;
 
-			// HS: this is not needed any more--------------------------------
-			// if(permeability_model==2) {
-			//SB 4218	tensor[0] = GetHetValue(index,"permeability");
-			//      tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
-			//	tensor[3] = tensor[0];
-			// }
-			// end of comment out section-------------------------------------
-		}
-		else if(permeability_tensor_type == 1)
-		{
-			tensor[0] = permeability_tensor[0];
-			tensor[1] = 0.0;
-			tensor[2] = 0.0;
-			tensor[3] = permeability_tensor[1];
-		}
-		else if(permeability_tensor_type == 2)
-		{
-			tensor[0] = permeability_tensor[0];
-			tensor[1] = permeability_tensor[1];
-			tensor[2] = permeability_tensor[2];
-			tensor[3] = permeability_tensor[3];
-		}
-		break;
-	case 3:                               // 3-D
-		if(permeability_tensor_type == 0)
-		{
-			// tensor[0] = permeability_tensor[0]; // HS: not needed. already done before
-			tensor[1] = 0.0;
-			tensor[2] = 0.0;
-			tensor[3] = 0.0;
-			// tensor[4] = permeability_tensor[0]; // HS: using the line below instead;
-			tensor[4] = tensor[0]; // using the existing value
-			tensor[5] = 0.0;
-			tensor[6] = 0.0;
-			tensor[7] = 0.0;
-			// tensor[8] = permeability_tensor[0]; // HS: using the line below instead;
-			tensor[8] = tensor[0]; // using the existing value
-			// HS: this is not needed any more--------------------------------
-			// if(permeability_model==2) {
-			// SB 4218	tensor[0] = GetHetValue(index,"permeability");
-			//      tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
-			//      tensor[4] = tensor[0];
-			//      tensor[8] = tensor[0];
-			// }
-			// end of comment out section-------------------------------------
-		}
-		else if(permeability_tensor_type == 1)
-		{
-			tensor[0] = permeability_tensor[0];
-			tensor[1] = 0.0;
-			tensor[2] = 0.0;
-			tensor[3] = 0.0;
-			tensor[4] = permeability_tensor[1];
-			tensor[5] = 0.0;
-			tensor[6] = 0.0;
-			tensor[7] = 0.0;
-			tensor[8] = permeability_tensor[2];
-		}
-		else if(permeability_tensor_type == 2)
-		{
-			tensor[0] = permeability_tensor[0];
-			tensor[1] = permeability_tensor[1];
-			tensor[2] = permeability_tensor[2];
-			tensor[3] = permeability_tensor[3];
-			tensor[4] = permeability_tensor[4];
-			tensor[5] = permeability_tensor[5];
-			tensor[6] = permeability_tensor[6];
-			tensor[7] = permeability_tensor[7];
-			tensor[8] = permeability_tensor[8];
-		}
-		break;
-	}
+            // HS: this is not needed any more--------------------------------
+            // if(permeability_model==2) {
+            //SB 4218	tensor[0] = GetHetValue(index,"permeability");
+            // 	tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+            //	tensor[3] = tensor[0];
+            // }
+            // end of comment out section-------------------------------------
+         }
+         else if(permeability_tensor_type==1)
+         {
+            tensor[0] = permeability_tensor[0];
+            tensor[1] = 0.0;
+            tensor[2] = 0.0;
+            tensor[3] = permeability_tensor[1];
+         }
+         else if(permeability_tensor_type==2)
+         {
+            tensor[0] = permeability_tensor[0];
+            tensor[1] = permeability_tensor[1];
+            tensor[2] = permeability_tensor[2];
+            tensor[3] = permeability_tensor[3];
+         }
+         break;
+      case 3:                                     // 3-D
+         if(permeability_tensor_type==0)
+         {
+            // tensor[0] = permeability_tensor[0]; // HS: not needed. already done before
+            tensor[1] = 0.0;
+            tensor[2] = 0.0;
+            tensor[3] = 0.0;
+            // tensor[4] = permeability_tensor[0]; // HS: using the line below instead;
+            tensor[4] = tensor[0];                // using the existing value
+            tensor[5] = 0.0;
+            tensor[6] = 0.0;
+            tensor[7] = 0.0;
+            // tensor[8] = permeability_tensor[0]; // HS: using the line below instead;
+            tensor[8] = tensor[0];                // using the existing value
+            // HS: this is not needed any more--------------------------------
+            // if(permeability_model==2) {
+            // SB 4218	tensor[0] = GetHetValue(index,"permeability");
+            // 	tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
+            // 	tensor[4] = tensor[0];
+            // 	tensor[8] = tensor[0];
+            // }
+            // end of comment out section-------------------------------------
+         }
+         else if(permeability_tensor_type==1)
+         {
+            tensor[0] = permeability_tensor[0];
+            tensor[1] = 0.0;
+            tensor[2] = 0.0;
+            tensor[3] = 0.0;
+            tensor[4] = permeability_tensor[1];
+            tensor[5] = 0.0;
+            tensor[6] = 0.0;
+            tensor[7] = 0.0;
+            tensor[8] = permeability_tensor[2];
+         }
+         else if(permeability_tensor_type==2)
+         {
+            tensor[0] = permeability_tensor[0];
+            tensor[1] = permeability_tensor[1];
+            tensor[2] = permeability_tensor[2];
+            tensor[3] = permeability_tensor[3];
+            tensor[4] = permeability_tensor[4];
+            tensor[5] = permeability_tensor[5];
+            tensor[6] = permeability_tensor[6];
+            tensor[7] = permeability_tensor[7];
+            tensor[8] = permeability_tensor[8];
+         }
+         break;
+   }
 	return tensor;
 }
 
@@ -4716,6 +4808,7 @@ double CMediumProperties::PermeabilityFunctionEffStress(long index, int nnodes, 
 
 //---------------------------------------------------------------------------------
 //12.(vii) PERMEABILITY_FUNCTION_FRAC_APERTURE
+//RFW 07/2005
 //---------------------------------------------------------------------------------
 //------------------------------------------------------------------------
 //13. CAPILLARY_PRESSURE_FUNCTION
@@ -8287,6 +8380,43 @@ double CMediumProperties::ParticleDiameter()
         break;
     case 1:
         val = particle_diameter_model_value;
+        break;
+    default:
+        break;
+    }
+
+    return val;
+}
+
+double CMediumProperties::HeatTransferCoefficient(long number,double theta, CFiniteElementStd* assem)
+{
+    double val = .0;
+    switch (heat_transfer_model) {
+    case 0:
+        break;
+    case 1:
+        val = heat_transfer_model_value;
+        break;
+    case 2:
+        {
+            const double dp = ParticleDiameter();
+            assert (dp>.0);
+            double h = .0;
+            if (effective_heat_transfer_model==1) {
+                h = heat_transfer_model_value;
+            } else if (effective_heat_transfer_model==2) {
+                h = .0;
+            } else {
+                std::cout << "***Error: Effective heat transfer model is not supported. " << effective_heat_transfer_model << '\n';
+            }
+            const double &n = Porosity(number, theta);
+            const int dimen = assem->pcs->m_msh->GetCoordinateFlag() / 10;
+            for (int i=0; i <dimen*dimen; i++)
+                heat_conductivity_tensor[i] = 0.0;
+            assem->SolidProp->HeatConductivityTensor(dimen, heat_conductivity_tensor, assem->MeshElement->GetPatchIndex());
+            const double lamda_s = heat_conductivity_tensor[0]; //assume isotropic
+            val = 6.*(1-n)/dp*1./(1./h+dp/10.0/lamda_s); // confirmed with DLR people. typo in Schaube2011
+        } 
         break;
     default:
         break;

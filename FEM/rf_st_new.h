@@ -171,6 +171,12 @@ public:
 
 	std::string fname;
 
+	  double getTransferCoefficient() { return transfer_coefficient; } //TN
+	  double getValueSurrounding() { return value_surrounding;} //TN
+	  std::vector<double> get_node_value_vectorArea(){ return node_value_vectorArea;} //TN
+
+	  std::vector<long> st_node_ids;
+
 private:                                          // TF, KR
 	void ReadDistributionType(std::ifstream* st_file);
 	void ReadGeoType(std::ifstream* st_file,
@@ -210,6 +216,9 @@ private:                                          // TF, KR
 	double analytical_linear_sorption_Kd; // used only once in a global in rf_st_new
 	double analytical_matrix_density;     // used only once in a global in rf_st_new
 	double factor;
+
+	  double transfer_coefficient; //TN - for DIS_TYPE TRANSFER_SURROUNDING
+	  double value_surrounding; //TN - for DIS_TYPE TRANSFER_SURROUNDING
 
 	std::string nodes_file;
 	int msh_node_number;
@@ -307,11 +316,9 @@ private:
 	                                      std::vector<size_t>& ply_nod_vector,
 	                                      std::vector<size_t>& ply_nod_vector_cond);
 
-	/*void SetPolylineNodeValueVector(CSourceTerm* st,
-	                                CGLPolyline* old_ply,
-	                                const std::vector<long>& ply_nod_vector,
-	                                std::vector<long>& ply_nod_vector_cond,
-	                                std::vector<double>& ply_nod_val_vector);*/ // removed with 5.3.07 JOD
+      void SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline * old_ply,
+    		  const std::vector<long>& ply_nod_vector,
+    		  std::vector<long>& ply_nod_vector_cond, std::vector<double>& ply_nod_val_vector);
 
 	/**
 	 * 09/2010 / 03/2011 TF
@@ -413,4 +420,6 @@ extern void GetPhilipNODValue(double& value, const CSourceTerm* m_st);
 extern void GetGreenAmptNODValue(double& value, CSourceTerm* m_st, long msh_node);
 // JOD
 extern void GetNODValue(double& value, CNodeValue* cnodev,CSourceTerm* m_st);
+
+extern void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node); //TN
 #endif

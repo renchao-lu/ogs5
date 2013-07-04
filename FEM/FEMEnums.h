@@ -45,6 +45,7 @@ enum ProcessType
 	OVERLAND_FLOW,                        //!< OVERLAND_FLOW
 	PS_GLOBAL,                            //!< PS_GLOBAL
 	MULTI_COMPONENTIAL_FLOW,                             // Fluid flow coupled with heat transport
+	TNEQ,									//reactive thermal nonequilibrium
 	RANDOM_WALK,                          //!< RANDOM_WALK
 	/// H process, incompressible flow
 	RICHARDS_FLOW,                        //!< RICHARDS_FLOW
@@ -132,6 +133,8 @@ enum PrimaryVariable
 	STRESS_ZZ,                            // IC
 	/// Heat transport
 	TEMPERATURE,                          //!< TEMPERATURE
+	TEMPERATURE1,							// for TNEQ models
+	TEMPERATURE2,							// for TNEQ models
 	VELOCITY_DM_X,                        //!< VELOCITY_DM_X
 	VELOCITY_DM_Y,                        //!< VELOCITY_DM_Y
 	VELOCITY_DM_Z,                        //!< VELOCITY_DM_Z
@@ -152,7 +155,7 @@ enum PrimaryVariable
  * @param pcs_pv_string string describing the primary variable
  * @return enum value describing the primary variable of the process
  */
-//!< PrimaryVariable
+                                                  //!< PrimaryVariable
 PrimaryVariable convertPrimaryVariable ( const std::string& pcs_pv_string );
 
 /**
@@ -165,7 +168,7 @@ std::string convertPrimaryVariableToString ( PrimaryVariable pcs_pv );
 /// Returns a list of strings containing all entries in the PrimaryVariable enum.
 const std::list<std::string> getAllPrimaryVariableNames();
 
-enum DistributionType
+   enum DistributionType
 {
 	INVALID_DIS_TYPE = 0,
 	ANALYTICAL,                           // ST
@@ -185,11 +188,13 @@ enum DistributionType
 	POINT,                                // BC
 	PRECIPITATION,
 	SYSTEM_DEPENDENT,                     // ST
+	TRANSFER_SURROUNDING,
 	CLIMATE,	// climate data (by NB)
 	// Sort of Neumann BC //WW
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
+	// make sure that this is always the last entry (important for iterating over the enum entries)!
 	DIS_END
-};
+   };
 
 /**
  * \brief Converts the given string into the appropriate enum value.

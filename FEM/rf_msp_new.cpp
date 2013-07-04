@@ -205,10 +205,20 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			case 3:       // DECOVALEX THM1, Bentonite
 				in_sd.clear();
 				break;
-			}
-		}
+			   case 4:
+				   //0. Capacity at density 1
+				   //1. Capacity at density 2
+				   //2. density 1
+				   //3. density 2
+				  data_Capacity = new Matrix(5);
+                  for(i=0; i<4; i++)
+                     in_sd>> (*data_Capacity)(i);
+                  in_sd.clear();
+                  break;
+            }
+         }
 
-		//....................................................................
+         //....................................................................
 		// subkeyword found
 		if(line_string.compare("CONDUCTIVITY") == 0)
 		{
@@ -736,6 +746,37 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				in_sd.clear();
 			}
 		}
+		 //Solid reaction system 
+		 if(line_string.find("$REACTIVE_SYSTEM")!=string::npos)
+         {
+	         in_sd.str(GetLineFromFile1(msp_file));
+			 in_sd >> reaction_system;
+			 in_sd.clear();
+			 if (reaction_system.compare("SINUSOIDAL") == 0) { //For Benchmarks
+				in_sd.str(GetLineFromFile1(msp_file));
+				in_sd >> reaction_enthalpy; //in J/kg, negative for exothermic composition reaction
+				in_sd.clear();
+			 }
+			 SetSolidReactiveSystemProperties();
+			
+         }
+
+		 //Solid non reactive fraction
+		 if(line_string.find("$NON_REACTIVE_FRACTION")!=string::npos)
+         {
+	         in_sd.str(GetLineFromFile1(msp_file));
+			 in_sd >> non_reactive_solid_volume_fraction >> non_reactive_solid_density;
+			 in_sd.clear();
+			
+         }
+
+		 if(line_string.find("$SPECIFIC_HEAT_SOURCE")!=string::npos)
+         {
+	         in_sd.str(GetLineFromFile1(msp_file));
+			 in_sd >> specific_heat_source;
+			 in_sd.clear();
+		 }
+
 		if(line_string.find("$MICRO_STRUCTURE_PLAS")!=string::npos)//WX:09.2011 for anisotropic plasticity
 		{
 			if (line_string.find("NORETURNMAPPING")!=string::npos)
@@ -790,9 +831,26 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 	return position;
 }
 
-//==========================================================================
+   //==========================================================================
 
-/**************************************************************************
+   /**************************************************************************
+   FEMLib-Method:
+   Task: Set values for solid reactive system
+   **************************************************************************/
+   void CSolidProperties::SetSolidReactiveSystemProperties() //Definition auch in ca_hydration::ca_hydration
+   {
+	   if (reaction_system.compare("CaOH2") == 0) {
+		lower_solid_density_limit = 1656.0; //Dichte Calciumoxid
+		upper_solid_density_limit = 2200.0; //Dichte Calciumhydroxid
+		reaction_enthalpy = -1.12e+05/0.018; //in J/kg (Molar heat of reaction divided by molar mass of water) negative for exothermic composition reaction
+		reaction_entropy = -143.5/0.018; //in J/kgK
+	   }
+	   return;
+   }
+
+   //==========================================================================
+
+   /**************************************************************************
    FEMLib-Method:
    Task: Constructor and destructor
    Programing:
@@ -884,8 +942,19 @@ CSolidProperties::CSolidProperties()
 	thermal_conductivity_tensor_dim = 1;
 	thermal_conductivity_tensor[0] = 1.0;
 
-	bishop_model = -1; //15.08.2011. WW
-}
+	  //Reactive system
+	reaction_system = "INERT";
+	lower_solid_density_limit = 0.0; 
+	upper_solid_density_limit = 0.0;
+	reaction_enthalpy = 0.0;
+	reaction_entropy = 0.0;
+	non_reactive_solid_volume_fraction = 0.0;
+	non_reactive_solid_density = 0.0;
+
+	specific_heat_source = 0.0;
+
+	  bishop_model = -1; //15.08.2011. WW
+   }
 CSolidProperties::~CSolidProperties()
 {
 	if(data_Density)
@@ -1077,76 +1146,80 @@ void CSolidProperties::NullDensity()
 	(*data_Density) = 0.0;
 }
 
-/**************************************************************************
+   /**************************************************************************
    FEMLib-Method: CSolidProperties::Heat_Capacity(const double refence = 0.0) const
    Task: Get heat capacity
    Programing:
    08/2004 WW Implementation
-**************************************************************************/
-double CSolidProperties::Heat_Capacity(double refence)
-{
-	double val = 0.0;
-	switch(Capacity_mode)
-	{
-	case 0:
-		val = CalulateValue(data_Capacity, refence);
-		break;
-	case 1:
-		val = (*data_Capacity)(0);
-		break;
-	case 3:
-		//WW        val=1.38*(273.15+refence)+732.5;
-		val = 1.38 * refence + 732.5;
-		break;
-	default:
-		val = (*data_Capacity)(0);
-		break;
-	}
-	return val;
-}
+   **************************************************************************/
+   double CSolidProperties::Heat_Capacity(double refence)
+   {
+      double val = 0.0;
+      switch(Capacity_mode)
+      {
+         case 0:
+            val = CalulateValue(data_Capacity, refence);
+            break;
+         case 1:
+            val = (*data_Capacity)(0);
+            break;
+         case 3:
+            //WW        val=1.38*(273.15+refence)+732.5;
+            val=1.38*refence+732.5;
+            break;
+		 case 4: //solid capacity depending on solid density (for thermochemical heat storage) - TN
+			 //refence contains value of solid density (current)
+			 val = (*data_Capacity)(0) + ((*data_Capacity)(1)-(*data_Capacity)(0))/((*data_Capacity)(3)-(*data_Capacity)(2))*(refence - (*data_Capacity)(2));
+			 break;
+         default:
+            val = (*data_Capacity)(0);
+            break;
+      }
+      return val;
+   }
 
-/*************************************************************************
+   /*************************************************************************
    FEMLib-Method:
    Task: Get heat phase change temperature
    Programing:
    09/2005 WW Implementation
- **************************************************************************/
-bool CSolidProperties:: CheckTemperature_in_PhaseChange
-        (const double T0, const double T1)
-{
-	bool stat = false;
-	double T_a = (*data_Capacity)(2);
-	double T_b = (*data_Capacity)(2) + (*data_Capacity)(3);
-	switch(Capacity_mode)
-	{
-	case 0:
-		break;
-	case 1:
-		break;
-	case 2:
-		if((T1 > T0) && (*data_Capacity)(4) > 0.0)
-		{
-			if((T0 < T_a) && (T1 > T_a))
-				stat = true;
-			else if((T0 < T_a) && (T1 > T_b))
-				stat = true;
-			else if((T0 < T_b) && (T1 > T_b))
-				stat = true;
-			else if((T1 >= T_a) && (T1 <= T_b))
-				stat = true;
-		}
-		break;
-	}
-	return stat;
-}
+   **************************************************************************/
+   bool CSolidProperties:: CheckTemperature_in_PhaseChange
+      (const double T0, const double T1)
+   {
+      bool stat = false;
+      double T_a=(*data_Capacity)(2);
+      double T_b=(*data_Capacity)(2)+(*data_Capacity)(3);
+      switch(Capacity_mode)
+      {
+         case 0:
+            break;
+         case 1:
+            break;
+         case 2:
+            if((T1>T0)&&(*data_Capacity)(4)>0.0)
+            {
+               if((T0<T_a)&&(T1>T_a))
+                  stat = true;
+               else if((T0<T_a)&&(T1>T_b))
+                  stat = true;
+               else if((T0<T_b)&&(T1>T_b))
+                  stat = true;
+               else if((T1>=T_a)&&(T1<=T_b))
+                  stat = true;
+            }
+            break;
+      }
+      return stat;
+   }
 
-/*************************************************************************
+   /*************************************************************************
    FEMLib-Method:
    Task: Get heat capacity with boiling model
-      latent_factor=density_w*porosity*saturation
+         latent_factor=density_w*porosity*saturation
    Programing:
    09/2005 WW Implementation
- **************************************************************************/
+   **************************************************************************/
 double CSolidProperties::Heat_Capacity(double temperature, double porosity, double Sat)
 {
 	double val = 0.0;

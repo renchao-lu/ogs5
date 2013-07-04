@@ -117,6 +117,7 @@ private:
 	std::string eos_name, mu_JT;
 	// Thermal properties
 	double specific_heat_capacity;
+	double beta_T;
 	double heat_conductivity;
 	double temperature_buffer;            //YD, shifted to public JOD
 
@@ -250,6 +251,9 @@ public:
 	double phi_r_dd (double rho, double T) const;
 	double phi_0_tt (double T) const;
 	double EffectiveDiffusionCoef(int CIndex, double* variables = NULL); //AKS
+
+
+	  double specific_heat_source;
 
 private:
 	// State variables

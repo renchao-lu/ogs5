@@ -40,8 +40,9 @@ using namespace std;
 #define GAS_CONSTANT    8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
+#define COMP_MOL_MASS_N2 28.014
 #define GAS_CONSTANT_V  461.5                     //WW
-#define T_KILVIN_ZERO  273.15                     //AKS
+#define T_KILVIN_ZERO  273.15                    //AKS
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;    
 
 //==========================================================================
@@ -91,6 +92,9 @@ CFluidProperties::CFluidProperties() :
 	molar_mass = COMP_MOL_MASS_AIR;
 
 	compressibility_model_pressure = -1;
+   specific_heat_source = 0.0;
+   beta_T = 0.0;
+
 #ifdef MFP_TEST //WW
 	scatter_data = NULL;
 #endif
@@ -597,10 +601,16 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> gravity_constant;
 			in.clear();
 			continue;
+      }
+	  if(line_string.find("$SPECIFIC_HEAT_SOURCE")!=string::npos){
+		  in.str(GetLineFromFile1(mfp_file));
+		  in >> specific_heat_source;
+		  in.clear();
+		  continue;
 		}
 	}
 	return position;
-}
+	}
 
 /**************************************************************************
    FEMLib-Method:
@@ -843,6 +853,7 @@ double CFluidProperties::Density(double* variables)
 {
 	
 	double Rho = 0.0;
+	double m_frac_w;
 	static double density;
 	// static double air_gas_density,vapour_density,vapour_pressure;
 	int fct_number = 0;
@@ -940,6 +951,13 @@ double CFluidProperties::Density(double* variables)
 #endif
 		       //insert call for GEMS densities..
 		       break;
+	  case 26: //AKS
+			m_frac_w = variables[2];
+			m_frac_w = COMP_MOL_MASS_N2*variables[2]/(COMP_MOL_MASS_N2*variables[2] + COMP_MOL_MASS_WATER*(1.0-variables[2])); //TN - mass in mole fraction
+			density = variables[0]/(GAS_CONSTANT*variables[1]) * (COMP_MOL_MASS_WATER*m_frac_w + COMP_MOL_MASS_N2*(1.0-m_frac_w)); //TN - Dalton's law
+
+          break;
+
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
 			"\n";
@@ -1340,7 +1358,7 @@ double CFluidProperties::Viscosity(double* variables)
 	static double viscosity;
 	int fct_number = 0;
 	int gueltig;
-	double mfp_arguments[2];
+	double mfp_arguments[2], x[2], Vs[2];
 	double density, my = 0.0;
 
 	// double TTT=0, PPP=0;
@@ -1412,7 +1430,6 @@ double CFluidProperties::Viscosity(double* variables)
 		                                  //NB
 		viscosity = Fluid_Viscosity(density,mfp_arguments[1],mfp_arguments[0],fluid_id);
 		break;
-
 	case 15: //mixture 1/µ= sum_i y_i/µ_i:: VTPR-EoS
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 		{
@@ -1438,6 +1455,17 @@ double CFluidProperties::Viscosity(double* variables)
 		break;
 	case 19: // reserved for GEMS coupling
 	        break;
+		case 26: //AKS
+
+		x[0] = variables[2];
+		therm_prop("W");
+		Vs[0] = Fluid_Viscosity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1], variables[0], 1);
+		x[1] = 1.0 - x[0];
+		therm_prop("N");
+		Vs[1] = Fluid_Viscosity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1], variables[0], 3);
+		viscosity = Vs[0]*x[0] + Vs[1]*x[1];
+		break;
+
 	default:
 		cout << "Error in CFluidProperties::Viscosity: no valid model" << "\n";
 		break;
@@ -1588,6 +1616,7 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
             CRFProcess* m_pcs;
     m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	double Cp = 0.0;
+	double x[2], Cp_c[2];
 
 	int gueltig = -1;
 	double pressure, saturation, temperature;
@@ -1622,7 +1651,23 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 	case 9:
 		specific_heat_capacity = isobaric_heat_capacity(Density(primary_variable), primary_variable[1], fluid_id);
 		break;
+    case 11: 
+		 	x[0] = variables[2];
+			therm_prop("W");
+			Cp_c[0] = isobaric_heat_capacity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1],1);
+			x[1] = 1.0 - x[0];
+			therm_prop("N");
+			Cp_c[1] = isobaric_heat_capacity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1],3);
+			specific_heat_capacity = Cp_c[0]*x[0] + Cp_c[1]*x[1];
+			//specific_heat_capacity = 1012.0; //TN for testing purposes
+         break;
+	  case 12: //TN - Special case for thermochemical heat storage under typical reaction conditions to gain speed;
+	      x[0] = variables[2];
+		  Cp_c[0] = 2011.0+(2256.8-2011.0)/(950.0-570.0)*(variables[1]-570.0); //Variation im betrachteten Druckbereich vernachlaessigt, Temperaturvariation linear mit Werten von 1 bar.
+		  x[1] = 1.0-x[0];
+		  Cp_c[1] = 1056.8+(1146.4-1056.8)/(900.0-500.0)*(variables[1]-500.0); //Nitrogen
 
+		  specific_heat_capacity = x[0]*Cp_c[0] + x[1]*Cp_c[1];
 	case 15: // mixture cp= sum_i y_i*cp:: P, T, x dependent
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 		{
@@ -1642,6 +1687,7 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 	}
 	return specific_heat_capacity;
 }
+
 
 /**************************************************************************
    FEMLib-Method:
@@ -1779,6 +1825,7 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 	return heat_capacity_fluids;
 }
 
+
 /**************************************************************************
    FEMLib-Method:
    Task: Master calc function
@@ -1864,6 +1911,7 @@ double CFluidProperties::HeatConductivity(double* variables)
 	CRFProcess* m_pcs;
     m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	double Kappa = 0.0;
+	double x[2], k[2];
 
 	int fct_number = 0;
 	int gueltig;
@@ -1896,7 +1944,15 @@ double CFluidProperties::HeatConductivity(double* variables)
 	case 9:
 		heat_conductivity = Fluid_Heat_Conductivity(Density(primary_variable), primary_variable[1], fluid_id);
 		break;
-
+      case 11:  
+		 x[0] = variables[2];
+		 therm_prop("W");
+		 k[0] = Fluid_Heat_Conductivity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1], 1); 
+		 x[1] = 1.0 - x[0];
+		 therm_prop("N");
+		 k[1] = Fluid_Heat_Conductivity(molar_mass*variables[0]/(GAS_CONSTANT*variables[1]), variables[1], 3);
+		 heat_conductivity = x[0]*k[0] + x[1]*k[1];
+         break;
 	case 15: // mixture k_m= sum_i y_i*k_i:: p, T, x
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 		{
@@ -3105,6 +3161,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	double arguments[6];
 	string pcs_name1;
 	string pcs_name2;
+	string pcs_name3;
 	CRFProcess* tp;
 		CRFProcess* m_pcs;
 	    m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
@@ -3155,10 +3212,33 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 			pcs_name2 = "TEMPERATURE1";
 		else
 			pcs_name2 = m_mfp->specific_heat_capacity_pcs_name_vector[1];
+	  	        if(m_mfp->viscosity_pcs_name_vector.size()<3)
+				{	pcs_name3 = "CONCENTRATION1";}
+				else
+				{
+					pcs_name2 = m_mfp->viscosity_pcs_name_vector[3];
+				}
+		break;
+		case 'N': mfp_id = 3;                 //SPECIFIC HEAT CAPACITY
+		if(m_mfp->specific_heat_capacity_pcs_name_vector.size() < 1)
+			pcs_name1 = "PRESSURE1";
+		else
+			pcs_name1 = m_mfp->specific_heat_capacity_pcs_name_vector[0];
+		if(m_mfp->specific_heat_capacity_pcs_name_vector.size() < 2)
+			pcs_name2 = "TEMPERATURE1";
+		else
+			pcs_name2 = m_mfp->specific_heat_capacity_pcs_name_vector[1];
+	  	        if(m_mfp->viscosity_pcs_name_vector.size()<3)
+				{	pcs_name3 = "CONCENTRATION1";}
+				else
+				{
+					pcs_name2 = m_mfp->viscosity_pcs_name_vector[3];
+				}
 		break;
 	default:  mfp_id = -1;
 		pcs_name1 = "PRESSURE1";
 		pcs_name2 = "TEMPERATURE1";
+	    pcs_name3 = "CONCENTRATION1";
 	}
 	//......................................................................
 

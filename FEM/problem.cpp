@@ -78,7 +78,6 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 #include "PETSC/PETScLinearSolver.h"
 #endif
-
 namespace process
 {class CRFProcessDeformation;
 }
@@ -533,7 +532,7 @@ Problem::~Problem()
     3: PS_GLOBAL   | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     |
+   12: DEFORMATION     | 14: TNEQ
    Return:
    Programming:
    07/2008 WW
@@ -676,48 +675,57 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 		active_processes[5] = &Problem::MULTI_COMPONENTIAL_FLOW;
 		return 5;
 	}
-	std::cout << "Error: no process is specified. " << "\n";
-	return -1;
+   else if (m_pcs->getProcessType() == FiniteElement::TNEQ)
+   {
+      if (!activefunc)
+         return 14;
+      total_processes[14] = m_pcs;
+      active_processes[14] = &Problem::TNEQ;
+      return 14;
+   }
+   std::cout << "Error: no process is specified. " << '\n';
+   return -1;
 }
 
+
 /*-------------------------------------------------------------------------
-   GeoSys - Function: SetActiveProcesses
-   Task:
+GeoSys - Function: SetActiveProcesses
+Task:
    total_processes:
     0: LIQUID_FLOW     | 1: GROUNDWATER_FLOW  | 2: RICHARDS_FLOW
     3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     |13: PS_GLOBAL         |
-   Return:
-   Programming:
-   07/2008 WW
-   03/2009 PCH add PS_GLOBAL
-   Modification:
-   --------------------------------------------------------------------*/
+   12: DEFORMATION     |13: PS_GLOBAL         |14: TNEQ
+Return:
+Programming:
+07/2008 WW
+03/2009 PCH add PS_GLOBAL
+Modification:
+--------------------------------------------------------------------*/
 void Problem::SetActiveProcesses()
 {
-	int i;
-	CRFProcess* m_pcs = NULL;
-	const int max_processes = 14;         // PCH
-	total_processes.resize(max_processes);
-	active_processes = new ProblemMemFn[max_processes];
-	coupled_process_index.resize(max_processes);
-	exe_flag = new bool[max_processes];
-	//
-	for(i = 0; i < max_processes; i++)
-	{
-		total_processes[i] = NULL;
-		active_processes[i] = NULL;
-		coupled_process_index[i] = -1;
-	}
-	//
-	for(i = 0; i < (int)pcs_vector.size(); i++)
-	{
-		m_pcs = pcs_vector[i];
-		AssignProcessIndex(m_pcs);
-	}
-	//
+   int i;
+   CRFProcess* m_pcs = NULL;
+   const int max_processes = 15;                  // PCH, TN
+   total_processes.resize(max_processes);
+   active_processes = new ProblemMemFn[max_processes];
+   coupled_process_index.resize(max_processes);
+   exe_flag = new bool[max_processes];
+   //
+   for(i=0; i<max_processes; i++)
+   {
+      total_processes[i] = NULL;
+      active_processes[i] = NULL;
+      coupled_process_index[i] = -1;
+   }
+   //
+   for(i=0; i<(int)pcs_vector.size(); i++)
+   {
+      m_pcs = pcs_vector[i];
+      AssignProcessIndex(m_pcs);
+   }
+   //
 	for(i = 0; i < max_processes; i++)
 		if(total_processes[i])
 		{
@@ -762,6 +770,7 @@ void Problem::SetActiveProcesses()
 		  singlephaseflow_process.push_back(m_pcs);
 	}
 }
+
 
 /**************************************************************************     <
    ROCKFLOW - Function: PCSCreate
@@ -2621,7 +2630,6 @@ inline double Problem::PS_Global()
 
 	return error;
 }
-
 /*-------------------------------------------------------------------------
    GeoSys - Function: MULTI_COMPONENTIAL_FLOW()
    Task: Multi-componential flow with global approach
@@ -2634,6 +2642,25 @@ inline double Problem::MULTI_COMPONENTIAL_FLOW()
 {
 	double error = 1.0e+8;
 	CRFProcess* m_pcs = total_processes[5];
+	if(!m_pcs->selected)
+		return error;
+	error = m_pcs->ExecuteNonLinear(loop_process_number); 
+	if(m_pcs->TimeStepAccept())
+		m_pcs->CalIntegrationPointValue();
+	return error;
+}
+/*-------------------------------------------------------------------------
+GeoSys - Function: TNEQ()
+Task: Simulate Reactive thermal nonequilibrium flow
+Return: error
+Programming:
+07/2013 HS,TN Implementation
+Modification:
+-------------------------------------------------------------------------*/
+inline double Problem::TNEQ()
+{
+   double error = 1.0e+8;
+	CRFProcess* m_pcs = total_processes[14];
 	if(!m_pcs->selected)
 		return error;
 	error = m_pcs->ExecuteNonLinear(loop_process_number); 

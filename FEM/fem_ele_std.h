@@ -3,7 +3,7 @@
    class for finite element.
    Designed and programmed by WW/OK, 12/2004
    modified by TF, 10/2010
- */
+*/
 
 #ifndef fem_std_INC
 #define fem_std_INC
@@ -31,7 +31,8 @@
 //R: Richards flow
 //F: Fluid momentum
 //A: Gas flow
-enum EnumProcessType { L, U, G, T, C, H, M, O, R, F, A, V, P, S};
+//N: Thermal nonequilibrium
+enum EnumProcessType { L, U, G, T, C, H, M, O, R, F, A, V, P, S, N};
 //-----------------------------------------------------
 
 namespace process
@@ -76,6 +77,7 @@ public:
 	void CalcMass();
 	void CalcMass2();
 	void CalcMassMCF();                   //AKS/NB
+         void CalcMassTNEQ();                      //AKS/NB
 	void CalcMassPSGLOBAL();              // PCH
 	// 2. Lumped mass matrix
 	void CalcLumpedMass();
@@ -94,10 +96,12 @@ public:
 	// 7. Advection matrix
 	void CalcAdvection();
 	void CalcAdvectionMCF();
+	void CalcAdvectionTNEQ();
 	// 8. Storage matrix
 	void CalcStorage();
 	// 9. Content matrix
 	void CalcContent();
+         void CalcContentTNEQ(); //NW
 	//
 	void CalcSatution();                  //WW
 	//
@@ -113,6 +117,8 @@ public:
 	void Assembly();
 	void Assembly(int option, int dimension); // PCH for Fluid Momentum
 	void Cal_Velocity();
+
+		 void Cal_rho_s_TS();                     //HS thermal storage application, calculate rho_s
 	void Cal_VelocityMCF();//AKS
 	void Cal_Velocity_2();                //CB this is to provide velocity only at the element center of gravity
 	void Cal_GP_Velocity_FM(int* i_ind); //SB 4900 interpolate node velocities to Gauss point velocities
@@ -182,7 +188,9 @@ public:
 	double CalcSUPGEffectiveElemenetLength(double* vel);
 	// Gauss value
 	void ExtropolateGauss(CRFProcess* m_pcs, const int idof);
-	//
+         // Extrapolate reaction rates on TNEQ flow
+    void ExtrapolateGauss_ReactRate_TNEQ(CRFProcess *m_pcs); 
+	void Copy_rho_s_curr_2_prev(size_t elem_idx);       // HS
 
 private:
 	bool newton_raphson;                  //24.05.2007 WW
@@ -190,6 +198,7 @@ private:
 	int dof_index;                        //24.02.2007 WW
 	// Column index in the node value table
 	int idx0, idx1, idxS, idxSn0, idxSn1, idx3, idxMCF[12];
+		 int idx_t2_0, idx_t2_1, idx_x0, idx_x1; 
 	int idxp0,idxp1, idxp20, idxp21, idxt0, idxt1;
 	int phase;
 	int comp;                             // Component
@@ -235,7 +244,15 @@ private:
 	// Gauss point value. Buffers. // Some changes. 27.2.2007 WW
 	double TG, TG0, PG, PG0, PG2,PG20, drho_gw_dT;
 	double Sw, rhow, poro, dSdp;
-	double rho_gw, rho_ga, rho_g, p_gw, M_g, tort;
+         double rho_gw, rho_ga, rho_g, p_gw, M_g, tort, Xw, eos_arg[5], heat_capacity, heat_conductivity, viscosity;
+
+		 // for thermal storage problem
+		 double rho_s_prev, rho_s_curr, q_R_curr; 
+		 double T_s, T_g, p_g, w_mf; 
+		 double start_t, delta_t;
+		 Eigen::VectorXd yy_rho_s;     // rho_s
+	     Eigen::VectorXd dydxx_rho_s;  // d{rho_s}/dt
+
 	//
 	double* edlluse;                      // WW edlluse[16]
 	double* edttuse;                      // WW edlluse[16]
@@ -260,15 +277,20 @@ private:
 	double CalCoefMass();
 	// 25.2.2007 WW
 	double CalCoefMass2(int dof_index);
-	// 03.3.2009 PCH
+         double CalCoefMasstneq(int dof_index);
+                                                  // 03.3.2009 PCH
 	double CalCoefMassPSGLOBAL(int dof_index);
 	void CalCoefLaplace(bool Gravity, int ip = 0);
 	// 10 2008 PCH
 	void CalCoefLaplaceMultiphase(int phase, int ip = 0);
 	void CalCoefLaplace2(bool Gravity, int dof_index);
-	void CalCoefLaplacePSGLOBAL(bool Gravity, int dof_index);
-	double CalCoefAdvection();     //SB4200 OK/CMCD
-	//AKS
+         void CalCoefLaplaceTNEQ(int dof_index);
+         void CalCoefLaplacePSGLOBAL(bool Gravity, int dof_index);
+         double CalCoefAdvection();        //SB4200 OK/CMCD
+                                                  //AKS/NB
+         double CalCoefAdvectionTNEQ(int dof_index);
+
+    double CalCoefMassTNEQ(int dof_index);
 	void CalCoefMassMCF();
 	void CalCoefAdvectionMCF();
 	void CalCoefLaplaceMCF(int ip);
@@ -277,12 +299,14 @@ private:
 
 	double CalCoefStorage();       //SB4200
 	double CalCoefContent();
+         double CalCoefContentTNEQ(int dof_index); //NW
 	double CalCoefStrainCouping(const int phase = 0);
 
 	double  CalcCoefDualTransfer();
 	// 27.2.2007 WW
 	double CalCoef_RHS_T_MPhase(int dof_index);
-	// 27.2.2007 WW
+         double CalCoef_RHS_TNEQ(int dof_index);
+                                                  // 27.2.2007 WW
 	double CalCoef_RHS_M_MPhase(int dof_index);
 	double CalCoef_RHS_PSGLOBAL(int dof_index);
 	//  NB
@@ -313,6 +337,7 @@ private:
 	//R: Richards flow
 	//A: Gas flow
 	//F: Fluid Momentum
+	//N: Thermal nonequilibrium
 	EnumProcessType PcsType;
 	//-----------------------------------------------------
 	// Local Assembly
@@ -346,6 +371,7 @@ private:
 	void Assemble_RHS_Pc();               // 03.2009 PCH
 	void Assemble_RHS_AIR_FLOW();         //AKS
 	void Assemble_RHS_HEAT_TRANSPORT();   //AKS
+	void Assemble_RHS_TNEQ();      //AKS
 	void Assemble_RHS_HEAT_TRANSPORT2();  //AKS
 	void Assemble_RHS_T_PSGlobal();       // Assembly of RHS by temperature for PSGlobal
 	void AssembleRHS(int dimension);      // PCH
@@ -358,7 +384,7 @@ private:
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
         void add2GlobalMatrixII();    
 #else
-	void add2GlobalMatrixII(int block_cols = 2);            //WW. 06.2011
+	void add2GlobalMatrixII(const int block_cols = 2);            //WW. 06.2011
 #endif
 	void PrintTheSetOfElementMatrices(std::string mark);
 	// Friend classes, 01/07, WW
@@ -379,12 +405,17 @@ private:
 	double* NodalVal2;
 	double* NodalVal3;
 	double* NodalVal4;
+    double *NodalVal5;
 	double* NodalValC;
 	double* NodalValC1;
 	double* NodalVal_Sat;
 	double* NodalVal_SatNW;
 	double* NodalVal_p2;
 	double* NodalVal_p20;                 //AKS
+         double *NodalVal_t0;                     // for TEMPERATURE1
+         double *NodalVal_t1;                     //AKS
+		 double *NodalVal_t2_0;                   // FOR TEMPERATURE2 previous time step
+		 double *NodalVal_t2_1;                   // for TEMPERATURE2 current time step
     double *NodalVal_X0;                     // for CONCENTRATION previous time step
     double *NodalVal_X1;                     // for CONCENTRATION current time step
 	//
@@ -405,6 +436,13 @@ public:
 	void getIPvalue_vec_phase(const int IP, int phase, double* vec);
 	void GetEleVelocity(double* vec);
 	Matrix Velocity;
+
+		 // HS Thermal Storage parameters---------------
+		 // Array of parameters on each Gauss point
+		 double *rho_s_prev, *rho_s_curr; 
+		 double *q_R; 
+		 // End of Thermal Storage parameters---------------
+
 private:
 	// Friend class
 	friend class ::CRFProcess;

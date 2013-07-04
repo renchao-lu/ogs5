@@ -11,7 +11,7 @@
 
 namespace FiniteElement
 {
-ProcessType convertProcessType ( const std::string& pcs_type_string )
+ProcessType convertProcessType ( const std::string& pcs_type_string)
 {
 	if (pcs_type_string.compare ("LIQUID_FLOW") == 0)
 		return LIQUID_FLOW;
@@ -53,11 +53,14 @@ ProcessType convertProcessType ( const std::string& pcs_type_string )
 		return NO_PCS;
 	if (pcs_type_string.compare ("MULTI_COMPONENTIAL_FLOW") == 0)
 		return MULTI_COMPONENTIAL_FLOW;
+	if (pcs_type_string.compare ("TNEQ") == 0)
+		return TNEQ;
 	//else
 		//std::cout << "WARNING in convertProcessType: process type #" << pcs_type_string <<
 		//"# unknown" << "\n";
 	return INVALID_PROCESS;
 }
+
 
 std::string convertProcessTypeToString ( ProcessType pcs_type )
 {
@@ -99,10 +102,13 @@ std::string convertProcessTypeToString ( ProcessType pcs_type )
 		return "PS_GLOBAL";
 	if (pcs_type == MULTI_COMPONENTIAL_FLOW)
 		return "MULTI_COMPONENTIAL_FLOW";
+    if (pcs_type == TNEQ)
+	    return "TNEQ";
 	if (pcs_type ==   NO_PCS)
 		return "NO_PCS";
 	return "INVALID_PROCESS";
 }
+
 
 bool isFlowProcess (ProcessType pcs_type)
 {
@@ -111,7 +117,8 @@ bool isFlowProcess (ProcessType pcs_type)
 		|| pcs_type == PS_GLOBAL || pcs_type == MULTI_PHASE_FLOW
 		|| pcs_type == DEFORMATION_FLOW || pcs_type == DEFORMATION_H2
 	    || pcs_type == TWO_PHASE_FLOW || pcs_type == OVERLAND_FLOW 
-	    || pcs_type == AIR_FLOW || pcs_type == MULTI_COMPONENTIAL_FLOW)
+	    || pcs_type == AIR_FLOW || pcs_type == MULTI_COMPONENTIAL_FLOW
+		|| pcs_type == TNEQ)
 		return true;
 	return false;
 }
@@ -145,8 +152,6 @@ const std::list<std::string> getAllProcessNames()
 	}
 	return enum_names;
 }
-
-
 PrimaryVariable convertPrimaryVariable ( const std::string& pcs_pv_string )
 {
 	if (pcs_pv_string.compare ("PRESSURE1") == 0)
@@ -161,6 +166,8 @@ PrimaryVariable convertPrimaryVariable ( const std::string& pcs_pv_string )
 		return SATURATION2;
 	if (pcs_pv_string.compare ("TEMPERATURE1") == 0)
 		return TEMPERATURE;
+	if (pcs_pv_string.compare ("TEMPERATURE2") == 0)
+		return TEMPERATURE2;
 	if (pcs_pv_string.compare ("DISPLACEMENT_X1") == 0)
 		return DISPLACEMENT_X;
 	if (pcs_pv_string.compare ("DISPLACEMENT_Y1") == 0)
@@ -241,6 +248,10 @@ std::string convertPrimaryVariableToString ( PrimaryVariable pcs_pv )
 		return "PRESSURE2";
 	if (pcs_pv == TEMPERATURE)
 		return "TEMPERATURE1";
+	if (pcs_pv == TEMPERATURE1)
+		return "TEMPERATURE1";
+	if (pcs_pv == TEMPERATURE2)
+		return "TEMPERATURE2";
 	if (pcs_pv == CARBON1)
 		return "CARBON1";
 	if (pcs_pv == WATER1)
@@ -357,6 +368,8 @@ DistributionType convertDisType(const std::string& dis_type_string)
 		return CLIMATE;
 	if (dis_type_string.compare("FUNCTION") == 0)
 		return FUNCTION;                              //24.08.2011. WW
+	if (dis_type_string.compare("TRANSFER_SURROUNDING") == 0)
+		return TRANSFER_SURROUNDING;    
 	else
 	{
 		std::cout << "convertDisType #" << dis_type_string << "# not found"
@@ -404,6 +417,8 @@ std::string convertDisTypeToString(DistributionType dis_type)
 		return "CLIMATE";
 	if (dis_type == FUNCTION)
 		return "FUNCTION";         //24.08.2011. WW
+	if (dis_type == TRANSFER_SURROUNDING)
+		return "TRANSFER_SURROUNDING";
 
 	return "INVALID_DIS_TYPE";
 }

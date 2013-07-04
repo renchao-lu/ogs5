@@ -471,6 +471,13 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       in.clear();
    }
 
+   //outflux to surrounding depending on current value of solution at boundary (e.g. heat transfer to surrounding dependent on current wall temperature)
+   if (this->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING){
+	   in >> transfer_coefficient;
+	   in >> value_surrounding;
+	   in.clear();
+   }
+
    //	if (dis_type_name.find("ANALYTICAL") != std::string::npos) {
    if (this->getProcessDistributionType() == FiniteElement::ANALYTICAL)
    {
@@ -491,12 +498,12 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       in.clear();
    }
 
-	// If a linear function is given. 25.08.2011. WW
-	if (getProcessDistributionType() == FiniteElement::FUNCTION)
-	{
-	  in.clear();
-	  dis_linear_f = new LinearFunctionData(*st_file);
-	}
+	// If a linear function is given. 25.08.2011. WW  
+	if (getProcessDistributionType() == FiniteElement::FUNCTION) 
+	{ 
+	  in.clear(); 
+	  dis_linear_f = new LinearFunctionData(*st_file); 
+	} 
 
    if (this->getProcessDistributionType() == FiniteElement::LINEAR || this->getProcessDistributionType() == FiniteElement::LINEAR_NEUMANN)
    {
@@ -591,7 +598,6 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       }
       in.clear();
    }
-
 if (this->getProcessDistributionType() == FiniteElement::CLIMATE)
    {
       dis_type_name = "CLIMATE";
@@ -2734,8 +2740,79 @@ void GetNODValue(double& value, CNodeValue* cnodev, CSourceTerm* st)
    if (cnodev->getProcessDistributionType() == FiniteElement::GREEN_AMPT)
       GetGreenAmptNODValue(value, st, cnodev->msh_node_number);
 
+   //TN - Test flux with heat transfer coefficient
+   if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE1 && st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) {
+	   GetNODHeatTransfer(value, st, cnodev->geo_node_number);
+	   //value = st->getTransferCoefficient()*cnodev->node_area*(cnodev->node_value - st->getValueSurrounding());
+   }
+   else if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE2 && st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) {
+	   GetNODHeatTransfer(value, st, cnodev->geo_node_number);
+	   //value = st->getTransferCoefficient()*cnodev->node_area*(cnodev->node_value - st->getValueSurrounding());
+   }
+
 }
 
+/**************************************************************************
+ FEMLib-Method:
+ Task: Compute heat flux for heat transfer boundary condition
+ Programing:
+ 04/2013 TN Implementation
+ last modified:
+ **************************************************************************/
+void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
+   CRFProcess* m_pcs_this = NULL;
+   int i,Index;
+   double poro;
+
+   //Get process type
+   m_pcs_this = PCSGet(convertProcessTypeToString(st->getProcessType()));
+   //Get Mesh
+   CFEMesh* mesh (m_pcs_this->m_msh);
+   
+   //Get number of conneted elements
+   long number_of_connected_elements = mesh->nod_vector[geo_node]->getConnectedElementIDs().size();
+
+   poro = 0.0;
+   double geo_area = 0.0;
+
+   //loop over connected elements and get average porosity
+   for (i=0;i<number_of_connected_elements;i++){
+	   long msh_ele = mesh->nod_vector[geo_node]->getConnectedElementIDs()[i];
+	   CElem *m_ele = mesh->ele_vector[msh_ele];
+	   Index = m_ele->GetIndex();
+	   int group = mesh->ele_vector[msh_ele]->GetPatchIndex();
+	   poro += mmp_vector[group]->porosity;
+	   geo_area += mmp_vector[group]->geo_area;
+   }
+   poro /= number_of_connected_elements;
+   geo_area /= number_of_connected_elements;
+
+   //if (mesh->isAxisymmetry() && mesh->GetMaxElementDim()!=1) //For axisymmetric 2D meshes geometry area is irrelevant
+	  // geo_area = 1.0;
+   
+   
+
+   //Get index of primary variable
+   long nidx1 = m_pcs_this->GetNodeValueIndex(convertPrimaryVariableToString(st->getProcessPrimaryVariable())) + 1;
+
+   //Get current primary variable value at that node
+   double temp = m_pcs_this->GetNodeValue(geo_node, nidx1);
+
+   //Find position of current node in st vectors
+   for (i=0; i<st->get_node_value_vectorArea().size(); i++){
+	   if (geo_node == st->st_node_ids[i])
+		   break;
+   }
+
+   value = st->getTransferCoefficient()*(st->getValueSurrounding() - temp);
+   value *= st->get_node_value_vectorArea()[i]*geo_area;
+
+   if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE2)
+	   value *= (1.0 - poro);
+   else if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE1)
+	   value *= poro;
+
+}
 
 /**************************************************************************
  FEMLib-Method:
@@ -2834,10 +2911,31 @@ const int ShiftInNodeVector)
          }
       }
    }
+
+   if (st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flächenelementen
+		st->node_value_vectorArea.resize(1);
+	    st->node_value_vectorArea[0] = 1.0;
+		//nod_val->node_value = 0.0;
+		////Get process type
+		//CRFProcess* m_pcs_this = PCSGet(convertProcessTypeToString(st->getProcessType()));
+		////Get Mesh
+		//CFEMesh* mesh (m_pcs_this->m_msh);
+		//long msh_ele = mesh->nod_vector[nod_val->geo_node_number]->getConnectedElementIDs()[0];
+	 //   int group = mesh->ele_vector[msh_ele]->GetPatchIndex();
+
+		//st->node_value_vectorArea[0] = mmp_vector[group]->geo_area;
+		if (m_msh->isAxisymmetry() && m_msh->GetMaxElementDim() == 1)
+			st->node_value_vectorArea[0] *= m_msh->nod_vector[nod_val->geo_node_number]->X(); //2pi is mulitplicated during the integration process
+
+		st->st_node_ids.push_back(nod_val->geo_node_number);
+
+		
+   }
    //WW        group_vector.push_back(m_node_value);
    //WW        st_group_vector.push_back(st); //OK
    pcs->st_node_value.push_back(nod_val);         //WW
-   pcs->st_node.push_back(st);                    //WW
+   pcs->st_node.push_back(st);                 //WW
+
 }
 
 
@@ -2896,7 +2994,7 @@ const int ShiftInNodeVector)
    delete m_ply;
    }
    else
-   cout << "Warning - CSourceTermGroup::Set: LIN not found" << "\n";
+   cout << "Warning - CSourceTermGroup::Set: LIN not found" << '\n';
    */
 }
 
@@ -2924,10 +3022,13 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 
 		if (st->isCoupled())
 			SetPolylineNodeVectorConditional(st, ply_nod_vector, ply_nod_vector_cond);
-
+		
 
 		if (st->distribute_volume_flux)   // 5.3.07 JOD
 			DistributeVolumeFlux(st, ply_nod_vector, ply_nod_val_vector);
+		st->st_node_ids.clear();
+		st->st_node_ids.resize(ply_nod_vector.size());
+		st->st_node_ids = ply_nod_vector;
 
 		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
@@ -3252,7 +3353,7 @@ void CSourceTerm::InterpolatePolylineNodeValueVector(
  Task:
  Programing:
  11/2007 JOD
- last modification: 
+ last modification:
  **************************************************************************/
 /*void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st, CGLPolyline * old_ply,
 		const std::vector<long>& ply_nod_vector,
@@ -3389,6 +3490,28 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 				st->node_value_vectorArea);
 	}
 
+	if (distype == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flächenelementen
+		st->node_value_vectorArea.resize(number_of_nodes);
+		for (size_t i = 0; i < number_of_nodes; i++){
+			st->node_value_vectorArea[i] = 1.0;
+			ply_nod_val_vector[i] = 0.0;
+		}
+
+		if (m_msh->GetMaxElementDim() == 1) // 1D  //WW MB
+			st->DomainIntegration(m_msh, ply_nod_vector,
+					 st->node_value_vectorArea);
+		else
+			st->EdgeIntegration(m_msh, ply_nod_vector, st->node_value_vectorArea);
+
+		
+		//CNode * a_node; //Fläche wird hier im Knoten als patch area abgelegt
+		//for (size_t i = 0; i < number_of_nodes; i++) 
+		//{ 
+		//	a_node = m_msh->nod_vector[ply_nod_vector[i]]; 
+		//	a_node->patch_area  = st->node_value_vectorArea[i];
+		//}
+	}
+
 	if (st->isCoupled() && st->node_averaging)
 		AreaAssembly(st, ply_nod_vector_cond, ply_nod_val_vector);
 }
@@ -3421,7 +3544,6 @@ std::vector<double>& ply_nod_val_vector) const
          ply_nod_val_vector[i] /= sum_node_value;
    }
 }
-
 
 
 /**************************************************************************
@@ -3611,6 +3733,7 @@ void CSourceTerm::SetNodeValues(const std::vector<long>& nodes, const std::vecto
                                                   //CMCD bugfix on 4.9.06
          m_nod_val->node_area = node_value_vectorArea[i];
       }
+
       _pcs->st_node_value.push_back(m_nod_val);   //WW
       _pcs->st_node.push_back(this);              //WW
    }                                              // end nodes
@@ -3776,18 +3899,18 @@ void CSourceTerm::DirectAssign(long ShiftInNodeVector)
    }
    else //NB this is the old version, where nodes were read from an separate input file
    {
-		std::string line_string;
-		std::string st_file_name;
-		std::stringstream in;
-		long n_index;
-		double n_val;
+   std::string line_string;
+   std::string st_file_name;
+   std::stringstream in;
+   long n_index;
+   double n_val;
 
-	   //========================================================================
-	   // File handling
-	   std::ifstream d_file(fname.c_str(), std::ios::in);
-	   //if (!st_file.good()) return;
+   //========================================================================
+   // File handling
+   std::ifstream d_file(fname.c_str(), std::ios::in);
+   //if (!st_file.good()) return;
 
-	   if (!d_file.good())
+   if (!d_file.good())
 	   {
 		  std::cout << "! Error in direct node source terms: Could not find file:!\n" << fname << "\n";
 		  abort();
@@ -3900,7 +4023,7 @@ std::string CSourceTerm::DirectAssign_Precipitation(double current_time)
 
    if(!bin_sA.good())
    {
-      std::cout<<"Could not find file "<< fileA<<"\n";
+      std::cout<<"Could not find file "<< fileA<<'\n';
       exit(0);
    }
    bin_sA.setf(std::ios::scientific,std::ios::floatfield);
@@ -3913,7 +4036,7 @@ std::string CSourceTerm::DirectAssign_Precipitation(double current_time)
       bin_sB.open(fileB.c_str(), ios::binary);
       if(!bin_sB.good())
       {
-          cout<<"Could not find file "<< fileB<<"\n";
+          cout<<"Could not find file "<< fileB<<'\n';
           exit(0);
       }
       bin_sB.setf(ios::scientific,ios::floatfield);
@@ -4151,7 +4274,7 @@ void CSourceTerm::SetNodePastValue(long n, int idx, int pos, double value)
    m_pcs = PCSGet(convertProcessTypeToString(getProcessType()), convertPrimaryVariableToString (getProcessPrimaryVariable()));
    if (!m_pcs)                                    //OK
    {
-      std::cout << "Warning in SetNodePastValue - no PCS data" << "\n";
+      std::cout << "Warning in SetNodePastValue - no PCS data" << '\n';
       return;
    }
 
