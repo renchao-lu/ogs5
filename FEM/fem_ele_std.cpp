@@ -108,6 +108,12 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	NodalVal_p2 = new double[size_m];
 	NodalVal_p20 = new double [size_m];   //AKS
 	mat = new double[9];    
+	NodalVal_t0 = new double[size_m];                     // for TEMPERATURE1
+    NodalVal_t1 = new double[size_m];                     //AKS
+	NodalVal_t2_0 = new double[size_m];                   // FOR TEMPERATURE2 previous time step
+	NodalVal_t2_1 = new double[size_m];                   // for TEMPERATURE2 current time step
+	NodalVal_X0 = new double[size_m];                     // for CONCENTRATION previous time step
+	NodalVal_X1 = new double[size_m]; 
 	//NW
 	switch (C_Sys_Flad / 10)
 	{
@@ -348,12 +354,6 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
             PcsType = N;
             size_m = 64; 
 
-			NodalVal_t0 = new double[size_m];                     // for TEMPERATURE1
-            NodalVal_t1 = new double[size_m];                     //AKS
-			NodalVal_t2_0 = new double[size_m];                   // FOR TEMPERATURE2 previous time step
-			NodalVal_t2_1 = new double[size_m];                   // for TEMPERATURE2 current time step
-			NodalVal_X0 = new double[size_m];                     // for CONCENTRATION previous time step
-			NodalVal_X1 = new double[size_m]; 
             break;
 	}
 	if (pcs->Memory_Type == 0)            // Do not store local matrices
@@ -480,12 +480,12 @@ CFiniteElementStd::~CFiniteElementStd()
 	delete [] NodalVal_p2;
 	delete [] mat;
 	delete [] NodalVal_p20;                     //AKS
-	  delete [] NodalVal_t0;          //AKS/NB
-      delete [] NodalVal_t1;          //AKS/NB
-	  delete [] NodalVal_t2_0;
-	  delete [] NodalVal_t2_1;
-      delete [] NodalVal_X0;
-	  delete [] NodalVal_X1; 
+    delete [] NodalVal_t0;          //AKS/NB
+    delete [] NodalVal_t1;          //AKS/NB
+	delete [] NodalVal_t2_0;
+	delete [] NodalVal_t2_1;
+    delete [] NodalVal_X0;
+	delete [] NodalVal_X1; 
 	if(idx_vel_disp)
 		delete [] idx_vel_disp;
 	delete [] idx_vel;              //AKS
