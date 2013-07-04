@@ -1,4 +1,4 @@
-﻿/*
+/*
    The members of class Element definitions.
  */
 
@@ -652,7 +652,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 	case 'T':                             // Two-phase flow
-		if( pcs_type == TNEQ )
+		if( pcs_type == ProcessType::TNEQ )
 				break;
 		else if(pcs->pcs_type_number == 0)
 		{
@@ -10258,9 +10258,12 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 		Velocity_g = 0.0;
 	}
 
+	if (pcs->type == 1414)
+	{
 	  rho_s_prev = new double[NGPoints];
 	  rho_s_curr = new double[NGPoints];
 	  q_R = new double[NGPoints]; 
+	
 
 	  for (int i=0; i<NGPoints; i++)
 	  {
@@ -10269,6 +10272,7 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 		  rho_s_curr[i] = rho_s_prev[i];
 		  q_R[i] = 0.0;	  
 	  }
+	}
 }
 //WW 08/2007
 void ElementValue::getIPvalue_vec(const int IP, double* vec)
@@ -10311,9 +10315,11 @@ ElementValue::~ElementValue()
 	Velocity.resize(0,0);
 	Velocity_g.resize(0,0);
 
+	if (pcs->type == 1414){
 	  delete [] rho_s_prev;
 	  delete [] rho_s_curr;
 	  delete [] q_R; 
+	}
    }
 
 /**************************************************************************
