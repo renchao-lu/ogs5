@@ -1,4 +1,4 @@
-/*
+﻿/*
    The members of class Element definitions.
  */
 
@@ -652,7 +652,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 	case 'T':                             // Two-phase flow
-		if( pcs_type == ProcessType::TNEQ )
+		if( pcs_type == TNEQ )
 				break;
 		else if(pcs->pcs_type_number == 0)
 		{
