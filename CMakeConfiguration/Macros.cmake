@@ -225,7 +225,7 @@ FUNCTION(CHECK_CONFIG)
 		"${OGS_FEM_PQC}"
 		"${OGS_FEM_LIS}"
 		"${OGS_FEM_CHEMAPP}"
-                "$(OGS_FEM_PETSC_GEMS}")
+                "$(OGS_FEM_PETSC_GEMS}"
 		"${OGS_FEM_PETSC}")
 
 	SET(counter 0)
@@ -240,7 +240,7 @@ FUNCTION(CHECK_CONFIG)
 		SET(OGS_FEM ON)
 	ENDIF (counter EQUAL 0)
 
-	IF (counter GREATER 2)
+	IF (counter GREATER 1)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given. Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
