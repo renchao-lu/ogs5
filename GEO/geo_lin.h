@@ -9,6 +9,8 @@ class CGLLine
 private:
 	bool marked; // For mesh
 	friend class Surface; //WW
+	// kg44 needed for domain decomposition with PETSC
+	bool for_ic;
 
 public:
 	CGLLine(void);
@@ -27,6 +29,9 @@ public:
 	int display_mode;
 	//MSH
 	std::vector<double*> nodes_coor_vector;
+	// kg44 needed for domain decomposition with PETSC	
+	void SetConditionTypeIC(const bool value) { for_ic=value;} ;
+	bool GetConditionTypeIC() const {return for_ic;} ;	
 	//Method
 	CGLLine* GEOGetLine(long);
 	CGLLine* CheckLineOutPut();

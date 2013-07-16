@@ -452,10 +452,17 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 					                             m_out->mmp_value_vector,
 					                             m_out->msh_type_name,
 					                             m_out);
+#if defined(USE_PETSC)						
+							vtkOutput.WriteDataVTKPETSC(
+							        time_step_number,
+							        m_out->_time,
+							        m_out->
+							        file_base_name);
+#else
 					vtkOutput.WriteDataVTK(time_step_number,
 					                       m_out->_time,
 					                       m_out->file_base_name);
-
+#endif
 					if (!m_out->_new_file_opened)
 						//WW
 						m_out->_new_file_opened = true;
@@ -467,7 +474,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						{
 							//OK
 							//m_out->WriteDataVTK(time_step_number);
-							LegacyVtkInterface vtkOutput(
+                                                        LegacyVtkInterface vtkOutput(
 							        m_msh,
 							        m_out->
 							        _nod_value_vector,
@@ -478,6 +485,16 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 							        m_out->
 							        msh_type_name,
 							        m_out);
+#if defined(USE_PETSC)						
+							vtkOutput.WriteDataVTKPETSC(
+							        time_step_number,
+							        m_out->_time,
+							        m_out->
+							        file_base_name);
+							m_out->time_vector.erase(
+							        m_out->time_vector.begin()
+							        + j);
+#else
 							vtkOutput.WriteDataVTK(
 							        time_step_number,
 							        m_out->_time,
@@ -486,10 +503,14 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 							m_out->time_vector.erase(
 							        m_out->time_vector.begin()
 							        + j);
+							
+#endif
 							if (!m_out->_new_file_opened)
 								//WW
 								m_out->_new_file_opened = true;
 							break;
+
+						  
 						}
 				}
 				break;

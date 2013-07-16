@@ -30,6 +30,8 @@ public:
 	int mat_group;
 	std::string mat_group_name;
 	bool selected;
+	// kg44 needed for domain decomposition with PETSC
+	bool for_ic;
 	//----------------------------------------------------------------------
 	// Methods
 private:
@@ -46,6 +48,9 @@ public:
 	void Write(std::string); //CC
 	// GEO
 	bool PointInVolume(CGLPoint*,int);
+	// kg44 needed for domain decomposition with PETSC	
+	void SetConditionTypeIC(const bool value) { for_ic=value;} ;
+	bool GetConditionTypeIC() const {return for_ic;} ;
 	//----------------------------------------------------------------------
 };
 

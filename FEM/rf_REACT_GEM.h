@@ -21,6 +21,13 @@
 #include "node.h"
 #include "rf_mfp_new.h"
 
+#if defined(USE_PETSC)
+#include "PETSC/PETScLinearSolver.h"
+#include "petscksp.h"
+#include "petscmat.h"
+typedef Mat PETSc_Mat;
+typedef Vec PETSc_Vec;
+#endif
 /**
  * class REACT_GEM for coupling OGS with GEMS
  */
@@ -61,7 +68,7 @@ public:
     // this is for porosity calculated on volume of solids
     double *m_porosity;
     /// this is used for kinetic law number 4
-    double  *m_porosity_initial;
+    double  *m_porosity_initial, *m_volumes_initial;
 
     /// this we need for porosity coupling to groundwater flow & multiphase flow
     double *m_fluid_volume, *m_gas_volume;
@@ -101,7 +108,7 @@ public:
     int CalcLimits ( long in, TNode* m_Node);
     int CalcLimitsInitial ( long in, TNode* m_Node);
     int *m_boundary;                            //holds marker for boundary nodes
-
+    double max_kinetic_timestep;               // variable used for limiting time step
 
     // CRFProcess *m_pcs;                          // pointer to the PCS Class.
     CRFProcess *m_flow_pcs;                     // pointer to the flow PCS.
@@ -152,6 +159,7 @@ public:
     int gem_pressure_flag;                      //shall we give a constant user defined pressure to gems?
     int flag_transport_b;                       //1: transport only dissolved components of b vector; 0: transport full speciation
     long m_max_failed_nodes; ///maximum number of failed nodes
+    int flag_disable_gems;             //disable gems calculations in main loop ..not for initialization!
     //--------------
 
     long nNodes;                                // number of all nodes;
@@ -245,19 +253,20 @@ public:
     // this we need for kinetics
     double *omega_phase_buff, *mol_phase_buff, *dmdt_buff, *omega_components_buff;
 
-#ifdef USE_MPI_GEMS
-    // MPI implementation
+// the next two are always defined, such that it also works in serial version    
+    int myrank;
+    int mysize;
 
+    // MPI implementation
+#if defined(USE_MPI_GEMS) 
     void CleanMPIBuffer(void);
     void CopyToMPIBuffer(long in);
-
     void GetGEMResult_MPI(void);
-
-
 #endif
 
 
     double GetNodePorosityValue( long node_Index);
+    double GetNodePorosityValueInitial( long node_Index);    
     double GetNodeFluidDensityValue( long node_Index);
 
     // Name lists from DCH file!
@@ -268,8 +277,16 @@ public:
     char (*m_ICNL)[MaxICN]; // List of IC names in the system, [nIC]  of MaxICN length
     char (*m_DCNL)[MaxDCN]; // List of DC names in the system, [nDC] of MaxDCN length
     char (*m_PHNL)[MaxPHN]; // List of Phase names  [nPH]  of MaxPHN length
-    void WriteVTKGEMValues(fstream &vtk_file);
-
+#if defined(USE_PETSC)    
+    PetscScalar *gem_glob_buff, *gem_glob_x1 , *gem_glob_x0;
+    void WriteVTKGEMValuesPETSC(PetscViewer viewer);
+    // for synchronizing data
+    void SynchronizeData(PetscScalar *data);
+    long GetGlobalNodeNumber_MT ( void); 
+    long GetLocalNodeNumber_MT(void);
+    long loc_NodesNumber_Linear, NodesNumber_Linear,glob_NodesNumber_Linear;
+#endif
+    void WriteVTKGEMValues(fstream &vtk_file);    
     // timer 
     double GetTimeOfDayDouble();
     

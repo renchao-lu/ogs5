@@ -169,6 +169,7 @@ void PETScLinearSolver::VectorCreate(PetscInt m)
   //VecSetSizes(b, m_size_loc, m);
   VecSetSizes(b, PETSC_DECIDE, m);
   VecSetFromOptions(b);
+  VecSetUp(b); //kg44 for PETSC 3.3 
   VecDuplicate(b, &x);
 
   //VecGetOwnershipRange(b, &i_start,&i_end);
@@ -180,17 +181,17 @@ void PETScLinearSolver::MatrixCreate( PetscInt m, PetscInt n)
 
   MatCreate(PETSC_COMM_WORLD, &A);
   // TEST  MatSetSizes(A, m_size_loc, PETSC_DECIDE, m, n);
-
   MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,m,n);
   //MatSetSizes(A, m_size_loc, PETSC_DECIDE, m,  n);
+  MatSetType(A,MATMPIAIJ);
 
   MatSetFromOptions(A);
-  MatSetType(A,MATMPIAIJ);
-  MatMPIAIJSetPreallocation(A,d_nz,PETSC_NULL, o_nz,PETSC_NULL);
-  //MatSeqAIJSetPreallocation(A,d_nz,PETSC_NULL);
+  MatSetUp(A);  // KG44 this seems to work with petsc 3.3 ..the commands below result in problems when assembling the matrix with version 3.3
+  //  MatMPIAIJSetPreallocation(A,d_nz,PETSC_NULL, o_nz,PETSC_NULL);
+  //  MatSeqAIJSetPreallocation(A,d_nz,PETSC_NULL);
   MatGetOwnershipRange(A,&i_start,&i_end);
 
-  // std::cout<<"sub_a  "<<i_start<<";   sub_d "<<i_end<<"\n";
+  //  std::cout<<"sub_a  "<<i_start<<";   sub_d "<<i_end<<"\n";
 }
 
 void  PETScLinearSolver::getLocalRowColumnSizes(int *m, int *n)
@@ -525,7 +526,6 @@ void PETScLinearSolver::addMatrixEntry(const int i, const int j, const double va
 void PETScLinearSolver::addMatrixEntries(const int m,const int idxm[], const int n, 
              const int idxn[],const PetscScalar v[])
 {
-
   MatSetValues(A, m, idxm, n, idxn, v, ADD_VALUES);
 }
 
@@ -565,7 +565,7 @@ void PETScLinearSolver::EQSV_Viewer(std::string file_name)
   VecView(b, viewer);
   VecView(x, viewer);  
 
-#define  EXIT_TEST 
+//#define  EXIT_TEST
 #ifdef EXIT_TEST 
   VecDestroy(&b);
   VecDestroy(&x);

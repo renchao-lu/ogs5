@@ -114,6 +114,10 @@ REACT_BRNS* m_vec_BRNS;
 #include "InterpolationAlgorithms/InverseDistanceInterpolation.h"
 #include "InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 
+#include "StringTools.h"
+
+#include "fct_mpi.h"
+
 using namespace std;
 using namespace MeshLib;
 using namespace Math_Group;
@@ -186,7 +190,7 @@ using FiniteElement::ElementValue;
 using FiniteElement::ElementValue_DM;//WX:07.2011
 using Math_Group::vec;
 
-#define noCHECK_EQS
+#define NOCHECK_EQS
 #define noCHECK_ST_GROUP
 #define noCHECK_BC_GROUP
 
@@ -345,31 +349,33 @@ CRFProcess::CRFProcess(void) :
 #endif
 	flag_couple_GEMS = 0;                 // 11.2009 HS
 	femFCTmode = false;                   //NW
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 	this->Gl_ML = NULL;                   //NW
 	this->Gl_Vec = NULL;                  //NW
 	this->Gl_Vec1 = NULL;                 //NW
 	this->FCT_AFlux = NULL;               //NW
+#ifdef USE_PETSC
+	this->FCT_K = NULL;
+	this->FCT_d = NULL;
 #endif
 	ExcavMaterialGroup = -1;              //01.2010 WX
 	PCS_ExcavState = -1;                  //WX
 	Neglect_H_ini = -1;                   //WX
    m_ca_hydration = NULL;                         //WW
    m_solver  = NULL;                              //WW
-   isRSM = false; //WW
+	isRSM = false; //WW
 	eqs_x = NULL;
 }
 
 
 void CRFProcess::setProblemObjectPointer (Problem* problem)
 {
-   _problem = problem;
+	_problem = problem;
 }
 
 
 Problem* CRFProcess::getProblemObjectPointer () const
 {
-   return _problem;
+	return _problem;
 }
 
 
@@ -478,7 +484,6 @@ CRFProcess::~CRFProcess(void)
 	DeleteArray(array_Fu_JFNK);           // 31.08.2010. WW
 	DeleteArray(norm_u_JFNK);             //24.11.2010. WW
 #endif
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 	//----------------------------------------------------------------------
 	if (this->m_num && this->m_num->fct_method > 0) //NW
 	{
@@ -490,6 +495,12 @@ CRFProcess::~CRFProcess(void)
 		this->Gl_Vec = NULL;
 		this->Gl_Vec1 = NULL;
 		this->FCT_AFlux = NULL;
+#ifdef USE_PETSC
+		delete this->FCT_K;
+		delete this->FCT_d;
+		this->FCT_K = NULL;
+		this->FCT_d = NULL;
+#endif
 	}
 
     // HS, 11.2011
@@ -497,7 +508,6 @@ CRFProcess::~CRFProcess(void)
 		delete m_ca_hydration; 
 	if (m_solver)
 		delete m_solver;
-#endif
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//10.3012. WW
 	delete eqs_new;
@@ -509,10 +519,10 @@ CRFProcess::~CRFProcess(void)
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:    Gauss point values for CFEMSH
-Programing:
-08/2005 WW Implementation
+   FEMLib-Method:
+   Task:    Gauss point values for CFEMSH
+   Programing:
+   08/2005 WW Implementation
 **************************************************************************/
 void CRFProcess::AllocateMemGPoint()
 {
@@ -525,12 +535,12 @@ void CRFProcess::AllocateMemGPoint()
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:    This function is a part of the monolithic scheme
+   FEMLib-Method:
+   Task:    This function is a part of the monolithic scheme
          and it is used to assign pcs name to IC, ST, BC, TIM and OUT. object
-Programing:
-07/2005 WW Implementation
-10/2010 TF cody style improvements
+   Programing:
+   07/2005 WW Implementation
+   10/2010 TF cody style improvements
 **************************************************************************/
 void CRFProcess::SetOBJNames()
 {
@@ -663,17 +673,21 @@ void CRFProcess::Create()
 		if (m_num->nls_max_iterations > 1) //WW
 			non_linear = true;
 	}
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 	if (m_num->fct_method > 0)            //NW
 	{
 		//Memory_Type = 1;
+#ifdef USE_PETSC
+		long gl_size = m_msh->getNumNodesGlobal();
+		this->FCT_K = new SparseMatrixDOK(gl_size, gl_size);
+		this->FCT_d = new SparseMatrixDOK(gl_size, gl_size);
+#else
 		long gl_size = m_msh->GetNodesNumber(false);
-		this->FCT_AFlux = new SparseMatrixDOK(gl_size, gl_size);
-		this->Gl_ML = new Vec(gl_size);
-		this->Gl_Vec = new Vec(gl_size);
-		this->Gl_Vec1 = new Vec(gl_size);
-	}
 #endif
+		this->FCT_AFlux = new SparseMatrixDOK(gl_size, gl_size);
+		this->Gl_ML = new Math_Group::Vec(gl_size);
+		this->Gl_Vec = new Math_Group::Vec(gl_size);
+		this->Gl_Vec1 = new Math_Group::Vec(gl_size);
+	}
 	//----------------------------------------------------------------------------
 	// EQS - create equation system
 	//WW CreateEQS();
@@ -1162,10 +1176,27 @@ void CRFProcess:: WriteSolution()
 	//kg44 write out only between nwrite_restart timesteps
 	if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 )
 		return;
+	
+#if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
+	string rank_str;
+    	int rank , msize;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &msize);
+	stringstream ss (stringstream::in | stringstream::out);
+	ss.clear(); 
+	ss.str("");
+	ss << rank;
+	rank_str = ss.str();
+	ss.clear();
+	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
+	                          pcs_primary_function_name[0] + "_primary_value_"+rank_str+".asc";
 
+#else
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
+#endif				  
 	std::ofstream os ( m_file_name.c_str(), ios::trunc | ios::out );
 	if (!os.good() )
 	{
@@ -1204,9 +1235,27 @@ void CRFProcess:: WriteSolution()
 **************************************************************************/
 void CRFProcess:: ReadSolution()
 {
+ 	
+#if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
+        string rank_str;
+	int rank , msize;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &msize);
+	stringstream ss (stringstream::in | stringstream::out);
+	ss.clear(); 
+	ss.str("");
+	ss << rank;
+	rank_str = ss.str();
+	ss.clear();
+	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
+	                          pcs_primary_function_name[0] + "_primary_value_"+rank_str+".asc";
+
+#else 
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
+#endif
 	std::ifstream is ( m_file_name.c_str(), ios::in );
 	if (!is.good())
 	{
@@ -1796,44 +1845,44 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 					RANDOM_WALK_Process = true;
 				}
 			}
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$NUM_TYPE") != string::npos)
-      {
-         *pcs_file >> num_type_name;
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$CPL_TYPE") != string::npos)
-      {
-         *pcs_file >> cpl_type_name;
-         if (cpl_type_name.compare("MONOLITHIC") == 0)
-         {
-            pcs_monolithic_flow = true;
-            pcs_deformation = 11;
-         }
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$TIM_TYPE") != string::npos)
-      {
-         *pcs_file >> tim_type_name;
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$APP_TYPE") != string::npos)
-      {
-         *pcs_file >> rwpt_app;
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$NUM_TYPE") != string::npos)
+		{
+			*pcs_file >> num_type_name;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$CPL_TYPE") != string::npos)
+		{
+			*pcs_file >> cpl_type_name;
+			if (cpl_type_name.compare("MONOLITHIC") == 0)
+			{
+				pcs_monolithic_flow = true;
+				pcs_deformation = 11;
+			}
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$TIM_TYPE") != string::npos)
+		{
+			*pcs_file >> tim_type_name;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$APP_TYPE") != string::npos)
+		{
+			*pcs_file >> rwpt_app;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
 		// YS 05/2013
 		if (line_string.find("$COUNT") != string::npos)
 		{
@@ -1846,24 +1895,24 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		if (line_string.find("$PRIMARY_VARIABLE") != string::npos)
 		{
 			*pcs_file >> primary_variable_name;
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$ELEMENT_MATRIX_OUTPUT") != string::npos)
-      {
-         *pcs_file >> Write_Matrix;               //WW
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  //WW
-      if (line_string.find("$BOUNDARY_CONDITION_OUTPUT") != string::npos)
-      {
-         write_boundary_condition = true;
-         continue;
-      }
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$ELEMENT_MATRIX_OUTPUT") != string::npos)
+		{
+			*pcs_file >> Write_Matrix; //WW
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		//WW
+		if (line_string.find("$BOUNDARY_CONDITION_OUTPUT") != string::npos)
+		{
+			write_boundary_condition = true;
+			continue;
+		}
 		//....................................................................
 		//BG 05/2012
 		if (line_string.find("$OutputMassOfGasInModel") != string::npos)
@@ -1873,102 +1922,102 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		}
 		//....................................................................
 		// subkeyword found
-      if (line_string.find("$ST_RHS") != string::npos)
-      {
-         *pcs_file >> WriteSourceNBC_RHS;         //WW
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      if (line_string.find("$PROCESSED_BC") != string::npos) //25.08.2011. WW
-      {
-         *pcs_file >> WriteProcessed_BC;        
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
+		if (line_string.find("$ST_RHS") != string::npos)
+		{
+			*pcs_file >> WriteSourceNBC_RHS; //WW
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		if (line_string.find("$PROCESSED_BC") != string::npos) //25.08.2011. WW
+		{
+			*pcs_file >> WriteProcessed_BC;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
 
 	  
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$MEMORY_TYPE") != string::npos)
-      {
-         *pcs_file >> Memory_Type;                //WW
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$RELOAD") != string::npos)
-      {
-         *pcs_file >> reload;                     //WW
-         if (reload == 1 || reload == 3)
-            *pcs_file >> nwrite_restart;          //kg44 read number of timesteps between writing restart files
-         pcs_file->ignore(MAX_ZEILE, '\n');
-         continue;
-      }
-                                                  // subkeyword found
-      if (line_string.find("$DEACTIVATED_SUBDOMAIN") != string::npos)
-      {
-                                                  //WW
-         *pcs_file >> NumDeactivated_SubDomains >> ws;
-         Deactivated_SubDomain = new int[NumDeactivated_SubDomains];
-         for (int i = 0; i < NumDeactivated_SubDomains; i++)
-            *pcs_file >> Deactivated_SubDomain[i] >> ws;
-         continue;
-      }
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$MSH_TYPE") != string::npos)
-      {
-         *pcs_file >> msh_type_name >> ws;
-         continue;
-      }
-      //....................................................................
-      //		if (line_string.find("$GEO_TYPE") != string::npos) { //OK
-      //			*pcs_file >> geo_type >> geo_type_name >> ws;
-      //			continue;
-      //		}
-      //
-      //....................................................................
-                                                  // subkeyword found
-      if (line_string.find("$MEDIUM_TYPE") != string::npos)
-      {
-         while ((!new_keyword) || (!new_subkeyword) || (!pcs_file->eof()))
-         {
-            position_subkeyword = pcs_file->tellg();
-            *pcs_file >> line_string;
-            if (line_string.size() == 0)
-               break;
-            if (line_string.find("#") != string::npos)
-            {
-               new_keyword = true;
-               break;
-            }
-            if (line_string.find("$") != string::npos)
-            {
-               new_subkeyword = true;
-               break;
-            }
-            if (line_string.find("CONTINUUM") != string::npos)
-            {
-               *pcs_file >> line_string;
-                                                  //WW
-               double w_m = strtod(line_string.data(), NULL);
-               continuum_vector.push_back(w_m);
-                                                  //WW
-               continuum_vector.push_back(1.0 - w_m);
-               break;                             //WW
-            }
-            pcs_file->ignore(MAX_ZEILE, '\n');
-         }
-         continue;
-      }
-                                                  //OK
-      if (line_string.find("$SATURATION_SWITCH") != string::npos)
-      {
-         saturation_switch = true;
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$MEMORY_TYPE") != string::npos)
+		{
+			*pcs_file >> Memory_Type; //WW
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$RELOAD") != string::npos)
+		{
+			*pcs_file >> reload; //WW
+			if (reload == 1 || reload == 3)
+				*pcs_file >> nwrite_restart;  //kg44 read number of timesteps between writing restart files
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		// subkeyword found
+		if (line_string.find("$DEACTIVATED_SUBDOMAIN") != string::npos)
+		{
+			//WW
+			*pcs_file >> NumDeactivated_SubDomains >> ws;
+			Deactivated_SubDomain = new int[NumDeactivated_SubDomains];
+			for (int i = 0; i < NumDeactivated_SubDomains; i++)
+				*pcs_file >> Deactivated_SubDomain[i] >> ws;
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$MSH_TYPE") != string::npos)
+		{
+			*pcs_file >> msh_type_name >> ws;
+			continue;
+		}
+		//....................................................................
+		//		if (line_string.find("$GEO_TYPE") != string::npos) { //OK
+		//			*pcs_file >> geo_type >> geo_type_name >> ws;
+		//			continue;
+		//		}
+		//
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$MEDIUM_TYPE") != string::npos)
+		{
+			while ((!new_keyword) || (!new_subkeyword) || (!pcs_file->eof()))
+			{
+				position_subkeyword = pcs_file->tellg();
+				*pcs_file >> line_string;
+				if (line_string.size() == 0)
+					break;
+				if (line_string.find("#") != string::npos)
+				{
+					new_keyword = true;
+					break;
+				}
+				if (line_string.find("$") != string::npos)
+				{
+					new_subkeyword = true;
+					break;
+				}
+				if (line_string.find("CONTINUUM") != string::npos)
+				{
+					*pcs_file >> line_string;
+					//WW
+					double w_m = strtod(line_string.data(), NULL);
+					continuum_vector.push_back(w_m);
+					//WW
+					continuum_vector.push_back(1.0 - w_m);
+					break; //WW
+				}
+				pcs_file->ignore(MAX_ZEILE, '\n');
+			}
+			continue;
+		}
+		//OK
+		if (line_string.find("$SATURATION_SWITCH") != string::npos)
+		{
+			saturation_switch = true;
          ;
-         continue;
-      }
+			continue;
+		}
 		//SB4900
 		if (line_string.find("$USE_VELOCITIES_FOR_TRANSPORT") != string::npos)
 		{
@@ -1977,29 +2026,29 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 				use_velocities_for_transport = true;
 			continue;
 		}
-      //Interface to Eclipse and Dumux, BG, 09/2010
-      //	if(line_string.find("$SIMULATOR")!=string::npos) { //OK
-      if(line_string.compare("$SIMULATOR")== 0)   // BG, 09/2010, coupling to Eclipse and DuMux
-      {
-         *pcs_file >> this->simulator;
-         continue;
-      }
-      if(line_string.find("$SIMULATOR_PATH")== 0) // BG, 09/2010, coupling to Eclipse and DuMux
-      {
-         *pcs_file >> this->simulator_path;
-         continue;
-      }
-                                                  // BG, 09/2010, coupling to Eclipse and DuMux
-      if(line_string.find("$SIMULATOR_MODEL_PATH")== 0)
-      {
-         *pcs_file >> this->simulator_model_path;
-         continue;
-      }
-                                                  // BG, 09/2010, coupling to Eclipse and DuMux
-      if(line_string.find("$USE_PRECALCULATED_FILES")== 0)
-      {
-         this->PrecalculatedFiles = true;
-         continue;
+		//Interface to Eclipse and Dumux, BG, 09/2010
+		//	if(line_string.find("$SIMULATOR")!=string::npos) { //OK
+		if(line_string.compare("$SIMULATOR") == 0) // BG, 09/2010, coupling to Eclipse and DuMux
+		{
+			*pcs_file >> this->simulator;
+			continue;
+		}
+		if(line_string.find("$SIMULATOR_PATH") == 0) // BG, 09/2010, coupling to Eclipse and DuMux
+		{
+			*pcs_file >> this->simulator_path;
+			continue;
+		}
+		// BG, 09/2010, coupling to Eclipse and DuMux
+		if(line_string.find("$SIMULATOR_MODEL_PATH") == 0)
+		{
+			*pcs_file >> this->simulator_model_path;
+			continue;
+		}
+		// BG, 09/2010, coupling to Eclipse and DuMux
+		if(line_string.find("$USE_PRECALCULATED_FILES") == 0)
+		{
+			this->PrecalculatedFiles = true;
+			continue;
 		}
 		// WTP, 04/2013, coupling to Eclipse (save data files)
 		if(line_string.find("$SAVE_ECLIPSE_DATA_FILES") == 0)
@@ -2009,19 +2058,19 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		}
 		// KB, 02/2011, coupling to Eclipse and DuMux
 		if(line_string.find("$SIMULATOR_WELL_PATH") == 0)
-      {
-         *pcs_file >> this->simulator_well_path;
-         continue;
-      }
-                                                  // BG, NB 11/2010, calculating phase transition for CO2
-      if(line_string.find("$PHASE_TRANSITION")== 0)
-      {
-         string tempstring;
-         *pcs_file >> tempstring;
-         if (tempstring == "CO2_H2O_NaCl")
-            this->Phase_Transition_Model = 1;
-         continue;
-      }
+		{
+			*pcs_file >> this->simulator_well_path;
+			continue;
+		}
+		// BG, NB 11/2010, calculating phase transition for CO2
+		if(line_string.find("$PHASE_TRANSITION") == 0)
+		{
+			string tempstring;
+			*pcs_file >> tempstring;
+			if (tempstring == "CO2_H2O_NaCl")
+				this->Phase_Transition_Model = 1;
+			continue;
+		}
 		// SB redo WTP
 		if(line_string.find("$DISSOLVED_CO2_PCS_NAME")==0){ //SB, CB 10/2011
 	       *pcs_file >> this->dissolved_co2_pcs_name;
@@ -2057,18 +2106,18 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 
 
 /**************************************************************************
-FEMLib-Method:
-01/2004 OK Implementation
-08/2004 WW Read the deformation process
+   FEMLib-Method:
+   01/2004 OK Implementation
+   08/2004 WW Read the deformation process
            Check the comment key '//' in .pcs
-06/2009 OK Write only if existing
+   06/2009 OK Write only if existing
 **************************************************************************/
 void PCSWrite(string file_base_name)
 {
-   if((int)pcs_vector.size()<1)
-      return;
-   //----------------------------------------------------------------------
-   // File handling
+	if((int)pcs_vector.size() < 1)
+		return;
+	//----------------------------------------------------------------------
+	// File handling
 	string pcs_file_name = file_base_name + PCS_FILE_EXTENSION;
 	fstream pcs_file (pcs_file_name.data(),ios::trunc | ios::out);
 	pcs_file.clear();
@@ -2088,11 +2137,11 @@ void PCSWrite(string file_base_name)
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-01/2004 OK Implementation
-12/2005 OK MSH_TYPE
+   FEMLib-Method:
+   Task:
+   Programing:
+   01/2004 OK Implementation
+   12/2005 OK MSH_TYPE
    last modified:
 **************************************************************************/
 void CRFProcess::Write(std::fstream* pcs_file)
@@ -2229,18 +2278,18 @@ CRFProcess* CRFProcess::GetProcessByNumber(int number)
 //////////////////////////////////////////////////////////////////////////
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-02/2003 OK Implementation
-08/2003 WW Modified to fit monolithic scheme
-02/2005 OK Unsaturated flow (Richards model)
-02/2005 MB string
-05/2005 WW/DL Dymanic problem
-01/2006 YD Dual Richards
-OKToDo switch to char
-03/2009 PCH PS_GLOBAL
-get rid of type
+   FEMLib-Method:
+   Task:
+   Programing:
+   02/2003 OK Implementation
+   08/2003 WW Modified to fit monolithic scheme
+   02/2005 OK Unsaturated flow (Richards model)
+   02/2005 MB string
+   05/2005 WW/DL Dymanic problem
+   01/2006 YD Dual Richards
+   OKToDo switch to char
+   03/2009 PCH PS_GLOBAL
+   get rid of type
 **************************************************************************/
 void CRFProcess::Config(void)
 {
@@ -2359,548 +2408,548 @@ void CRFProcess::Config(void)
    {
       type = 1414;
       ConfigTNEQ();
-   }
+}
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 OK Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 OK Implementation
         WW Splitted for processes
-last modified:
-02/2005 MB Pressure version for LIQUID Flow
+   last modified:
+   02/2005 MB Pressure version for LIQUID Flow
 **************************************************************************/
 void CRFProcess::ConfigLiquidFlow()
 {
-   //pcs_num_name[0] = "PRESSURE0";
-   //pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
-   pcs_number_of_primary_nvals = 0;
-   pcs_number_of_secondary_nvals = 0;
-   pcs_number_of_evals = 0;
-   Def_Variable_LiquidFlow(); //NW
+	//pcs_num_name[0] = "PRESSURE0";
+	//pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+	pcs_number_of_primary_nvals = 0;
+	pcs_number_of_secondary_nvals = 0;
+	pcs_number_of_evals = 0;
+	Def_Variable_LiquidFlow(); //NW
 
-   // Output material parameters
-   configMaterialParameters();
+	// Output material parameters
+	configMaterialParameters();
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-03/2003 OK Implementation
+   FEMLib-Method:
+   03/2003 OK Implementation
         WW Splitted for processes
-02/2005 MB head version for GroundwaterFlow
-08/2006 OK FLUX
+   02/2005 MB head version for GroundwaterFlow
+   08/2006 OK FLUX
 **************************************************************************/
 void CRFProcess::ConfigGroundwaterFlow()
 {
-   pcs_num_name[0] = "HEAD";
-   pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_HEAD";
-   // NOD values
-   pcs_number_of_primary_nvals = 1;
-   pcs_primary_function_name[0] = "HEAD";
-   pcs_primary_function_unit[0] = "m";
-   // ELE values
-   pcs_number_of_evals = 6;
-   pcs_eval_name[0] = "VOLUME";
-   pcs_eval_unit[0] = "m3";
-   pcs_eval_name[1] = "VELOCITY1_X";
-   pcs_eval_unit[1] = "m/s";
-   pcs_eval_name[2] = "VELOCITY1_Y";
-   pcs_eval_unit[2] = "m/s";
-   pcs_eval_name[3] = "VELOCITY1_Z";
-   pcs_eval_unit[3] = "m/s";
-   pcs_eval_name[4] = "PERMEABILITY";
-   pcs_eval_unit[4] = "m^2";
-   pcs_eval_name[5] = "POROSITY";
-   pcs_eval_unit[5] = "-";
-   //----------------------------------------------------------------------
-   // Secondary variables
-   pcs_number_of_secondary_nvals = 5;
-   pcs_secondary_function_name[0] = "FLUX";
-   pcs_secondary_function_unit[0] = "m3/s";
-   pcs_secondary_function_timelevel[0] = 1;
-   pcs_secondary_function_name[1] = "WDEPTH";
-   pcs_secondary_function_unit[1] = "m";
-   pcs_secondary_function_timelevel[1] = 1;
-   pcs_secondary_function_name[2] = "COUPLING";   //JOD
-   pcs_secondary_function_unit[2] = "m/s";
-   pcs_secondary_function_timelevel[2] = 0;
-   pcs_secondary_function_name[3] = "COUPLING";   //JOD
-   pcs_secondary_function_unit[3] = "m/s";
-   pcs_secondary_function_timelevel[3] = 1;
-   pcs_secondary_function_name[4] = "STORE";      //JOD  for subtiming 4.7.10
-   pcs_secondary_function_unit[4] = "m";
-   pcs_secondary_function_timelevel[4] = 1;
+	pcs_num_name[0] = "HEAD";
+	pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_HEAD";
+	// NOD values
+	pcs_number_of_primary_nvals = 1;
+	pcs_primary_function_name[0] = "HEAD";
+	pcs_primary_function_unit[0] = "m";
+	// ELE values
+	pcs_number_of_evals = 6;
+	pcs_eval_name[0] = "VOLUME";
+	pcs_eval_unit[0] = "m3";
+	pcs_eval_name[1] = "VELOCITY1_X";
+	pcs_eval_unit[1] = "m/s";
+	pcs_eval_name[2] = "VELOCITY1_Y";
+	pcs_eval_unit[2] = "m/s";
+	pcs_eval_name[3] = "VELOCITY1_Z";
+	pcs_eval_unit[3] = "m/s";
+	pcs_eval_name[4] = "PERMEABILITY";
+	pcs_eval_unit[4] = "m^2";
+	pcs_eval_name[5] = "POROSITY";
+	pcs_eval_unit[5] = "-";
+	//----------------------------------------------------------------------
+	// Secondary variables
+	pcs_number_of_secondary_nvals = 5;
+	pcs_secondary_function_name[0] = "FLUX";
+	pcs_secondary_function_unit[0] = "m3/s";
+	pcs_secondary_function_timelevel[0] = 1;
+	pcs_secondary_function_name[1] = "WDEPTH";
+	pcs_secondary_function_unit[1] = "m";
+	pcs_secondary_function_timelevel[1] = 1;
+	pcs_secondary_function_name[2] = "COUPLING"; //JOD
+	pcs_secondary_function_unit[2] = "m/s";
+	pcs_secondary_function_timelevel[2] = 0;
+	pcs_secondary_function_name[3] = "COUPLING"; //JOD
+	pcs_secondary_function_unit[3] = "m/s";
+	pcs_secondary_function_timelevel[3] = 1;
+	pcs_secondary_function_name[4] = "STORE"; //JOD  for subtiming 4.7.10
+	pcs_secondary_function_unit[4] = "m";
+	pcs_secondary_function_timelevel[4] = 1;
 
-   pcs_number_of_secondary_nvals = 5;             //WW
-   //WW
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;               //WW
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;               //WW
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;               //WW
-   //----------------------------------------------------------------------
-   //WW / TF
-   // Output material parameters
-   configMaterialParameters();
+	pcs_number_of_secondary_nvals = 5;    //WW
+	//WW
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;      //WW
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;      //WW
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;      //WW
+	//----------------------------------------------------------------------
+	//WW / TF
+	// Output material parameters
+	configMaterialParameters();
 
-   if (m_msh)
-      m_msh->DefineMobileNodes(this);
+	if (m_msh)
+		m_msh->DefineMobileNodes(this);
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-10/2004 OK Implementation
-last modified:
+   FEMLib-Method:
+   Task:
+   Programing:
+   10/2004 OK Implementation
+   last modified:
 **************************************************************************/
 void CRFProcess::ConfigGasFlow()
 {
-   //----------------------------------------------------------------------
-   // Primary variables - NOD values
-   pcs_number_of_primary_nvals = 1;
-   pcs_number_of_secondary_nvals = 0;
-   pcs_primary_function_name[0] = "PRESSURE1";
-   pcs_primary_function_unit[0] = "Pa";
-   //----------------------------------------------------------------------
-   // Secondary variables - NOD values
-   pcs_number_of_secondary_nvals = 1;
-   pcs_secondary_function_name[0] = "NOD_MASS_FLUX";
-   pcs_secondary_function_unit[0] = "kg/s";
-   //----------------------------------------------------------------------
-   // ELE values
-   pcs_number_of_evals = 3;
-   pcs_eval_name[0] = "VELOCITY1_X";
-   pcs_eval_unit[0] = "m/s";
-   pcs_eval_name[1] = "VELOCITY1_Y";
-   pcs_eval_unit[1] = "m/s";
-   pcs_eval_name[2] = "VELOCITY1_Z";
-   pcs_eval_unit[2] = "m/s";
-   //----------------------------------------------------------------------
-   // NUM
-   pcs_num_name[0] = "PRESSURE0";
-   pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+	//----------------------------------------------------------------------
+	// Primary variables - NOD values
+	pcs_number_of_primary_nvals = 1;
+	pcs_number_of_secondary_nvals = 0;
+	pcs_primary_function_name[0] = "PRESSURE1";
+	pcs_primary_function_unit[0] = "Pa";
+	//----------------------------------------------------------------------
+	// Secondary variables - NOD values
+	pcs_number_of_secondary_nvals = 1;
+	pcs_secondary_function_name[0] = "NOD_MASS_FLUX";
+	pcs_secondary_function_unit[0] = "kg/s";
+	//----------------------------------------------------------------------
+	// ELE values
+	pcs_number_of_evals = 3;
+	pcs_eval_name[0] = "VELOCITY1_X";
+	pcs_eval_unit[0] = "m/s";
+	pcs_eval_name[1] = "VELOCITY1_Y";
+	pcs_eval_unit[1] = "m/s";
+	pcs_eval_name[2] = "VELOCITY1_Z";
+	pcs_eval_unit[2] = "m/s";
+	//----------------------------------------------------------------------
+	// NUM
+	pcs_num_name[0] = "PRESSURE0";
+	pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 OK Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 OK Implementation
         WW Splitted for processes
-last modified:
+   last modified:
 **************************************************************************/
 void CRFProcess::ConfigMultiphaseFlow()
 {
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_num_name[0]= "PRESSURE0";
-         pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
-         break;
-      case 1:
-         pcs_num_name[0]= "SATURATION0";
-         pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_SATURATION1";
-         break;
-   }
-   //----------------------------------------------------------------------
-   // NOD Primary variables
-   pcs_number_of_primary_nvals=1;
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_primary_function_name[0] = "PRESSURE1";
-         pcs_primary_function_unit[0] = "Pa";
-         break;
-      case 1:
-         pcs_primary_function_name[0] = "SATURATION2";
-         pcs_primary_function_unit[0] = "m3/m3";
-         break;
-   }
-   //----------------------------------------------------------------------
-   // NOD Secondary variables
-   pcs_number_of_secondary_nvals = 12;            // BG
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_secondary_function_name[0]      = "PRESSURE2";
-         pcs_secondary_function_unit[0]      = "Pa";
-         pcs_secondary_function_timelevel[0] = 0;
-         pcs_secondary_function_name[1]      = "PRESSURE2";
-         pcs_secondary_function_unit[1]      = "Pa";
-         pcs_secondary_function_timelevel[1] = 1;
-         pcs_secondary_function_name[2]      = "PRESSURE_CAP";
-         pcs_secondary_function_unit[2]      = "Pa";
-         pcs_secondary_function_timelevel[2] = 0;
-         pcs_secondary_function_name[3]      = "FLUX";
-         pcs_secondary_function_unit[3]      = "m3/s";
-         pcs_secondary_function_timelevel[3] = 0;
-         pcs_secondary_function_name[4]      = "DENSITY1";
-         pcs_secondary_function_unit[4]      = "kg/m3";
-         pcs_secondary_function_timelevel[4] = 1;
-         pcs_secondary_function_name[5]      = "VISCOSITY1";
-         pcs_secondary_function_unit[5]      = "Pa s";
-         pcs_secondary_function_timelevel[5] = 1;
-         //BG
-         pcs_secondary_function_name[6] = "VELOCITY_X1";
-         pcs_secondary_function_unit[6] = "m/s";
-         pcs_secondary_function_timelevel[6] = 1;
-         pcs_secondary_function_name[7] = "VELOCITY_Y1";
-         pcs_secondary_function_unit[7] = "m/s";
-         pcs_secondary_function_timelevel[7] = 1;
-         pcs_secondary_function_name[8] = "VELOCITY_Z1";
-         pcs_secondary_function_unit[8] = "m/s";
-         pcs_secondary_function_timelevel[8] = 1;
-         pcs_secondary_function_name[9] = "VELOCITY_X2";
-         pcs_secondary_function_unit[9] = "m/s";
-         pcs_secondary_function_timelevel[9] = 1;
-         pcs_secondary_function_name[10] = "VELOCITY_Y2";
-         pcs_secondary_function_unit[10] = "m/s";
-         pcs_secondary_function_timelevel[10] = 1;
-         pcs_secondary_function_name[11] = "VELOCITY_Z2";
-         pcs_secondary_function_unit[11] = "m/s";
-         pcs_secondary_function_timelevel[11] = 1;
-         break;
-      case 1:
-         pcs_secondary_function_name[0]      = "SATURATION1";
-         pcs_secondary_function_timelevel[0] = 0;
-         pcs_secondary_function_unit[0]      = "m3/m3";
-         pcs_secondary_function_name[1]      = "SATURATION1";
-         pcs_secondary_function_timelevel[1] = 1;
-         pcs_secondary_function_unit[1]      = "m3/m3";
-         pcs_secondary_function_name[2]      = "PRESSURE_CAP";
-         pcs_secondary_function_unit[2]      = "Pa";
-         pcs_secondary_function_timelevel[2] = 1;
-         pcs_secondary_function_name[3]      = "FLUX";
-         pcs_secondary_function_unit[3]      = "m3/s";
-         pcs_secondary_function_timelevel[3] = 1;
-         pcs_secondary_function_name[4]      = "DENSITY2";
-         pcs_secondary_function_unit[4]      = "kg/m3";
-         pcs_secondary_function_timelevel[4] = 1;
-         pcs_secondary_function_name[5]      = "VISCOSITY2";
-         pcs_secondary_function_unit[5]      = "Pa s";
-         pcs_secondary_function_timelevel[5] = 1;
-         //BG
-         pcs_secondary_function_name[6] = "VELOCITY_X1";
-         pcs_secondary_function_unit[6] = "m/s";
-         pcs_secondary_function_timelevel[6] = 1;
-         pcs_secondary_function_name[7] = "VELOCITY_Y1";
-         pcs_secondary_function_unit[7] = "m/s";
-         pcs_secondary_function_timelevel[7] = 1;
-         pcs_secondary_function_name[8] = "VELOCITY_Z1";
-         pcs_secondary_function_unit[8] = "m/s";
-         pcs_secondary_function_timelevel[8] = 1;
-         pcs_secondary_function_name[9] = "VELOCITY_X2";
-         pcs_secondary_function_unit[9] = "m/s";
-         pcs_secondary_function_timelevel[9] = 1;
-         pcs_secondary_function_name[10] = "VELOCITY_Y2";
-         pcs_secondary_function_unit[10] = "m/s";
-         pcs_secondary_function_timelevel[10] = 1;
-         pcs_secondary_function_name[11] = "VELOCITY_Z2";
-         pcs_secondary_function_unit[11] = "m/s";
-         pcs_secondary_function_timelevel[11] = 1;
-         break;
-   }
-   //----------------------------------------------------------------------
-   // ELE values
-   pcs_number_of_evals = 7;
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_eval_name[0] = "VELOCITY1_X";
-         pcs_eval_unit[0] = "m/s";
-         pcs_eval_name[1] = "VELOCITY1_Y";
-         pcs_eval_unit[1] = "m/s";
-         pcs_eval_name[2] = "VELOCITY1_Z";
-         pcs_eval_unit[2] = "m/s";
-         pcs_eval_name[3] = "POROSITY1";          //MX 03.2005
-         pcs_eval_unit[3] = "-";
-         pcs_eval_name[4] = "POROSITY1_IL";       //MX 03.2005
-         pcs_eval_unit[4] = "-";
-         pcs_eval_name[5] = "PERMEABILITY1";      //MX 03.2005
-         pcs_eval_unit[5] = "-";
-         pcs_eval_name[6] = "POROSITY1_SW";       //MX 03.2005
-         pcs_eval_unit[6] = "-";
-         break;
-      case 1:
-         pcs_eval_name[0] = "VELOCITY2_X";
-         pcs_eval_unit[0] = "m/s";
-         pcs_eval_name[1] = "VELOCITY2_Y";
-         pcs_eval_unit[1] = "m/s";
-         pcs_eval_name[2] = "VELOCITY2_Z";
-         pcs_eval_unit[2] = "m/s";
-         pcs_eval_name[3] = "POROSITY";           //MX 03.2005
-         pcs_eval_unit[3] = "-";
-         pcs_eval_name[4] = "POROSITY_IL";        //MX 03.2005
-         pcs_eval_unit[4] = "-";
-         pcs_eval_name[5] = "PERMEABILITY";       //MX 03.2005
-         pcs_eval_unit[5] = "-";
-         pcs_eval_name[6] = "POROSITY_SW";        //MX 03.2005
-         pcs_eval_unit[6] = "-";
-         break;
-   }
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_num_name[0] = "PRESSURE0";
+		pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+		break;
+	case 1:
+		pcs_num_name[0] = "SATURATION0";
+		pcs_sol_name   = "LINEAR_SOLVER_PROPERTIES_SATURATION1";
+		break;
+	}
+	//----------------------------------------------------------------------
+	// NOD Primary variables
+	pcs_number_of_primary_nvals = 1;
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_primary_function_name[0] = "PRESSURE1";
+		pcs_primary_function_unit[0] = "Pa";
+		break;
+	case 1:
+		pcs_primary_function_name[0] = "SATURATION2";
+		pcs_primary_function_unit[0] = "m3/m3";
+		break;
+	}
+	//----------------------------------------------------------------------
+	// NOD Secondary variables
+	pcs_number_of_secondary_nvals = 12;   // BG
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_secondary_function_name[0]      = "PRESSURE2";
+		pcs_secondary_function_unit[0]      = "Pa";
+		pcs_secondary_function_timelevel[0] = 0;
+		pcs_secondary_function_name[1]      = "PRESSURE2";
+		pcs_secondary_function_unit[1]      = "Pa";
+		pcs_secondary_function_timelevel[1] = 1;
+		pcs_secondary_function_name[2]      = "PRESSURE_CAP";
+		pcs_secondary_function_unit[2]      = "Pa";
+		pcs_secondary_function_timelevel[2] = 0;
+		pcs_secondary_function_name[3]      = "FLUX";
+		pcs_secondary_function_unit[3]      = "m3/s";
+		pcs_secondary_function_timelevel[3] = 0;
+		pcs_secondary_function_name[4]      = "DENSITY1";
+		pcs_secondary_function_unit[4]      = "kg/m3";
+		pcs_secondary_function_timelevel[4] = 1;
+		pcs_secondary_function_name[5]      = "VISCOSITY1";
+		pcs_secondary_function_unit[5]      = "Pa s";
+		pcs_secondary_function_timelevel[5] = 1;
+		//BG
+		pcs_secondary_function_name[6] = "VELOCITY_X1";
+		pcs_secondary_function_unit[6] = "m/s";
+		pcs_secondary_function_timelevel[6] = 1;
+		pcs_secondary_function_name[7] = "VELOCITY_Y1";
+		pcs_secondary_function_unit[7] = "m/s";
+		pcs_secondary_function_timelevel[7] = 1;
+		pcs_secondary_function_name[8] = "VELOCITY_Z1";
+		pcs_secondary_function_unit[8] = "m/s";
+		pcs_secondary_function_timelevel[8] = 1;
+		pcs_secondary_function_name[9] = "VELOCITY_X2";
+		pcs_secondary_function_unit[9] = "m/s";
+		pcs_secondary_function_timelevel[9] = 1;
+		pcs_secondary_function_name[10] = "VELOCITY_Y2";
+		pcs_secondary_function_unit[10] = "m/s";
+		pcs_secondary_function_timelevel[10] = 1;
+		pcs_secondary_function_name[11] = "VELOCITY_Z2";
+		pcs_secondary_function_unit[11] = "m/s";
+		pcs_secondary_function_timelevel[11] = 1;
+		break;
+	case 1:
+		pcs_secondary_function_name[0]      = "SATURATION1";
+		pcs_secondary_function_timelevel[0] = 0;
+		pcs_secondary_function_unit[0]      = "m3/m3";
+		pcs_secondary_function_name[1]      = "SATURATION1";
+		pcs_secondary_function_timelevel[1] = 1;
+		pcs_secondary_function_unit[1]      = "m3/m3";
+		pcs_secondary_function_name[2]      = "PRESSURE_CAP";
+		pcs_secondary_function_unit[2]      = "Pa";
+		pcs_secondary_function_timelevel[2] = 1;
+		pcs_secondary_function_name[3]      = "FLUX";
+		pcs_secondary_function_unit[3]      = "m3/s";
+		pcs_secondary_function_timelevel[3] = 1;
+		pcs_secondary_function_name[4]      = "DENSITY2";
+		pcs_secondary_function_unit[4]      = "kg/m3";
+		pcs_secondary_function_timelevel[4] = 1;
+		pcs_secondary_function_name[5]      = "VISCOSITY2";
+		pcs_secondary_function_unit[5]      = "Pa s";
+		pcs_secondary_function_timelevel[5] = 1;
+		//BG
+		pcs_secondary_function_name[6] = "VELOCITY_X1";
+		pcs_secondary_function_unit[6] = "m/s";
+		pcs_secondary_function_timelevel[6] = 1;
+		pcs_secondary_function_name[7] = "VELOCITY_Y1";
+		pcs_secondary_function_unit[7] = "m/s";
+		pcs_secondary_function_timelevel[7] = 1;
+		pcs_secondary_function_name[8] = "VELOCITY_Z1";
+		pcs_secondary_function_unit[8] = "m/s";
+		pcs_secondary_function_timelevel[8] = 1;
+		pcs_secondary_function_name[9] = "VELOCITY_X2";
+		pcs_secondary_function_unit[9] = "m/s";
+		pcs_secondary_function_timelevel[9] = 1;
+		pcs_secondary_function_name[10] = "VELOCITY_Y2";
+		pcs_secondary_function_unit[10] = "m/s";
+		pcs_secondary_function_timelevel[10] = 1;
+		pcs_secondary_function_name[11] = "VELOCITY_Z2";
+		pcs_secondary_function_unit[11] = "m/s";
+		pcs_secondary_function_timelevel[11] = 1;
+		break;
+	}
+	//----------------------------------------------------------------------
+	// ELE values
+	pcs_number_of_evals = 7;
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_eval_name[0] = "VELOCITY1_X";
+		pcs_eval_unit[0] = "m/s";
+		pcs_eval_name[1] = "VELOCITY1_Y";
+		pcs_eval_unit[1] = "m/s";
+		pcs_eval_name[2] = "VELOCITY1_Z";
+		pcs_eval_unit[2] = "m/s";
+		pcs_eval_name[3] = "POROSITY1"; //MX 03.2005
+		pcs_eval_unit[3] = "-";
+		pcs_eval_name[4] = "POROSITY1_IL"; //MX 03.2005
+		pcs_eval_unit[4] = "-";
+		pcs_eval_name[5] = "PERMEABILITY1"; //MX 03.2005
+		pcs_eval_unit[5] = "-";
+		pcs_eval_name[6] = "POROSITY1_SW"; //MX 03.2005
+		pcs_eval_unit[6] = "-";
+		break;
+	case 1:
+		pcs_eval_name[0] = "VELOCITY2_X";
+		pcs_eval_unit[0] = "m/s";
+		pcs_eval_name[1] = "VELOCITY2_Y";
+		pcs_eval_unit[1] = "m/s";
+		pcs_eval_name[2] = "VELOCITY2_Z";
+		pcs_eval_unit[2] = "m/s";
+		pcs_eval_name[3] = "POROSITY"; //MX 03.2005
+		pcs_eval_unit[3] = "-";
+		pcs_eval_name[4] = "POROSITY_IL"; //MX 03.2005
+		pcs_eval_unit[4] = "-";
+		pcs_eval_name[5] = "PERMEABILITY"; //MX 03.2005
+		pcs_eval_unit[5] = "-";
+		pcs_eval_name[6] = "POROSITY_SW"; //MX 03.2005
+		pcs_eval_unit[6] = "-";
+		break;
+	}
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 OK Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 OK Implementation
         WW Splitted for processes
-last modified:
+   last modified:
 **************************************************************************/
 void CRFProcess::ConfigNonIsothermalFlow()
 {
-   //----------------------------------------------------------------------
-   // Primary variables
-   pcs_number_of_primary_nvals=1;
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_num_name[0]= "PRESSURE0";
-         pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
-         pcs_primary_function_name[0] = "PRESSURE1";
-         pcs_primary_function_unit[0] = "Pa";
-         break;
-      case 1:
-         pcs_num_name[0]= "SATURATION0";
-         pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_SATURATION1";
-         pcs_primary_function_name[0] = "SATURATION2";
-         pcs_primary_function_unit[0] = "m3/m3";
-         break;
-   }
-   //----------------------------------------------------------------------
-   // Secondary variables
-   pcs_number_of_secondary_nvals = 6;
-   switch(pcs_type_number)
-   {
-      case 0:
-         pcs_secondary_function_name[0] = "PRESSURE2";
-         pcs_secondary_function_timelevel[0] = 0;
-         pcs_secondary_function_unit[0] = "Pa";
-         pcs_secondary_function_name[1] = "PRESSURE2";
-         pcs_secondary_function_timelevel[1] = 1;
-         pcs_secondary_function_unit[1] = "Pa";
-         pcs_secondary_function_name[2] = "MASS_FRACTION1";
-         pcs_secondary_function_timelevel[2] = 0;
-         pcs_secondary_function_unit[2] = "kg/kg";
-         pcs_secondary_function_name[3] = "MASS_FRACTION1";
-         pcs_secondary_function_timelevel[3] = 1;
-         pcs_secondary_function_unit[3] = "kg/kg";
-         pcs_secondary_function_name[4] = "PRESSURE_CAP";
-         pcs_secondary_function_timelevel[4] = 0;
-         pcs_secondary_function_unit[4] = "Pa";
-         pcs_secondary_function_name[5] = "DENSITY1";
-         pcs_secondary_function_timelevel[5] = 1;
-         pcs_secondary_function_unit[5] = "kg/m3";
-         break;
-      case 1:
-         pcs_secondary_function_name[0] = "SATURATION1";
-         pcs_secondary_function_timelevel[0] = 0;
-         pcs_secondary_function_unit[0] = "m3/m3";
-         pcs_secondary_function_name[1] = "SATURATION1";
-         pcs_secondary_function_timelevel[1] = 1;
-         pcs_secondary_function_unit[1] = "m3/m3";
-         pcs_secondary_function_name[2] = "MASS_FRACTION2";
-         pcs_secondary_function_timelevel[2] = 0;
-         pcs_secondary_function_unit[2] = "kg/kg";
-         pcs_secondary_function_name[3] = "MASS_FRACTION2";
-         pcs_secondary_function_timelevel[3] = 1;
-         pcs_secondary_function_unit[3] = "kg/kg";
-         pcs_secondary_function_name[4] = "PRESSURE_CAP";
-         pcs_secondary_function_timelevel[4] = 1;
-         pcs_secondary_function_unit[4] = "Pa";
-         pcs_secondary_function_name[5] = "DENSITY2";
-         pcs_secondary_function_timelevel[5] = 1;
-         pcs_secondary_function_unit[5] = "kg/m3";
-         break;
-   }
-   // Node
-   pcs_number_of_primary_nvals=1;
-   // ELE values
-   pcs_number_of_evals = 14;
-   pcs_eval_name[0]  = "COMP_FLUX";
-   pcs_eval_name[1]  = "POROSITY";
-   pcs_eval_name[2]  = "PERMEABILITY";
-   pcs_eval_name[3]  = "VELOCITY1_X";
-   pcs_eval_name[4]  = "VELOCITY1_Y";
-   pcs_eval_name[5]  = "VELOCITY1_Z";
-   pcs_eval_name[6]  = "VELOCITY2_X";
-   pcs_eval_name[7]  = "VELOCITY2_Y";
-   pcs_eval_name[8]  = "VELOCITY2_Z";
-   pcs_eval_name[9]  = "POROSITY_IL";
-   pcs_eval_name[10] = "VoidRatio";
-   pcs_eval_name[11] = "PorosityChange";
-   pcs_eval_name[12] = "n_sw_Rate";
-   pcs_eval_name[13]  = "POROSITY_SW";
-   pcs_eval_unit[0]  = "kg/s";
-   pcs_eval_unit[1]  = "m3/m3";
-   pcs_eval_unit[2]  = "m2";
-   pcs_eval_unit[3]  = "m/s";
-   pcs_eval_unit[4]  = "m/s";
-   pcs_eval_unit[5]  = "m/s";
-   pcs_eval_unit[6]  = "m/s";
-   pcs_eval_unit[7]  = "m/s";
-   pcs_eval_unit[8]  = "m/s";
-   pcs_eval_unit[9]  = "-";
-   pcs_eval_unit[10] = "-";
-   pcs_eval_unit[11] = "-";
-   pcs_eval_unit[12] = "-";
-   pcs_eval_unit[13] = "-";
+	//----------------------------------------------------------------------
+	// Primary variables
+	pcs_number_of_primary_nvals = 1;
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_num_name[0] = "PRESSURE0";
+		pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+		pcs_primary_function_name[0] = "PRESSURE1";
+		pcs_primary_function_unit[0] = "Pa";
+		break;
+	case 1:
+		pcs_num_name[0] = "SATURATION0";
+		pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_SATURATION1";
+		pcs_primary_function_name[0] = "SATURATION2";
+		pcs_primary_function_unit[0] = "m3/m3";
+		break;
+	}
+	//----------------------------------------------------------------------
+	// Secondary variables
+	pcs_number_of_secondary_nvals = 6;
+	switch(pcs_type_number)
+	{
+	case 0:
+		pcs_secondary_function_name[0] = "PRESSURE2";
+		pcs_secondary_function_timelevel[0] = 0;
+		pcs_secondary_function_unit[0] = "Pa";
+		pcs_secondary_function_name[1] = "PRESSURE2";
+		pcs_secondary_function_timelevel[1] = 1;
+		pcs_secondary_function_unit[1] = "Pa";
+		pcs_secondary_function_name[2] = "MASS_FRACTION1";
+		pcs_secondary_function_timelevel[2] = 0;
+		pcs_secondary_function_unit[2] = "kg/kg";
+		pcs_secondary_function_name[3] = "MASS_FRACTION1";
+		pcs_secondary_function_timelevel[3] = 1;
+		pcs_secondary_function_unit[3] = "kg/kg";
+		pcs_secondary_function_name[4] = "PRESSURE_CAP";
+		pcs_secondary_function_timelevel[4] = 0;
+		pcs_secondary_function_unit[4] = "Pa";
+		pcs_secondary_function_name[5] = "DENSITY1";
+		pcs_secondary_function_timelevel[5] = 1;
+		pcs_secondary_function_unit[5] = "kg/m3";
+		break;
+	case 1:
+		pcs_secondary_function_name[0] = "SATURATION1";
+		pcs_secondary_function_timelevel[0] = 0;
+		pcs_secondary_function_unit[0] = "m3/m3";
+		pcs_secondary_function_name[1] = "SATURATION1";
+		pcs_secondary_function_timelevel[1] = 1;
+		pcs_secondary_function_unit[1] = "m3/m3";
+		pcs_secondary_function_name[2] = "MASS_FRACTION2";
+		pcs_secondary_function_timelevel[2] = 0;
+		pcs_secondary_function_unit[2] = "kg/kg";
+		pcs_secondary_function_name[3] = "MASS_FRACTION2";
+		pcs_secondary_function_timelevel[3] = 1;
+		pcs_secondary_function_unit[3] = "kg/kg";
+		pcs_secondary_function_name[4] = "PRESSURE_CAP";
+		pcs_secondary_function_timelevel[4] = 1;
+		pcs_secondary_function_unit[4] = "Pa";
+		pcs_secondary_function_name[5] = "DENSITY2";
+		pcs_secondary_function_timelevel[5] = 1;
+		pcs_secondary_function_unit[5] = "kg/m3";
+		break;
+	}
+	// Node
+	pcs_number_of_primary_nvals = 1;
+	// ELE values
+	pcs_number_of_evals = 14;
+	pcs_eval_name[0]  = "COMP_FLUX";
+	pcs_eval_name[1]  = "POROSITY";
+	pcs_eval_name[2]  = "PERMEABILITY";
+	pcs_eval_name[3]  = "VELOCITY1_X";
+	pcs_eval_name[4]  = "VELOCITY1_Y";
+	pcs_eval_name[5]  = "VELOCITY1_Z";
+	pcs_eval_name[6]  = "VELOCITY2_X";
+	pcs_eval_name[7]  = "VELOCITY2_Y";
+	pcs_eval_name[8]  = "VELOCITY2_Z";
+	pcs_eval_name[9]  = "POROSITY_IL";
+	pcs_eval_name[10] = "VoidRatio";
+	pcs_eval_name[11] = "PorosityChange";
+	pcs_eval_name[12] = "n_sw_Rate";
+	pcs_eval_name[13]  = "POROSITY_SW";
+	pcs_eval_unit[0]  = "kg/s";
+	pcs_eval_unit[1]  = "m3/m3";
+	pcs_eval_unit[2]  = "m2";
+	pcs_eval_unit[3]  = "m/s";
+	pcs_eval_unit[4]  = "m/s";
+	pcs_eval_unit[5]  = "m/s";
+	pcs_eval_unit[6]  = "m/s";
+	pcs_eval_unit[7]  = "m/s";
+	pcs_eval_unit[8]  = "m/s";
+	pcs_eval_unit[9]  = "-";
+	pcs_eval_unit[10] = "-";
+	pcs_eval_unit[11] = "-";
+	pcs_eval_unit[12] = "-";
+	pcs_eval_unit[13] = "-";
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 OK Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 OK Implementation
         WW Splitted for processes
-last modified:
+   last modified:
 **************************************************************************/
 //void CRFProcess::ConfigNonIsothermalFlowRichards()
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2004 SB Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2004 SB Implementation
         WW Splitted for processes
-01/2006 OK Tests
-08/2006 OK FLUX
+   01/2006 OK Tests
+   08/2006 OK FLUX
 **************************************************************************/
 void CRFProcess::ConfigMassTransport()
 {
-   long comp=1;
-   /* count transport processes */
-   pcs_component_number++;
-   comp = pcs_component_number;
-   // 1 NOD values
-   // 1.1 primary variables
-   pcs_number_of_primary_nvals = 1;
-   pcs_primary_function_name[0]= new char[80];
-   //  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
-   //----------------------------------------------------------------------
-   // Tests
-   //WW int size; 
-   //WW  size = (int)cp_vec.size();
-   //int comb;                                      //OK411
-   //comb = pcs_component_number;
+	long comp = 1;
+	/* count transport processes */
+	pcs_component_number++;
+	comp = pcs_component_number;
+	// 1 NOD values
+	// 1.1 primary variables
+	pcs_number_of_primary_nvals = 1;
+	pcs_primary_function_name[0] = new char[80];
+	//  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
+	//----------------------------------------------------------------------
+	// Tests
+	//WW int size;
+	//WW  size = (int)cp_vec.size();
+	//int comb;                                      //OK411
+	//comb = pcs_component_number;
 
-   if((int)cp_vec.size()<pcs_component_number+1)
-   {
+	if((int)cp_vec.size() < pcs_component_number + 1)
+	{
       cout << "Error in CRFProcess::ConfigMassTransport - not enough MCP data" << '\n';
-      return;
-   }
-   //----------------------------------------------------------------------
-   pcs_primary_function_name[0] = cp_vec[pcs_component_number]->compname.c_str();
-   //sprintf(pcs_primary_function_name[0], "%s", cp_vec[pcs_component_number]->compname.c_str());
-   pcs_primary_function_unit[0] = "kg/m3";        //SB
-   /* SB: Eintrag component name in Ausgabestruktur */ //SB:todo : just one phase todo:name
-   /*
-         pcs_primary_function_name[0] = GetTracerCompName(0,this->pcs_component_number-1);
-         name_initial_condition_tracer_component = pcs_primary_function_name[0];
-         pcs_ic_name_mass = pcs_primary_function_name[0];
-   */
-   // 1.2 secondary variables
-   pcs_number_of_secondary_nvals = 2;             //SB3909
-   pcs_secondary_function_name[0]= new char[80];
-   char pcs_secondary_function_name_tmp [80];
-   sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
-   pcs_secondary_function_name[0] = pcs_secondary_function_name_tmp;
-   //      pcs_secondary_function_name[0] = "MASS_FLUX1";
-   pcs_secondary_function_unit[0] = "kg/m3/s";
-   pcs_secondary_function_timelevel[0] = 0;
-   pcs_secondary_function_name[1]= new char[80];
-   sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
-   pcs_secondary_function_name[1] = pcs_secondary_function_name_tmp;
-   pcs_secondary_function_unit[1] = "kg/m3/s";
-   pcs_secondary_function_timelevel[1] = 1;
-   //KG44 added secondary function for adaptive time stepping
-   if (adaption)
-   {
-      pcs_number_of_secondary_nvals = 3;
-      pcs_secondary_function_name[2]= new char[80];
-      sprintf(pcs_secondary_function_name_tmp, "%s%li","CONC_BACK_",comp);
-      pcs_secondary_function_name[2] = pcs_secondary_function_name_tmp;
-      pcs_secondary_function_unit[2] = "kg/m3";
-      pcs_secondary_function_timelevel[2] = 0;
-   }
-   //OK  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
-   // 2 ELE values
-   pcs_number_of_evals = 0;
-   //	  pcs_eval_name[0] = "Darcy velocity";
+		return;
+	}
+	//----------------------------------------------------------------------
+	pcs_primary_function_name[0] = cp_vec[pcs_component_number]->compname.c_str();
+	//sprintf(pcs_primary_function_name[0], "%s", cp_vec[pcs_component_number]->compname.c_str());
+	pcs_primary_function_unit[0] = "kg/m3"; //SB
+	/* SB: Eintrag component name in Ausgabestruktur */ //SB:todo : just one phase todo:name
+	/*
+	      pcs_primary_function_name[0] = GetTracerCompName(0,this->pcs_component_number-1);
+	      name_initial_condition_tracer_component = pcs_primary_function_name[0];
+	      pcs_ic_name_mass = pcs_primary_function_name[0];
+	 */
+	// 1.2 secondary variables
+	pcs_number_of_secondary_nvals = 2;    //SB3909
+	pcs_secondary_function_name[0] = new char[80];
+	char pcs_secondary_function_name_tmp [80];
+	sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
+	pcs_secondary_function_name[0] = pcs_secondary_function_name_tmp;
+	//      pcs_secondary_function_name[0] = "MASS_FLUX1";
+	pcs_secondary_function_unit[0] = "kg/m3/s";
+	pcs_secondary_function_timelevel[0] = 0;
+	pcs_secondary_function_name[1] = new char[80];
+	sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
+	pcs_secondary_function_name[1] = pcs_secondary_function_name_tmp;
+	pcs_secondary_function_unit[1] = "kg/m3/s";
+	pcs_secondary_function_timelevel[1] = 1;
+	//KG44 added secondary function for adaptive time stepping
+	if (adaption)
+	{
+		pcs_number_of_secondary_nvals = 3;
+		pcs_secondary_function_name[2] = new char[80];
+		sprintf(pcs_secondary_function_name_tmp, "%s%li","CONC_BACK_",comp);
+		pcs_secondary_function_name[2] = pcs_secondary_function_name_tmp;
+		pcs_secondary_function_unit[2] = "kg/m3";
+		pcs_secondary_function_timelevel[2] = 0;
+	}
+	//OK  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
+	// 2 ELE values
+	pcs_number_of_evals = 0;
+	//	  pcs_eval_name[0] = "Darcy velocity";
 #ifdef REACTION_ELEMENT
-   pcs_number_of_evals = 1;
-   pcs_eval_name[0] = pcs_primary_function_name[0];
-   pcs_eval_unit[0] = "mol/kgH2O";
+	pcs_number_of_evals = 1;
+	pcs_eval_name[0] = pcs_primary_function_name[0];
+	pcs_eval_unit[0] = "mol/kgH2O";
 #endif
-   // 3 ELE matrices
-   // NUM
-   pcs_num_name[0] = "CONCENTRATION0";
-   /* SB: immer solver properties der ersten Komponente nehmen */
-                                                  //SB ??
-   pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_CONCENTRATION1";
+	// 3 ELE matrices
+	// NUM
+	pcs_num_name[0] = "CONCENTRATION0";
+	/* SB: immer solver properties der ersten Komponente nehmen */
+	//SB ??
+	pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_CONCENTRATION1";
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 OK Implementation
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 OK Implementation
         WW Splitted for processes
-last modified:
+   last modified:
 **************************************************************************/
 void CRFProcess::ConfigHeatTransport()
 {
-   pcs_num_name[0] = "TEMPERATURE0";
-   pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_TEMPERATURE1";
-   // NOD
-   if((int)continuum_vector.size() == 1)
-   {
-      pcs_number_of_primary_nvals = 1;
-      pcs_primary_function_name[0] = "TEMPERATURE1";
-      pcs_primary_function_unit[0] = "K";
-      pcs_number_of_secondary_nvals = 0;
+	pcs_num_name[0] = "TEMPERATURE0";
+	pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_TEMPERATURE1";
+	// NOD
+	if((int)continuum_vector.size() == 1)
+	{
+		pcs_number_of_primary_nvals = 1;
+		pcs_primary_function_name[0] = "TEMPERATURE1";
+		pcs_primary_function_unit[0] = "K";
+		pcs_number_of_secondary_nvals = 0;
 #ifdef REACTION_ELEMENT
-      pcs_number_of_evals = 1;                    //MX
-      pcs_eval_name[0] = "TEMPERATURE1";
-      pcs_eval_unit[0] = "K";
+		pcs_number_of_evals = 1;  //MX
+		pcs_eval_name[0] = "TEMPERATURE1";
+		pcs_eval_unit[0] = "K";
 #endif
-   }
-   if((int)continuum_vector.size() == 2)
-   {
-      pcs_number_of_primary_nvals = 2;
-      pcs_primary_function_name[0] = "TEMPERATURE1";
-      pcs_primary_function_unit[0] = "K";
-      pcs_number_of_primary_nvals = 2;
-      pcs_primary_function_name[1] = "TEMPERATURE2";
-      pcs_primary_function_unit[1] = "K";
-      pcs_number_of_secondary_nvals = 0;
-   }
+	}
+	if((int)continuum_vector.size() == 2)
+	{
+		pcs_number_of_primary_nvals = 2;
+		pcs_primary_function_name[0] = "TEMPERATURE1";
+		pcs_primary_function_unit[0] = "K";
+		pcs_number_of_primary_nvals = 2;
+		pcs_primary_function_name[1] = "TEMPERATURE2";
+		pcs_primary_function_unit[1] = "K";
+		pcs_number_of_secondary_nvals = 0;
+	}
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2003 WW Implementation
-last modified:
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2003 WW Implementation
+   last modified:
 **************************************************************************/
 void CRFProcess::ConfigDeformation()
 {
@@ -2999,276 +3048,276 @@ void CRFProcess::ConfigDeformation()
 
 
 /**************************************************************************
-FEMLib-Method: Static problems
-Task:
-Programing:
-05/2005 WW Implementation
-last modified:
+   FEMLib-Method: Static problems
+   Task:
+   Programing:
+   05/2005 WW Implementation
+   last modified:
 **************************************************************************/
 void CRFProcess::VariableStaticProblem()
 {
-   //----------------------------------------------------------------------
-   // NOD Primary functions
-   pcs_number_of_primary_nvals = 2;               //OK distinguish 2/3D problems, problem_dimension_dm;
-   dm_number_of_primary_nvals = 2;
-   pcs_number_of_evals = 0;
-   pcs_primary_function_name[0] = "DISPLACEMENT_X1";
-   pcs_primary_function_name[1] = "DISPLACEMENT_Y1";
-   pcs_primary_function_unit[0] = "m";
-   pcs_primary_function_unit[1] = "m";
-   if(max_dim==2)
-   {
-      pcs_number_of_primary_nvals = 3;
-      dm_number_of_primary_nvals = 3;
-      pcs_primary_function_name[2] = "DISPLACEMENT_Z1";
-      pcs_primary_function_unit[2] = "m";
-   }
-   //----------------------------------------------------------------------
-   // NOD Secondary functions
-   pcs_number_of_secondary_nvals = 0;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   //  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0";
-   //  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   //  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   //  pcs_number_of_secondary_nvals++;
+	//----------------------------------------------------------------------
+	// NOD Primary functions
+	pcs_number_of_primary_nvals = 2;      //OK distinguish 2/3D problems, problem_dimension_dm;
+	dm_number_of_primary_nvals = 2;
+	pcs_number_of_evals = 0;
+	pcs_primary_function_name[0] = "DISPLACEMENT_X1";
+	pcs_primary_function_name[1] = "DISPLACEMENT_Y1";
+	pcs_primary_function_unit[0] = "m";
+	pcs_primary_function_unit[1] = "m";
+	if(max_dim == 2)
+	{
+		pcs_number_of_primary_nvals = 3;
+		dm_number_of_primary_nvals = 3;
+		pcs_primary_function_name[2] = "DISPLACEMENT_Z1";
+		pcs_primary_function_unit[2] = "m";
+	}
+	//----------------------------------------------------------------------
+	// NOD Secondary functions
+	pcs_number_of_secondary_nvals = 0;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	//  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0";
+	//  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	//  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	//  pcs_number_of_secondary_nvals++;
 
-   if(max_dim==2)                                 // 3D
-   {
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-   }
+	if(max_dim == 2)                      // 3D
+	{
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "--";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+	}
 
-   if(type==41)
-   {                                              //Monolithic scheme
-      Def_Variable_LiquidFlow();
+	if(type == 41)
+	{                                     //Monolithic scheme
+		Def_Variable_LiquidFlow();
 
-      // Output material parameters
-      configMaterialParameters();
-   }
-   else if (type==42)                             //Monolithic scheme H2M. 03.08.2010. WW
-   {
-      Def_Variable_MultiPhaseFlow();
+		// Output material parameters
+		configMaterialParameters();
+	}
+	else if (type == 42)                  //Monolithic scheme H2M. 03.08.2010. WW
+	{
+		Def_Variable_MultiPhaseFlow();
 
-      // Output material parameters
-      configMaterialParameters();
-   }
+		// Output material parameters
+		configMaterialParameters();
+	}
 }
 
 
 /**************************************************************************
-FEMLib-Method: Dynamic problems
-Task:
-Programing:
-05/2005 WW/LD Implementation
-last modified:
+   FEMLib-Method: Dynamic problems
+   Task:
+   Programing:
+   05/2005 WW/LD Implementation
+   last modified:
 **************************************************************************/
 void CRFProcess::VariableDynamics()
 {
-   //----------------------------------------------------------------------
-   // NOD Primary functions
-   pcs_number_of_primary_nvals = 2;
-   dm_number_of_primary_nvals = 2;
-   pcs_primary_function_name[0] = "ACCELERATION_X1";
-   pcs_primary_function_name[1] = "ACCELERATION_Y1";
-   pcs_primary_function_unit[0] = "m/s^2";
-   pcs_primary_function_unit[1] = "m/s^2";
-   if(max_dim==2)
-   {
-      pcs_number_of_primary_nvals = 3;
-      dm_number_of_primary_nvals = 3;
-      pcs_primary_function_name[2] = "ACCELERATION_Z1";
-      pcs_primary_function_unit[2] = "m/s^2";
-   }
-   pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE_RATE1";
-   pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa/s";
-   pcs_number_of_primary_nvals++;
+	//----------------------------------------------------------------------
+	// NOD Primary functions
+	pcs_number_of_primary_nvals = 2;
+	dm_number_of_primary_nvals = 2;
+	pcs_primary_function_name[0] = "ACCELERATION_X1";
+	pcs_primary_function_name[1] = "ACCELERATION_Y1";
+	pcs_primary_function_unit[0] = "m/s^2";
+	pcs_primary_function_unit[1] = "m/s^2";
+	if(max_dim == 2)
+	{
+		pcs_number_of_primary_nvals = 3;
+		dm_number_of_primary_nvals = 3;
+		pcs_primary_function_name[2] = "ACCELERATION_Z1";
+		pcs_primary_function_unit[2] = "m/s^2";
+	}
+	pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE_RATE1";
+	pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa/s";
+	pcs_number_of_primary_nvals++;
 
-   //----------------------------------------------------------------------
-   // NOD Secondary functions
-   pcs_number_of_secondary_nvals = 0;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   //  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0";
-   //  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   //  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   //  pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_X1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Y1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_X";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Y";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   // 3D
-   if(max_dim==2)                                 // 3D
-   {
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Z1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Z";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-   }
+	//----------------------------------------------------------------------
+	// NOD Secondary functions
+	pcs_number_of_secondary_nvals = 0;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XX";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_ZZ";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	//  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "POROPRESSURE0";
+	//  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	//  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	//  pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XX";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YY";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_ZZ";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_PLS";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_X";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Y";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	// 3D
+	if(max_dim == 2)                      // 3D
+	{
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_XZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRESS_YZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_XZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STRAIN_YZ";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "-";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DISPLACEMENT_Z1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_DM_Z";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+	}
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-02/2005 OK Implementation
-02/2006 OK FLUX
+   FEMLib-Method:
+   Task:
+   Programing:
+   02/2005 OK Implementation
+   02/2006 OK FLUX
 **************************************************************************/
 void CRFProcess::ConfigUnsaturatedFlow()
 {
-   if ((int) continuum_vector.size() == 1)
-   {
-      // 1.1 primary variables
-      pcs_number_of_primary_nvals = 1;
-      pcs_primary_function_name[0] = "PRESSURE1";
-      pcs_primary_function_unit[0] = "Pa";
-      // 1.2 secondary variables
-      //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-      pcs_number_of_secondary_nvals = 0;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "PRESSURE_CAP1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;
-                                                  //MB
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;
-                                                  //MB
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
+	if ((int) continuum_vector.size() == 1)
+	{
+		// 1.1 primary variables
+		pcs_number_of_primary_nvals = 1;
+		pcs_primary_function_name[0] = "PRESSURE1";
+		pcs_primary_function_unit[0] = "Pa";
+		// 1.2 secondary variables
+		//OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
+		pcs_number_of_secondary_nvals = 0;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "PRESSURE_CAP1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++;
+		//MB
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++;
+		//MB
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "FLUX";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
 		if(Neglect_H_ini==2)
 		{
 			pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE1_Ini";
@@ -3277,207 +3326,207 @@ void CRFProcess::ConfigUnsaturatedFlow()
 			pcs_number_of_secondary_nvals++;//WX:08.2011
 		}
 
-      //TEST
-      //#define DECOVALEX
+		//TEST
+		//#define DECOVALEX
 #ifdef DECOVALEX
-      // DECOVALEX Test
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_I";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;
+		// DECOVALEX Test
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_I";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++;
 #endif
-      /* if(adaption) //WW, JOD removed
-       {
-       pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P";
-       pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-       pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-       pcs_number_of_secondary_nvals++;
-       }*/
-      // Nodal velocity. WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_X1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Y1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Z1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-                                                  //JOD
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;
-                                                  //JOD
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
+		/* if(adaption) //WW, JOD removed
+		   {
+		   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P";
+		   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		   pcs_number_of_secondary_nvals++;
+		   }*/
+		// Nodal velocity. WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_X1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Y1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Z1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
+		//JOD
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++;
+		//JOD
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "COUPLING";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++;
 			// for calibration (unconfined groundwater flow with variable density) 5.3.07 JOD
 	    pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
         pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
         pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
         pcs_number_of_secondary_nvals++;
 	}
-   else if ((int) continuum_vector.size() == 2)
-   {
-      dof = 2;                                    //WW
-      // 1.1 primary variables
-      pcs_number_of_primary_nvals = 2;            //YD
-      pcs_primary_function_name[0] = "PRESSURE1";
-      pcs_primary_function_unit[0] = "Pa";
-      pcs_primary_function_name[1] = "PRESSURE2";
-      pcs_primary_function_unit[1] = "Pa";
-      // 1.2 secondary variables
-      //OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
-      pcs_number_of_secondary_nvals = 0;
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "SATURATION2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "PRESSURE_CAP1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "PRESSURE_CAP2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-      pcs_number_of_secondary_nvals++;            //WW
-      // Nodal velocity. WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_X1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Y1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Z1";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_X2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Y2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals]
-         = "VELOCITY_Z2";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;            //WW
-                                                  // 03.03.2008. WW
-      for (size_t i = 0; i < GetPrimaryVNumber(); i++)
-         Shift[i] = i * m_msh->GetNodesNumber(true);
-   }
+	else if ((int) continuum_vector.size() == 2)
+	{
+		dof = 2;                  //WW
+		// 1.1 primary variables
+		pcs_number_of_primary_nvals = 2; //YD
+		pcs_primary_function_name[0] = "PRESSURE1";
+		pcs_primary_function_unit[0] = "Pa";
+		pcs_primary_function_name[1] = "PRESSURE2";
+		pcs_primary_function_unit[1] = "Pa";
+		// 1.2 secondary variables
+		//OK LOPCalcSecondaryVariables_USER = MMPCalcSecondaryVariablesRichards; // p_c and S^l
+		pcs_number_of_secondary_nvals = 0;
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "SATURATION2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "PRESSURE_CAP1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "PRESSURE_CAP2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+		pcs_number_of_secondary_nvals++; //WW
+		// Nodal velocity. WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_X1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Y1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Z1";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_X2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Y2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
+		        = "VELOCITY_Z2";
+		pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+		pcs_number_of_secondary_nvals++; //WW
+		                                 // 03.03.2008. WW
+		for (size_t i = 0; i < GetPrimaryVNumber(); i++)
+			Shift[i] = i * m_msh->GetNodesNumber(true);
+	}
 
-   // Output material parameters
-   //WW // TF
-   configMaterialParameters();
+	// Output material parameters
+	//WW // TF
+	configMaterialParameters();
 
-   // 2 ELE values
-   pcs_number_of_evals = 8;
-   pcs_eval_name[0] = "VELOCITY1_X";
-   pcs_eval_unit[0] = "m/s";
-   pcs_eval_name[1] = "VELOCITY1_Y";
-   pcs_eval_unit[1] = "m/s";
-   pcs_eval_name[2] = "VELOCITY1_Z";
-   pcs_eval_unit[2] = "m/s";
-   pcs_eval_name[3] = "POROSITY";                 //MX 11.2005
-   pcs_eval_unit[3] = "-";
-   pcs_eval_name[4] = "POROSITY_IL";              //MX 11.2005
-   pcs_eval_unit[4] = "-";
-   pcs_eval_name[5] = "PERMEABILITY";             //MX 11.2005
-   pcs_eval_unit[5] = "-";
-   pcs_eval_name[6] = "n_sw";                     //MX 11.2005
-   pcs_eval_unit[6] = "-";
-   pcs_eval_name[7] = "n_sw_rate";                //MX 11.2005
-   pcs_eval_unit[7] = "-";
+	// 2 ELE values
+	pcs_number_of_evals = 8;
+	pcs_eval_name[0] = "VELOCITY1_X";
+	pcs_eval_unit[0] = "m/s";
+	pcs_eval_name[1] = "VELOCITY1_Y";
+	pcs_eval_unit[1] = "m/s";
+	pcs_eval_name[2] = "VELOCITY1_Z";
+	pcs_eval_unit[2] = "m/s";
+	pcs_eval_name[3] = "POROSITY";        //MX 11.2005
+	pcs_eval_unit[3] = "-";
+	pcs_eval_name[4] = "POROSITY_IL";     //MX 11.2005
+	pcs_eval_unit[4] = "-";
+	pcs_eval_name[5] = "PERMEABILITY";    //MX 11.2005
+	pcs_eval_unit[5] = "-";
+	pcs_eval_name[6] = "n_sw";            //MX 11.2005
+	pcs_eval_unit[6] = "-";
+	pcs_eval_name[7] = "n_sw_rate";       //MX 11.2005
+	pcs_eval_unit[7] = "-";
 }
 
 
 /**************************************************************************
- FEMLib-Method:
- Task:
- Programing:
- 05/2005 PCH Implementation
- last modified:
- **************************************************************************/
+   FEMLib-Method:
+   Task:
+   Programing:
+   05/2005 PCH Implementation
+   last modified:
+**************************************************************************/
 void CRFProcess::ConfigFluidMomentum()
 {
-   //pcs_num_name[0] = "VELOCITY1_X";
-   // Nothing added in terms of matrix solver.
-   // Just linear solver is good enough.
-   pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
-   // NOD values
-   pcs_number_of_primary_nvals = 3;
-   pcs_primary_function_name[0] = "VELOCITY1_X";
-   pcs_primary_function_unit[0] = "m/s";
-   pcs_primary_function_name[1] = "VELOCITY1_Y";
-   pcs_primary_function_unit[1] = "m/s";
-   pcs_primary_function_name[2] = "VELOCITY1_Z";
-   pcs_primary_function_unit[2] = "m/s";
+	//pcs_num_name[0] = "VELOCITY1_X";
+	// Nothing added in terms of matrix solver.
+	// Just linear solver is good enough.
+	pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+	// NOD values
+	pcs_number_of_primary_nvals = 3;
+	pcs_primary_function_name[0] = "VELOCITY1_X";
+	pcs_primary_function_unit[0] = "m/s";
+	pcs_primary_function_name[1] = "VELOCITY1_Y";
+	pcs_primary_function_unit[1] = "m/s";
+	pcs_primary_function_name[2] = "VELOCITY1_Z";
+	pcs_primary_function_unit[2] = "m/s";
 
-   // I'm adding this to initialize for Fluid Momentum process
-   pcs_number_of_secondary_nvals = 0;
-   pcs_number_of_evals = 3;
+	// I'm adding this to initialize for Fluid Momentum process
+	pcs_number_of_secondary_nvals = 0;
+	pcs_number_of_evals = 3;
 
-   pcs_eval_name[0] = "VELOCITY1_X";
-   pcs_eval_unit[0] = "m/s";
-   pcs_eval_name[1] = "VELOCITY1_Y";
-   pcs_eval_unit[1] = "m/s";
-   pcs_eval_name[2] = "VELOCITY1_Z";
-   pcs_eval_unit[2] = "m/s";
+	pcs_eval_name[0] = "VELOCITY1_X";
+	pcs_eval_unit[0] = "m/s";
+	pcs_eval_name[1] = "VELOCITY1_Y";
+	pcs_eval_unit[1] = "m/s";
+	pcs_eval_name[2] = "VELOCITY1_Z";
+	pcs_eval_unit[2] = "m/s";
 }
 
 
 /**************************************************************************/
 void CRFProcess::ConfigRandomWalk()
 {
-   // Nothing added in terms of matrix solver.
-   // Just linear solver is good enough.
-   pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
+	// Nothing added in terms of matrix solver.
+	// Just linear solver is good enough.
+	pcs_sol_name    = "LINEAR_SOLVER_PROPERTIES_PRESSURE1";
 
-   // NOD values
-   pcs_number_of_primary_nvals = 0;
-   pcs_number_of_secondary_nvals = 0;
+	// NOD values
+	pcs_number_of_primary_nvals = 0;
+	pcs_number_of_secondary_nvals = 0;
 
-   // 2 ELE values
-   pcs_number_of_evals = 1;
-   pcs_eval_name[0] = "CONCENTRATION0";
-   pcs_eval_unit[0]  = "kg/m3";
+	// 2 ELE values
+	pcs_number_of_evals = 1;
+	pcs_eval_name[0] = "CONCENTRATION0";
+	pcs_eval_unit[0]  = "kg/m3";
 
     for(size_t e = 0; e<m_msh->ele_vector.size(); e++)
 	{    
@@ -3485,7 +3534,7 @@ void CRFProcess::ConfigRandomWalk()
         m_msh->ele_vector[e]->SetAngle(0, 0.); 
         m_msh->ele_vector[e]->SetAngle(1, 0.); 
         m_msh->ele_vector[e]->SetAngle(2, 0.); 
-	}
+}
 
 }
 
@@ -3496,54 +3545,54 @@ void CRFProcess::ConfigRandomWalk()
 ////////////////////////////////////////////////////////////////////////////
 void CRFProcess:: Def_Variable_MultiPhaseFlow()
 {
-   // 1.1 primary variables
-   pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE1";
-   pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
-   pcs_number_of_primary_nvals++;
+	// 1.1 primary variables
+	pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE1";
+	pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
+	pcs_number_of_primary_nvals++;
 
-   pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE2";
-   pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
-   pcs_number_of_primary_nvals++;
+	pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE2";
+	pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
+	pcs_number_of_primary_nvals++;
 
-   // 1.2 secondary variables
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_W";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
+	// 1.2 secondary variables
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_W";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
 
-   // Nodal velocity.
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
+	// Nodal velocity.
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
 
 	if(Neglect_H_ini==2)
 	{
@@ -3579,7 +3628,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_eval_unit[pcs_number_of_evals] = "m/s";
 	pcs_number_of_evals++;
 
-  if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
+       if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
         {
 	// BG 01/2011, variables necessary for ECLIPSE
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals]      = "DENSITY1";
@@ -3616,28 +3665,28 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 ////////////////////////////////////////////////////////////////////////////
 void CRFProcess:: Def_Variable_LiquidFlow()
 {
-      // 1.1 primary variables
-      pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE1";
-      pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
-      pcs_number_of_primary_nvals++;
+	// 1.1 primary variables
+	pcs_primary_function_name[pcs_number_of_primary_nvals] = "PRESSURE1";
+	pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
+	pcs_number_of_primary_nvals++;
 
 
-      pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
-      pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
-      pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-      pcs_number_of_secondary_nvals++;
-	  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
-	  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-	  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-	  pcs_number_of_secondary_nvals++;
-	  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
-	  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-	  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-	  pcs_number_of_secondary_nvals++;
-	  pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
-	  pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-	  pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-	  pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
 
 	if(Neglect_H_ini==2)
 	{
@@ -3647,29 +3696,29 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 		pcs_number_of_secondary_nvals++;				  //WX 08.2011
 	}
 
-      // 1.3 elemental variables
-	  //pcs_number_of_evals = 0;
-      pcs_eval_name[pcs_number_of_evals] = "VOLUME";
-      pcs_eval_unit[pcs_number_of_evals] = "m3";
-	  pcs_number_of_evals++;
-      pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_X";
-	  pcs_eval_unit[pcs_number_of_evals] = "m/s";
-	  pcs_number_of_evals++;
-	  pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Y";
-	  pcs_eval_unit[pcs_number_of_evals] = "m/s";
-	  pcs_number_of_evals++;
-	  pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Z";
-	  pcs_eval_unit[pcs_number_of_evals] = "m/s";
-	  pcs_number_of_evals++;
-      pcs_eval_name[pcs_number_of_evals] = "POROSITY";                 //MX, test for n=n(c), 04.2005
-      pcs_eval_unit[pcs_number_of_evals] = "-";
-	  pcs_number_of_evals++;
+	// 1.3 elemental variables
+	//pcs_number_of_evals = 0;
+	pcs_eval_name[pcs_number_of_evals] = "VOLUME";
+	pcs_eval_unit[pcs_number_of_evals] = "m3";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_X";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Y";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Z";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "POROSITY";           //MX, test for n=n(c), 04.2005
+	pcs_eval_unit[pcs_number_of_evals] = "-";
+	pcs_number_of_evals++;
 	pcs_eval_name[pcs_number_of_evals] = "PERMEABILITY";       //JT 2010 -- need this for index call of heterogeneous permeability
 	pcs_eval_unit[pcs_number_of_evals] = "m2";
 	pcs_number_of_evals++;
 
 	// WTP: needed?
-     if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
+        if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
         {
 	// BG 01/2011, variables necessary for ECLIPSE
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals]      = "DENSITY1";
@@ -3687,100 +3736,100 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 }
 
 /**************************************************************************
-FEMLib-Method: For non-isothermal multi-phase flow
-Task:
-Programing:
-02/2007 WW Implementation
-04/2011 WW Apdate for H2M
+   FEMLib-Method: For non-isothermal multi-phase flow
+   Task:
+   Programing:
+   02/2007 WW Implementation
+   04/2011 WW Apdate for H2M
 **************************************************************************/
 void CRFProcess::ConfigMultiPhaseFlow()
 {
-   dof = 2;
-   pcs_number_of_primary_nvals = 0;
-   pcs_number_of_secondary_nvals = 0;
+	dof = 2;
+	pcs_number_of_primary_nvals = 0;
+	pcs_number_of_secondary_nvals = 0;
 
-   Def_Variable_MultiPhaseFlow();
+	Def_Variable_MultiPhaseFlow();
 
-   // Output material parameters
-   configMaterialParameters();
+	// Output material parameters
+	configMaterialParameters();
 
-   // 11.08.2010. WW
-   long nn = m_msh->GetNodesNumber(false);
-   //
-   for(size_t i=0; i<GetPrimaryVNumber(); i++)    // 03.03.2008. WW
-      Shift[i] = i*nn;
+	// 11.08.2010. WW
+	long nn = m_msh->GetNodesNumber(false);
+	//
+	for(size_t i = 0; i < GetPrimaryVNumber(); i++) // 03.03.2008. WW
+		Shift[i] = i * nn;
 
-   num_nodes_p_var = new long[2];
-   num_nodes_p_var[0] = num_nodes_p_var[1] = nn;
+	num_nodes_p_var = new long[2];
+	num_nodes_p_var[0] = num_nodes_p_var[1] = nn;
 }
 
 
 /**************************************************************************
-FEMLib-Method: For PS model for multiphase flow
-Task:
-Programing:
-03/2009 PCH Implementation
+   FEMLib-Method: For PS model for multiphase flow
+   Task:
+   Programing:
+   03/2009 PCH Implementation
 **************************************************************************/
 void CRFProcess::ConfigPS_Global()
 {
-   dof = 2;
-   // 1.1 primary variables
-   pcs_number_of_primary_nvals = 2;
-   pcs_primary_function_name[0] = "PRESSURE1";
-   pcs_primary_function_unit[0] = "Pa";
-   pcs_primary_function_name[1] = "SATURATION2";
-   pcs_primary_function_unit[1] = "m3/m3";
-   // 1.2 secondary variables
-   pcs_number_of_secondary_nvals = 0;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   // Nodal velocity.
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
-   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
-   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
-   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
-   pcs_number_of_secondary_nvals++;
+	dof = 2;
+	// 1.1 primary variables
+	pcs_number_of_primary_nvals = 2;
+	pcs_primary_function_name[0] = "PRESSURE1";
+	pcs_primary_function_unit[0] = "Pa";
+	pcs_primary_function_name[1] = "SATURATION2";
+	pcs_primary_function_unit[1] = "m3/m3";
+	// 1.2 secondary variables
+	pcs_number_of_secondary_nvals = 0;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "PRESSURE_CAP";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SATURATION1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m3/m3";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	// Nodal velocity.
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z2";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
 
-   //
-   for(size_t i=0; i<GetPrimaryVNumber(); i++)    // 03.03.2008. WW
-      Shift[i] = i*m_msh->GetNodesNumber(true);
+	//
+	for(size_t i = 0; i < GetPrimaryVNumber(); i++) // 03.03.2008. WW
+		Shift[i] = i * m_msh->GetNodesNumber(true);
 }
 
 
 /**************************************************************************
-FEMLib-Method: For Pressure-temperature-coupled flow for fluids
-Task:
-Programing:
-02/2011 AKS/NB Implementation
+   FEMLib-Method: For Pressure-temperature-coupled flow for fluids
+   Task:
+   Programing:
+   02/2011 AKS/NB Implementation
 **************************************************************************/
 void CRFProcess::ConfigMULTI_COMPONENTIAL_FLOW()
 {
@@ -4431,17 +4480,22 @@ double CRFProcess::Execute()
 	//----------------------------------------------------------------------
 	// Linearized Flux corrected transport (FCT) by Kuzmin 2009
 	//----------------------------------------------------------------------
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	if(m_num->fct_method > 0)      //NW
 	{
-		pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false); // JT
-#ifdef USE_MPI
+#if defined(USE_PETSC)
+        eqs_x = eqs_new->GetGlobalSolution();
+		pcs_error = CalcIterationNODError(1);
+#else
+        pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false); // JT
+#endif
+
+#if defined(USE_MPI) || defined(USE_PETSC)
 		if(myrank == 0)
 		{
 #endif
         cout << "    Relative PCS error: " << pcs_error << "\n";
         cout << "    Start FCT calculation" << "\n";
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 		}
 #endif
 		// Set u^H: use the solution as the higher-order solution
@@ -4449,12 +4503,20 @@ double CRFProcess::Execute()
 		{
 			nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 			for(j = 0; j < g_nnodes; j++){
-				k = m_msh->Eqs2Global_NodeIndex[j];
-				SetNodeValue(k,nidx1,eqs_x[j + ii*g_nnodes]);
+#if defined(USE_PETSC)
+                k =  m_msh->Eqs2Global_NodeIndex[j] * pcs_number_of_primary_nvals + ii;
+	            SetNodeValue(j, nidx1, eqs_x[k]);
+#else
+                k = m_msh->Eqs2Global_NodeIndex[j];
+                SetNodeValue(k,nidx1,eqs_x[j + ii*g_nnodes]);
+#endif
 			}
 		}
 
 		// Initialize the algebra system
+#if defined(USE_PETSC)
+	    eqs_new->Initialize();
+#else
 #ifdef NEW_EQS                              //WW
 		if(!configured_in_nonlinearloop)
 #if defined(USE_MPI)
@@ -4465,8 +4527,10 @@ double CRFProcess::Execute()
 #else
 		SetZeroLinearSolver(eqs);
 #endif
+#endif
 
 		// Set initial guess
+#if !defined(USE_PETSC)
 		for(int ii = 0; ii < pcs_number_of_primary_nvals; ii++)
 		{
 			nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
@@ -4475,16 +4539,17 @@ double CRFProcess::Execute()
 				eqs_x[j + ii*g_nnodes] = GetNodeValue(k,nidx1);
 			}
 		}
+#endif
 
 		// Assembly
-#ifdef USE_MPI                              //WW
+#if defined(USE_MPI) || defined(USE_PETSC)
 		clock_t cpu_time = 0;     //WW
 		cpu_time = -clock();
 #endif
 		femFCTmode = true;
 		GlobalAssembly();
 		femFCTmode = false;
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(USE_PETSC)
 		cpu_time += clock();
 		cpu_time_assembly += cpu_time;
 #endif
@@ -4494,6 +4559,13 @@ double CRFProcess::Execute()
 		string eqs_name = pcs_type_name + "_EQS.txt";
 		MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
 #endif
+
+#if defined(USE_PETSC)
+//		std::string eqs_output_file = FileName + number2str(aktueller_zeitschritt);
+//		eqs_new->EQSV_Viewer(eqs_output_file);
+		eqs_new->Solver();
+		eqs_new->MappingSolution();
+#else
 #ifdef NEW_EQS                              //WW
 #if defined(USE_MPI)
 		//21.12.2007
@@ -4503,21 +4575,21 @@ double CRFProcess::Execute()
 		eqs_new->Solver(this->m_num); //NW
 #else
 		eqs_new->Solver();
-
-		string fname = FileName + "_equation_results.txt";
-		ofstream dum(fname.c_str(), ios::out | ios::trunc);
-		eqs_new->Write(dum);
-		exit(1);
+// kg44 the next lines are for debug?
+//		string fname = FileName + "_equation_results.txt";
+//		ofstream dum(fname.c_str(), ios::out | ios::trunc);
+//		eqs_new->Write(dum);
+//		exit(1);
 #endif
 #endif
 #else // ifdef NEW_EQS
 		ExecuteLinearSolver();
 #endif
+#endif //USE_PETSC
 	}
 	//----------------------------------------------------------------------
 	// END OF FLUX CORRECTED TRANSPORT
 	//----------------------------------------------------------------------
-#endif // end of #if !defined(USE_PETSC)
 
 	//PCSDumpModelNodeValues();
 	//----------------------------------------------------------------------
@@ -4647,13 +4719,13 @@ double CRFProcess::Execute()
 }
 
 /*************************************************************************
-GEOSYS - Function:
-Task:
-Programming:
- 08/2008 WW Implementation
- 11/2008 WW Update
-last modified:
-**************************************************************************/
+   GEOSYS - Function:
+   Task:
+   Programming:
+   08/2008 WW Implementation
+   11/2008 WW Update
+   last modified:
+ **************************************************************************/
 void CRFProcess::CopyU_n()
 {
 	int i, nidx1;
@@ -4690,39 +4762,39 @@ void CRFProcess::CopyU_n()
 
 
 /*************************************************************************
-ROCKFLOW - Function:
-Task: Calculate element matrices
-Programming:
-05/2003 OK Implementation
-09/2005 OK gas flow removed
-last modified:
-**************************************************************************/
+   ROCKFLOW - Function:
+   Task: Calculate element matrices
+   Programming:
+   05/2003 OK Implementation
+   09/2005 OK gas flow removed
+   last modified:
+ **************************************************************************/
 void CRFProcess::CalculateElementMatrices(void)
 {
-   switch(this->type)
-   {
-      case 1:                                     //SM
-         break;
-      case 2:                                     //MTM2
-         break;
-      case 3:                                     //HTM
-         break;
-      case 5:                                     // Gas flow
-         break;
-      case 11:
-         break;
-      case 12:                                    //MMP
-         break;
-      case 13:                                    //MPC
-         break;
+	switch(this->type)
+	{
+	case 1:                               //SM
+		break;
+	case 2:                               //MTM2
+		break;
+	case 3:                               //HTM
+		break;
+	case 5:                               // Gas flow
+		break;
+	case 11:
+		break;
+	case 12:                              //MMP
+		break;
+	case 13:                              //MPC
+		break;
 	  case 14:									//TNEQ
 		  break;
-      case 66:                                    //OF
-         break;
-      default:
-         DisplayMsgLn("CalculateElementMatrices: no CalculateElementMatrices specified");
-         abort();
-   }
+	case 66:                              //OF
+		break;
+	default:
+		DisplayMsgLn("CalculateElementMatrices: no CalculateElementMatrices specified");
+		abort();
+	}
 }
 
 
@@ -4732,11 +4804,10 @@ void CRFProcess::CalculateElementMatrices(void)
    Programming:
    04/2010 NW Implementation
    last modified:
+   05/2013 NW Support PETSc parallelization
  **************************************************************************/
 void CRFProcess::AddFCT_CorrectionVector()
 {
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-	size_t i,j;
 	int idx0 = 0;
 	int idx1 = idx0 + 1;
 	const double theta = this->m_num->ls_theta;
@@ -4745,7 +4816,7 @@ void CRFProcess::AddFCT_CorrectionVector()
 	SparseMatrixDOK::col_t* col;
 	SparseMatrixDOK::mat_t::const_iterator ii;
 	SparseMatrixDOK::col_t::const_iterator jj;
-	Vec* ML = this->Gl_ML;
+	Math_Group::Vec* ML = this->Gl_ML;
 #if defined(NEW_EQS)
 	CSparseMatrix* A = NULL;              //WW
 	//if(m_dom)
@@ -4754,10 +4825,16 @@ void CRFProcess::AddFCT_CorrectionVector()
 	A = this->eqs_new->A;
 #endif
 
+#ifdef USE_PETSC
+	// gather K
+	FCT_MPI::gatherK(FCT_MPI::ct, *FCT_K);
+	// compute D
+	FCT_MPI::computeD(m_msh, *FCT_K, *FCT_d);
+#endif
+
 	// List of Dirichlet nodes
 	std::set<long> list_bc_nodes;
-	//cout << "Dirichlet nodes" << "\n";
-	for (i = 0; i < bc_node_value.size(); i++)
+	for (size_t i = 0; i < bc_node_value.size(); i++)
 	{
 		CBoundaryConditionNode* bc_node = bc_node_value[i];
 		long nod_id = bc_node->geo_node_number;
@@ -4777,33 +4854,39 @@ void CRFProcess::AddFCT_CorrectionVector()
 	//   -> f_ij = m_ij
 	//----------------------------------------------------------------------
 	// f_ij*=1/dt*(DeltaU_ij^H-DeltaU_ij^n)  for i!=j
-	for (i = 0; i < node_size; i++)
+	for (size_t i = 0; i < node_size; i++)
 	{
 		col = &fct_f[i];
 		for(jj = col->begin(); jj != col->end(); jj++)
 		{
-			j = (*jj).first;
+			const size_t j = (*jj).first;
 			if (i > j)
 				continue;  //symmetric part, off-diagonal
 			double diff_uH = this->GetNodeValue(i, idx1) - this->GetNodeValue(j, idx1);
 			double diff_u0 = this->GetNodeValue(i, idx0) - this->GetNodeValue(j, idx0);
 			double v = 1.0 / dt * (diff_uH - diff_u0);
-			(*FCT_AFlux)(i,j) *= v; //MC is already done in local ele assembly
+            (*FCT_AFlux)(i,j) *= v; //MC is already done in local ele assembly
+            (*FCT_AFlux)(j,i) *= -v; //MC is already done in local ele assembly
 		}
 	}
 
 	//Complete f, L
 	//Remark: Using iteration is only possible after the sparse table has been constructed.
-	for(i = 0; i < node_size; i++)
+	for(size_t i = 0; i < node_size; i++)
 	{
+		const size_t i_global = FCT_GLOB_ADDRESS(i);
 		col = &fct_f[i];
 		for(jj = col->begin(); jj != col->end(); jj++)
 		{
-			j = (*jj).first;
-			if (i > j)
-				continue;  //symmetric part, off-diagonal
+			const size_t j = (*jj).first;
+			const size_t j_global = FCT_GLOB_ADDRESS(j);
+			if (i > j || i==j)
+				continue;  //do below only for upper triangle due to symmetric
 
 			// Get artificial diffusion operator D
+#ifdef USE_PETSC
+			double d1 = (*FCT_d)(i_global, j_global);
+#else
 #if defined(NEW_EQS)
 			double K_ij = (*A)(i,j);
 			double K_ji = (*A)(j,i);
@@ -4814,6 +4897,8 @@ void CRFProcess::AddFCT_CorrectionVector()
 			if (K_ij == 0.0 && K_ji == 0.0)
 				continue;
 			double d1 = GetFCTADiff(K_ij, K_ji);
+#endif
+			if (d1 == 0.0) continue;
 			double d0 = d1; //TODO should use AuxMatrix at the previous time step
 			//if (list_bc_nodes.find(i)!=list_bc_nodes.end() || list_bc_nodes.find(j)!=list_bc_nodes.end()) {
 			//  d1 = d0 = 0.0;
@@ -4836,9 +4921,24 @@ void CRFProcess::AddFCT_CorrectionVector()
 				v = MinMod(v, -d1 * diff_uH);
 			else if (this->m_num->fct_prelimiter_type == 2)
 				v = SuperBee(v, -d1 * diff_uH);
-			(*FCT_AFlux)(i,j) = v;
-			(*FCT_AFlux)(j,i) = v;
+			(*FCT_AFlux)(i, j) = v;
+#ifdef USE_PETSC
+			(*FCT_AFlux)(j, i) = -v;
+#else
+			(*FCT_AFlux)(j, i) = v;
+#endif
 
+#ifdef USE_PETSC
+			// A += theta * D
+			if (i < (size_t)m_msh->getNumNodesLocal()) {
+				eqs_new->addMatrixEntry(i_global, i_global, -d1*theta);
+				eqs_new->addMatrixEntry(i_global, j_global, d1*theta);
+			}
+			if (j < (size_t)m_msh->getNumNodesLocal()) {
+				eqs_new->addMatrixEntry(j_global, i_global, d1*theta);
+				eqs_new->addMatrixEntry(j_global, j_global, -d1*theta);
+			}
+#else
 			// L = K + D
 #if defined(NEW_EQS)
 			(*A)(i,i) += -d1;
@@ -4853,45 +4953,64 @@ void CRFProcess::AddFCT_CorrectionVector()
 			MXInc(i,i,-d1);
 			MXInc(j,j,-d1);
 #endif
+#endif
 		}
 	}
 
 	//----------------------------------------------------------------------
 	// Assemble RHS: b_i += [- (1-theta) * L_ij] u_j^n
 	//----------------------------------------------------------------------
-	Vec* V1 = this->Gl_Vec1;
-	Vec* V = this->Gl_Vec;
+	Math_Group::Vec* V1 = this->Gl_Vec1;
+	Math_Group::Vec* V = this->Gl_Vec;
 	(*V1) = 0.0;
 	(*V) = 0.0;
+#if !defined(USE_PETSC)
 	double* eqs_rhs;
 #ifdef NEW_EQS
 	eqs_rhs = eqs_new->b;
 #else
 	eqs_rhs = eqs->b;
 #endif
+#endif
 	// b = [-(1-theta) * L] u^n
-	if (1.0 - theta > 0)
+	if (1.0 - theta > .0)
 	{
 		// u^n
-		for (i = 0; i < node_size; i++)
+		for (size_t i = 0; i < node_size; i++)
 			(*V1)(i) = this->GetNodeValue(i,idx0);
 		// L*u^n
-		for (i = 0; i < node_size; i++)
+		for (size_t i = 0; i < node_size; i++)
 		{
-			for (j = 0; j < node_size; j++)
+			const size_t i_global = FCT_GLOB_ADDRESS(i);
+			for (size_t j = 0; j < node_size; j++)
 			{
+				const size_t j_global = FCT_GLOB_ADDRESS(j);
+#ifdef USE_PETSC
+				// b+=-(1-theta)*D*u^n
+                (*V)(i) += (*FCT_d)(i_global, j_global) * (*V1)(j);
+#else
 #ifdef NEW_EQS
 				(*V)(i) += (*A)(i,j) * (*V1)(j);
 #else
 				(*V)(i) += MXGet(i,j) * (*V1)(j);
 #endif
+#endif
 			}
 		}
-		for (i = 0; i < node_size; i++)
+		for (size_t i = 0; i < node_size; i++) {
+#if defined(USE_PETSC)
+			if (i < m_msh->getNumNodesLocal()) {
+				const size_t i_global = FCT_GLOB_ADDRESS(i);
+				eqs_new->add_bVectorEntry(i_global, - (1.0 - theta) * (*V)(i), ADD_VALUES);
+			}
+#else
 			eqs_rhs[i] -= (1.0 - theta) * (*V)(i);
-		//(*RHS)(i+LocalShift) +=  NodalVal[i];
+	        //(*RHS)(i+LocalShift) +=  NodalVal[i];
+#endif
+		}
 	}
 
+#ifndef USE_PETSC
 	//----------------------------------------------------------------------
 	// Assemble A matrix: 1/dt*ML + theta * L
 	//----------------------------------------------------------------------
@@ -4901,8 +5020,8 @@ void CRFProcess::AddFCT_CorrectionVector()
 #ifdef NEW_EQS
 		(*A) = 0.0;
 #else
-		for (i = 0; i < node_size; i++)
-			for (j = 0; j < node_size; j++)
+		for (size_t i = 0; i < node_size; i++)
+			for (size_t j = 0; j < node_size; j++)
 				MXSet(i,j,0.0);
 
 #endif
@@ -4916,14 +5035,14 @@ void CRFProcess::AddFCT_CorrectionVector()
 #ifdef NEW_EQS
 		(*A) *= theta;
 #else
-		for (i = 0; i < node_size; i++)
-			for (j = 0; j < node_size; j++)
+		for (size_t i = 0; i < node_size; i++)
+			for (size_t j = 0; j < node_size; j++)
 				MXMul(i,j,theta);
 
 #endif
 	}
 	// A matrix: += 1/dt * ML
-	for (i = 0; i < node_size; i++)
+	for (size_t i = 0; i < node_size; i++)
 	{
 		double v = 1.0 / dt * (*ML)(i);
 #ifdef NEW_EQS
@@ -4932,33 +5051,34 @@ void CRFProcess::AddFCT_CorrectionVector()
 		MXInc(i,i,v);
 #endif
 	}
+#endif
 
 	//----------------------------------------------------------------------
 	// Assemble RHS: b += alpha * f
 	//----------------------------------------------------------------------
 	// Calculate R+, R-
-	Vec* R_plus = this->Gl_Vec1;
-	Vec* R_min = this->Gl_Vec;
+	Math_Group::Vec* R_plus = this->Gl_Vec1;
+	Math_Group::Vec* R_min = this->Gl_Vec;
 	(*R_plus) = 0.0;
 	(*R_min) = 0.0;
-	//for(ii=fct_f.begin(); ii!=fct_f.end(); ii++){
-	//  i = (*ii).first;
-	for(i = 0; i < node_size; i++)
+	for(size_t i = 0; i < node_size; i++)
 	{
+        const size_t i_global = FCT_GLOB_ADDRESS(i);
 		double P_plus, P_min;
 		double Q_plus, Q_min;
 		P_plus = P_min = 0.0;
 		Q_plus = Q_min = 0.0;
-		//for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++){
 		col = &fct_f[i];
 		for(jj = col->begin(); jj != col->end(); jj++)
 		{
-			j = (*jj).first;
+			const size_t j = (*jj).first;
 			if (i == j)
 				continue;
 			double f = (*jj).second; //double f = (*FCT_AFlux)(i,j);
+#ifndef USE_PETSC
 			if (i > j)
 				f *= -1.0;
+#endif
 			double diff_uH = this->GetNodeValue(j, idx1) - this->GetNodeValue(i, idx1);
 
 			P_plus += max(0.0, f);
@@ -4966,67 +5086,72 @@ void CRFProcess::AddFCT_CorrectionVector()
 			Q_plus = max(Q_plus, diff_uH);
 			Q_min = min(Q_min, diff_uH);
 		}
-		double ml = (*ML)(i);
+		double ml = (*ML)(i_global);
+
 		if (P_plus == 0.0)
-			(*R_plus)(i) = 0.0;
+			(*R_plus)(i_global) = 0.0;
 		else
-			(*R_plus)(i) = min(1.0, ml * Q_plus / (dt * P_plus));
+			(*R_plus)(i_global) = min(1.0, ml * Q_plus / (dt * P_plus));
 		if (P_min == 0.0)
-			(*R_min)(i) = 0.0;
+			(*R_min)(i_global) = 0.0;
 		else
-			(*R_min)(i) = min(1.0, ml * Q_min / (dt * P_min));
+			(*R_min)(i_global) = min(1.0, ml * Q_min / (dt * P_min));
 	}
 
+#ifdef USE_PETSC
+    FCT_MPI::gatherR(FCT_MPI::ct, *R_plus, *R_min);
+#endif
+
 	// for Dirichlet nodes
-	//cout << "Dirichlet nodes" << "\n";
-	for (i = 0; i < bc_node_value.size(); i++)
+	for (size_t i = 0; i < bc_node_value.size(); i++)
 	{
 		CBoundaryConditionNode* bc_node = bc_node_value[i];
 		long nod_id = bc_node->geo_node_number;
-		//cout << nod_id << ": R+=" <<  (*R_plus)(nod_id) << ", R-=" << (*R_min)(nod_id) << "\n";
-		(*R_plus)(nod_id) = 1.0;
-		(*R_min)(nod_id) = 1.0;
-
-		//col = &fct_f[nod_id];
-		//for (jj=col->begin(); jj!=col->end(); jj++) {
-		//  j = (*jj).first;
-		//  double f = (*jj).second; //double f = (*FCT_AFlux)(i,j);
-		//  cout << nod_id << "," << j << ": f=" << f << "\n";
-		//}
+        const size_t i_global = FCT_GLOB_ADDRESS(nod_id);
+		(*R_plus)(i_global) = 1.0;
+		(*R_min)(i_global) = 1.0;
 	}
 
 	// b_i += alpha_i * f_ij
-	for (i = 0; i < node_size; i++)
+	for (size_t i = 0; i < node_size; i++)
 	{
+		const size_t i_global = FCT_GLOB_ADDRESS(i);
 		col = &fct_f[i];
 		for (jj = col->begin(); jj != col->end(); jj++)
 		{
-			//for(ii=fct_f.begin(); ii!=fct_f.end(); ii++){
-			//  i = (*ii).first;
-			//  for(jj=(*ii).second.begin(); jj!=(*ii).second.end(); jj++){
-			j = (*jj).first;
+			const size_t j = (*jj).first;
+	        const size_t j_global = FCT_GLOB_ADDRESS(j);
 			if (i == j)
 				continue;
 
 			double f = (*jj).second; //double f = (*FCT_AFlux)(i,j);
+#ifndef USE_PETSC
 			if (i > j)
 				f *= -1;  // symmetric
+#endif
 			double alpha = 1.0;
 			if (f > 0)
-				alpha = min((*R_plus)(i), (*R_min)(j));
+				alpha = min((*R_plus)(i_global), (*R_min)(j_global));
 			else
-				alpha = min((*R_plus)(j), (*R_min)(i));
+				alpha = min((*R_plus)(j_global), (*R_min)(i_global));
 
+			double val = .0;
 			if (this->m_num->fct_const_alpha < 0.0)
-				eqs_rhs[i] += alpha * f;
+				val = alpha * f;
 			else
-				eqs_rhs[i] += this->m_num->fct_const_alpha * f;
+				val = this->m_num->fct_const_alpha * f;
+
+#ifdef USE_PETSC
+			if (i < m_msh->getNumNodesLocal())
+				eqs_new->add_bVectorEntry(i_global, val, ADD_VALUES);
+#else
+            eqs_rhs[i] += val;
+#endif
 
 			//Note: Galerkin FEM is recovered if alpha = 1 as below,
 			//eqs_rhs[i] += 1.0*f;
 		}
 	}
-#endif //#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 }
 
 /*************************************************************************
@@ -5070,15 +5195,17 @@ void CRFProcess::GlobalAssembly()
 	Check2D3D = false;
 	if (type == 66)                       //Overland flow
 		Check2D3D = true;
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	if (this->femFCTmode)                 //NW
 	{
 		(*this->FCT_AFlux) = 0.0;
 		(*this->Gl_ML) = 0.0;
 		(*this->Gl_Vec) = 0.0;
 		(*this->Gl_Vec1) = 0.0;
-	}
+#ifdef USE_PETSC
+        (*this->FCT_K) = 0.0;
+        (*this->FCT_d) = .0;
 #endif
+	}
 
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 	// DDC
@@ -5323,10 +5450,10 @@ void CRFProcess::CalIntegrationPointValue()
 	    || getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW  //AKS/NB
 	    || getProcessType() == FiniteElement::DEFORMATION_FLOW //NW
 	    || getProcessType() == FiniteElement::TNEQ //HS, TN
-      )
-      cal_integration_point_value = true;
-   if (!cal_integration_point_value)
-      return;
+	    )
+		cal_integration_point_value = true;
+	if (!cal_integration_point_value)
+		return;
 
    std::cout << "->Calculate velocity" << '\n';
 
@@ -6851,19 +6978,19 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 /**************************************************************************
-FEMLib-Method:
-Task: PCS source terms into EQS
-Programing:
-04/2004 OK Implementation
-08/2004 WW Extension for monolithic PCS and time curve
-last modification:
-02/2005 MB River Condition and CriticalDepth
-05/2005 WW Dynamic problems
-07/2005 WW Changes due to the geometry object applied
-03/2006 WW Re-arrange
-04/2006 OK CPL
-05/2006 WW DDC
-08/2006 YD FCT use
+   FEMLib-Method:
+   Task: PCS source terms into EQS
+   Programing:
+   04/2004 OK Implementation
+   08/2004 WW Extension for monolithic PCS and time curve
+   last modification:
+   02/2005 MB River Condition and CriticalDepth
+   05/2005 WW Dynamic problems
+   07/2005 WW Changes due to the geometry object applied
+   03/2006 WW Re-arrange
+   04/2006 OK CPL
+   05/2006 WW DDC
+   08/2006 YD FCT use
 **************************************************************************/
 	void CRFProcess::IncorporateSourceTerms(const int rank)
 	{
@@ -7241,8 +7368,9 @@ last modification:
 		long gem_node_index = -1, glocalindex = -1;
 		if (flag_couple_GEMS == 1 && aktueller_zeitschritt > 1)
 		{
+
 			begin = 0;
-			if (rank == -1) // serial version
+			if (rank == -1) // serial version and also Version for PETSC!!
 
 				end = (long ) Water_ST_vec.size();
 			else          // parallel version
@@ -7526,14 +7654,14 @@ last modification:
    09/2004 OK Implementation
    10/2004 OK 2nd version
 **************************************************************************/
-std::string PCSProblemType()
-{
-   std::string pcs_problem_type;
-   size_t no_processes(pcs_vector.size());
+	std::string PCSProblemType()
+	{
+		std::string pcs_problem_type;
+		size_t no_processes(pcs_vector.size());
 
-   for (size_t i = 0; i < no_processes; i++)
-   {
-      switch (pcs_vector[i]->getProcessType())
+		for (size_t i = 0; i < no_processes; i++)
+		{
+			switch (pcs_vector[i]->getProcessType())
 			{
 			case FiniteElement::LIQUID_FLOW:
 				pcs_problem_type = "LIQUID_FLOW";
@@ -7777,7 +7905,7 @@ std::string PCSProblemType()
 		//  }
 
 		switch (getProcessType())
-   {
+		{
 		case FiniteElement::TNEQ:
          CalcSecondaryVariablesTNEQ();        //HS
          break;
@@ -9709,7 +9837,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 	}
 
 /*************************************************************************
-GeoSys-FEM Function:
+   GeoSys-FEM Function:
 Task: Updating rho_s values in TNEQ
 
 Programming: 
@@ -13358,6 +13486,8 @@ CRFProcess* PCSGetMass(size_t component_number)
 				// Adding the rate of concentration change to the right hand side of the equation.
 #ifdef NEW_EQS                           //15.12.2008. WW
 				eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;
+#elif defined(USE_PETSC)
+				// eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;				
 #else
 				eqs->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;
 #endif

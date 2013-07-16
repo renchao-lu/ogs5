@@ -219,6 +219,15 @@ public:
         {
 	   return loc_NodesNumber_Quadratic; 
         }
+        
+        size_t NodesInUsagePETSC() const
+	{
+		if (useQuadratic)
+			return loc_NodesNumber_Quadratic;
+		else
+			return loc_NodesNumber_Linear;
+	}
+
 #endif
 
 	//
@@ -541,7 +550,7 @@ private:
   //int n_sub_elements;
 	int glb_NodesNumber_Linear;
 	int glb_NodesNumber_Quadratic;
-	int loc_NodesNumber_Linear;
+	int loc_NodesNumber_Linear; //index of shadow nodes starts from this number
 	int loc_NodesNumber_Quadratic;
 #endif
 	bool useQuadratic;

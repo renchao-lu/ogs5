@@ -564,7 +564,7 @@ void CInitialCondition::SetPoint(int nidx)
 		                                                                                getGeoObj(
 		                                                                                        ))),
 		                                 nidx,
-		                                 geo_node_value);
+		                                 geo_node_value);	
 	else
 		std::cerr << "Error in CInitialCondition::SetPoint - point: "
 		          << *(static_cast<const GEOLIB::Point*>(getGeoObj()))
@@ -612,6 +612,7 @@ void CInitialCondition::SetEle(int nidx)
 **************************************************************************/
 void CInitialCondition::SetPolyline(int nidx)
 {
+  	CGLPolyline* m_ply = GEOGetPLYByName(geo_name);
 	if (this->getProcessDistributionType() == FiniteElement::CONSTANT)
 	{
 		//		CGLPolyline* m_polyline = polyline_vector[getGeoObjIdx()];
@@ -656,7 +657,8 @@ void CInitialCondition::SetSurface(int nidx)
 
 	if(m_sfc && m_msh)
 	{
-		m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
+
+		 m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
 
 		if(this->getProcessDistributionType() == FiniteElement::CONSTANT)
 			for(size_t i = 0; i < sfc_nod_vector.size(); i++)

@@ -1374,7 +1374,9 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
   long node_id = -1;
-  const size_t nodes_in_usage = loc_NodesNumber_Quadratic;
+  
+  const size_t nodes_in_usage=NodesInUsage(); 
+
   double sqr_dist = 0.0;
   double distmin = getMinEdgeLength()/10.0;
   if(distmin < 0.)
@@ -1650,7 +1652,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 	begin = clock();
 #endif
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-  const size_t nodes_in_usage = loc_NodesNumber_Quadratic;
+  	const size_t nodes_in_usage= NodesInUsagePETSC(); //always use local nodes only ..
 #else
 	const size_t nodes_in_usage((size_t) NodesInUsage());
 #endif
@@ -1736,7 +1738,7 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 		//....................................................................
 		// Check nodes by comparing area
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-		const size_t nn = static_cast<size_t> ( loc_NodesNumber_Quadratic);
+		const size_t nn =  NodesInUsagePETSC();
 #else
 		const size_t nn =  NodesInUsage();
 #endif

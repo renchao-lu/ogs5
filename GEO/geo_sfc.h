@@ -90,6 +90,7 @@ public:
 	//material
 	long profile_code; //YD
 private:
+  //
 	friend class CGLLine; //WW
 };
 //vector

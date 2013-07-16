@@ -106,7 +106,7 @@ set( SOURCES
 )
 
 IF(OGS_FEM_PETSC)
- SET( SOURCES ${SOURCES} rf_pcs1.cpp )
+ SET( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.h fct_mpi.cpp)
 ELSE(OGS_FEM_PETSC)
   SET( SOURCES ${SOURCES} par_ddc.h par_ddc.cpp)
 ## New sparse class. WW
@@ -194,6 +194,9 @@ if (WIN32)
 endif (WIN32)
 
 if (UNIX)
+	if (OGS_FEM_GEMS)
+		target_link_libraries( FEM GEM boost_thread )
+	endif (OGS_FEM_GEMS)
 
 	if (OGS_FEM_BRNS)
 		target_link_libraries( FEM dl )

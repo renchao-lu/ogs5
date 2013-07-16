@@ -37,7 +37,6 @@ private:
 	bool computeline;
 //	std::string ply_file_name;
 	std::vector<int> OrderedPoint;
-
 protected:
 	std::vector<CGLLine*> line_vector;
 

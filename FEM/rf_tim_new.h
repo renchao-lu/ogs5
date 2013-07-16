@@ -14,7 +14,14 @@
 //#include <string>
 //#include <vector>
 #include "makros.h" // JT2012
-
+// kg44 this is to synchronize time step size  for PETSC
+#if defined(USE_PETSC)
+#include "PETSC/PETScLinearSolver.h"
+#include "petscksp.h"
+#include "petscmat.h"
+typedef Mat PETSc_Mat;
+typedef Vec PETSc_Vec;
+#endif
 //----------------------------------------------------------------
 class CRFProcess;                                 //21.08.2008. WW
 class CTimeDiscretization

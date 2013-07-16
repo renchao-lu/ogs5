@@ -18,6 +18,8 @@
 #include <cfloat>
 #include <iostream>
 #include <sstream>
+//kg44: max size for size_t (system_dependent) is set normally here
+#include <limits>
 //WW
 //
 /*------------------------------------------------------------------------*/
@@ -233,7 +235,7 @@ Problem::Problem (char* filename) :
 		else // something is wrong and we stop execution
 		{
 		              cout << " GEMS: Error in Init_Nodes..check input " << "\n";
-#ifdef USE_MPI_GEMS
+#if defined(USE_MPI_GEMS) || defined(USE_PETSC) 
             MPI_Finalize();                       //make sure MPI exits
 #endif
 
@@ -243,7 +245,7 @@ Problem::Problem (char* filename) :
 	else // something is wrong and we stop execution
 	{
 	 		              cout << " GEMS: Error in Init_RUN..check input " << "\n";
-#ifdef USE_MPI_GEMS
+#if defined(USE_MPI_GEMS) || defined(USE_PETSC)
             MPI_Finalize();                       //make sure MPI exits
 #endif
 
@@ -415,7 +417,7 @@ Problem::Problem (char* filename) :
 			time_ctr = true;
 	}
 	if(max_time_steps == 0)
-		max_time_steps = 1000000;
+		max_time_steps = std::numeric_limits<std::size_t>::max()-1; // ULONG_MAX-1;  //kg44 increased the number to maximum number (size_t)
 	current_time =  start_time;
 	if (time_ctr)
 	{
@@ -464,7 +466,7 @@ Problem::Problem (char* filename) :
        for(size_t k = 0; k < fem_msh_vector.size(); k++)
        {
 		  fem_msh_vector[k]->FreeEdgeMemory();
-	   }
+}
 	}
 #endif
 }
@@ -684,48 +686,48 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
       return 14;
    }
    std::cout << "Error: no process is specified. " << '\n';
-   return -1;
+	return -1;
 }
 
 
 /*-------------------------------------------------------------------------
-GeoSys - Function: SetActiveProcesses
-Task:
+   GeoSys - Function: SetActiveProcesses
+   Task:
    total_processes:
     0: LIQUID_FLOW     | 1: GROUNDWATER_FLOW  | 2: RICHARDS_FLOW
     3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
    12: DEFORMATION     |13: PS_GLOBAL         |14: TNEQ
-Return:
-Programming:
-07/2008 WW
-03/2009 PCH add PS_GLOBAL
-Modification:
---------------------------------------------------------------------*/
+   Return:
+   Programming:
+   07/2008 WW
+   03/2009 PCH add PS_GLOBAL
+   Modification:
+   --------------------------------------------------------------------*/
 void Problem::SetActiveProcesses()
 {
-   int i;
-   CRFProcess* m_pcs = NULL;
+	int i;
+	CRFProcess* m_pcs = NULL;
    const int max_processes = 15;                  // PCH, TN
-   total_processes.resize(max_processes);
-   active_processes = new ProblemMemFn[max_processes];
-   coupled_process_index.resize(max_processes);
-   exe_flag = new bool[max_processes];
-   //
-   for(i=0; i<max_processes; i++)
-   {
-      total_processes[i] = NULL;
-      active_processes[i] = NULL;
-      coupled_process_index[i] = -1;
-   }
-   //
-   for(i=0; i<(int)pcs_vector.size(); i++)
-   {
-      m_pcs = pcs_vector[i];
-      AssignProcessIndex(m_pcs);
-   }
-   //
+	total_processes.resize(max_processes);
+	active_processes = new ProblemMemFn[max_processes];
+	coupled_process_index.resize(max_processes);
+	exe_flag = new bool[max_processes];
+	//
+	for(i = 0; i < max_processes; i++)
+	{
+		total_processes[i] = NULL;
+		active_processes[i] = NULL;
+		coupled_process_index[i] = -1;
+	}
+	//
+	for(i = 0; i < (int)pcs_vector.size(); i++)
+	{
+		m_pcs = pcs_vector[i];
+		AssignProcessIndex(m_pcs);
+	}
+	//
 	for(i = 0; i < max_processes; i++)
 		if(total_processes[i])
 		{

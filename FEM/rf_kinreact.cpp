@@ -807,7 +807,7 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 				m_surface = GEOGetSFCByName(s_geo_name);
 				if (m_surface)
 				{
-					m_msh->GetNODOnSFC(m_surface, nodes_vector);
+					m_msh->GetNODOnSFC(m_surface, nodes_vector); //kg44 if used together with PETSC one maybe needs to set the for_ic flag...see rf_id_new.cpp
 					for (size_t i = 0; i < nodes_vector.size(); i++)
 					{
 						long ll = nodes_vector[i]; //+ShiftInNodeVector;
@@ -887,7 +887,7 @@ void KRConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_name)
 						m_surface = GEOGetSFCByName(s_geo_name);
 						if (m_surface)
 						{
-							m_msh->GetNODOnSFC(m_surface, nodes_vector);
+							m_msh->GetNODOnSFC(m_surface, nodes_vector); //kg44 if used together with PETSC one maybe needs to set the for_ic flag...see rf_id_new.cpp
 							for (size_t i = 0; i < nodes_vector.size();
 							     i++)
 							{
@@ -2082,7 +2082,7 @@ void KBlobConfig(const GEOLIB::GEOObjects& geo_obj, const std::string& unique_na
 				m_surface = GEOGetSFCByName(s_geo_name);
 				if (m_surface)
 				{
-					m_msh->GetNODOnSFC(m_surface, nodes_vector);
+					m_msh->GetNODOnSFC(m_surface, nodes_vector); //kg44 if used together with PETSC one maybe needs to set the for_ic flag...see rf_id_new.cpp
 					for (size_t k = 0; k < nodes_vector.size(); k++)
 					{
 						//+ShiftInNodeVector;

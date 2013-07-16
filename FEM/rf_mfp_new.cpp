@@ -42,8 +42,8 @@ using namespace std;
 #define COMP_MOL_MASS_WATER  18.016
 #define COMP_MOL_MASS_N2 28.014
 #define GAS_CONSTANT_V  461.5                     //WW
-#define T_KILVIN_ZERO  273.15                    //AKS
-double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;    
+#define T_KILVIN_ZERO  273.15                     //AKS
+double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
 
 //==========================================================================
 std::vector<CFluidProperties*>mfp_vector;
@@ -194,7 +194,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 		//....................................................................
 		// NB Oct-2009
 		if(line_string.find("$COMPRESSIBILITY") != string::npos)
-		{   
+		{
 			in.str(GetLineFromFile1(mfp_file));
 			in >> compressibility_model_pressure; //sub_line 1 for first phase
 			if(compressibility_model_pressure == 15)// components constant density
@@ -232,7 +232,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in.clear();
 			continue;
 		}
-			//....................................................................
+		//....................................................................
 		if(line_string.find("$JTC") != string::npos)
 		{
 			in.str(GetLineFromFile1(mfp_file));
@@ -450,7 +450,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			if(viscosity_model == 19) // KG44 extract viscosity from GEMS
 			{
 			}
-
+			
 
 			//    mfp_file->ignore(MAX_ZEILE,'\n');
 			in.clear();
@@ -601,16 +601,16 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> gravity_constant;
 			in.clear();
 			continue;
-      }
+		}
 	  if(line_string.find("$SPECIFIC_HEAT_SOURCE")!=string::npos){
 		  in.str(GetLineFromFile1(mfp_file));
 		  in >> specific_heat_source;
 		  in.clear();
 		  continue;
-		}
+	}
 	}
 	return position;
-	}
+}
 
 /**************************************************************************
    FEMLib-Method:
@@ -851,7 +851,7 @@ void CFluidProperties::CalPrimaryVariable(std::vector<std::string>& pcs_name_vec
 **************************************************************************/
 double CFluidProperties::Density(double* variables)
 {
-	
+
 	double Rho = 0.0;
 	double m_frac_w;
 	static double density;
@@ -911,7 +911,7 @@ double CFluidProperties::Density(double* variables)
 			if(!T_Process)
 				variables[1] = T_0;
 			//NB
-		density = preos(this, variables[1],variables[0]);
+			density = preos(this, variables[1],variables[0]);
 			break;
 		case 13:                  // Helmholtz free Energy NB JUN 09
 			//NB
@@ -924,7 +924,7 @@ double CFluidProperties::Density(double* variables)
 		case 15: // mixture 1/rho= sum_i x_i/rho_i #p, T, x:->Amagat's law#
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++) Rho += variables[CIndex]/ComponentDensity(CIndex, variables);
 		density =  1/Rho;
-		break;
+			break;
 
 		case 18: //using calculated densities at nodes from the phase transition model, BG, NB 11/2010
 			variables[2] = phase;
@@ -1432,19 +1432,19 @@ double CFluidProperties::Viscosity(double* variables)
 		break;
 	case 15: //mixture 1/µ= sum_i y_i/µ_i:: VTPR-EoS
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-		{
+	{
 		if(eos_name == "CONSTANT") 
-		{
+	{
 		my += variables[CIndex]/mu[CIndex-2]; 
-		}
+	}
 		else
-		{
+	{
 		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
 		my += variables[CIndex]/Fluid_Viscosity(ComponentDensity(CIndex, variables), variables[1], variables[0], fluid_id);
-		}
+	}
 		}
 		viscosity =  1.0/my;
-	break;
+		break;
 
 
 	case 18: //BG, NB using calculated viscosities at nodes from the phase transition model
@@ -1670,20 +1670,20 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 		  specific_heat_capacity = x[0]*Cp_c[0] + x[1]*Cp_c[1];
 	case 15: // mixture cp= sum_i y_i*cp:: P, T, x dependent
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-		{
+	{
 		if(eos_name == "CONSTANT") 
-		{
+	{
 		Cp += variables[CIndex]*cp[CIndex-2]; 
-		}
+	}
 		else
-		{
+	{
 		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
 		Cp += variables[CIndex]*isobaric_heat_capacity(ComponentDensity(CIndex, variables), variables[1], fluid_id);
-		}
+	}
 		}
 		specific_heat_capacity =  Cp;
 
-	break;
+		break;
 	}
 	return specific_heat_capacity;
 }
@@ -1907,7 +1907,7 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 //NB Dec 08 4.9.05
 double CFluidProperties::HeatConductivity(double* variables)
 {
-	
+
 	CRFProcess* m_pcs;
     m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	double Kappa = 0.0;
@@ -1955,19 +1955,19 @@ double CFluidProperties::HeatConductivity(double* variables)
          break;
 	case 15: // mixture k_m= sum_i y_i*k_i:: p, T, x
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-		{
+	{
 		if(eos_name == "CONSTANT") 
-		{
+	{
 		Kappa += variables[CIndex]*kappa[CIndex-2]; 
-		}
+	}
 		else
-		{
+	{
 		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
 		Kappa += variables[CIndex]*Fluid_Heat_Conductivity(ComponentDensity(CIndex, variables), variables[1], fluid_id);
-		}
+	}
 		}
 		heat_conductivity =  Kappa;
-	break;
+		break;
 
 	}
 
@@ -3346,8 +3346,8 @@ double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1,
 		break;                    // use of difference quotient
 	case 7:                               // use of fct file
 		drhodP = 1.0/p;               // to be done
-	break;
-
+		break;
+		
 
 	case 15: //volume translated Peng-Robinson
 	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL") 
@@ -3355,9 +3355,9 @@ double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1,
 	for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 	{
 	therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
-	Tr = T/Tc;
+	 Tr = T/Tc;
 	a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
-	Trr = 1.0 - pow(Tr, 0.6667);
+   Trr = 1.0 - pow(Tr, 0.6667);
 	fct = -0.25 + pc/p;
 	if(fluid_id == 1) fct = (1.0780 + p/6.8e8);  
 	c = fct*(k1 + k2*Trr + k3*Trr*Trr)*R*Tc/pc;
@@ -3369,7 +3369,7 @@ double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1,
 	z2 = (A - 3.0*B*B + 3.0*C*C + 2.0*B*C - 2.0*B - 2.0*C );
 	z3 = (B*B*B + C*C*C + B*B - C*C + B*C*C - 3.0*B*B*C - 2.0*B*C + C*A - A*B);
 	NsPol3(z1,z2,z3,&roots);
-	z = FindMax(roots);
+     z = FindMax(roots);
 	if(fluid_id == 1) z = FindMin(roots);
 	if(eos_name == "IDEAL") {z=1.0; c=0.0; b=0.0; a=0.0;}
 	v = (z*R*T/p);
@@ -3380,7 +3380,7 @@ double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1,
 	beta = dvdp;
 	beta_m += beta;
 	v_m += v;
-	}
+	     }
 
 	drhodP = beta_m/v_m;//beta_t=beta_g*(vg/vt)+beta_l*(vl/vt)
 	}
@@ -3447,19 +3447,19 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 		break;
 			case 7:                               // use of fct file
 	drhodT = 1.0/T; 
-	break;
+		break;
 
 	case 15: //volume translated Peng-Robinson
 	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL") 
 	{
 	for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-	{
+	   {
 	therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
-	Tr = T/Tc;
+	 Tr = T/Tc;
 	a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
 	da0 = -(m0 + n0*(1.0 - Tr) + n0*(0.7 - Tr))/Tc;
 	da = 0.457235*2.0*a0*da0*pow(R*Tc, 2.0)/pc;
-	Trr = 1.0 - pow(Tr, 0.6667);
+   Trr = 1.0 - pow(Tr, 0.6667);
 	fct = -0.25 + pc/p;
 	if(fluid_id == 1) fct = (1.0780 + p/6.8e8);  
 	c = fct*(k1 + k2*Trr + k3*Trr*Trr)*R*Tc/pc;
@@ -3471,7 +3471,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 	z2 = (A - 3.0*B*B + 3.0*C*C + 2.0*B*C - 2.0*B - 2.0*C );
 	z3 = (B*B*B + C*C*C + B*B - C*C + B*C*C - 3.0*B*B*C - 2.0*B*C + C*A - A*B);
 	NsPol3(z1,z2,z3,&roots);
-	z = FindMax(roots);
+     z = FindMax(roots);
 	if(fluid_id == 1) z = FindMin(roots);
 	if(eos_name == "IDEAL") {z=1.0; c=0.0; b=0.0; a=0.0, da=0.0;}
 	v = (z*R*T/p);
@@ -3492,7 +3492,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 	drhodT = variables[CIndex-2]*alpha_T[CIndex-2];
 	}
 
-	break;
+		break;
 
 
 	default:
@@ -3533,7 +3533,7 @@ double CFluidProperties::drhodX(int CIndex, double* variables)
    Programing: 09/2012 AKS
 **************************************************************************/
 double CFluidProperties::ComponentDensity(int CIndex, double* variables)
-{
+	{
 	double a0, A, B, z, z1, z2, z3, Tr, c, C, Trr, T, p, density, R, fct;
 	CRFProcess* m_pcs;
 	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
@@ -3573,7 +3573,7 @@ double CFluidProperties::ComponentDensity(int CIndex, double* variables)
    Programing: 05/2010 AKS
 **************************************************************************/
 double  CFluidProperties::EffectiveDiffusionCoef(int CIndex, double* variables)
-{
+	{
 	CRFProcess* m_pcs;
     m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	double MI=0.0, VdI =0.0, effective_diffusion_coef=0.0, T, p;
@@ -3603,7 +3603,7 @@ double  CFluidProperties::EffectiveDiffusionCoef(int CIndex, double* variables)
 	if(eos_name == "CONSTANT")  effective_diffusion_coef = D0[CIndex - 2];
 	break;
 
-	}
+    }
 	return effective_diffusion_coef;
 
     }

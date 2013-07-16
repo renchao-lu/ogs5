@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: io_arrays.h 725 2012-10-02 15:43:37Z kulik $
+// $Id: io_arrays.h 761 2012-11-30 09:12:20Z dmitrieva $
 /// \file io_arrays.h
 /// Various service functions for writing/reading arrays in files
 //
@@ -123,6 +123,12 @@ public:
     /// \param with_comments - Write files with comments for all data entries
     /// \param brief_mode - Do not write data items that contain only default values
     void writeField(long f_num, short value, bool with_comments, bool brief_mode  );
+
+    /// Writes char field to a text file.
+    /// <flds[f_num].name> 'value'
+    /// \param with_comments - Write files with comments for all data entries
+    /// \param brief_mode - Do not write data items that contain only default values
+    void writeField(long f_num, char value, bool with_comments, bool brief_mode  );
 
     /// Writes double field to a text file.
     /// <flds[f_num].name> value

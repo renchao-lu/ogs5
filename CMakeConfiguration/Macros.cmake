@@ -123,6 +123,9 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	IF (${ogsConfiguration} STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
 	  SET (CONFIG_MATCH TRUE)
 	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
+	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
+	  SET (CONFIG_MATCH TRUE)
+	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
 	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
 		SET (CONFIG_MATCH TRUE)
 	ENDIF ()
@@ -222,6 +225,7 @@ FUNCTION(CHECK_CONFIG)
 		"${OGS_FEM_PQC}"
 		"${OGS_FEM_LIS}"
 		"${OGS_FEM_CHEMAPP}"
+                "$(OGS_FEM_PETSC_GEMS}")
 		"${OGS_FEM_PETSC}")
 
 	SET(counter 0)
@@ -236,7 +240,7 @@ FUNCTION(CHECK_CONFIG)
 		SET(OGS_FEM ON)
 	ENDIF (counter EQUAL 0)
 
-	IF (counter GREATER 1)
+	IF (counter GREATER 2)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given. Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
@@ -248,8 +252,9 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_PQC
 			OGS_FEM_LIS
 			OGS_FEM_CHEMAPP
+                        OGS_FEM_PETSC_GEMS
 			OGS_FEM_PETSC")
-	ENDIF (counter GREATER 1)
+	ENDIF ()
 
 ENDFUNCTION()
 

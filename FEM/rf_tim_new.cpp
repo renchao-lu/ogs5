@@ -190,14 +190,14 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 		}
 		//....................................................................
 		// subkeyword found
-		  if(line_string.find("$TIME_START") != std::string::npos)
-        {
-            line.str(GetLineFromFile1(tim_file));
-            line >> time_start;
-            last_active_time=time_start; // JOD for GK  5.3.07
-            line.clear();
-            continue;
-        }
+		if(line_string.find("$TIME_START") != std::string::npos)
+		{
+			line.str(GetLineFromFile1(tim_file));
+			line >> time_start;
+                        last_active_time=time_start; // JOD for GK  5.3.07
+			line.clear();
+			continue;
+		}
 		//....................................................................
 		// subkeyword found
 		if(line_string.find("$TIME_END") != std::string::npos)
@@ -1267,8 +1267,9 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 				{
 					imflag = 0;
 					std::cout <<
-					"Self adaptive time step: to many iterations for Groundwater/LIQUID flow"
+					"failed: Self adaptive time step: to many iterations for Groundwater/LIQUID flow"
 					          << "\n";
+						//  exit(1); // debug to find bug in flow field
 				}
 				if (((imflag == 1) && (m_pcs->iter_lin <= time_adapt_tim_vector[0])))
 					imflag = 2;
@@ -1304,6 +1305,23 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 	// BUG my_max_time_step is not necessarily initialised
 	time_step_length = MMin ( time_step_length,my_max_time_step );
 	time_step_length = MMax ( time_step_length,min_time_step );
+#if defined(USE_PETSC)
+// synchronice time step size between processes
+    PetscScalar *gtimp; //used for pointer
+    PetscReal tresult;
+    PETSc_Vec gtim; //
+    PetscInt count;
+    VecCreate(PETSC_COMM_WORLD, &gtim);
+    VecSetSizes(gtim, 1,PETSC_DECIDE); // only one value per mpi-process
+    VecSetFromOptions(gtim); //
+    // get range of local variables
+    VecGetLocalSize(gtim, &count);         // reuse count
+    // get local part of vectors
+    VecGetArray(gtim, &gtimp);  
+    gtimp[0]=time_step_length; // assign value...as we have only one value this should work
+    VecMin(gtim,PETSC_NULL,&tresult); //get minimum value 
+    time_step_length= tresult;  // assign to time step size
+#endif	
 
 	std::cout << "Self_Adaptive time step size: " << " imflag " << imflag << " dr " <<
 	time_step_length << " max iterations: " << iterdum << " number of evaluated processes: " <<
@@ -1525,7 +1543,7 @@ bool CTimeDiscretization::isDynamicTimeFailureSuggested(CRFProcess *m_pcs)
 
 		m_pcs->CalcIterationNODError(method,false,false);
 		for(int ii=0; ii<m_pcs->temporary_num_dof_errors; ii++){
-			if(this->dynamic_failure_threshold > m_pcs->temporary_absolute_error[ii]/this->dynamic_control_tolerance[ii])                        {
+			if(this->dynamic_failure_threshold > m_pcs->temporary_absolute_error[ii]/this->dynamic_control_tolerance[ii]){
 				return true;
 			}
 		}
@@ -1695,11 +1713,13 @@ bool IsSynCron()
 double CTimeDiscretization::MaxTimeStep()
 {
 	long i;
-	double max_diff_time_step = 1.0e+100,Dm,dummy,max_adv_time_step = 1.0e+100;
+        double velocity[3] = {0.,0.,0.};
+	double max_diff_time_step = 1.0e+100,Dm,dummy,max_adv_time_step = 1.0e+100, vg, advective_velocity;
 	double theta = 0.0;                   // direction zero...no anisotropy
+	double g[3] = {0.,0.,0.};
 	CRFProcess* this_pcs = NULL;
 	MeshLib::CElem* melem = NULL;
-
+        ElementValue* gp_ele;  // for velocities
 	CMediumProperties* m_mat_mp = NULL;
 	// Get the pointer to a proper PCS. ..we assume that all transport processes use the same diffusion coefficient
 
@@ -1709,17 +1729,25 @@ double CTimeDiscretization::MaxTimeStep()
 	//only do if Courant number bigger than zero
 	if (dummy > DBL_EPSILON)
 		max_adv_time_step = std::min(max_diff_time_step, dummy);	
-	
-	this_pcs = PCSGet ( "MASS_TRANSPORT" );
+	// pcs for a mass transport process ...
+	this_pcs = PCSGet ( "MASS_TRANSPORT" ); // is this always the first one?
 	long nElems = ( long ) this_pcs->m_msh->ele_vector.size();
 	int component = this_pcs->pcs_component_number;
 	int group;
-
+	// pcs for flow transport
+	CRFProcess* m_pcs = NULL;
+	m_pcs = PCSGetFluxProcess();
+	if (!m_pcs) {
+		return 0.0;
+	}
+	int pcs_no = m_pcs->pcs_number;
+	
 	CompProperties* m_cp = cp_vec[component];
 
 
 
 	// find Neumann for first mass transport process
+	// 15.01.2013 modified to include dispersive transport
 	for(i = 0; i < nElems; i++)
 	{
 		group = this_pcs->m_msh->ele_vector[i]->GetPatchIndex();
@@ -1728,18 +1756,28 @@ double CTimeDiscretization::MaxTimeStep()
 		melem =  this_pcs->m_msh->ele_vector[i];
 		//		cout << m_mat_mp->Porosity(i,theta) << " " << melem->representative_length << "\n";
 		// KG44 attention DM needs to be multiplied with porosity!
-		Dm = m_mat_mp->Porosity(i,theta) * m_cp->CalcDiffusionCoefficientCP(i,
-		                                                                    theta,
-		                                                                    this_pcs);
-		// calculation of typical length
+		Dm = m_mat_mp->TortuosityFunction(i,g,theta)* m_mat_mp->Porosity(i,theta) 
+		                               * m_cp->CalcDiffusionCoefficientCP(i,theta,this_pcs);
+		// now get magnitude of advective velocity to get an estimate of dispersive transport
+		gp_ele = ele_gp_value[i]; //to get gp velocities
+		gp_ele->getIPvalue_vec(pcs_no, velocity);
+		vg = MBtrgVec(velocity,3);
+		advective_velocity = vg / m_mat_mp->Porosity(i,theta);
 
+		// now get magnitude of dispersion ....take alpha_longitudinal and add it to Dm
+		Dm=Dm+m_mat_mp->mass_dispersion_longitudinal*advective_velocity;
+		
+		// calculation of typical length
 		dummy = ( 0.5 * (melem->representative_length * melem->representative_length)) / Dm;
 		max_diff_time_step = std::min(max_diff_time_step, dummy);
 		//	std::cout << "Neumann criteria: " << max_diff_time_step << " i " << i << "\n";
 	}
 
-	std::cout << " Diffusive Time Step " << max_diff_time_step  << "\n";
+	std::cout << "GEMS3K: maximum Diffusive / Dispersive Time Step " << max_diff_time_step  << std::endl;
 
 	return std::min(max_diff_time_step, max_adv_time_step);
 }
+
+
+
 #endif                                            // end of GEM_REACT

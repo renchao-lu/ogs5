@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------
-// $Id: m_param.h 725 2012-10-02 15:43:37Z kulik $
+// $Id: m_param.h 770 2012-12-12 15:10:02Z dmitrieva $
 //
 /// \file m_param.h
 /// Declaration of TProfil class, config and calculation functions
@@ -280,8 +280,9 @@ class TProfil : public TCModule
     TMulti* multi;
 
     bool newRecord;
-//    int pll;
-//    double FXold;
+    // new 12.12.12 data to Project record
+    char *internalBufer;  // text bufer for internal Project settings
+                          // (now only for built-in TDB)
 
     // to compare with old Project
     bool comp_change_all;

@@ -235,11 +235,13 @@ protected:                                        //WW
 	// ELE
 	std::vector<FiniteElement::ElementMatrix*> Ele_Matrices;
 	//Global matrix
-#if !defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 	Math_Group::Vec* Gl_Vec;              //NW
 	Math_Group::Vec* Gl_Vec1;             //NW
 	Math_Group::Vec* Gl_ML;               //NW
 	Math_Group::SparseMatrixDOK* FCT_AFlux; //NW
+#ifdef USE_PETSC
+	Math_Group::SparseMatrixDOK* FCT_K;
+	Math_Group::SparseMatrixDOK* FCT_d;
 #endif
 	/**
 	 * Storage type for all element matrices and vectors
@@ -631,7 +633,7 @@ public:
 	void ConfigFluidMomentum();
 	void ConfigRandomWalk();
 	void ConfigMultiPhaseFlow();
-      void ConfigPS_Global();                     // PCH
+	void ConfigPS_Global();               // PCH
 	void ConfigMULTI_COMPONENTIAL_FLOW();                // AKS/NB
 	  void ConfigTNEQ();						//HS,TN
 	// Configuration 1 - NOD
@@ -669,19 +671,19 @@ public:
 	void AllocateMemGPoint();             //NEW Gauss point values for CFEMSH WW
 	void CalcELEVelocities(void);
 	//void CalcELEMassFluxes();				//BG
-      //WW   double GetELEValue(long index,double*gp,double theta,string nod_fct_name);
-      void CheckMarkedElement();                  //WW
-      void CheckExcavedElement();                 //WX
-      // Configuration 3 - ELE matrices
-      void CreateELEMatricesPointer(void);
-      // Equation system
-      //---WW
-      CFiniteElementStd* GetAssember () { return fem; }
-      void AllocateLocalMatrixMemory();
-      virtual void GlobalAssembly();              // Make as a virtul function. //10.09.201l. WW
-      /// For all PDEs excluding that for deformation. 24.11.2010l. WW
-      void GlobalAssembly_std(bool is_quad, bool Check2D3D = false);
-      /// Assemble EQS for deformation process.
+	//WW   double GetELEValue(long index,double*gp,double theta,string nod_fct_name);
+	void CheckMarkedElement();            //WW
+	void CheckExcavedElement();           //WX
+	// Configuration 3 - ELE matrices
+	void CreateELEMatricesPointer(void);
+	// Equation system
+	//---WW
+	CFiniteElementStd* GetAssember () { return fem; }
+	void AllocateLocalMatrixMemory();
+	virtual void GlobalAssembly();        // Make as a virtul function. //10.09.201l. WW
+	/// For all PDEs excluding that for deformation. 24.11.2010l. WW
+	void GlobalAssembly_std(bool is_quad, bool Check2D3D = false);
+	/// Assemble EQS for deformation process.
       virtual void GlobalAssembly_DM() {};
 #if defined (NEW_EQS) && defined(JFNK_H2M)
 	/// Jacobian free methid to calculate J*v.
@@ -694,14 +696,14 @@ public:
 	/// Force term control for inexact Newton method. 01.2011.
 	bool ForceTermCriterion(double* Jdx, const int num_iteration);
 #endif
-      void AddFCT_CorrectionVector();             //NW
-      void ConfigureCouplingForLocalAssemblier();
-      void CalIntegrationPointValue();
-      bool cal_integration_point_value;           //WW
-      void CalGPVelocitiesfromFluidMomentum();    //SB 4900
-      bool use_velocities_for_transport;          //SB4900
- 
-	  //---
+	void AddFCT_CorrectionVector();       //NW
+	void ConfigureCouplingForLocalAssemblier();
+	void CalIntegrationPointValue();
+	bool cal_integration_point_value;     //WW
+	void CalGPVelocitiesfromFluidMomentum(); //SB 4900
+	bool use_velocities_for_transport;    //SB4900
+
+	//---
 	double Execute();
 	double ExecuteNonLinear(int loop_process_number, bool print_pcs=true);
 	void PrintStandardIterationInformation(bool write_std_errors = true);
@@ -711,18 +713,18 @@ public:
 	void DDCAssembleGlobalMatrix();
 #endif
 	virtual void AssembleSystemMatrixNew(void);
-      // This function is a part of the monolithic scheme
-      //  and it is related to ST, BC, IC, TIM and OUT. WW
-      void SetOBJNames();
-      // ST
-      void IncorporateSourceTerms(const int rank=-1);
-      //WW void CheckSTGroup(); //OK
+	// This function is a part of the monolithic scheme
+	//  and it is related to ST, BC, IC, TIM and OUT. WW
+	void SetOBJNames();
+	// ST
+	void IncorporateSourceTerms(const int rank = -1);
+	//WW void CheckSTGroup(); //OK
 #ifdef GEM_REACT
-      void IncorporateSourceTerms_GEMS(void);     //HS: dC/dt from GEMS chemical solver.
-      int GetRestartFlag() const {return reload;}
+	void IncorporateSourceTerms_GEMS(void); //HS: dC/dt from GEMS chemical solver.
+	int GetRestartFlag() const {return reload; }
 #endif
-      // BC
-      void IncorporateBoundaryConditions(const int rank=-1);
+	// BC
+	void IncorporateBoundaryConditions(const int rank = -1);
 	// PCH for FLUID_MOMENTUM
 	void IncorporateBoundaryConditions(const int rank, const int axis);
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
@@ -769,57 +771,57 @@ public:
 	// BC for dynamic problems. WW
 	inline void setBC_danymic_problems();
 	inline void setST_danymic_problems();
-      inline void setIC_danymic_problems();
-      // Extropolate Gauss point values to node values. WW
-      void Extropolation_GaussValue();
-      void Extropolation_MatValue();              //WW
-                                                  //WW. 05.2009
-      void Integration(std::vector<double> &node_velue);
-      // Auto time step size control. WW
-      void PI_TimeStepSize();          //WW
-      bool TimeStepAccept() const { return accepted;}
-      void SetDefaultTimeStepAccepted() { accepted = true;}
-      // USER
-      //ToDo
-      double *TempArry;                           //MX
-      void PCSOutputNODValues(void);
-      void PCSSetTempArry(void);                  //MX
-      double GetTempArryVal(int index) const      //MX
-      {
-         return TempArry[index];
-      }
-      void LOPCopySwellingStrain(CRFProcess *m_pcs);
-      VoidFuncInt PCSSetIC_USER;
-      void SetIC();
-                                                  // Remove argument. WW
-      void CalcSecondaryVariables(bool initial = false);
-      void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
-      //WW Reomve int timelevel, bool update
-                                                  //WW
+	inline void setIC_danymic_problems();
+	// Extropolate Gauss point values to node values. WW
+	void Extropolation_GaussValue();
+	void Extropolation_MatValue();        //WW
+	                                      //WW. 05.2009
+	void Integration(std::vector<double> &node_velue);
+	// Auto time step size control. WW
+	void PI_TimeStepSize();    //WW
+	bool TimeStepAccept() const { return accepted; }
+	void SetDefaultTimeStepAccepted() { accepted = true; }
+	// USER
+	//ToDo
+	double* TempArry;                     //MX
+	void PCSOutputNODValues(void);
+	void PCSSetTempArry(void);            //MX
+	double GetTempArryVal(int index) const //MX
+	{
+		return TempArry[index];
+	}
+	void LOPCopySwellingStrain(CRFProcess* m_pcs);
+	VoidFuncInt PCSSetIC_USER;
+	void SetIC();
+	// Remove argument. WW
+	void CalcSecondaryVariables(bool initial = false);
+	void MMPCalcSecondaryVariablesRichards(int timelevel, bool update);
+	//WW Reomve int timelevel, bool update
+	//WW
 
 	  void CalcSecondaryVariablesTNEQ();      //HS
-      void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false);
-      void CalcSecondaryVariablesPSGLOBAL();      // PCH
+	void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false);
+	void CalcSecondaryVariablesPSGLOBAL(); // PCH
 	                                       // PCH
 	double GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx,
 	                                                             int meanOption,
 	                                                             double Sw);
 	// JOD
-      void CalcSaturationRichards(int timelevel, bool update);
-      bool non_linear;                            //OK/CMCD
-                                                  //MX
-      void InterpolateTempGP(CRFProcess *, std::string);
-                                                  //MX
-      void ExtropolateTempGP(CRFProcess *, std::string);
-      //Repeat Calculation,    JOD removed // HS reactivated
-      void PrimaryVariableReload();               //YD
-      void PrimaryVariableReloadRichards();       //YD
-      void PrimaryVariableStorageRichards();      //YD
-      bool adaption;
-      void PrimaryVariableReloadTransport();      //kg44
-      void PrimaryVariableStorageTransport();     //kg44
-      //double GetNewTimeStepSizeTransport(double mchange); //kg44
-      // FLX
+	void CalcSaturationRichards(int timelevel, bool update);
+	bool non_linear;                      //OK/CMCD
+	                                      //MX
+	void InterpolateTempGP(CRFProcess*, std::string);
+	//MX
+	void ExtropolateTempGP(CRFProcess*, std::string);
+	//Repeat Calculation,    JOD removed // HS reactivated
+	void PrimaryVariableReload();         //YD
+	void PrimaryVariableReloadRichards(); //YD
+	void PrimaryVariableStorageRichards(); //YD
+	bool adaption;
+	void PrimaryVariableReloadTransport(); //kg44
+	void PrimaryVariableStorageTransport(); //kg44
+	//double GetNewTimeStepSizeTransport(double mchange); //kg44
+	// FLX
 	void CalcELEFluxes(const GEOLIB::Polyline* const ply, double* result);
 	/**
 	 * Necessary for the output of mass fluxes over polylines, BG 08/2011
@@ -929,7 +931,7 @@ extern CRFProcess* PCSGet(const std::string&,const std::string&);
  * @param pv_name the name of the primary function
  * @return
  */
-                                                  // TF
+// TF
 CRFProcess* PCSGet(FiniteElement::ProcessType pcs_type, const std::string &pv_name);
 
 //OK

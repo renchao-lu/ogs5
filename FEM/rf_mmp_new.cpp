@@ -57,7 +57,7 @@ using FiniteElement::ElementValue_DM;
 #define GAS_CONSTANT      8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
-#define T_KILVIN_ZERO  273.15                   //AKS
+#define T_KILVIN_ZERO  273.15                     //AKS
 /**************************************************************************
    FEMLib-Method: CMediumProperties
    Task: constructor
@@ -506,10 +506,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			case 15:
 				in >> porosity_model_values[0]; // set a default value for GEMS calculation
 				                                // save this seperately;
-				KC_porosity_initial = porosity_model_values[0];
-
-				// KG44: TODO!!!!!!!!!!!!! check the above  ***************
-
 				break;
 #endif
 #ifdef BRNS
@@ -821,7 +817,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 		}
 
 		//subkeyword found
-		if(line_string.find("$UNCONFINED") != string::npos) 
+		if(line_string.find("$UNCONFINED") != string::npos)
 		{
 			//unconfined_flow_group = 1;
 			in.str(GetLineFromFile1(mmp_file));
@@ -1389,14 +1385,22 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				permeability_tensor_type = 0;
 				permeability_model = 3; // this means permeability depends on K-C relationship
 				                        // initial values
-				in >> permeability_porosity_model_values[0];
+				in >> permeability_porosity_model_values[0];  // initial porosity
+				in >> permeability_porosity_model_values[1];   // initial permeability
+				KC_permeability_initial = permeability_porosity_model_values[1];
+				KC_porosity_initial  =permeability_porosity_model_values[0];
+
+				
 				break;
 			case 4:       // HS: 11.2008, Kozeny-Carman_normalized relationship
 				// we set the tensor type first to isotropic and constant as initial value
 				permeability_tensor_type = 0;
 				permeability_model = 4; // this means permeability depends on K-C_normalized relationship
 				                        // initial values
-				in >> permeability_porosity_model_values[0];
+				in >> permeability_porosity_model_values[0];  // initial porosity
+				in >> permeability_porosity_model_values[1];  //initial permeab ility
+				KC_permeability_initial = permeability_porosity_model_values[1];
+				KC_porosity_initial =permeability_porosity_model_values[0];
 				break;
 			case 5:       // HS: 01.2010, Clement 1996 model
 				// M. Thullner et al. 2004, J Contaminant Hydrology 70: 37-62, pp42
@@ -1811,7 +1815,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
                   std::cout << "-> Heat transfer model: Schaube11 with h by Gnielinskl" << '\n';
               } else {
                   std::cout << "Error in CMediumProperties::Read: no valid effective heat transfer model" << '\n';
-              }
+	}
               break;
           default:
               std::cout << "Error in CMediumProperties::Read: no valid heat transfer model" << '\n';
@@ -1855,7 +1859,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
       }
 
    }
-   return position;
+	return position;
 }
 
 
@@ -2108,33 +2112,33 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 }
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-03/2004 OK Implementation
-last modification:
+   FEMLib-Method:
+   Task:
+   Programing:
+   03/2004 OK Implementation
+   last modification:
 **************************************************************************/
 void MMPWriteTecplot(std::string msh_name)
 {
-   CMediumProperties *m_mmp = NULL;
-   int i;
-   int no_mat =(int)mmp_vector.size();
-   for(i=0;i<no_mat;i++)
-   {
-      m_mmp = mmp_vector[i];
-      m_mmp->WriteTecplot(msh_name);
-   }
+	CMediumProperties* m_mmp = NULL;
+	int i;
+	int no_mat = (int)mmp_vector.size();
+	for(i = 0; i < no_mat; i++)
+	{
+		m_mmp = mmp_vector[i];
+		m_mmp->WriteTecplot(msh_name);
+	}
 }
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-01/2005 OK Implementation
-09/2005 OK MSH
-10/2005 OK OO-ELE
-last modification:
+   FEMLib-Method:
+   Task:
+   Programing:
+   01/2005 OK Implementation
+   09/2005 OK MSH
+   10/2005 OK OO-ELE
+   last modification:
 **************************************************************************/
 void CMediumProperties::WriteTecplot(std::string msh_name)
 {
@@ -2257,46 +2261,46 @@ void CMediumProperties::WriteTecplot(std::string msh_name)
 ////////////////////////////////////////////////////////////////////////////
 
 /**************************************************************************
-FEMLib-Method: CMediumProperties
-Task: get instance by name
-Programing:
-02/2004 OK Implementation
-last modification:
+   FEMLib-Method: CMediumProperties
+   Task: get instance by name
+   Programing:
+   02/2004 OK Implementation
+   last modification:
 **************************************************************************/
 CMediumProperties* MMPGet(const std::string &mat_name)
 {
-   CMediumProperties *m_mat = NULL;
-   int no_mat =(int)mmp_vector.size();
-   int i;
-   for(i=0;i<no_mat;i++)
-   {
-      m_mat = mmp_vector[i];
-      if(mat_name.compare(m_mat->name)==0)
-         return m_mat;
-   }
-   return NULL;
+	CMediumProperties* m_mat = NULL;
+	int no_mat = (int)mmp_vector.size();
+	int i;
+	for(i = 0; i < no_mat; i++)
+	{
+		m_mat = mmp_vector[i];
+		if(mat_name.compare(m_mat->name) == 0)
+			return m_mat;
+	}
+	return NULL;
 }
 
 
 /**************************************************************************
-FEMLib-Method: CMediumProperties
-Task: get instance by name
-Programing:
-02/2004 OK Implementation
-last modification:
+   FEMLib-Method: CMediumProperties
+   Task: get instance by name
+   Programing:
+   02/2004 OK Implementation
+   last modification:
 **************************************************************************/
 CMediumProperties* CMediumProperties::GetByGroupNumber(int group_number)
 {
-   CMediumProperties *m_mat = NULL;
-   int no_mat =(int)mmp_vector.size();
-   int i;
-   for(i=0;i<no_mat;i++)
-   {
-      m_mat = mmp_vector[i];
-      if(m_mat->number==group_number)
-         return m_mat;
-   }
-   return NULL;
+	CMediumProperties* m_mat = NULL;
+	int no_mat = (int)mmp_vector.size();
+	int i;
+	for(i = 0; i < no_mat; i++)
+	{
+		m_mat = mmp_vector[i];
+		if(m_mat->number == group_number)
+			return m_mat;
+	}
+	return NULL;
 }
 
 
@@ -2852,7 +2856,7 @@ double* CMediumProperties::HeatDispersionTensorNew(int ip)
 {
 	static double heat_dispersion_tensor[9];
 	double* heat_conductivity_porous_medium;
-	double vg, D[9];         
+	double vg, D[9];
 	double heat_capacity_fluids = 0.0;
 	double fluid_density;
 	double alpha_t, alpha_l;
@@ -4326,21 +4330,33 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		else if ( permeability_model == 3 )
 		{                         // HS: 11.2008, for K-C relationship
-			// get indexes
-			idx_k = m_pcs->GetElementValueIndex("PERMEABILITY");
-			idx_n = m_pcs->GetElementValueIndex("POROSITY");
+		  k_new=tensor[0];
+		  CRFProcess* pcs_tmp(NULL);
+		  for (size_t i = 0; i < pcs_vector.size(); i++)
+		  {
+			pcs_tmp = pcs_vector[i];
+			if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
+			     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
+			     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
+			break;
+		  }
+		        // get indexes
+			idx_k = pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			idx_n = pcs_tmp->GetElementValueIndex("POROSITY");
 
 			// get values of k0, n0, and n.
-			k_new = m_pcs->GetElementValue( index, idx_k + 1 );
-			n_new = m_pcs->GetElementValue( index, idx_n + 1 );
+			k_new = pcs_tmp->GetElementValue( index, idx_k + 1 );
+			n_new = pcs_tmp->GetElementValue( index, idx_n + 1 );
 
 			// if first time step, get the k_new from material class
-			if ( aktueller_zeitschritt == 1) // for the first time step
+			if ( aktueller_zeitschritt == 1) // for the first time step.....
+			    {
 				// get the permeability.
-				KC_permeability_initial = k_new = tensor[0];
-
+//				KC_permeability_initial = k_new = tensor[0];
+//				KC_porosity_initial = n_new;
+			    }
 			// save old permeability
-			m_pcs->SetElementValue( index, idx_k, k_new  );
+			pcs_tmp->SetElementValue( index, idx_k, k_new  );
 
 			// calculate new permeability
 			k_new = CMediumProperties::KozenyCarman( KC_permeability_initial,
@@ -4348,28 +4364,40 @@ double* CMediumProperties::PermeabilityTensor(long index)
 			                                         n_new );
 
 			// save new permeability
-			m_pcs->SetElementValue( index, idx_k + 1, k_new   );
+			pcs_tmp->SetElementValue( index, idx_k + 1, k_new   );
 
 			// now gives the newly calculated value to tensor[]
 			tensor[0] = k_new;
 		}
 		else if ( permeability_model == 4 )
 		{                         // HS: 11.2008, for K-C_normalized relationship
-			// get indexes
-			idx_k = m_pcs->GetElementValueIndex("PERMEABILITY");
-			idx_n = m_pcs->GetElementValueIndex("POROSITY");
+		  k_new=tensor[0];
+		  CRFProcess* pcs_tmp(NULL);
+		  for (size_t i = 0; i < pcs_vector.size(); i++)
+		  {
+			pcs_tmp = pcs_vector[i];
+			if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
+			     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
+			     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
+			break;
+		  }
+		        // get indexes
+			idx_k = pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			idx_n = pcs_tmp->GetElementValueIndex("POROSITY");
 
 			// get values of k0, n0, and n.
-			k_new = m_pcs->GetElementValue( index, idx_k + 1 );
-			n_new = m_pcs->GetElementValue( index, idx_n + 1 );
+			k_new = pcs_tmp->GetElementValue( index, idx_k + 1 );
+			n_new = pcs_tmp->GetElementValue( index, idx_n + 1 );
 
 			// if first time step, get the k_new from material class
-			if ( aktueller_zeitschritt == 0) // for the first time step
+			if ( aktueller_zeitschritt == 1) // for the first time step.....
+			    {
 				// get the permeability.
-				KC_permeability_initial = k_new = tensor[0];
-
+//				KC_permeability_initial = k_new = tensor[0];
+//				KC_porosity_initial = n_new;
+			    }
 			// save old permeability
-			m_pcs->SetElementValue( index, idx_k, k_new  );
+			pcs_tmp->SetElementValue( index, idx_k, k_new  );
 
 			// calculate new permeability
 			k_new = CMediumProperties::KozenyCarman_normalized( KC_permeability_initial,
@@ -4377,7 +4405,7 @@ double* CMediumProperties::PermeabilityTensor(long index)
 			                                                    n_new );
 
 			// save new permeability
-			m_pcs->SetElementValue( index, idx_k + 1, k_new   );
+			pcs_tmp->SetElementValue( index, idx_k + 1, k_new   );
 
 			// now gives the newly calculated value to tensor[]
 			tensor[0] = k_new;
@@ -4503,92 +4531,92 @@ double* CMediumProperties::PermeabilityTensor(long index)
 	}
 	// end of K-C relationship-----------------------------------------------------------------------------------
 
-   switch(geo_dimension)
-   {
-      case 1:                                     // 1-D
-         // HS: tensor[0] already set, doing nothing here;
-         break;
-      case 2:                                     // 2-D
-         if(permeability_tensor_type==0)
-         {
-            // tensor[0] = permeability_tensor[0]; // HS: done already;
-            tensor[1] = 0.0;
-            tensor[2] = 0.0;
-            // tensor[3] = permeability_tensor[0];
-            tensor[3] = tensor[0];                // HS: use the existing value;
+	switch(geo_dimension)
+	{
+	case 1:                               // 1-D
+		// HS: tensor[0] already set, doing nothing here;
+		break;
+	case 2:                               // 2-D
+		if(permeability_tensor_type == 0)
+		{
+			// tensor[0] = permeability_tensor[0]; // HS: done already;
+			tensor[1] = 0.0;
+			tensor[2] = 0.0;
+			// tensor[3] = permeability_tensor[0];
+			tensor[3] = tensor[0]; // HS: use the existing value;
 
-            // HS: this is not needed any more--------------------------------
-            // if(permeability_model==2) {
-            //SB 4218	tensor[0] = GetHetValue(index,"permeability");
-            // 	tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
-            //	tensor[3] = tensor[0];
-            // }
-            // end of comment out section-------------------------------------
-         }
-         else if(permeability_tensor_type==1)
-         {
-            tensor[0] = permeability_tensor[0];
-            tensor[1] = 0.0;
-            tensor[2] = 0.0;
-            tensor[3] = permeability_tensor[1];
-         }
-         else if(permeability_tensor_type==2)
-         {
-            tensor[0] = permeability_tensor[0];
-            tensor[1] = permeability_tensor[1];
-            tensor[2] = permeability_tensor[2];
-            tensor[3] = permeability_tensor[3];
-         }
-         break;
-      case 3:                                     // 3-D
-         if(permeability_tensor_type==0)
-         {
-            // tensor[0] = permeability_tensor[0]; // HS: not needed. already done before
-            tensor[1] = 0.0;
-            tensor[2] = 0.0;
-            tensor[3] = 0.0;
-            // tensor[4] = permeability_tensor[0]; // HS: using the line below instead;
-            tensor[4] = tensor[0];                // using the existing value
-            tensor[5] = 0.0;
-            tensor[6] = 0.0;
-            tensor[7] = 0.0;
-            // tensor[8] = permeability_tensor[0]; // HS: using the line below instead;
-            tensor[8] = tensor[0];                // using the existing value
-            // HS: this is not needed any more--------------------------------
-            // if(permeability_model==2) {
-            // SB 4218	tensor[0] = GetHetValue(index,"permeability");
-            // 	tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
-            // 	tensor[4] = tensor[0];
-            // 	tensor[8] = tensor[0];
-            // }
-            // end of comment out section-------------------------------------
-         }
-         else if(permeability_tensor_type==1)
-         {
-            tensor[0] = permeability_tensor[0];
-            tensor[1] = 0.0;
-            tensor[2] = 0.0;
-            tensor[3] = 0.0;
-            tensor[4] = permeability_tensor[1];
-            tensor[5] = 0.0;
-            tensor[6] = 0.0;
-            tensor[7] = 0.0;
-            tensor[8] = permeability_tensor[2];
-         }
-         else if(permeability_tensor_type==2)
-         {
-            tensor[0] = permeability_tensor[0];
-            tensor[1] = permeability_tensor[1];
-            tensor[2] = permeability_tensor[2];
-            tensor[3] = permeability_tensor[3];
-            tensor[4] = permeability_tensor[4];
-            tensor[5] = permeability_tensor[5];
-            tensor[6] = permeability_tensor[6];
-            tensor[7] = permeability_tensor[7];
-            tensor[8] = permeability_tensor[8];
-         }
-         break;
-   }
+			// HS: this is not needed any more--------------------------------
+			// if(permeability_model==2) {
+			//SB 4218	tensor[0] = GetHetValue(index,"permeability");
+			//      tensor[0] = m_msh->ele_vector[index]->mat_vector(perm_index);
+			//	tensor[3] = tensor[0];
+			// }
+			// end of comment out section-------------------------------------
+		}
+		else if(permeability_tensor_type == 1)
+		{
+			tensor[0] = permeability_tensor[0];
+			tensor[1] = 0.0;
+			tensor[2] = 0.0;
+			tensor[3] = permeability_tensor[1];
+		}
+		else if(permeability_tensor_type == 2)
+		{
+			tensor[0] = permeability_tensor[0];
+			tensor[1] = permeability_tensor[1];
+			tensor[2] = permeability_tensor[2];
+			tensor[3] = permeability_tensor[3];
+		}
+		break;
+	case 3:                               // 3-D
+		if(permeability_tensor_type == 0)
+		{
+			// tensor[0] = permeability_tensor[0]; // HS: not needed. already done before
+			tensor[1] = 0.0;
+			tensor[2] = 0.0;
+			tensor[3] = 0.0;
+			// tensor[4] = permeability_tensor[0]; // HS: using the line below instead;
+			tensor[4] = tensor[0]; // using the existing value
+			tensor[5] = 0.0;
+			tensor[6] = 0.0;
+			tensor[7] = 0.0;
+			// tensor[8] = permeability_tensor[0]; // HS: using the line below instead;
+			tensor[8] = tensor[0]; // using the existing value
+			// HS: this is not needed any more--------------------------------
+			// if(permeability_model==2) {
+			// SB 4218	tensor[0] = GetHetValue(index,"permeability");
+			//      tensor[0] = m_pcs->m_msh->ele_vector[index]->mat_vector(perm_index);
+			//      tensor[4] = tensor[0];
+			//      tensor[8] = tensor[0];
+			// }
+			// end of comment out section-------------------------------------
+		}
+		else if(permeability_tensor_type == 1)
+		{
+			tensor[0] = permeability_tensor[0];
+			tensor[1] = 0.0;
+			tensor[2] = 0.0;
+			tensor[3] = 0.0;
+			tensor[4] = permeability_tensor[1];
+			tensor[5] = 0.0;
+			tensor[6] = 0.0;
+			tensor[7] = 0.0;
+			tensor[8] = permeability_tensor[2];
+		}
+		else if(permeability_tensor_type == 2)
+		{
+			tensor[0] = permeability_tensor[0];
+			tensor[1] = permeability_tensor[1];
+			tensor[2] = permeability_tensor[2];
+			tensor[3] = permeability_tensor[3];
+			tensor[4] = permeability_tensor[4];
+			tensor[5] = permeability_tensor[5];
+			tensor[6] = permeability_tensor[6];
+			tensor[7] = permeability_tensor[7];
+			tensor[8] = permeability_tensor[8];
+		}
+		break;
+	}
 	return tensor;
 }
 
@@ -6256,7 +6284,7 @@ double CMediumProperties::KozenyCarman(double k0, double n0, double n)
 	double rt = 0.0;
 
 	// TODO: here it should be the min_porosity and max_porosity instead of 0 and 1
-	if (k0 < 1.0e-20 || k0 > 1.0 || n0 <= 0 || n0 >= 1 || n <= 0 || n >= 1 )
+	if (k0 < 1.0e-40 || k0 > 1.0 || n0 <= 0 || n0 >= 1 || n <= 0 || n >= 1 )
 		return k0;
 	else
 	{
@@ -6281,7 +6309,7 @@ double CMediumProperties::KozenyCarman_normalized(double k0, double n0, double n
 	double rt = 0.0;
 
 	// TODO: here it should be the min_porosity and max_porosity instead of 0 and 1
-	if (k0 < 1.0e-20 || k0 > 1.0 || n0 <= 0 || n0 >= 1 || n <= 0 || n >= 1 )
+	if (k0 < 1.0e-40 || k0 > 1.0 || n0 <= 0 || n0 >= 1 || n <= 0 || n >= 1 )
 		return k0;
 	else
 	{
