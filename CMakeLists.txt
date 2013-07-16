@@ -40,11 +40,11 @@ INCLUDE(CMakeConfiguration/CompilerSetup.cmake)
 
 
 ### Find directories and libraries ###
-#IF(NOT OGS_FEM_PETSC)
+IF(NOT OGS_FEM_PETSC)
 IF(NOT OGS_NO_EXTERNAL_LIBS)
 INCLUDE (CMakeConfiguration/Find.cmake)
 ENDIF() # NOT OGS_NO_EXTERNAL_LIBS
-#ENDIF()
+ENDIF()
 
 
 ### General project setup ###

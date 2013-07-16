@@ -313,7 +313,7 @@ public:
 		
 			if (reject) // Arrive here from any break in for loop.
 				prev_reject=true;
-		} // Go back if step was rejected.\
+		} // Go back if step was rejected.
 	
 		derivs_class->eval(x+h,y,dydxnew); // Used for start of next step and in dense out-put.
 		if (dense)

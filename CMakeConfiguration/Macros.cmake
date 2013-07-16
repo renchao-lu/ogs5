@@ -128,7 +128,7 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
 	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
 		SET (CONFIG_MATCH TRUE)
-	ENDIF ()
+	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
   ENDIF (UNIX)
 
   IF (CONFIG_MATCH)
