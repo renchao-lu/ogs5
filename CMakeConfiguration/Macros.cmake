@@ -225,7 +225,7 @@ FUNCTION(CHECK_CONFIG)
 		"${OGS_FEM_PQC}"
 		"${OGS_FEM_LIS}"
 		"${OGS_FEM_CHEMAPP}"
-                "$(OGS_FEM_PETSC_GEMS}"
+		"$(OGS_FEM_PETSC_GEMS}"
 		"${OGS_FEM_PETSC}")
 
 	SET(counter 0)
@@ -238,9 +238,11 @@ FUNCTION(CHECK_CONFIG)
 	IF (counter EQUAL 0)
 		MESSAGE(STATUS "No configuration specified. Assuming default configuration...")
 		SET(OGS_FEM ON)
+                SET(counter 1)
 	ENDIF (counter EQUAL 0)
-
-	IF (counter GREATER 1)
+# why does the following line not work with 1
+#	IF (counter GREATER 1)
+	IF (counter GREATER 2)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given. Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
@@ -254,7 +256,7 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_CHEMAPP
                         OGS_FEM_PETSC_GEMS
 			OGS_FEM_PETSC")
-	ENDIF ()
+	ENDIF (counter GREATER 2)
 
 ENDFUNCTION()
 
