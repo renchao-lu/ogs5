@@ -143,7 +143,7 @@ MARK_AS_ADVANCED(CMAKE_THREAD_PREFER_PTHREAD)
 ## boost (see FindBoost.cmake for more options) ##
 set(Boost_USE_STATIC_LIBS    ON)
 set(Boost_USE_MULTITHREADED  ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
+set(Boost_USE_STATIC_RUNTIME ON)
 
 IF(NOT OGS_FEM_GEMS)
 	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
