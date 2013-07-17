@@ -37,7 +37,7 @@ set( SOURCES
 #	LinAlg/HouseholderAlgorithm.cpp
 )
 
-IF(OGS_FEM_PETSC)
+IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
    set( HEADERS  ${HEADERS} PETSC/PETScLinearSolver.h)
    set( SOURCES  ${SOURCES} PETSC/PETScLinearSolver.cpp)
 
