@@ -99,7 +99,7 @@ ENDIF()
 ######################
 ### Find libraries ###
 ######################
-IF(OGS_NO_EXTERNAL_LIBS)
+IF(OGS_FEM_PETSC OR OGS_NO_EXTERNAL_LIBS)
 	RETURN()
 ENDIF()
 
@@ -143,13 +143,13 @@ MARK_AS_ADVANCED(CMAKE_THREAD_PREFER_PTHREAD)
 ## boost (see FindBoost.cmake for more options) ##
 set(Boost_USE_STATIC_LIBS    ON)
 set(Boost_USE_MULTITHREADED  ON)
-set(Boost_USE_STATIC_RUNTIME ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
 
 IF(NOT OGS_FEM_GEMS)
-	FIND_PACKAGE( Boost COMPONENTS filesystem system regex)
+	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
 ELSE()
 	# Boost with threads is required for GEMS
-	FIND_PACKAGE( Boost COMPONENTS filesystem system regex thread )
+	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex thread )
 ENDIF()
 
 ## VTK ##
