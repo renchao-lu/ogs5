@@ -4,17 +4,22 @@
 #include <limits>
 #include "Eigen/Eigen"
 
+#ifndef SQR
 template<class T>
 inline T SQR(const T a) {return a*a;}
+#endif
 
+#ifndef MAX
 template<class T>
 inline const T &MAX(const T &a, const T &b)
         {return b > a ? (b) : (a);}
+#endif
 
+#ifndef MIN
 template<class T>
 inline const T &MIN(const T &a, const T &b)
         {return b < a ? (b) : (a);}
-
+#endif
 
 class StepperBase
 {

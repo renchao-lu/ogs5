@@ -29,7 +29,6 @@ extern std::string GetLineFromFile1(std::ifstream*);
 #include "rf_mmp_new.h"
 #include "rf_msp_new.h"
 #include "rf_out_new.h"
-#include "rf_out_new.h"
 #include "rf_pcs.h"
 #include "rf_st_new.h"
 #include "rf_tim_new.h"
