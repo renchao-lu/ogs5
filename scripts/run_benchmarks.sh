@@ -85,6 +85,15 @@ if  [ $RUN_EXCEEDING ]; then
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
+	cd $BUILD_LOCATION/build_petsc_gems
+	ctest -VV -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
+	if [ "${?}" -ne "0" ] ; then
+		returncode=1
+	fi
+	ctest -R 'EXCEEDING_FILECOMPARE'
+	if [ "${?}" -ne "0" ] ; then
+		returncode=1
+	fi
 else
 	# Don´t abort on errors
 	set +e >/dev/null
