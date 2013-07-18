@@ -77,7 +77,7 @@ if  [ $RUN_EXCEEDING ]; then
 	fi
 
 	cd $BUILD_LOCATION/build_gems
-	ctest -VV -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
+	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
@@ -86,7 +86,7 @@ if  [ $RUN_EXCEEDING ]; then
 		returncode=1
 	fi
 	cd $BUILD_LOCATION/build_petsc_gems
-	ctest -VV -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
+	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
