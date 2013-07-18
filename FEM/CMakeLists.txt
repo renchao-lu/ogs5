@@ -195,7 +195,7 @@ endif (WIN32)
 
 if (UNIX)
 	if (OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
-		target_link_libraries( FEM GEM boost_thread )
+		target_link_libraries( FEM GEM boost_thread-mt )
 	endif (OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 
 	if (OGS_FEM_BRNS)
