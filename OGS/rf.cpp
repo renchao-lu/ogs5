@@ -185,8 +185,12 @@ int main ( int argc, char* argv[] )
 	char help[] = "OGS with PETSc \n";
 	//PetscInitialize(argc, argv, help);
 	PetscInitialize(&argc,&argv,(char *)0,help);
-	PetscGetTime(&v1);
-
+	//kg44 quick fix to compile PETSC with version PETSCV3.4
+#ifdef PETSC34
+       PetscTime(&v1);
+#else
+       PetscGetTime(&v1);
+#endif
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	MPI_Comm_size(PETSC_COMM_WORLD, &r_size);
 	PetscSynchronizedPrintf(PETSC_COMM_WORLD, "===\nUse PETSc solver");
@@ -298,7 +302,14 @@ int main ( int argc, char* argv[] )
 	free(dateiname);
 
 #ifdef USE_PETSC
-   PetscGetTime(&v2);
+	//kg44 quick fix to compile PETSC with version PETSCV3.4
+#ifdef PETSC34
+       PetscTime(&v2);
+#else
+       PetscGetTime(&v2);
+#endif
+
+
    PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total elapsed time by using PETSC:%f s\n",v2-v1);
 
    PetscFinalize();
