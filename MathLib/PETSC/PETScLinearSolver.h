@@ -13,6 +13,10 @@
 #include "petscmat.h"
 #include "petscksp.h"
 
+#ifdef PETSC34
+#include "petsctime.h"
+#endif
+
 typedef Mat PETSc_Mat;
 typedef Vec PETSc_Vec;
 
