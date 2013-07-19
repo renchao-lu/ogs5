@@ -9,6 +9,9 @@
  
 #include <string>
 #include <vector>
+//kg needed for memcpy in petsc libs
+#include <stdio.h>
+#include <string.h>
 
 #include "petscmat.h"
 #include "petscksp.h"
