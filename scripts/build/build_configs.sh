@@ -46,8 +46,8 @@ if [ "$OSTYPE" == 'msys' ]; then
 elif [[ "$OSTYPE" == darwin* ]]; then
 	configs=("FEM" "SP")                                       # Mac
 else
-#	configs=("FEM" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC" "PETSC_GEMS") # Linux
-	configs=("PETSC" "PETSC_GEMS") # Linux
+	configs=("FEM" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC" "PETSC_GEMS") # Linux
+#	configs=("PETSC" "PETSC_GEMS") # Linux fast version to debug petsc
 fi
 
 # Iterate over configurations
@@ -70,6 +70,9 @@ do
 		cmake_args="-DCMAKE_C_COMPILER=/opt/openmpi-1.4.1/bin/mpicc -DCMAKE_CXX_COMPILER=/opt/openmpi-1.4.1/bin/mpic++ -DMPI_INCLUDE_PATH=/opt/openmpi-1.4.1/include"
 	fi
 	if [ "$config" = "PETSC" ] ; then
+		cmake_args="-DPETSC_DIR=/opt/petsc-3.4.2 -DCMAKE_C_COMPILER=/opt/openmpi-1.4.1/bin/mpicc -DCMAKE_CXX_COMPILER=/opt/openmpi-1.4.1/bin/mpic++ -DMPI_INCLUDE_PATH=/opt/openmpi-1.4.1/include"
+	fi
+	if [ "$config" = "PETSC_GEMS" ] ; then
 		cmake_args="-DPETSC_DIR=/opt/petsc-3.4.2 -DCMAKE_C_COMPILER=/opt/openmpi-1.4.1/bin/mpicc -DCMAKE_CXX_COMPILER=/opt/openmpi-1.4.1/bin/mpic++ -DMPI_INCLUDE_PATH=/opt/openmpi-1.4.1/include"
 	fi
 
