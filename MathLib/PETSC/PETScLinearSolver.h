@@ -16,7 +16,7 @@
 #include "petscmat.h"
 #include "petscksp.h"
 
-#ifdef PETSC34
+#ifdef USEPETSC34
 #include "petsctime.h"
 #endif
 

@@ -229,7 +229,7 @@ void PETScLinearSolver::Solver()
 
    // #define PETSC34
    //kg44 quick fix to compile PETSC with version PETSCV3.4
-#ifdef PETSC34
+#ifdef USEPETSC34
    PetscTime(&v1);
 #else
    PetscGetTime(&v1);
@@ -267,7 +267,7 @@ void PETScLinearSolver::Solver()
    //VecAssemblyEnd(x);
 
    //kg44 quick fix to compile PETSC with version PETSCV3.4
-#ifdef PETSC34
+#ifdef USEPETSC34
    PetscTime(&v2);
 #else
    PetscGetTime(&v2);
