@@ -227,7 +227,12 @@ void PETScLinearSolver::Solver()
    PetscLogDouble v1,v2;
    KSPConvergedReason reason;
 
+   //kg44 quick fix to compile PETSC with version PETSCV3.4
+#if defined(PETSC3.4)
+   PetscTime(&v1);
+#else
    PetscGetTime(&v1);
+#endif
 
    KSPSolve(lsolver, b, x);
   
@@ -260,7 +265,13 @@ void PETScLinearSolver::Solver()
    //VecAssemblyBegin(x);
    //VecAssemblyEnd(x);
 
+   //kg44 quick fix to compile PETSC with version PETSCV3.4
+#if defined(PETSC3.4)
+   PetscTime(&v2);
+#else
    PetscGetTime(&v2);
+#endif
+
    time_elapsed += v2-v1;
 
    
