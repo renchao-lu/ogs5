@@ -66,6 +66,9 @@ double elapsed_time_mpi;
 // Use PETSc. WW
 #ifdef USE_PETSC
 #include "petscksp.h"
+#ifdef PETSC34
+#include "petsctime.h"
+#endif
 #endif
 
 /* Definitionen */
