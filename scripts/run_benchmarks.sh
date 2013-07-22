@@ -97,7 +97,7 @@ if  [ $RUN_EXCEEDING ]; then
 	fi
 
 	cd $BUILD_LOCATION/build_petsc_gems
-	ctest -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
+	ctest -VV -R 'EXCEED' -E 'Tests|FILE' -j $NUM_PROCESSORS
 	if [ "${?}" -ne "0" ] ; then
 		returncode=1
 	fi
@@ -130,7 +130,7 @@ else
 	ctest -R 'FILECOMPARE' -E 'EXCEED' -VV >> ../benchOut.txt
 
 	cd $BUILD_LOCATION/build_petsc_gems
-	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
+	ctest -VV -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' -VV >> ../benchOut.txt
 
 	cd $BUILD_LOCATION/build_mpi
