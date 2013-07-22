@@ -10,7 +10,8 @@ cd ..
 mkdir -p Release
 
 # Iterate over configurations
-for config in "" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC" "PETSC_GEMS"
+#for config in "" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC" "PETSC_GEMS"
+for config in "PETSC" "PETSC_GEMS"
 do
 	cmake_args=""
 	if [ "$config" = "" ] ; then
