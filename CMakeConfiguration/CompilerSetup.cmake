@@ -1,7 +1,7 @@
 INCLUDE(ResetConfigurations)        # To Debug, Release, RelWithDbgInfo
 INCLUDE(SetDefaultBuildType)
 INCLUDE(DisableCompilerFlag)
-SET_DEFAULT_BUILD_TYPE(Release)
+SET_DEFAULT_BUILD_TYPE(Debug)
 INCLUDE(MSVCMultipleProcessCompile) # /MP Switch for VS
 
 IF (WIN32)
@@ -40,10 +40,10 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 	IF( NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	IF (OGS_FEM_PETSC_GEMS)
 				SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -DNDEBUG")
-		ELSE()
+		ELSE(OGS_FEM_PETSC_GEMS)
 				SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
-		ENDIF()
-	ENDIF()
+		ENDIF(OGS_FEM_PETSC_GEMS)
+	ENDIF(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	# -g
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra -Woverloaded-virtual -fno-nonansi-builtins")
 	# would be cool: -Woverloaded-virtual, would be overkill: -Weffc++
