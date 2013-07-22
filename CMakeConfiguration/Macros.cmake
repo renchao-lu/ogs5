@@ -123,12 +123,12 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	IF (${ogsConfiguration} STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
 	  SET (CONFIG_MATCH TRUE)
 	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
+	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
+	  SET (CONFIG_MATCH TRUE)
+	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
 	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
 	  SET (CONFIG_MATCH TRUE)
 	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
-	IF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
-		SET (CONFIG_MATCH TRUE)
-	ENDIF (${ogsConfiguration} STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
   ENDIF (UNIX)
 
   IF (CONFIG_MATCH)
@@ -225,8 +225,8 @@ FUNCTION(CHECK_CONFIG)
 		"${OGS_FEM_PQC}"
 		"${OGS_FEM_LIS}"
 		"${OGS_FEM_CHEMAPP}"
-		"$(OGS_FEM_PETSC_GEMS}"
-		"${OGS_FEM_PETSC}")
+		"$(OGS_FEM_PETSC}"
+		"${OGS_FEM_PETSC_GEMS}")
 
 	SET(counter 0)
 
@@ -240,10 +240,9 @@ FUNCTION(CHECK_CONFIG)
 		SET(OGS_FEM ON)
                 SET(counter 1)
 	ENDIF (counter EQUAL 0)
-# why does the following line not work with 1
-#	IF (counter GREATER 1)
-	IF (counter GREATER 2)
-		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given. Please use only one of the following configurations:
+
+	IF (counter GREATER 1)
+		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
 			OGS_FEM_SP
@@ -254,9 +253,9 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_PQC
 			OGS_FEM_LIS
 			OGS_FEM_CHEMAPP
-                        OGS_FEM_PETSC_GEMS
-			OGS_FEM_PETSC")
-	ENDIF (counter GREATER 2)
+			OGS_FEM_PETSC
+			OGS_FEM_PETSC_GEMS")
+	ENDIF (counter GREATER 1)
 
 ENDFUNCTION()
 
