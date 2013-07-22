@@ -241,7 +241,8 @@ FUNCTION(CHECK_CONFIG)
                 SET(counter 1)
 	ENDIF (counter EQUAL 0)
 
-	IF (counter GREATER 1)
+# kg44 why does the function find 2 configs for OGS_FEM_PETSC_GEMS ?
+	IF (counter GREATER 2)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
@@ -255,7 +256,7 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_CHEMAPP
 			OGS_FEM_PETSC
 			OGS_FEM_PETSC_GEMS")
-	ENDIF (counter GREATER 1)
+	ENDIF (counter GREATER 2)
 
 ENDFUNCTION()
 
