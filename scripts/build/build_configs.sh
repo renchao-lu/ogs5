@@ -47,7 +47,7 @@ elif [[ "$OSTYPE" == darwin* ]]; then
 	configs=("FEM" "SP")                                       # Mac
 else
 #	configs=("FEM" "SP" "MPI" "GEMS" "PQC" "BRNS" "MKL" "LIS" "PETSC" "PETSC_GEMS") # Linux
-	configs=("PETSC" "PETSC_GEMS") # Linux fast version to debug petsc
+	configs=("FEM" "PETSC" "PETSC_GEMS") # Linux fast version to debug petsc
 fi
 
 # Iterate over configurations
