@@ -234,6 +234,7 @@ FUNCTION(CHECK_CONFIG)
 		IF (config)
 			MATH(EXPR counter "${counter} + 1")
 		ENDIF (config)
+		MESSAGE(STATUS "config test ${config} found total ${counter}")
 	ENDFOREACH()
 	IF (counter EQUAL 0)
 		MESSAGE(STATUS "No configuration specified. Assuming default configuration...")
@@ -241,7 +242,7 @@ FUNCTION(CHECK_CONFIG)
                 SET(counter 1)
 	ENDIF (counter EQUAL 0)
 
-# kg44 why does the function find 2 configs for OGS_FEM_PETSC_GEMS ?
+# kg44 why does the function always find 2 configs ..counter greater 1 does not work?
 	IF (counter GREATER 2)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
