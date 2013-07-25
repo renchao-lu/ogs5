@@ -2741,7 +2741,7 @@ void GetNODValue(double& value, CNodeValue* cnodev, CSourceTerm* st)
       GetGreenAmptNODValue(value, st, cnodev->msh_node_number);
 
    //TN - Test flux with heat transfer coefficient
-   if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE1 && st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) {
+   if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE && st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) {
 	   GetNODHeatTransfer(value, st, cnodev->geo_node_number);
 	   //value = st->getTransferCoefficient()*cnodev->node_area*(cnodev->node_value - st->getValueSurrounding());
    }
@@ -2809,7 +2809,7 @@ void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
 
    if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE2)
 	   value *= (1.0 - poro);
-   else if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE1)
+   else if (st->getProcessPrimaryVariable() == FiniteElement::TEMPERATURE)
 	   value *= poro;
 
 }
