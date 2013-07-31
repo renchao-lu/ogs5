@@ -50,6 +50,7 @@ using FiniteElement::CElement;
 using FiniteElement::ElementValue;
 using FiniteElement::CFiniteElementStd;
 using FiniteElement::ElementValue_DM;
+
 ////////////////////////////////////////////////////////////////////////////
 // CMediumProperties
 ////////////////////////////////////////////////////////////////////////////
@@ -1852,8 +1853,9 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
       {
          in.str(GetLineFromFile1(mmp_file));
          in >> PhaseHeatedByFriction;
-		 if (PhaseHeatedByFriction.compare("SOLID") != 0 && PhaseHeatedByFriction.compare("FLUID") != 0)
-			 std::cout << "Error in CMediumProperties::Read: $INTERPHASE_FRICTION must be either SOLID or FLUID";
+		 this->setFrictionPhase(FiniteElement::convertFrictionPhase(PhaseHeatedByFriction));
+		 if (PhaseHeatedByFriction.compare("SOLID") != 0 && PhaseHeatedByFriction.compare("FLUID") != 0 && PhaseHeatedByFriction.compare("NONE") != 0)
+			 std::cout << "Error in CMediumProperties::Read: $INTERPHASE_FRICTION must be either SOLID or FLUID or NONE";
          in.clear();
          continue;
       }
@@ -8451,4 +8453,14 @@ double CMediumProperties::HeatTransferCoefficient(long number,double theta, CFin
     }
 
     return val;
+}
+//TN - added for TNEQ process
+void CMediumProperties::setFrictionPhase (FiniteElement::FrictionPhase fric_phase)
+{
+	_fric_phase = fric_phase;
+}
+
+FiniteElement::FrictionPhase CMediumProperties::getFrictionPhase () const
+{
+	return _fric_phase;
 }

@@ -170,6 +170,7 @@ private:
 	 * material property is assigned to
 	 */
 	GEOLIB::GEOTYPE _geo_type;
+	FiniteElement::FrictionPhase _fric_phase;
 public:
 	//GEO
 	std::string geo_name;
@@ -279,6 +280,11 @@ public:
       
       int particle_diameter_model;
       double particle_diameter_model_value;
+	//Get friction phase - TN
+	FiniteElement::FrictionPhase getFrictionPhase () const;
+
+	//Set value for friction phase - TN
+	void setFrictionPhase (FiniteElement::FrictionPhase fric_phase);
 };
 
 class CMediumPropertiesGroup                      //YD

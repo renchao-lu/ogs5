@@ -455,4 +455,28 @@ ErrorMethod convertErrorMethod(const std::string& error_method_string)
 	return INVALID_ERROR_METHOD;
 }
 
+FrictionPhase convertFrictionPhase( const std::string& friction_string)
+{
+	if (friction_string.compare("SOLID") == 0)
+		return SOLID;
+	if (friction_string.compare("FLUID") == 0)
+		return FLUID;
+	if (friction_string.compare("NONE") == 0)
+		return SOLID;
+
+	std::cout << "Convert error: " << friction_string << " not found. \n";
+
+}
+std::string convertFrictionPhaseToString(FrictionPhase friction_phase)
+{
+	if (friction_phase == SOLID)
+		return "SOLID";
+	if (friction_phase == FLUID)
+		return "FLUID";
+	if (friction_phase == NONE)
+		return "NONE";
+
+	std::cout << "Invalid friction_phase type. \n";
+}
+
 } // end namespace FiniteElement

@@ -240,6 +240,18 @@ enum ErrorMethod
  */
 ErrorMethod convertErrorMethod ( const std::string& error_method_string );
 
+//Determines into which energy balance interphase friction is integrated in TNEQ models
+enum FrictionPhase
+{
+	SOLID,
+	FLUID,
+	NONE
+};
+
+FrictionPhase convertFrictionPhase( const std::string& friction_string);
+std::string convertFrictionPhaseToString(FrictionPhase friction_phase);
+
+
 } // end namespace FiniteElement
 
 #endif                                            //FEMENUMS_H

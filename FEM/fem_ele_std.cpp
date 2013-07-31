@@ -3604,7 +3604,8 @@ double CFiniteElementStd::CalCoefAdvection()
 			val= -FluidProp->beta_T*eos_arg[1];
 			//val = -FluidProp->beta_T*T_gas_gp[gp];
 
-		if (MediaProp->PhaseHeatedByFriction.compare("FLUID") == 0) //If heat caused by interphase friction goes into fluid rather than solid
+		//if (MediaProp->PhaseHeatedByFriction.compare("FLUID") == 0) //If heat caused by interphase friction goes into fluid rather than solid
+		if (MediaProp->getFrictionPhase() == FiniteElement::FLUID) 
 			val += 1.0;
 		break;
 
@@ -10578,7 +10579,8 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		val = (1.0-poro)*q_r*H_vap;
 		val += gp_ele->rho_s_curr[gp]*(1.0-poro)*SolidProp->specific_heat_source;
 
-		if (MediaProp->PhaseHeatedByFriction.compare("SOLID") == 0) {
+//		if (MediaProp->PhaseHeatedByFriction.compare("SOLID") == 0) {
+		if (MediaProp->getFrictionPhase() == FiniteElement::SOLID) {
 			// HS, implementing the friction term here. 
 			double * grad_pg; // gradient of gas pressure. 
 			double * vel_Darcy; // velocity term; 
