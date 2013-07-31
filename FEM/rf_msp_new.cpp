@@ -751,6 +751,7 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
          {
 	         in_sd.str(GetLineFromFile1(msp_file));
 			 in_sd >> reaction_system;
+			 this->setSolidReactiveSystem(FiniteElement::convertSolidReactiveSystem(reaction_system));
 			 in_sd.clear();
 			 if (reaction_system.compare("SINUSOIDAL") == 0) { //For Benchmarks
 				in_sd.str(GetLineFromFile1(msp_file));
@@ -7933,6 +7934,18 @@ double CSolidProperties::E_Function(int dim, const ElementValue_DM *ele_val, int
 	}
 	return return_value;
 }
+
+//TN - added for TNEQ process
+void CSolidProperties::setSolidReactiveSystem (FiniteElement::SolidReactiveSystem reactive_system)
+{
+	_reactive_system = reactive_system;
+}
+
+FiniteElement::SolidReactiveSystem CSolidProperties::getSolidReactiveSystem () const
+{
+	return _reactive_system;
+}
+
 }                                                 // end namespace
 
 /////////////////////////////////////////////////////////////////////////////
@@ -8195,3 +8208,4 @@ SolidProp::CSolidProperties* MSPGet(std::string mat_name)
 	}
 	return NULL;
 }
+

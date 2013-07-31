@@ -479,4 +479,29 @@ std::string convertFrictionPhaseToString(FrictionPhase friction_phase)
 	std::cout << "Invalid friction_phase type. \n";
 }
 
+SolidReactiveSystem convertSolidReactiveSystem( const std::string& reactive_string)
+{
+	if (reactive_string.compare("INERT") == 0)
+		return INERT;
+	if (reactive_string.compare("SINUSOIDAL") == 0)
+		return SINUSOIDAL;
+	if (reactive_string.compare("CaOH2") == 0)
+		return CaOH2;
+
+	std::cout << "Convert error: " << reactive_string << " not found. \n";
+
+}
+
+std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_system)
+{
+	if (reactive_system == INERT)
+		return "INERT";
+	if (reactive_system == SINUSOIDAL)
+		return "SINUSOIDAL";
+	if (reactive_system == CaOH2)
+		return "CaOH2";
+
+	std::cout << "Invalid reactive system type. \n";
+}
+
 } // end namespace FiniteElement

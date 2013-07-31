@@ -3965,6 +3965,7 @@ void CRFProcess::ConfigTNEQ()
 	long group_count = 0;
 	m_rho_s_0 = msp_vector[group_count]->Density();      // get initial solid density
 	double poro = mmp_vector[group_count]->porosity;
+	FiniteElement::SolidReactiveSystem react_syst = msp_vector[group_count]->getSolidReactiveSystem();
 	//if (group_count != 0) break;
    // if (this->m_num->reaction_scaling!=.0) {
 	double start_t = 0.0;
@@ -3975,8 +3976,8 @@ void CRFProcess::ConfigTNEQ()
 			                          0.0,       // w_water, mass fraction unitless
 			                          m_rho_s_0, //TN 1656.0 // kg/m3, // rho_s_initial, 
 									  1.0-poro, //solid volume fraction
-			                          0.001,
-									  "CaOH2");      // delta_t //TN: decreased from 1.0
+			                          0.001,   // delta_t //TN: decreased from 1.0
+									  react_syst);      
 
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
 	dydxx_rho_s = Eigen::VectorXd::Zero(1);

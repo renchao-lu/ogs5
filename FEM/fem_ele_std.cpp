@@ -6670,10 +6670,10 @@ void CFiniteElementStd::Cal_rho_s_TS()
 									              gp_ele->rho_s_prev[gp],   // solid density, previous time step value
 												  1-poro,
 									              delta_t,
-												  this->SolidProp->reaction_system);            // time step size, same as PDE step size
+												  this->SolidProp->getSolidReactiveSystem());            // time step size, same as PDE step size
 		 
-		 if (this->SolidProp->reaction_system.compare("INERT") != 0){
-			 if (this->SolidProp->reaction_system.compare("SINUSOIDAL") == 0) {//For Benchmarks
+		 if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
+			 if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
 				 gp_ele->rho_s_curr[gp] = 1.0 + 0.1*sin(2.0*3.1416*aktuelle_zeit)/(1.0-poro);//TN Test mass transfer
 				 gp_ele->q_R[gp] = 0.1*2.0*3.1416*cos(2.0*3.1416*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
 			 }

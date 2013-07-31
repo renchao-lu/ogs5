@@ -251,6 +251,16 @@ enum FrictionPhase
 FrictionPhase convertFrictionPhase( const std::string& friction_string);
 std::string convertFrictionPhaseToString(FrictionPhase friction_phase);
 
+//Solid Reactive System
+enum SolidReactiveSystem
+{
+	INERT,
+	SINUSOIDAL,
+	CaOH2
+};
+
+SolidReactiveSystem convertSolidReactiveSystem( const std::string& reactive_string);
+std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_system);
 
 } // end namespace FiniteElement
 
