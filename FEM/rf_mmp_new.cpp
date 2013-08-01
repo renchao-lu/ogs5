@@ -132,6 +132,7 @@ CMediumProperties::CMediumProperties() :
    particle_diameter_model_value = .0;
 
    PhaseHeatedByFriction = "SOLID";
+   _fric_phase = FiniteElement::SOLID;
 	storage_effstress_model = 0;
 	permeability_effstress_model = 0;
 }

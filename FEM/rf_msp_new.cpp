@@ -945,6 +945,7 @@ CSolidProperties::CSolidProperties()
 
 	  //Reactive system
 	reaction_system = "INERT";
+	_reactive_system = FiniteElement::INERT;
 	lower_solid_density_limit = 0.0; 
 	upper_solid_density_limit = 0.0;
 	reaction_enthalpy = 0.0;
