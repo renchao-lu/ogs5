@@ -10442,7 +10442,6 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		eos_arg[0] = pg;
 		eos_arg[1] = Tg;
 		eos_arg[2] = Xw;
-		val += (1.0-poro)*q_r*FluidProp->SpecificHeatCapacity(eos_arg)*(Tg);
 		val += FluidProp->Density(eos_arg)*poro*FluidProp->specific_heat_source;
 		//val += rho_gas_gp[gp]*poro*FluidProp->specific_heat_source;
 		break;
@@ -10502,7 +10501,6 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 			delete vel_Darcy; // clean the memory of velocity darcy
 		}
 		            
-		val += -1.0*(1.0-poro)*q_r*SolidProp->Heat_Capacity()*(Ts);
 		
 		break;
 		case 3:
