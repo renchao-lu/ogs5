@@ -1668,6 +1668,7 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 		  Cp_c[1] = 1056.8+(1146.4-1056.8)/(900.0-500.0)*(variables[1]-500.0); //Nitrogen
 
 		  specific_heat_capacity = x[0]*Cp_c[0] + x[1]*Cp_c[1];
+		  break;
 	case 15: // mixture cp= sum_i y_i*cp:: P, T, x dependent
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 	{

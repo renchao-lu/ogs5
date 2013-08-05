@@ -3634,6 +3634,7 @@ double CFiniteElementStd::CalCoefAdvection()
 		val= FluidProp->Density(eos_arg);
 		break;
 		}
+
 		return val;
    }
 
@@ -3710,7 +3711,10 @@ double CFiniteElementStd::CalCoefAdvection()
 		   val += (MediaProp->Porosity(Index,pcs->m_num->ls_theta) - 1.0)*gp_ele->q_R[gp];
            break;
        }
+
        return val;
+
+	  
    }
 
  /**************************************************************************
@@ -10443,7 +10447,6 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		eos_arg[1] = Tg;
 		eos_arg[2] = Xw;
 		val += FluidProp->Density(eos_arg)*poro*FluidProp->specific_heat_source;
-		//val += rho_gas_gp[gp]*poro*FluidProp->specific_heat_source;
 		break;
 
 		case 2:
@@ -10451,7 +10454,6 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		val = (1.0-poro)*q_r*H_vap;
 		val += gp_ele->rho_s_curr[gp]*(1.0-poro)*SolidProp->specific_heat_source;
 
-//		if (MediaProp->PhaseHeatedByFriction.compare("SOLID") == 0) {
 		if (MediaProp->getFrictionPhase() == FiniteElement::SOLID) {
 			// HS, implementing the friction term here. 
 			double * grad_pg; // gradient of gas pressure. 
@@ -10491,12 +10493,10 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 					vel_Darcy[i] += tensor[index_tmp] * grad_pg[i] ;
 				}
 				friction_term += vel_Darcy[i] * grad_pg[i] * k_rel / FluidProp->Viscosity(eos_arg); 
-				//friction_term += vel_Darcy[i] * grad_pg[i] * k_rel / visc_gas_gp[gp]; 
 			}
 
 			val += friction_term;
 
-			//std::cout << "Druckgradient " << grad_pg[0] << " Reibung: " << friction_term << "\n";
 			delete grad_pg;  // clean tmp memory
 			delete vel_Darcy; // clean the memory of velocity darcy
 		}

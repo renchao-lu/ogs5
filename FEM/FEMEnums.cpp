@@ -462,7 +462,7 @@ FrictionPhase convertFrictionPhase( const std::string& friction_string)
 	if (friction_string.compare("FLUID") == 0)
 		return FLUID;
 	if (friction_string.compare("NONE") == 0)
-		return SOLID;
+		return NONE;
 
 	std::cout << "Convert error: " << friction_string << " not found. \n";
 

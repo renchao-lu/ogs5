@@ -3,6 +3,8 @@
 #include <math.h>
 #include <cmath>
 
+//#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
+
 #ifndef max
   #define max(a,b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -100,42 +102,35 @@ void ca_hydration::calculate_qR()
 	
 
 	// step 3, calculate dX/dt
-	//if ( T_s < T_eq ) // hydration - simple model
+#ifdef SIMPLE_KINETICS
+	if ( T_s < T_eq ) // hydration - simple model
+#else
 	if ( p_w_g > p_eq ) // hydration - Schaube model
+#endif
 	{
-		//this is from Schaube
+		
+#ifdef SIMPLE_KINETICS // this is from P. Schmidt
+		dXdt = -1.0*(1.0-X_H) * (T_s - T_eq) / T_eq * 0.2 * ca_hydration::w_h2o;
+#else //this is from Schaube
 		if ( (T_eq-T_s) >= 50.0 )
 			dXdt = 13945.0 * exp(-89486.0/R/T_s) * pow(p_w_g/p_eq - 1.0,0.83) * 3.0 * (1-X_H) * pow(-1.0*log(1.0-X_H),0.666); 
 		else
 			dXdt = 1.0004e-34 * exp(5.3332e4/T_s) * pow(p_w_g, 6.0) * (1.0-X_H); 
-		
-		// this is from P. Schmidt
-		//dXdt = -1.0*(1.0-X_H) * (T_s - T_eq) / T_eq;
-
+#endif
 	}
 	else // dehydration
 	{
+#ifdef SIMPLE_KINETICS // this is from P. Schmidt
+		dXdt = -1.0* (1.0-X_D) * (T_s - T_eq) / T_eq * 0.05;
+#else
 		if (X_D < 0.2)
 			dXdt = -1.9425e12 * exp( -1.8788e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*(1.0 - X_D);
 		else
 			dXdt = -8.9588e9 * exp( -1.6262e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*2.0*pow(1.0 - X_D, 0.5); 
-
-		//dXdt = -1.0* (1.0-X_D) * (T_s - T_eq) / T_eq;
+#endif
 	}
 
-	qR = (rho_up - rho_low) * dXdt; //TN - reaction rate continuous around T_eq
-	//TN - scale qR with mass fraction (smoothes simulation)
-	//if (qR > 0.0)
-		//qR *= ca_hydration::w_h2o;
-
-	//double k_R;
-
-	//if (qR < 0.0)
-	//	k_R = 0.05;
-	//else
-	//	k_R = 0.2;
-
-	//qR *= k_R;
+	qR = (rho_up - rho_low) * dXdt;
 
 }
 
