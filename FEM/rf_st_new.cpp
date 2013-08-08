@@ -469,6 +469,8 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
    {
       in >> geo_node_value;
       in.clear();
+      if (geo_node_value==.0)
+          std::cout << "Warning in CSourceTerm::ReadDistributionType (): Zero is set to the distribution type " << dis_type_name << ", which actually does nothing. There might be a mistake in yoru ST file. \n";
    }
 
    //outflux to surrounding depending on current value of solution at boundary (e.g. heat transfer to surrounding dependent on current wall temperature)
@@ -2912,7 +2914,7 @@ const int ShiftInNodeVector)
       }
    }
 
-   if (st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flächenelementen
+   if (st->getProcessDistributionType() == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flï¿½chenelementen
 		st->node_value_vectorArea.resize(1);
 	    st->node_value_vectorArea[0] = 1.0;
 		//nod_val->node_value = 0.0;
@@ -3490,7 +3492,7 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 				st->node_value_vectorArea);
 	}
 
-	if (distype == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flächenelementen
+	if (distype == FiniteElement::TRANSFER_SURROUNDING) { //TN - Belegung mit Flï¿½chenelementen
 		st->node_value_vectorArea.resize(number_of_nodes);
 		for (size_t i = 0; i < number_of_nodes; i++){
 			st->node_value_vectorArea[i] = 1.0;
@@ -3504,7 +3506,7 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 			st->EdgeIntegration(m_msh, ply_nod_vector, st->node_value_vectorArea);
 
 		
-		//CNode * a_node; //Fläche wird hier im Knoten als patch area abgelegt
+		//CNode * a_node; //Flï¿½che wird hier im Knoten als patch area abgelegt
 		//for (size_t i = 0; i < number_of_nodes; i++) 
 		//{ 
 		//	a_node = m_msh->nod_vector[ply_nod_vector[i]]; 
