@@ -29,8 +29,8 @@ ca_hydration::ca_hydration(double T_solid,
 	update_param( T_solid, T_gas, p_gas, w_water, rho_s_initial, phi_S, delta_t, system);
 	ca_hydration::rho_s_0 = rho_s_initial;
 	if (system == FiniteElement::CaOH2){ //Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
-		rho_low = 1655.98;
-		rho_up = 2200.02;
+		rho_low = 1655.999999;
+		rho_up = 2200.000001;
 		reaction_enthalpy = -1.12e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -143.5; //in J/mol K
 	}
@@ -64,18 +64,18 @@ void ca_hydration::update_param(double T_solid,
 
 void ca_hydration::calculate_qR()
 {
+	const double tol_u = 1.0-1.0e-9;
+	const double tol_l = 1.0e-9;
 	// step 1, calculate X_D and X_H
 	X_D = (rho_s - rho_up)/(rho_low - rho_up) ;
 	qR = 0.0;
-	if ( X_D < 0.00001 )
+	if ( X_D < tol_l)
 	{
-		X_D = max(X_D, 0.00001);
 		qR = 0.0; 
 		return;
 	}
-	else if (X_D > 0.99999)
+	else if (X_D > tol_u)
 	{
-		X_D = min(X_D, 0.99999);
 		qR = 0.0;
 		return;
 	}
