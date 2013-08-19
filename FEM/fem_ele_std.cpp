@@ -695,6 +695,13 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 					//WW
 					idxS = cpl_pcs->GetNodeValueIndex("SATURATION1") + 1;
 			}
+            if(cpl_pcs == NULL) //CB_merge_05.13 
+            {
+               cpl_pcs = PCSGet("PS_GLOBAL");
+               if(cpl_pcs)
+                  idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1;
+            }
+			
 			if(cpl_pcs == NULL) //23.02.2009 NB 4.9.05
 			{
 				cpl_pcs = PCSGet("TWO_PHASE_FLOW");
@@ -1667,6 +1674,11 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 	//
 	if(pcs->m_num->ele_mass_lumping)
 		ComputeShapefct(1);
+    // CB_merge_0513 in case of het K, store local K in permeability_tensor
+    double *tensor = NULL;
+    tensor = MediaProp->PermeabilityTensor(Index);
+    MediaProp->local_permeability = tensor[0];
+	
 	switch(dof_index)
 	{
 	case 0:
@@ -2712,6 +2724,9 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 	dens_arg[1] = 293.15;
 	//
 	int Index = MeshElement->GetIndex();
+    // CB_merge_0513 in case of het K, store local K in permeability_tensor
+    tensor = MediaProp->PermeabilityTensor(Index);
+    MediaProp->local_permeability = tensor[0];
 	//
 	ComputeShapefct(1);                   //  12.3.2007 WW
 
@@ -2932,6 +2947,7 @@ void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_index)
 	double mat_fac = 1.0;                 //OK411 m_fac=0.;
 	double k_rel = 0.0;
 	double mfp_arg[2];
+    double variables[3];
 
 	int Index = MeshElement->GetIndex();
 	//
@@ -2954,8 +2970,12 @@ void CFiniteElementStd::CalCoefLaplacePSGLOBAL(bool Gravity,  int dof_index)
 			Sw = 1.0 - interpolate(NodalVal_SatNW);
 		k_rel = MediaProp->PermeabilitySaturationFunction(Sw,0);
 
-		mat_fac = k_rel / FluidProp->Viscosity();
+        // CB_merge_0513
+		variables[0] = interpolate(NodalVal1); // pressure
+        variables[1] = interpolate(NodalValC); // temperature
 
+        mat_fac = k_rel / FluidProp->Viscosity(variables);
+        //mat_fac = k_rel / FluidProp->Viscosity();
 		// Since gravity for water phase is handled directly in Assemble_Gravity,
 		// no need of any code for water phase here.
 		for(size_t i = 0; i < dim * dim; i++)
@@ -5170,8 +5190,8 @@ void CFiniteElementStd::CalcContent()
  **************************************************************************/
 void CFiniteElementStd::CalcLaplace()
 {
-  int i, j, k, l, in, jn;
-  
+  int i, j,  l, in, jn;
+  size_t k;
   // ---- Gauss integral
   int gp_r = 0, gp_s = 0, gp_t;
   gp_t = 0;
@@ -5266,7 +5286,7 @@ void CFiniteElementStd::CalcLaplace()
 			{
 			  const int ksh = k*nnodes + i; 
 			  const int km = dim *k ;
-			  for(l=0; l< dim; l++)
+			  for(l=0; l< (int)dim; l++)
 			    {
 			      (*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
 				* mat[km + l] * dshapefct[l*nnodes+j];
@@ -5490,6 +5510,16 @@ void CFiniteElementStd::CalcAdvection()
 	CFluidProperties* m_mfp_g = NULL;
 	bool multiphase = false;
 	//18.02.2008, 04.09.2008 WW
+
+    // CB _ctx_
+	//bool _ctx_ = false;
+    //double  porosity =0;
+    //if(pcs->type==2){
+    //  if (cp_vec[pcs->pcs_component_number]->_ctx_Coefficient>0){
+    //    _ctx_ = true;
+    //    porosity = this->MediaProp->Porosity(Index,this->pcs->m_num->ls_theta);
+    //  }                                                  //18.02.2008, 04.09.2008 WW
+    //}
 	if(!cpl_pcs && (pcs->type != 2) && (pcs->type != 5))
 		return;
 	if(cpl_pcs && cpl_pcs->type == 1212)
@@ -5523,6 +5553,12 @@ void CFiniteElementStd::CalcAdvection()
 		vel[0] = mat_factor * gp_ele->Velocity(0, gp);
 		vel[1] = mat_factor * gp_ele->Velocity(1, gp);
 		vel[2] = mat_factor * gp_ele->Velocity(2, gp);
+        // CB _ctx_ : modify v if _ctx_ flux needs to be included
+        //if(_ctx_){
+        //  vel[0] -= porosity * gp_ele->_ctx_Gauss(0,gp);
+        //  vel[1] -= porosity * gp_ele->_ctx_Gauss(1,gp);
+        //  vel[2] -= porosity * gp_ele->_ctx_Gauss(2,gp);
+        //}
 		// If component is in non - wetting phase, as designated by transport_phase == 10 // SB, BG
 		if(cp_vec.size() > 0 && this->pcs->pcs_component_number>=0)
 			// // SB, BG
@@ -6786,8 +6822,10 @@ void CFiniteElementStd::Cal_Velocity()
 				}
 				else if(PcsType == P) // PCH 05.2009
 				{
-					vel[dim - 1] -= coef;
-					vel_g[dim - 1] += gravity_constant * GasProp->Density();
+                  //vel[dim-1] -= coef;
+				  // CB_merge_0513 ?? gravity term
+            	  vel[dim-1] += coef; // CB I think this should be added 
+				  vel_g[dim - 1] += gravity_constant * GasProp->Density();
 				}
 				else
 					vel[dim - 1] += coef;
@@ -7453,25 +7491,25 @@ string CFiniteElementStd::Cal_GP_Velocity_ECLIPSE(string tempstring,
 		temp_vel[1] = interpolate(NodalVal1);
 		temp_vel[2] = interpolate(NodalVal2);
 
-		// Set gauss point velocity
-		for(size_t i_dim = 0; i_dim < dim; i_dim++)
-			if (phase == "WATER")
-				gp_ele->Velocity(i_dim, gp) = temp_vel[i_dim];
-			else
-			{
-				if ((phase == "GAS") || (phase == "OIL"))
-					gp_ele->Velocity_g(i_dim, gp) = temp_vel[i_dim];
-				else
-				{
-					cout <<
-					"The program is canceled because there is a phase used which is not considered yet!"
-					     << "\n";
-					system("Pause");
-					exit(0);
-				}
-			}
+		// Set gauss point velocity //CB SB
+        for(size_t i_dim = 0; i_dim < dim; i_dim++){
 
-		// Data for Test Output
+          if (phase == "WATER"){
+              if (this->pcs->EclipseData->phase_shift_flag == false)
+				gp_ele->Velocity(i_dim, gp) = temp_vel[i_dim];
+          }
+  		  else if (phase == "GAS")
+		    gp_ele->Velocity_g(i_dim, gp) = temp_vel[i_dim];
+          else if(phase == "OIL")
+          {
+            if (this->pcs->EclipseData->phase_shift_flag == true)
+              gp_ele->Velocity(i_dim, gp) = temp_vel[i_dim];
+            else
+		      gp_ele->Velocity_g(i_dim, gp) = temp_vel[i_dim];
+          }
+	  
+        }
+        // Data for Test Output
 		if (output_average == true) //WW
 		{
 			for(size_t i_dim = 0; i_dim < dim; i_dim++)
@@ -7644,7 +7682,10 @@ void CFiniteElementStd::AssembleRHS(int dimension)
 		m_pcs = pcs_vector[i];
 		//		if (m_pcs->pcs_type_name.find("GROUNDWATER_FLOW") != string::npos) // TF
 		if (m_pcs->getProcessType () == GROUNDWATER_FLOW)
+		{
 			IsGroundwaterIntheProcesses = 1;
+   	        break;
+		}
 	}
 
 	// Checking the coordinateflag for proper solution.
@@ -9870,7 +9911,11 @@ void CFiniteElementStd::CalcSatution()
 	int i_s, i_e, ish;
 	//  int l1,l2,l3,l4; //, counter;
 	double sign, eS = 0.0;
-	//
+    // CB_merge_0513
+    double *tens = NULL;
+    int Index ;
+    Index = MeshElement->GetIndex();
+
 	MshElemType::type ElementType = MeshElement->GetElementType();
 	//----------------------------------------------------------------------
 	// Media
@@ -9888,6 +9933,8 @@ void CFiniteElementStd::CalcSatution()
 	MediaProp = mmp_vector[mmp_index];
 	MediaProp->m_pcs = pcs;
 	MediaProp->Fem_Ele_Std = this;
+    // CB_merge_0513
+	tens = MediaProp->PermeabilityTensor(Index);
 	//
 	sign = -1.0;
 	idx_cp = pcs->GetNodeValueIndex("PRESSURE1") + 1;
@@ -9927,6 +9974,8 @@ void CFiniteElementStd::CalcSatution()
 			continue;
 		ComputeShapefct(1);
 		//
+        // CB_merge_0513 in case of het K, store local K 
+        MediaProp->local_permeability  = tens[0];
 		PG = interpolate(NodalVal0);
 		NodalVal_Sat[i] = MediaProp->SaturationCapillaryPressureFunction(PG);
 	}
@@ -10201,8 +10250,14 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 		  rho_s_prev[i] = msp_vector[group]->Density() ;
 		  rho_s_curr[i] = rho_s_prev[i];
 		  q_R[i] = 0.0;	  
-}
+      }
 	}
+	
+    // CB _ctx_ CB_merge_0513
+	// SB electric field
+    //_ctx_Gauss.resize(3,NGPoints);
+    //_ctx_Gauss = 0.0;
+
 }
 //WW 08/2007
 void ElementValue::getIPvalue_vec(const int IP, double* vec)
@@ -12090,6 +12145,28 @@ void CFiniteElementStd::PrintTheSetOfElementMatrices(std::string mark)
 		(*pcs->matrix_file) << "\n";
 	}
 }
+
+//CB _ctx_ CB_merge_0513
+/*void CFiniteElementStd::Set_ctx_(long ele_index, double val, int gaussp, int i_dim){ 
+
+	ElementValue* gp_ele = ele_gp_value[Index];
+	//cout << " Index in SetElectricField: " << this->GetElementIndex() << "\n";
+	if(this->GetElementIndex() != ele_index) cout << "\n" << " Warning! Element Index does not fit! " << "\n";
+
+	gp_ele->_ctx_Gauss(i_dim,gaussp) = val;
+}
+
+
+double CFiniteElementStd::Get_ctx_(long ele_index, int gaussp, int i_dim){
+
+	double val=0.0;
+	ElementValue* gp_ele = ele_gp_value[Index];
+	//cout << " Index in GetElectricField: "  << this->GetElementIndex() << "\n";
+	if(this->GetElementIndex() != ele_index) cout << "\n" << " Warning! Element Index does not fit! " << "\n";
+	val = gp_ele->_ctx_Gauss(i_dim, gaussp);
+	return val;
+}*/
+
 }                                                 // end namespace
 
 //////////////////////////////////////////////////////////////////////////

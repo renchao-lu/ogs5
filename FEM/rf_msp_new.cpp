@@ -2990,7 +2990,7 @@ int CSolidProperties::StressIntegrationMOHR_Aniso(const int GPiGPj, const Elemen
 	double normdstr=0., TmpValue1, TmpValue2;
 	double LodeAngle, I1, J2, J3, sqrtJ2;
 	double AnisoParaComp, AnisoParaTens;
-	double shearsurf, tensionsurf, ep, dlamda, dlamda_0, dlamda_1, ddlamda, Jacob;
+	double shearsurf, tensionsurf, ep, dlamda, dlamda_0, dlamda_1; //, ddlamda, Jacob;
 
 	//initialize all vectors
 	double dstrs[6] = {0.}, TryStress_0[6]={0.}, TryStr_buff[6] ={0.}, TmpStress[6] = {0.};
