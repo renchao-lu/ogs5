@@ -46,7 +46,6 @@ Kiel, 11/2008
 
 #ifdef OGS_FEM_CAP // CAP_REACT
   #include "cacint.h" //DL
-  #include "rf_react_phrq.h"  //CB merge branch
 #else
   /* Length of a TQ String */
   #define TQSTRLEN 25

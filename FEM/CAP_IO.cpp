@@ -14,7 +14,6 @@
 
 #ifdef OGS_FEM_CAP // CAP_REACT
    #include "cacint.h"
-   #include "rf_react_phrq.h"
 #endif
 
 #include "rf_react.h"

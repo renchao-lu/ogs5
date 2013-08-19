@@ -133,12 +133,6 @@ IF(OGS_FEM_BRNS)
 	SET( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp ) 
 ENDIF(OGS_FEM_BRNS)
 
-IF(OGS_FEM_CAP)
-  SET( SOURCES ${SOURCES}  
-   rf_react_phrq.h 
-   rf_react_phrq.cpp 
-  )
-ENDIF(OGS_FEM_CAP)
 
 
 

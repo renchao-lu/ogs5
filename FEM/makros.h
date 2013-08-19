@@ -158,7 +158,6 @@
 /* Dateinamen-Erweiterung fuer Text-Eingabedatei (Chemical reaction) */
 #define CHEMAPP_REACTION_EXTENSION  ".chm"
 #define REACTION_EXTENSION_CHEMAPP ".cap" // DL/SB 11.2008
-#define REACTION_EXTENSION_PHRQ ".prq" // DL/SB 11.2008
 #define TEC_FILE_EXTENSION ".tec"
 #define VTK_FILE_EXTENSION ".vtk"                 //GK
 #define CSV_FILE_EXTENSION ".csv"

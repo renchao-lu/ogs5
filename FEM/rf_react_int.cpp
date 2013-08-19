@@ -24,9 +24,7 @@
 #include <signal.h>
 #include <vector>
 #include <sstream>
-#ifdef OGS_FEM_CAP // CAP_REACT //CB merge CAP 0311  
-  #include "rf_react_phrq.h"
-#endif
+
 // Elem object
 #include "fem_ele_std.h"
 

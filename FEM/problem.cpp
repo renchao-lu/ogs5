@@ -46,9 +46,7 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #include "rf_react.h"
 #include "rf_react_int.h"
 #include "rf_react_cap.h"  //CB merge CAP 0311 
-#ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311   
-  #include "rf_react_phrq.h" 
-#endif
+
 
 #include "rf_st_new.h"
 #include "rf_tim_new.h"
@@ -327,11 +325,6 @@ Problem::Problem (char* filename) :
 	  // Copy new timelevel to old time level
 	  REACT_CAP_vec[0]->ConvertIC2BC(*_geo_obj, _geo_name);
   }
-#ifdef OGS_FEM_CAP // CAP_REACT
-  if(REACT_PRQ_vec.size() > 0) {
-		REACT_PRQ_vec[0]->ExecuteReactionsPHRQ_new(0); 
-	} 
-#endif                                         // CAP
 #endif                                         // GEM_REACT
 
 #ifdef BRNS
@@ -1406,9 +1399,7 @@ void Problem::PostCouplingLoop()
 
 // Reaction postprocessing
   if (REACT_CAP_vec.size() > 0) capvec = true;
-#ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311
-  if (REACT_PRQ_vec.size() > 0) prqvec = true;
-#endif
+
 
   if( (KinReactData_vector.size() > 0) || (REACT_vec.size()>0) || capvec  || prqvec ){  
     // map concentrations in radial model
@@ -3014,9 +3005,7 @@ inline double Problem::MassTrasport()
 	//				delete rc;
 //CB2406 #ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311
    if (REACT_CAP_vec.size() > 0) capvec = true;
-#ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311
-   if (REACT_PRQ_vec.size() > 0) prqvec = true;   
-#endif
+
 
   //if( (KinReactData_vector.size() > 0) || (REACT_vec.size()>0) ||  capvec || (REACT_PRQ_vec.size()>0) )  //CB merge CAP 0311
    if(REACTINT_vec.size()>0)
@@ -3034,10 +3023,7 @@ inline double Problem::MassTrasport()
       // this will provide activities and speciation for kinetics
       if(capvec && KinReactData_vector[0]->NumberMineralkinetics>0)
         REACT_CAP_vec[0]->ExecuteReactionsChemApp(-1, -1);     
-#ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311      
-	     if(prqvec && KinReactData_vector[0]->NumberMineralkinetics>0)
-		      REACT_PRQ_vec[0]->ExecuteReactionsPHRQ_new(-1); 
-#endif
+
       KinReactData_vector[0]->ExecuteKinReact();
       ClockTimeVec[0]->StopTime("KinReactions");  // CB time
       ClockTimeVec[0]->StartTime();  // CB time
@@ -3065,11 +3051,7 @@ inline double Problem::MassTrasport()
 			REACT_CAP_vec[0]->ExecuteReactionsChemApp(1, -1);  //DL
 		//REACT_CAP_vec[0]->ConvertIC2BC();
 		}
-#ifdef OGS_FEM_CAP // CAP_REACT  //CB merge CAP 0311
-		if(REACT_PRQ_vec.size() > 0) {
-			REACT_PRQ_vec[0]->ExecuteReactionsPHRQ_new(1); 
-		}
-#endif
+
 
 #ifdef GEM_REACT
 	else                                  // WW moved these pare of curly braces inside  ifdef GEM_REACT
