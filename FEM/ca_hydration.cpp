@@ -71,13 +71,15 @@ void ca_hydration::calculate_qR()
 	qR = 0.0;
 	if ( X_D < tol_l)
 	{
-		qR = 0.0; 
-		return;
+		/*qR = 0.0; 
+		return;*/
+		X_D = 0.0;
 	}
 	else if (X_D > tol_u)
 	{
-		qR = 0.0;
-		return;
+		/*qR = 0.0;
+		return;*/
+		X_D = 1.0;
 	}
 
 	X_H = 1.0 - X_D;
@@ -88,12 +90,7 @@ void ca_hydration::calculate_qR()
 	
 	////// step 2, calculate p_eq
 	T_s = ca_hydration::T_s;
-	p_w_g = mol_frac_vapor * ca_hydration::p_gas; //TN
-	if (p_w_g < 1e-3) //TN - avoid illdefined log 
-	{
-		qR = 0.0;
-		return;
-	}
+	p_w_g = max(mol_frac_vapor * ca_hydration::p_gas, 1.0e-3); //TN - avoid illdefined log
 
 	// using the p_eq to calculate the T_eq - Clausius-Clapeyron
 	T_eq = (reaction_enthalpy/R) / ((reaction_entropy/R) + log(p_w_g)); // unit of p in bar
