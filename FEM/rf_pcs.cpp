@@ -4034,9 +4034,9 @@ void CRFProcess::ConfigTNEQ()
 			                          573.0,     // T_gas, Kelvin
 			                          0.0,       // p_gas
 			                          0.0,       // w_water, mass fraction unitless
-			                          m_rho_s_0, //TN 1656.0 // kg/m3, // rho_s_initial, 
+			                          m_rho_s_0, //kg/m3, // rho_s_initial, 
 									  1.0-poro, //solid volume fraction
-			                          0.001,   // delta_t //TN: decreased from 1.0
+			                          1.0,   // delta_t
 									  react_syst);      
 
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
@@ -4045,7 +4045,8 @@ void CRFProcess::ConfigTNEQ()
 	yy_rho_s(0) = m_rho_s_0;
 
 	// evaluate inital value of dydt
-	m_ca_hydration->eval(start_t, yy_rho_s, dydxx_rho_s);
+	//m_ca_hydration->eval(start_t, yy_rho_s, dydxx_rho_s);
+	dydxx_rho_s(0) = 0.0;
 	// initialize the solver
 	m_solver = new StepperBulischStoer<ca_hydration>(yy_rho_s, dydxx_rho_s, start_t, 1e-6, 1e-6, true);
 	// }

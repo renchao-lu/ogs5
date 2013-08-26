@@ -29,8 +29,8 @@ ca_hydration::ca_hydration(double T_solid,
 	update_param( T_solid, T_gas, p_gas, w_water, rho_s_initial, phi_S, delta_t, system);
 	ca_hydration::rho_s_0 = rho_s_initial;
 	if (system == FiniteElement::CaOH2){ //Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
-		rho_low = 1655.999999;
-		rho_up = 2200.000001;
+		rho_low = 1655.9;
+		rho_up = 2200.1;
 		reaction_enthalpy = -1.12e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -143.5; //in J/mol K
 	}
@@ -64,23 +64,13 @@ void ca_hydration::update_param(double T_solid,
 
 void ca_hydration::calculate_qR()
 {
-	const double tol_u = 1.0-1.0e-9;
-	const double tol_l = 1.0e-9;
+	const double tol_u = 0.999;
+	const double tol_l = 0.001;
 	// step 1, calculate X_D and X_H
 	X_D = (rho_s - rho_up)/(rho_low - rho_up) ;
 	qR = 0.0;
-	if ( X_D < tol_l)
-	{
-		/*qR = 0.0; 
-		return;*/
-		X_D = 0.0;
-	}
-	else if (X_D > tol_u)
-	{
-		/*qR = 0.0;
-		return;*/
-		X_D = 1.0;
-	}
+
+	if(X_D < 0.5,max(tol_l,X_D),min(X_D,tol_u))
 
 	X_H = 1.0 - X_D;
 
@@ -105,25 +95,32 @@ void ca_hydration::calculate_qR()
 	if ( p_w_g > p_eq ) // hydration - Schaube model
 #endif
 	{
-		
+		if (X_H < tol_u) {
 #ifdef SIMPLE_KINETICS // this is from P. Schmidt
-		dXdt = -1.0*(1.0-X_H) * (T_s - T_eq) / T_eq * 0.2 * ca_hydration::w_h2o;
+			dXdt = -1.0*(1.0-X_H) * (T_s - T_eq) / T_eq * 0.2 * ca_hydration::w_h2o;
 #else //this is from Schaube
-		if ( (T_eq-T_s) >= 50.0 )
-			dXdt = 13945.0 * exp(-89486.0/R/T_s) * pow(p_w_g/p_eq - 1.0,0.83) * 3.0 * (1-X_H) * pow(-1.0*log(1.0-X_H),0.666); 
+			if ( (T_eq-T_s) >= 50.0 )
+				dXdt = 13945.0 * exp(-89486.0/R/T_s) * pow(p_w_g/p_eq - 1.0,0.83) * 3.0 * (1.0-X_H) * pow(-1.0*log(1.0-X_H),0.666); 
+			else
+				dXdt = 1.0004e-34 * exp(5.3332e4/T_s) * pow(p_w_g, 6.0) * (1.0-X_H);
+		}
 		else
-			dXdt = 1.0004e-34 * exp(5.3332e4/T_s) * pow(p_w_g, 6.0) * (1.0-X_H); 
+			dXdt = 0.0;
 #endif
 	}
 	else // dehydration
 	{
+		if (X_D > tol_l) {
 #ifdef SIMPLE_KINETICS // this is from P. Schmidt
-		dXdt = -1.0* (1.0-X_D) * (T_s - T_eq) / T_eq * 0.05;
+			dXdt = -1.0* (1.0-X_D) * (T_s - T_eq) / T_eq * 0.05;
 #else
-		if (X_D < 0.2)
-			dXdt = -1.9425e12 * exp( -1.8788e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*(1.0 - X_D);
+			if (X_D < 0.2)
+				dXdt = -1.9425e12 * exp( -1.8788e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*(1.0 - X_D);
+			else
+				dXdt = -8.9588e9 * exp( -1.6262e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*2.0*pow(1.0 - X_D, 0.5);
+		}
 		else
-			dXdt = -8.9588e9 * exp( -1.6262e5/R/T_s )*pow(1.0-p_w_g/p_eq,3.0)*2.0*pow(1.0 - X_D, 0.5); 
+			dXdt = 0.0;
 #endif
 	}
 
