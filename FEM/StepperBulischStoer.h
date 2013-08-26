@@ -143,7 +143,7 @@ public:
 					ysave(k,i)=yn[i];
 			}
 		
-			if (dense && fabs( (int)(nn-nstep/2)) <= (int)(2*k+1) )
+			if (dense && abs( (int)(nn-nstep/2)) <= (int)(2*k+1) )
 			{
 				ipt++;
 				for ( i=0; i<n; i++)
