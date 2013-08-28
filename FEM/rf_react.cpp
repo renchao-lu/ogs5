@@ -2529,7 +2529,7 @@ double unitfactor_l = 1, unitfactor_s = 1;
           if(stepsflag == 0) { // keyword found
             stepsflag++;
             in.str(line_string);
-            in >> dummy >> dval >> this->rcml_number_of_pqcsteps >> dummy;
+            in >> dummy >> dval >> dummy >> this->rcml_number_of_pqcsteps >> dummy;
             in.clear();
             CTimeDiscretization *m_tim = NULL;
             if(time_vector.size()>0)
@@ -3597,8 +3597,11 @@ int REACT::Teststeps(long nodes){
   }
   ein.close();
   
-  steps = (length-2)/nodes;
-  return steps-1;
+  steps = (length-2)/nodes - 1;
+  if (steps<1)
+    steps = 1; 
+  
+  return steps;
 }
 // MDL: here the new functions begin
 #ifdef LIBPHREEQC
