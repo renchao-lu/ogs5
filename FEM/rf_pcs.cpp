@@ -1837,7 +1837,7 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 					pcs_number_flow = pcs_vector.size(); //JT2012
 					if(this->getProcessType() == FiniteElement::PS_GLOBAL ||
 					   this->getProcessType() == FiniteElement::MULTI_PHASE_FLOW ||
-					   this->getProcessType() == FiniteElement::TNEQ ||
+					   //this->getProcessType() == FiniteElement::TNEQ || no multiphase flow
 					   pcs_type_name.find("H2") != string::npos){
 						   this->isPCSMultiFlow = true;
 					}
