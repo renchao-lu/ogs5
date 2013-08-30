@@ -255,8 +255,8 @@ void REACT::ExecuteReactionsPHREEQCNew(void)
 		//        exit(1);
 	}
 
-    //if(aktueller_zeitschritt==0)
-    //  this->rcml_number_of_pqcsteps = this->Teststeps(ii);
+    if(aktueller_zeitschritt==0)
+      this->rcml_number_of_pqcsteps = this->Teststeps(ii);
 	if(ok)
 	{
 		ok = ReadOutputPhreeqcNew();
@@ -302,7 +302,7 @@ REACT::REACT(void)
 	rcml_pe_flag = 1;
 	rcml_heat_flag = 0;
 	rcml_pH_charge = 0;
-	rcml_number_of_pqcsteps = 0;          //standard = 1;
+	rcml_number_of_pqcsteps = 1;          //standard = 1;
 	outfile = NULL;
 	outfile_name = "phinp.dat";
 	results_file_name = "phout_sel.dat";
@@ -3598,8 +3598,8 @@ int REACT::Teststeps(long nodes){
   ein.close();
   
   steps = (length-2)/nodes - 1;
-  if (steps<1)
-    steps = 1; 
+  //if (steps<1)
+  //  steps = 1; 
   
   return steps;
 }
