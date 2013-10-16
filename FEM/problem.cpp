@@ -446,6 +446,7 @@ Problem::Problem (char* filename) :
 			max_time_steps = m_tim->time_step_vector.size();
 		if (m_tim->GetPITimeStepCrtlType() > 0)
 			time_ctr = true;
+		m_tim->last_active_time = start_time; //NW
 	}
 	if(max_time_steps == 0)
 		max_time_steps = std::numeric_limits<std::size_t>::max()-1; // ULONG_MAX-1;  //kg44 increased the number to maximum number (size_t)
@@ -574,6 +575,16 @@ Problem::~Problem()
    -------------------------------------------------------------------------*/
 inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 {
+	//	if (m_pcs->pcs_type_name.compare("LIQUID_FLOW") == 0) {
+	/*if (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW)
+	{
+		if (!activefunc)
+			return 0;
+		total_processes[0] = m_pcs;
+		active_processes[0] = &Problem::LiquidFlow;
+		return 0;
+		//	} else if (m_pcs->pcs_type_name.compare("GROUNDWATER_FLOW") == 0) {
+	}*/
 	//	if (m_pcs->pcs_type_name.compare("OVERLAND_FLOW") == 0) {
 	if (m_pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
 	{
@@ -627,6 +638,15 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 		//		return 5;
 		//	} else if (m_pcs->pcs_type_name.compare("OVERLAND_FLOW") == 0) {
 	}
+	/*else if (m_pcs->getProcessType() == FiniteElement::OVERLAND_FLOW)
+	{
+		if (!activefunc)
+			return 6;
+		total_processes[6] = m_pcs;
+		active_processes[6] = &Problem::OverlandFlow;
+		return 6;
+		//	} else if (m_pcs->pcs_type_name.compare("AIR_FLOW") == 0) {
+	}*/
 	else if (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW)
 	{
 		if (!activefunc)
@@ -858,6 +878,7 @@ void Problem::PCSCreate()
 			pcs_vector[i]->pcs_component_number;
 		}
 		std::cout << "\n";
+		std::cout << " ->TIM_TYPE: " << pcs_vector[i]->tim_type_name << "\n";
 		pcs_vector[i]->Create();
 	}
 
@@ -993,15 +1014,18 @@ void Problem::Euler_TimeDiscretize()
 	ScreenMessage("\n\n***Start time steps\n");
 	//
 	// Output zero time initial values
-#if defined(USE_MPI)  || defined(USE_MPI_KRC) 
-		if(myrank == 0)
-		{
-#endif
-	OUTData(0.0,aktueller_zeitschritt,true);
-#if defined(USE_MPI) || defined(USE_MPI_KRC) 
-		}
-#endif
+//#if defined(USE_MPI)  || defined(USE_MPI_KRC) 
+//		if(myrank == 0)
+//		{
+//#endif
+//	OUTData(0.0,aktueller_zeitschritt,true);
+//#if defined(USE_MPI) || defined(USE_MPI_KRC) 
+//		}
+//#endif
 	
+	std::cout << "Outputting initial values... " << std::flush;
+	OUTData(current_time,aktueller_zeitschritt,true);
+    std::cout << "done \n";
 	//
 	// ------------------------------------------
 	// PERFORM TRANSIENT SIMULATION
@@ -1093,6 +1117,7 @@ void Problem::Euler_TimeDiscretize()
 					continue;
 				m_tim->rejected_step_count++;
 				m_tim->last_active_time -= dt;
+				m_tim->last_rejected_timestep = aktueller_zeitschritt+1;
 				//
 				// Copy nodal values in reverse
 				if(isDeformationProcess(total_processes[active_process_index[i]]->getProcessType()))
@@ -1160,7 +1185,8 @@ bool Problem::CouplingLoop()
 	print_result = false;
 	int acounter = 0;
 	//
-   for(i=0; i<(int)pcs_vector.size(); i++){
+   for(i = 0; i < (int)pcs_vector.size(); i++)
+	{
       pcs_vector[i]-> UpdateTransientBC();
       if(pcs_vector[i]->bc_transient_index.size() != 0)
         transient_bc = true;
@@ -1177,6 +1203,9 @@ bool Problem::CouplingLoop()
 			total_processes[i]->SetDefaultTimeStepAccepted();
 			acounter++;
 			m_tim->step_current++;
+			// initilize
+			total_processes[i]->iter_nlin_max = 0;
+            total_processes[i]->iter_lin_max = 0;
 		}
 		else
 		{   //21.05.2010.  WW
@@ -1300,13 +1329,18 @@ bool Problem::CouplingLoop()
 				if(a_pcs->first_coupling_iteration) PreCouplingLoop(a_pcs);
 //				error = Call_Member_FN(this, active_processes[index])(); // TF: error set, but never used
 				Call_Member_FN(this, active_processes[index])();
-				if(!a_pcs->TimeStepAccept()){
-				   accept = false;
-				   break;
-				}
 				a_pcs->first_coupling_iteration = false; // No longer true.
 				// Check for break criteria
 				max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
+	            std::cout << "coupling error (relative to tolerance): " << a_pcs->cpl_max_relative_error << "\n";
+				if(!a_pcs->TimeStepAccept()){
+				   std::cout << "*** The process rejected this time step." << std::endl;
+				   accept = false;
+				   break;
+				}
+				//a_pcs->first_coupling_iteration = false; // No longer true.
+				// // Check for break criteria
+				//max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
 			}
 			if(!accept) break;
 		}
@@ -1324,10 +1358,16 @@ bool Problem::CouplingLoop()
 	    else{
 			std::cout << "\n";
 	    }
+		if(!accept){
+			std::cout << "\n";
+			break;
+		}
 		// Coupling convergence criteria
 		if(max_outer_error <= 1.0 && outer_index+2 > cpl_overall_min_iterations) // JT: error is relative to the tolerance.
 			break;
 	}
+	if (max_outer_error > 1.0 && outer_index == cpl_overall_max_iterations && cpl_overall_max_iterations>1)
+	    accept = false;
 	//
 	return accept;
 }
