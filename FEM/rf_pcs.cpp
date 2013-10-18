@@ -368,7 +368,6 @@ CRFProcess::CRFProcess(void) :
    m_solver  = NULL;                              //WW
 	isRSM = false; //WW
 	eqs_x = NULL;
-	write_leqs = false; //NW
 }
 
 
@@ -1222,9 +1221,7 @@ void CRFProcess:: WriteSolution()
 #else
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-		                          pcs_primary_function_name[0] + "_primary_value" + number2str(aktueller_zeitschritt) + ".asc";
-	//std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-	//                          pcs_primary_function_name[0] + "_primary_value.asc";
+	                          pcs_primary_function_name[0] + "_primary_value.asc";
 #endif				  
 	std::ofstream os ( m_file_name.c_str(), ios::trunc | ios::out );
 	if (!os.good() )
@@ -1306,13 +1303,8 @@ void CRFProcess:: ReadSolution()
 		for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
 			is >> val[j];
 		is >> ws;
-//		for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
-//			SetNodeValue ( i,idx[j], val[j] );
-		//previous and current value should be initially same
-		for (j = 0; j < pcs_number_of_primary_nvals; j++ ) {
-			SetNodeValue ( i,idx[j*2], val[j*2+1] );
-			SetNodeValue ( i,idx[j*2+1], val[j*2+1] );
-		}
+		for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
+			SetNodeValue ( i,idx[j], val[j] );
 	}
 	is.close();
 	delete [] idx;
@@ -1731,7 +1723,6 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
 	}
 	dm_pcs->Neglect_H_ini = Neglect_H_ini;//WX:08.2011
 	dm_pcs->UpdateIniState = UpdateIniState;//WX:10.2011
-	dm_pcs->write_leqs = write_leqs;
 	//
 	return dynamic_cast<CRFProcess*> (dm_pcs);
 }
@@ -2132,11 +2123,6 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		if(line_string.find("$UPDATE_INI_STATE")==0)//WX:10.2011
 		{
 			*pcs_file >> UpdateIniState;
-			continue;
-		}
-		if(line_string.find("$LEQS_OUTPUT") == 0)
-		{
-			write_leqs = true;
 			continue;
 		}
 		//....................................................................
@@ -3728,7 +3714,7 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 	pcs_primary_function_unit[pcs_number_of_primary_nvals] = "Pa";
 	pcs_number_of_primary_nvals++;
 
-	// 1.2 secondary variables
+
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "HEAD";
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
@@ -4427,11 +4413,9 @@ void CRFProcess::CheckExcavedElement()
  **************************************************************************/
 double CRFProcess::Execute()
 {
-	int nidx1;
+	int  nidx1;
 	double pcs_error, nl_theta;
 	long j, k, g_nnodes;          //07.01.07 WW
-	double* eqs_x = NULL;
-	//double implicit_lim = 1.0 - DBL_EPSILON;
 
 	pcs_error = DBL_MAX;
 	g_nnodes = m_msh->GetNodesNumber(false);
@@ -4546,7 +4530,7 @@ double CRFProcess::Execute()
 	iter_lin = dom->eqs->Solver(eqs_new->x, global_eqs_dim);
 #else
 #ifdef LIS
-	iter_lin = eqs_new->Solver(this->m_num); //NW	//MW maybe here some more merging
+	iter_lin = eqs_new->Solver(this->m_num); //NW
 #else
 	iter_lin = eqs_new->Solver();
 #endif
@@ -4634,8 +4618,7 @@ double CRFProcess::Execute()
 
 		// Solve the algebra
 #ifdef CHECK_EQS
-		//string eqs_name = pcs_type_name + "_EQS.txt";
-		string eqs_name = convertProcessTypeToString(this->getProcessType())  + "_EQS" + number2str(aktueller_zeitschritt) +  ".txt";
+		string eqs_name = pcs_type_name + "_EQS.txt";
 		MXDumpGLS((char*)eqs_name.c_str(),1,eqs->b,eqs->x);
 #endif
 
@@ -5257,26 +5240,6 @@ void CRFProcess::GlobalAssembly()
 		cout << "Error in CRFProcess::GlobalAssembly() - no TIM data" << "\n";
 		return;
 	}
-	/*if (Write_Matrix)		//MW need this?
-	{
-		std::string pcs_type_name(
-		        convertProcessTypeToString(this->getProcessType()));
-#if defined(USE_MPI)
-		char stro[32];
-		sprintf(stro, "%d",myrank);
-		string m_file_name = FileName + "_" + pcs_type_name + (string)stro +
-		                     "_element_matrix.txt";
-#else
-		std::string m_file_name = FileName + "_" + pcs_type_name
-		                          + "_element_matrix.txt";
-#endif
-		if (matrix_file) matrix_file->close();
-		delete matrix_file;
-		matrix_file = new std::fstream(m_file_name.c_str(), ios::trunc | ios::out);
-		if (!matrix_file->good())
-			std::cout << "Warning in GlobalAssembly: Matrix files are not found"
-			          << std::endl;
-	}*/
 
 	if (!fem)
 		// Which process needs this?
@@ -5398,17 +5361,6 @@ void CRFProcess::GlobalAssembly()
 
 		if (femFCTmode)     //NW
 			AddFCT_CorrectionVector();
-
-		if (write_leqs) {
-			std::string fname = FileName + "_" + convertProcessTypeToString(this->getProcessType()) + "_leqs.txt";
-#ifdef NEW_EQS
-			std::ofstream Dum(fname.c_str(), ios::out);
-			eqs_new->Write(Dum);
-			Dum.close();
-#else
-			MXDumpGLS(fname.c_str(), 1, eqs->b, eqs->x);
-#endif
-		}
 
 		//	          MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
 		//eqs_new->Write();
@@ -6119,9 +6071,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		int ii, idx0 = -1;
 		CBoundaryConditionNode* m_bc_node; //WW
 		CBoundaryCondition* m_bc; //WW
-		//CPARDomain* m_dom = NULL;
 		CFunction* m_fct = NULL;  //OK
-		//double* eqs_rhs = NULL;
 		bool is_valid = false;    //OK
 		bool onExBoundary = false;                     //WX
 		bool excavated = false;   //WX
@@ -6209,7 +6159,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #endif
 			m_bc_node = bc_node_value[gindex];
 			m_bc = bc_node[gindex];
-			shift = m_bc_node->msh_node_number - m_bc_node->geo_node_number;
 			//
 			//WX: check if bc is aktive, when Time_Controlled_Aktive for this bc is defined
 			if(m_bc->getTimeContrCurve() > 0)
@@ -6650,7 +6599,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #endif
 
 		CFunction* m_fct = NULL;  //OK
-//		double* eqs_rhs = NULL;
 		bool is_valid = false;    //OK
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		vector<int> bc_eqs_id;
@@ -7139,7 +7087,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		int interp_method = 0;
 		int curve, valid = 0;
 		long msh_node, shift;
-		//long bc_eqs_index = -1;
 		MshElemType::type EleType; //ii
 		double q_face = 0.0;
 		CElem* elem = NULL;
@@ -7178,7 +7125,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		long begin = 0;
 		long end = 0;
 		long gindex = 0;
-		//int dim_space = 0;        //kg44 better define here and not in a loop!
 
 //###############################
 //NB Climate Data
@@ -9006,7 +8952,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		double nonlinear_iteration_error;
 		double nl_theta, damping, norm_x0, norm_b0, norm_x, norm_b, val;
 		double error_x1, error_x2, error_b1, error_b2, error, last_error, percent_difference;
-		double* eqs_x = NULL;
+		//double* eqs_x = NULL;     //
 		double* eqs_b = NULL;
 		bool converged, diverged;
 		int ii, nidx1, num_fail;
@@ -9109,11 +9055,6 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					// For most error methods (also works for Newton)
 					default:
 						PrintStandardIterationInformation(true);
-						if (iter_nlin==0)
-							percent_difference = .0;
-						else
-							percent_difference = 100.0 * ((last_error - nonlinear_iteration_error) / last_error);
-						std::cout << "         ->Nonlinear error: " << nonlinear_iteration_error << ", Convergence rate: " << percent_difference << "%"<< std::endl;
 						//
 						if(nonlinear_iteration_error <= 1.0){
 							converged = true;
@@ -9220,7 +9161,6 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 						cout << "         NR-Error  |" << "    RHS Norm|" << "  Unknowns Norm|"  << " Damping\n";
 						cout << "         " << setw(10) << error << "|  " << setw(9) << norm_b << "| ";
 						cout << setw(14) << norm_x << "| "<< setw(9) << damping << "\n";
-						cout.flush();
 #if defined (USE_MPI) || defined(USE_PETSC)
                         }
 #endif
@@ -9286,9 +9226,6 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				break;
 			}
 		}
-		if ((!converged || diverged) && m_num->nls_max_iterations>1)
-		    accepted = false;
-		iter_nlin_max = std::max(iter_nlin_max, iter_nlin);
 		// ------------------------------------------------------------
 		// NON-LINEAR ITERATIONS COMPLETE
 		// ------------------------------------------------------------
@@ -9300,12 +9237,9 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		if(m_num->nls_max_iterations > 1) // only for non-linear iterations
 		{
 			if(diverged){
-				if(accepted) { // only increment if not fixed by a failed time step.
+				if(accepted) // only increment if not fixed by a failed time step.
 					num_diverged++;
-					std::cout << "\nNon-linear iteration stabilized."<< std::endl;
-				} else {
-					std::cout << "\nNon-linear iteration diverged."<< std::endl;
-				}
+				std::cout << "\nNon-linear iteration stabilized.";
 			}
 			else if(!converged){
 				if(accepted) // only increment if not fixed by a failed time step.

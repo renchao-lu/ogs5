@@ -294,7 +294,6 @@ public:
 	// Write indices of the nodes with boundary conditons
 	bool write_boundary_condition;        //15.01.2008. WW
 	bool OutputMassOfGasInModel;			// BG 05/2012
-	bool write_leqs;
 	// Element matrices output
 	void Def_Variable_LiquidFlow();
 	void Def_Variable_MultiPhaseFlow();
@@ -754,9 +753,7 @@ public:
 	int num_diverged;
 	int num_notsatisfied;
 	int iter_nlin;
-    int iter_nlin_max;
 	int iter_lin;
-    int iter_lin_max;
 	int iter_outer_cpl;							// JT2012
 	int iter_inner_cpl;							// JT2012
 	int pcs_num_dof_errors;						// JT2012
