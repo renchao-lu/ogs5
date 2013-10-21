@@ -130,7 +130,7 @@ public:
 	int CurveIndex;
 	std::vector<int> element_st_vector;
 
-	double st_rill_height, coup_pressure_head, coup_residualPerm; // JOD 
+	double st_rill_height, coup_given_value, coup_residualPerm; // JOD 
 	double sorptivity, constant, rainfall, rainfall_duration, moistureDeficit /*1x*/;
 	bool node_averaging, distribute_volume_flux; // JOD 
 	bool no_surface_water_pressure, explicit_surface_water_pressure; // JOD 

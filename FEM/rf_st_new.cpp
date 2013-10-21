@@ -322,7 +322,7 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
             in.clear();
 //            in.str(GetLineFromFile1(st_file));
             in.str(readNonBlankLineFromInputStream(*st_file));
-            in >> _coup_leakance >> st_rill_height >> coup_pressure_head >> coup_residualPerm;
+            in >> _coup_leakance >> st_rill_height >> coup_given_value >> coup_residualPerm;
             in.clear();
          }                                        //05.09.2008 WW
          else
@@ -2202,7 +2202,7 @@ CNodeValue* cnodev)
 		 && m_st->pcs_type_name_cond == "OVERLAND_FLOW" ) // ??? 
    {   // gas pressure term 
 	   MXInc(cnodev->msh_node_number , cnodev->msh_node_number+ m_pcs_this->m_msh->nod_vector.size(), -condArea); 
-	   value  -= condArea * m_st->coup_pressure_head;
+	   value  -= condArea * m_st->coup_given_value;
    }
   
    if (m_st->getProcessType() == FiniteElement::GROUNDWATER_FLOW)                   
@@ -4491,9 +4491,15 @@ CSourceTerm* m_st, CNodeValue* cnodev, long msh_node_number, long msh_node_numbe
 
    *h_this = m_pcs_this->GetNodeValue(msh_node_number, nidx);
 
-   if(m_st->pcs_pv_name_cond == "HEIGHT" || m_st->pcs_pv_name_cond == "PRESSURE2")
+   if(m_st->pcs_pv_name_cond == "GIVEN_HEIGHT" || m_st->pcs_pv_name_cond == "PRESSURE2")
    {
-	 *h_cond = *h_shifted = m_st->coup_pressure_head; // coupled to fixed pressure head / or atmospheric pressure
+	 *h_cond = *h_shifted = m_st->coup_given_value; // coupled to fixed pressure head / or atmospheric pressure
+	 *z_this = *z_cond = 0;
+	 return;
+   }
+   else if(m_st->pcs_pv_name_cond == "GIVEN_PRESSURE")
+  {
+	 *h_cond = *h_shifted = m_st->coup_given_value / gamma; // coupled to fixed pressure head / or atmospheric pressure
 	 *z_this = *z_cond = 0;
 	 return;
    }
@@ -4505,7 +4511,7 @@ CSourceTerm* m_st, CNodeValue* cnodev, long msh_node_number, long msh_node_numbe
 	   if(m_st->pcs_type_name_cond == "MULTI_PHASE_FLOW")
 	   { // capillary pressure as a primary variable in the coupled process 
 	     double gasPressure =  m_pcs_cond->GetNodeValue(msh_node_number_cond, 3);
-	     *h_cond -= (gasPressure - m_st->coup_pressure_head);
+	     *h_cond -= (gasPressure - m_st->coup_given_value);
       }
    }
 
