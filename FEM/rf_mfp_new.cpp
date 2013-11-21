@@ -3292,7 +3292,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 		if(m_mfp->viscosity_pcs_name_vector.size()<3)
 			pcs_name3 = "CONCENTRATION1";
 		else
-			pcs_name2 = m_mfp->viscosity_pcs_name_vector[3];
+			pcs_name3 = m_mfp->viscosity_pcs_name_vector[3];
 		break;
 	case 'D': mfp_id = 1;                 //DENSITY
 		if(m_mfp->density_pcs_name_vector.size() < 1)
@@ -3306,7 +3306,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 		if(m_mfp->density_pcs_name_vector.size()<3)
 			pcs_name3 = "CONCENTRATION1";
 		else
-			pcs_name2 = m_mfp->density_pcs_name_vector[3];
+			pcs_name3 = m_mfp->density_pcs_name_vector[3];
 		break;
 	case 'H': mfp_id = 2;                 //HEAT_CONDUCTIVITY
 		if(m_mfp->heat_conductivity_pcs_name_vector.size() < 1)
@@ -3320,7 +3320,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 		if(m_mfp->heat_conductivity_pcs_name_vector.size()<3)
 			pcs_name3 = "CONCENTRATION1";
 		else
-			pcs_name2 = m_mfp->heat_conductivity_pcs_name_vector[3];
+			pcs_name3 = m_mfp->heat_conductivity_pcs_name_vector[3];
 		break;
 	case 'S': mfp_id = 3;                 //SPECIFIC HEAT CAPACITY
 		if(m_mfp->specific_heat_capacity_pcs_name_vector.size() < 1)
@@ -3334,7 +3334,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	  	if(m_mfp->specific_heat_capacity_pcs_name_vector.size()<3)
 			pcs_name3 = "CONCENTRATION1";
 		else
-			pcs_name2 = m_mfp->specific_heat_capacity_pcs_name_vector[3];
+			pcs_name3 = m_mfp->specific_heat_capacity_pcs_name_vector[3];
 		break;
 	default:  mfp_id = -1;
 		pcs_name1 = "PRESSURE1";
