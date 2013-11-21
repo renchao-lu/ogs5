@@ -334,6 +334,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 				std::string arg1,arg2,arg3;
 				in >> arg1 >> arg2 >> arg3; //get up to three arguments for density model
 
+				if (arg1.length() > 0)
 				if (isdigit(arg1[0]) != 0) // first argument is reference temperature
 				{
 					T_0 = atof(arg1.c_str());
@@ -3371,8 +3372,12 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	arguments[1] = tp->GetNodeValue(node,val_idx);
 //Include concentration as primary variable
 	tp = PCSGet(pcs_name3,true);          //NB 4.8.01
-	val_idx = tp->GetNodeValueIndex(pcs_name3,true); // NB // JT latest
-	arguments[2] = tp->GetNodeValue(node,val_idx);
+	if (tp){
+		val_idx = tp->GetNodeValueIndex(pcs_name3,true); // NB // JT latest
+		arguments[2] = tp->GetNodeValue(node,val_idx);
+	}
+	else
+		arguments[2] = 0.0;
 
 	if (m_mfp->cmpN > 0)
 	{
