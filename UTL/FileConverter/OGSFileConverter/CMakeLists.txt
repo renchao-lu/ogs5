@@ -1,5 +1,5 @@
 # Specify minimum CMake version
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.3)
 
 # Project name
 project( OGSFileConverter )
@@ -28,6 +28,9 @@ SET( UIS
 	FileList.ui
 	OGSFileConverter.ui
 )
+
+# Find installed Qt4 libraries and headers
+find_package( Qt4 REQUIRED )
 
 # Run Qts user interface compiler uic on .ui files
 QT4_WRAP_UI( UI_HEADERS ${UIS} )
@@ -72,9 +75,6 @@ TARGET_LINK_LIBRARIES( OGSFileConverter
 	QtDataView
 )
 
-# Find installed Qt4 libraries and headers
-find_package( Qt4 REQUIRED )
-
 # Adds useful macros and variables
 # this is needed to correctly link the qt libraries through target_link_libraries
 INCLUDE( ${QT_USE_FILE} )
@@ -87,3 +87,11 @@ set ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
 # Binaries are created in /bin and libraries in /lib
 set( EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin )
 set( LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib )
+
+####################
+### Installation ###
+####################
+
+IF(OGS_PACKAGING)
+	INSTALL (TARGETS OGSFileConverter RUNTIME DESTINATION bin COMPONENT ogs)
+ENDIF()
