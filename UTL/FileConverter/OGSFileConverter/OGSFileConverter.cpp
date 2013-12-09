@@ -2,6 +2,7 @@
  * \file OGSFileConverter.cpp
  * 2012/04/04 KR Initial implementation
  */
+#define BOOST_FILESYSTEM_VERSION 3
 
 #include "OGSFileConverter.h"
 #include "FileListDialog.h"
@@ -245,7 +246,7 @@ void OGSFileConverter::convertCND2BC(const QStringList &input, const QString &ou
 		if (!st_vector.empty())
 			STWrite(std::string(output_str));
 
-		project.removeConditions(FiniteElement::ProcessType::INVALID_PROCESS, "", FEMCondition::CondType::UNSPECIFIED);
+		project.removeConditions(FiniteElement::INVALID_PROCESS, "", FEMCondition::UNSPECIFIED);
 		bc_list.clear();
 		ic_vector.clear();
 		st_vector.clear();
@@ -274,7 +275,7 @@ void OGSFileConverter::convertBC2CND(const QStringList &input, const QString &ou
 		std::string schemaName(fileFinder.getPath("OpenGeoSysCond.xsd"));
 		FileIO::XmlCndInterface xml(&project, schemaName);
 		xml.writeToFile(output_str);
-		project.removeConditions(FiniteElement::ProcessType::INVALID_PROCESS, "", FEMCondition::CondType::UNSPECIFIED);
+		project.removeConditions(FiniteElement::INVALID_PROCESS, "", FEMCondition::UNSPECIFIED);
 	}
 	OGSError::box("File conversion finished");
 }
@@ -336,7 +337,7 @@ void OGSFileConverter::on_closeDialogButton_pressed()
 
 bool OGSFileConverter::fileExists(const std::string &file_name) const
 {
-	std::ifstream file(file_name);
+	std::ifstream file(file_name.c_str());
 	if (file)
 	{
 		QString name = QString::fromStdString(BaseLib::getFileNameFromPath(file_name, true));
