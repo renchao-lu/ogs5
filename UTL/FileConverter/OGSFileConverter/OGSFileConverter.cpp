@@ -49,6 +49,9 @@ OGSFileConverter::~OGSFileConverter()
 
 void OGSFileConverter::convertGML2GLI(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	ProjectData project;
 	GEOLIB::GEOObjects* geo_objects = new GEOLIB::GEOObjects;
 	project.setGEOObjects(geo_objects);
@@ -81,6 +84,9 @@ void OGSFileConverter::convertGML2GLI(const QStringList &input, const QString &o
 
 void OGSFileConverter::convertGLI2GML(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	ProjectData project;
 	GEOLIB::GEOObjects* geo_objects = new GEOLIB::GEOObjects;
 	project.setGEOObjects(geo_objects);
@@ -122,6 +128,9 @@ void OGSFileConverter::convertGLI2GML(const QStringList &input, const QString &o
 
 void OGSFileConverter::convertVTU2MSH(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	for (QStringList::const_iterator it=input.begin(); it!=input.end(); ++it)
 	{
 		const QFileInfo fi(*it);
@@ -149,6 +158,9 @@ void OGSFileConverter::convertVTU2MSH(const QStringList &input, const QString &o
 
 void OGSFileConverter::convertMSH2VTU(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	for (QStringList::const_iterator it=input.begin(); it!=input.end(); ++it)
 	{
 		const QFileInfo fi(*it);
@@ -177,6 +189,9 @@ void OGSFileConverter::convertMSH2VTU(const QStringList &input, const QString &o
 
 void OGSFileConverter::convertCND2BC(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	ProjectData project;
 	GEOLIB::GEOObjects* geo_objects = new GEOLIB::GEOObjects;
 	project.setGEOObjects(geo_objects);
@@ -191,66 +206,75 @@ void OGSFileConverter::convertCND2BC(const QStringList &input, const QString &ou
 	std::string schemaName(fileFinder.getPath("OpenGeoSysCond.xsd"));
 	FileIO::XmlCndInterface xml(&project, schemaName);
 
-	std::vector<FEMCondition*> conditions;
-
+	std::size_t direct_file_count(0);
 	for (QStringList::const_iterator it=input.begin(); it!=input.end(); ++it)
+	{
+		std::vector<FEMCondition*> conditions;
 		xml.readFile(conditions, *it);
 
-	if (!conditions.empty())
-	{
+		if (conditions.empty())
+			continue;
+		
 		project.addConditions(conditions);
-		QFileInfo fi(output);
-		FEMCondition::CondType type = FEMCondition::UNSPECIFIED;
-		if (fi.suffix().compare("bc") == 0)      type = FEMCondition::BOUNDARY_CONDITION;
-		else if (fi.suffix().compare("ic") == 0) type = FEMCondition::INITIAL_CONDITION;
-		else if (fi.suffix().compare("st") == 0) type = FEMCondition::SOURCE_TERM;
-
-		size_t count(0);
-		size_t nConds(conditions.size());
+		const std::size_t nConds(conditions.size());
 		for (size_t i=0; i<nConds; i++)
 		{
-			if (conditions[i]->getCondType() == type)
-			{
-				if (type == FEMCondition::BOUNDARY_CONDITION)
-					bc_list.push_back(new CBoundaryCondition(static_cast<BoundaryCondition*>(conditions[i])));
-				else if (type == FEMCondition::INITIAL_CONDITION)
-					ic_vector.push_back(new CInitialCondition(static_cast<InitialCondition*>(conditions[i])));
-				else if (type == FEMCondition::SOURCE_TERM)
-					st_vector.push_back(new CSourceTerm(static_cast<SourceTerm*>(conditions[i])));
+			const FEMCondition::CondType type (conditions[i]->getCondType());
+			if (type == FEMCondition::BOUNDARY_CONDITION)
+				bc_list.push_back(new CBoundaryCondition(static_cast<BoundaryCondition*>(conditions[i])));
+			else if (type == FEMCondition::INITIAL_CONDITION)
+				ic_vector.push_back(new CInitialCondition(static_cast<InitialCondition*>(conditions[i])));
+			else if (type == FEMCondition::SOURCE_TERM)
+				st_vector.push_back(new CSourceTerm(static_cast<SourceTerm*>(conditions[i])));
 
-				if (conditions[i]->getProcessDistributionType() == FiniteElement::DIRECT)
-				{
-					std::string count_str (QString::number(count++).toStdString());
-					std::string direct_value_file = fi.absolutePath().toStdString() + "/direct_values" + count_str + ".txt";
-					st_vector[st_vector.size()-1]->fname = direct_value_file;
-					ConversionTools::writeDirectValues(*conditions[i], direct_value_file);
-				}
+			if (conditions[i]->getProcessDistributionType() == FiniteElement::DIRECT)
+			{
+				const QString count_str (QString::number(direct_file_count++));
+				const std::string direct_value_file = QString(output + "/direct_values" + count_str + ".txt").toStdString();
+				st_vector[st_vector.size()-1]->fname = direct_value_file;
+				ConversionTools::writeDirectValues(*conditions[i], direct_value_file);
 			}
 		}
-		if (type == FEMCondition::BOUNDARY_CONDITION)
-			BCWrite(output.toStdString());
-		else if (type == FEMCondition::INITIAL_CONDITION)
-			ICWrite(output.toStdString());
-		else if (type == FEMCondition::SOURCE_TERM)
-			STWrite(output.toStdString());
+
+		const QFileInfo fi(*it);
+		const std::string output_str = QString(output + "/" + fi.completeBaseName()).toStdString();
+		if (!bc_list.empty())
+			BCWrite(std::string(output_str));
+		if (!ic_vector.empty())
+			ICWrite(std::string(output_str));
+		if (!st_vector.empty())
+			STWrite(std::string(output_str));
+
+		project.removeConditions(FiniteElement::ProcessType::INVALID_PROCESS, "", FEMCondition::CondType::UNSPECIFIED);
+		bc_list.clear();
+		ic_vector.clear();
+		st_vector.clear();
 	}
 	OGSError::box("File conversion finished");
 }
 
 void OGSFileConverter::convertBC2CND(const QStringList &input, const QString &output)
 {
+	if (input.empty())
+		return;
+
 	ProjectData project;
-	std::vector<FEMCondition*> conditions;
 	for (QStringList::const_iterator it=input.begin(); it!=input.end(); ++it)
+	{
+		std::vector<FEMCondition*> conditions;
 		ConversionTools::getFEMConditionsFromASCIIFile(*it, conditions);
 
-	if (!conditions.empty())
-	{
+		if (conditions.empty())
+			continue;
+
+		const QFileInfo fi(*it);
+		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".cnd").toStdString();
 		project.addConditions(conditions);
 		FileFinder fileFinder = createFileFinder();
 		std::string schemaName(fileFinder.getPath("OpenGeoSysCond.xsd"));
 		FileIO::XmlCndInterface xml(&project, schemaName);
-		xml.writeToFile(output.toStdString());
+		xml.writeToFile(output_str);
+		project.removeConditions(FiniteElement::ProcessType::INVALID_PROCESS, "", FEMCondition::CondType::UNSPECIFIED);
 	}
 	OGSError::box("File conversion finished");
 }
