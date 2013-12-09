@@ -51,6 +51,7 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/MSH
 	${CMAKE_SOURCE_DIR}/Qt/Base
 	${CMAKE_SOURCE_DIR}/Qt/DataView
+	${CMAKE_SOURCE_DIR}/Qt/VtkVis
 )
 
 # Put moc files in a project folder
@@ -73,11 +74,14 @@ TARGET_LINK_LIBRARIES( OGSFileConverter
 	GEO
 	FEM
 	QtDataView
+	VtkVis
+	QVTK	
 )
 
 # Adds useful macros and variables
-# this is needed to correctly link the qt libraries through target_link_libraries
+# this is needed to correctly link the qt and vtk libraries through target_link_libraries
 INCLUDE( ${QT_USE_FILE} )
+INCLUDE( ${VTK_USE_FILE} )
 
 # Set build configuration types
 # "RelWithDebInfo" and "MinSizeRelease" can be added here
