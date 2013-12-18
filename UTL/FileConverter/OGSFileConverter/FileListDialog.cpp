@@ -68,7 +68,7 @@ void FileListDialog::accept()
 		if (!this->outputDirEdit->text().isEmpty() && QDir(_output_dir).exists())
 			this->done(QDialog::Accepted);
 		else
-			OGSError::box("Directory not found.");
+			OGSError::box("Output directory not found.");
 	}
 	else
 		OGSError::box("No files selected.");
@@ -82,8 +82,10 @@ void FileListDialog::reject()
 QString FileListDialog::getFileTypeString(FileType file_type)
 {
 	if (file_type==GML)		return "OpenGeoSys geometry files (*.gml)";
+	else if (file_type==VTU) return "OpenGeoSys mesh files (*.vtu)";
 	else if (file_type==CND) return "OpenGeoSys condition files (*.cnd)";
 	else if (file_type==GLI) return "GeoSys geometry files (*.gli)";
+	else if (file_type==MSH) return "GeoSys mesh files (*.msh)";
 	else if (file_type==BC)	return "GeoSys boundary condition files (*.bc);; GeoSys initial condition files (*.ic);; GeoSys source term files (*.st)";
 	else return "All files (*.*)";
 }

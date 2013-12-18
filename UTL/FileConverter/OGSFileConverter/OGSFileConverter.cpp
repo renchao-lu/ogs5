@@ -67,7 +67,7 @@ void OGSFileConverter::convertGML2GLI(const QStringList &input, const QString &o
 		const std::string file_name = fi.baseName().toStdString();
 		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".gli").toStdString();
 
-		if (fileExists(output_str))
+		if (!fileExists(output_str))
 		{
 			xml.readFile(*it);
 			std::vector<std::string> geo_names;
@@ -101,26 +101,23 @@ void OGSFileConverter::convertGLI2GML(const QStringList &input, const QString &o
 		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".gml").toStdString();
 		const std::string geo_name = BaseLib::getFileNameFromPath(it->toStdString(), true);
 
-		if (fileExists(output_str))
+		if (!fileExists(output_str))
 		{
 			std::string unique_name;
 			std::vector<std::string> errors;
 
-			if (FileIO::readGLIFileV4(it->toStdString(), geo_objects, unique_name, errors)) 
+			FileIO::readGLIFileV4(it->toStdString(), geo_objects, unique_name, errors);
+			if (errors.empty() || (errors.size()==1 && errors[0].compare("[readSurface] polyline for surface not found!")==0))
 			{
-				if (errors.empty())
-				{
-					xml.setNameForExport(geo_name);
-					xml.writeToFile(output_str);
-					geo_objects->removeSurfaceVec(geo_name);
-					geo_objects->removePolylineVec(geo_name);
-					geo_objects->removePointVec(geo_name);
-				}
-				else
-					for (size_t k(0); k<errors.size(); k++)
-						OGSError::box(QString::fromStdString(errors[k]));
-
+				xml.setNameForExport(geo_name);
+				xml.writeToFile(output_str);
+				geo_objects->removeSurfaceVec(geo_name);
+				geo_objects->removePolylineVec(geo_name);
+				geo_objects->removePointVec(geo_name);
 			}
+			else
+				for (size_t k(0); k<errors.size(); k++)
+					OGSError::box(QString::fromStdString(errors[k]));
 		}
 	}
 	
@@ -138,7 +135,7 @@ void OGSFileConverter::convertVTU2MSH(const QStringList &input, const QString &o
 		const std::string msh_name = fi.fileName().toStdString();
 		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".msh").toStdString();
 
-		if (fileExists(output_str))
+		if (!fileExists(output_str))
 		{
 			vtkXMLUnstructuredGridReader* reader = vtkXMLUnstructuredGridReader::New();
 			reader->SetFileName(it->toStdString().c_str());
@@ -168,7 +165,7 @@ void OGSFileConverter::convertMSH2VTU(const QStringList &input, const QString &o
 		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".vtu").toStdString();
 		const std::string msh_name = BaseLib::getFileNameFromPath(it->toStdString(), true);
 
-		if (fileExists(output_str))
+		if (!fileExists(output_str))
 		{
 			const GridAdapter grid(it->toStdString());
 			VtkMeshSource* source = VtkMeshSource::New();
@@ -269,7 +266,7 @@ void OGSFileConverter::convertBC2CND(const QStringList &input, const QString &ou
 			continue;
 
 		const QFileInfo fi(*it);
-		const std::string output_str = QString(output + "/" + fi.completeBaseName() + ".cnd").toStdString();
+		const std::string output_str = QString(output + "/" + fi.completeBaseName() + "_" + fi.suffix().toLower() + ".cnd").toStdString();
 		project.addConditions(conditions);
 		FileFinder fileFinder = createFileFinder();
 		std::string schemaName(fileFinder.getPath("OpenGeoSysCond.xsd"));
@@ -341,7 +338,7 @@ bool OGSFileConverter::fileExists(const std::string &file_name) const
 	if (file)
 	{
 		QString name = QString::fromStdString(BaseLib::getFileNameFromPath(file_name, true));
-		return OGSError::question("The file \'" + name + "\' already exists.\n Do you want to overwrite it?", "Warning");
+		return !OGSError::question("The file \'" + name + "\' already exists.\n Do you want to overwrite it?", "Warning");
 	}
 	return false;
 }
