@@ -9470,8 +9470,8 @@ void CFiniteElementStd::Assembly()
 		{
 			ComputeAdditionalJacobi_H2();
 
-			if(dm_pcs)
-			{
+           if(dm_pcs&& dm_pcs->type == 42)
+           {
 				(*StrainCoupling) = 0.0;
 				CalcStrainCoupling(0);
 				Assemble_strainCPL_Matrix(1.0, 0); //Phase 0

@@ -598,6 +598,8 @@ void CRFProcess::SetOBJNames()
 **************************************************************************/
 void CRFProcess::Create()
 {
+    CheckMarkedElement();                 //01.2014 WW
+
 	// we need the string representation of process type at some points
 	std::string pcs_type_name(
 	        convertProcessTypeToString(this->getProcessType()));
