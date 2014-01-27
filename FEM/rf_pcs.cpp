@@ -598,7 +598,8 @@ void CRFProcess::SetOBJNames()
 **************************************************************************/
 void CRFProcess::Create()
 {
-    CheckMarkedElement();                 //01.2014 WW
+         if (hasAnyProcessDeactivatedSubdomains)
+            CheckMarkedElement();                 //01.2014 WW
 
 	// we need the string representation of process type at some points
 	std::string pcs_type_name(
@@ -2330,7 +2331,9 @@ void CRFProcess::Config(void)
 		cout << "Error in CRFProcess::Config - no MSH data" << "\n";
 		return;
 	}
-	CheckMarkedElement();                 //WW
+
+        if (hasAnyProcessDeactivatedSubdomains)
+             CheckMarkedElement();                 //WW
 
 	if (continuum_vector.size() == 0)     // YD
 		continuum_vector.push_back(1.0);
