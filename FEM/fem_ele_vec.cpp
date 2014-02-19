@@ -1740,6 +1740,13 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 							bishop_coef_ini = pow(S_e_ini,smat->bishop_model_value);
 							AuxNodal[i] = LoadFactor*pow(S_e,smat->bishop_model_value)* val_n;
 							break;
+						case 3:  
+							h_pcs->GetNodeValue(nodes[i],idx_p1_ini)<smat->bishop_model_value ?  bishop_coef_ini=0.0 : bishop_coef_ini=1.0;
+							if(val_n<smat->bishop_model_value)
+							   AuxNodal[i] = 0.0;						
+							else
+							   AuxNodal[i] = LoadFactor * val_n;						
+							break;
 						default :
 							break;
 						}
@@ -1750,17 +1757,16 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 
 				if(pcs->Neglect_H_ini==2)//WX:08.2011
 				{
-					if(biot<0.0&&h_pcs->GetNodeValue(nodes[i],idx_p1_ini)<0.0)
-						AuxNodal[i] -= 0;//WX:12.2012
-					else 
-					{
-						if(smat->bishop_model==1||smat->bishop_model==2)
+						if(smat->bishop_model==1||smat->bishop_model==2||smat->bishop_model==3)  
 							AuxNodal[i] -= LoadFactor * bishop_coef_ini * h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
 						else
-							AuxNodal[i] -= LoadFactor*(m_mmp->SaturationCapillaryPressureFunction(-h_pcs->GetNodeValue(nodes[i],idx_p1_ini)))
-							*h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+						{
+
+							double p0 = h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+							double Sat0=  LoadFactor*m_mmp->SaturationCapillaryPressureFunction(-p0);
+							AuxNodal[i] -= LoadFactor * Sat0 * p0;
+						}
 					}
-				}
 #endif
 			}
 			break;
@@ -1802,10 +1808,17 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 						}
 						bishop_coef = pow(S_e, smat->bishop_model_value);
 						break;
+					case 3:  
+						S_e = (AuxNodal_S[i]-m_mmp->capillary_pressure_values[1])
+							/(m_mmp->capillary_pressure_values[2]-m_mmp->capillary_pressure_values[1]);
+						if(pcs->Neglect_H_ini==2)
+							h_pcs->GetNodeValue(nodes[i],idx_p1_ini)<smat->bishop_model_value ?  bishop_coef_ini=0.0 : bishop_coef_ini=1.0;
+						h_pcs->GetNodeValue(nodes[i],idx_P1)<smat->bishop_model_value ?  bishop_coef=0.0 : bishop_coef=1.0;
+						break;
 					default:
 						break;
 					}
-					if(smat->bishop_model == 1 || smat->bishop_model == 2) // pg-bishop*pc 05.2011 WX
+					if(smat->bishop_model == 1 || smat->bishop_model == 2 || smat->bishop_model == 3) // pg-bishop*pc 05.2011 WX
 					{
 						val_n = h_pcs->GetNodeValue(nodes[i],idx_P2)
 							-bishop_coef*h_pcs->GetNodeValue(nodes[i],idx_P1);

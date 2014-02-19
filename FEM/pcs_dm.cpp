@@ -300,18 +300,26 @@ void CRFProcessDeformation::CalIniTotalStress()
 					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*SMat->bishop_model_value;
 				else if (SMat->bishop_model==2)
 					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*pow(tmp_h_pcs->GetNodeValue(j,idx_s),SMat->bishop_model_value);
+				else if (SMat->bishop_model==3) 
+				{
+					tmp_h_pcs->GetNodeValue(j,idx_s) >= SMat->bishop_model_value ? pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1) :  pw +=0.0; 
+				} 
 				else
 					pw +=  tmp_h_pcs->GetNodeValue(j,idx_p1)*tmp_h_pcs->GetNodeValue(j,idx_s);
 			}
 			if(h_pcs_type == 1212 || h_pcs_type == 42)//multi phase flow  pg-sw*pc
 			{
 				if(SMat->bishop_model==1)
-					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - SMat->bishop_model_value;
+					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - SMat->bishop_model_value * tmp_h_pcs->GetNodeValue(j,idx_p1);
 				else if(SMat->bishop_model==2)
 					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - pow(tmp_h_pcs->GetNodeValue(j,idx_s),SMat->bishop_model_value)
 					*tmp_h_pcs->GetNodeValue(j,idx_p1);
-				else
-					pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - SMat->bishop_model_value*tmp_h_pcs->GetNodeValue(j,idx_p1);
+				else if(SMat->bishop_model==3) 
+				{
+                  tmp_h_pcs->GetNodeValue(j,idx_p1) >= SMat->bishop_model_value ? pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - tmp_h_pcs->GetNodeValue(j,idx_p1) : pw += tmp_h_pcs->GetNodeValue(j,idx_p2); 
+                }
+                else
+				  pw += tmp_h_pcs->GetNodeValue(j,idx_p2) - tmp_h_pcs->GetNodeValue(j,idx_s)*tmp_h_pcs->GetNodeValue(j,idx_p1); 
 			}
 		}
 		pw /= nnodes;//average node value, could be also interp. value

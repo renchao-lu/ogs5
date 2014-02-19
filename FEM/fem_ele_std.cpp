@@ -1451,18 +1451,21 @@ void CFiniteElementStd::CalNodalEnthalpy()
 **************************************************************************/
 double CFiniteElementStd::CalCoefMass()
 {
-	int Index = MeshElement->GetIndex();
+    int Index = MeshElement->GetIndex();
 	double val = 0.0;
 	double humi = 1.0;
 	double rhov = 0.0;
-	double biot_val, poro_val = 0.0, rho_val, Se;
+	double arg[2];
+	double biot_val, poro_val = 0.0, rho_val = 0.0, Se;
 	int tr_phase = 0;                     // SB, BG
 	double saturation = 0.0;              // SB, BG
 	CompProperties* m_cp = NULL;
+	double drho_dp_rho=0.0;                  // drho/dp * 1/rho 
+		
+		if(pcs->m_num->ele_mass_lumping)
+		  ComputeShapefct(1);
 
-	if(pcs->m_num->ele_mass_lumping)
-		ComputeShapefct(1);
-	switch(PcsType)
+ switch(PcsType)
 	{
 	default:
 		std::cout << "Fatal error in CalCoefMass: No valid PCS type" << "\n";
@@ -1470,21 +1473,34 @@ double CFiniteElementStd::CalCoefMass()
 	case L:                               // Liquid flow
 		// Is this really needed?
 		val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta);
+		
+                 // get drho/dp/rho from material model or direct input
+		 if(FluidProp->compressibility_model_pressure>0)
+		 {
+
+                   rho_val = FluidProp->Density();
+     	           arg[0]=interpolate(NodalVal1);   //   p
+    	           arg[1]=interpolate(NodalValC1);  //   T 
+    	           drho_dp_rho=FluidProp->drhodP(arg)/rho_val; 
+                 }
+		 else 
+		   drho_dp_rho=FluidProp->drho_dp;  
+		
 		// JT 2010, needed storage term and fluid compressibility...
 		// We derive here the storage at constant strain, or the inverse of Biot's "M" coefficient
 		// Assumptions are the most general possible::  Invarience under "pi" (Detournay & Cheng) loading.
 		// Se = 1/M = poro/Kf + (alpha-poro)/Ks    ::    Cf = 1/Kf = 1/rho * drho/dp    ::    alpha = 1 - K/Ks
 		// Second term (of Se) below vanishes for incompressible grains
-		rho_val = FluidProp->Density();
 		//WW if(D_Flag > 0  && rho_val > MKleinsteZahl)
-        if(dm_pcs  && MediaProp->storage_model == 7) // Add MediaProp->storage_model.  29.09.2011. WW
+           if(dm_pcs  && MediaProp->storage_model == 7) // Add MediaProp->storage_model.  29.09.2011. WW
 		{
 			biot_val = SolidProp->biot_const;
 			poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			val = 0.;//WX:04.2013
+	  
 
 			//WW if(SolidProp->K == 0) //WX: if HM Partitioned, K still 0 here
-            if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
+               if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
 			{
 				if(SolidProp->Youngs_mode<10||SolidProp->Youngs_mode>13)//JM,WX: 2013
 				SolidProp->K = SolidProp->E / 3 / (1 - 2 * SolidProp->PoissonRatio);
@@ -1509,10 +1525,17 @@ double CFiniteElementStd::CalCoefMass()
 					SolidProp->K=E_av/3/(1-2*nu_av);
 				}
 			}
-			val += poro_val * FluidProp->drho_dp \
-			       + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;
+			val += poro_val * drho_dp_rho \
+			      + (biot_val - poro_val) * (1.0 - biot_val) / SolidProp->K;            
+			
 			// Will handle the dual porosity version later...
 		}
+		else
+		{    
+		  poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		  val += poro_val * drho_dp_rho; 
+		} 
+		  
 		//AS,WX: 08.2012 storage function eff stress
 		if(MediaProp->storage_effstress_model>0)
 		{
@@ -1613,23 +1636,39 @@ double CFiniteElementStd::CalCoefMass()
 		val = 1.0;
 		break;
 	case R:                               // Richards
+		Sw = 1.0;
+		dSdp = 0.;
 		PG = interpolate(NodalVal1); //12.02.2007.  Important! WW
-		                             //WW
-		Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);
-		//     Sw = interpolate(NodalVal_Sat);
-		rhow = FluidProp->Density();
-		dSdp = -MediaProp->PressureSaturationDependency(Sw,true); // JT: dSdp now returns actual sign (i.e. <0)
+		
+		if (PG<0.0) // JM skip to call these two functions in saturated case
+		{
+			Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);
+		  dSdp = -MediaProp->PressureSaturationDependency(Sw,true); // JT: dSdp now returns actual sign (i.e. <0)
+		}
+
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
+		rhow = FluidProp->Density();
+
+		 if(FluidProp->compressibility_model_pressure>0)
+		 {  //drho_dp from rho-p-T relation
+            arg[0]=PG;
+    	    arg[1]=interpolate(NodalValC1);  // T
+			drho_dp_rho=FluidProp->drhodP(arg)/rhow; 
+         }
+		 else 
+		   drho_dp_rho=FluidProp->drho_dp;
+		
 		// Storativity
 		val = MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * Sw;
 
 		// Fluid compressibility
 		if(rhow > 0.0)
-			val += poro  * Sw * FluidProp->drho_dp;
+			val += poro  * Sw * drho_dp_rho;
 		// Capillarity
-		val += poro * dSdp;
+		 if(PG<0.0) // dSdp gives always a value>0, even if p>0!
+		  val += poro * dSdp;
 		//WW
-		if(MediaProp->heat_diffusion_model == 273)
+		if(MediaProp->heat_diffusion_model == 1)
 		{
 			//           PG = fabs(interpolate(NodalVal1));
 			TG = interpolate(NodalValC) + T_KILVIN_ZERO;
@@ -1668,7 +1707,7 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 
 	bool diffusion = false;               //08.05.2008 WW
 
-	if(MediaProp->heat_diffusion_model == 273 && cpl_pcs)
+	if(MediaProp->heat_diffusion_model == 1 && cpl_pcs)
 		diffusion = true;
 	dens_arg[1] = 293.15;
 	//
@@ -2585,7 +2624,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		for(size_t i = 0; i < dim * dim; i++)
 			mat[i] = tensor[i] * mat_fac *fac_perm;//WX:12.2012
 
-		if(MediaProp->heat_diffusion_model == 273 && !Gravity)
+		if(MediaProp->heat_diffusion_model == 1 && !Gravity)
 		{
 			rhow = FluidProp->Density();
 			//PG = fabs(interpolate(NodalVal1));
@@ -2595,7 +2634,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 			//Rv = GAS_CONSTANT;
 			humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
 			//
-			Dpv = 2.16e-5 * tort * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
+			Dpv = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8); 
 			Dpv *= time_unit_factor * FluidProp->vaporDensity(TG) * humi /
 			       (GAS_CONSTANT_V * rhow * TG);
 			for(size_t i = 0; i < dim; i++)
@@ -2721,7 +2760,7 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 	expfactor = D_gw = D_ga = 0.0;
 	double dens_arg[3];                   //08.05.2008 WW
 	bool diffusion = false;               //08.05.2008 WW
-	if(MediaProp->heat_diffusion_model == 273 && cpl_pcs)
+	if(MediaProp->heat_diffusion_model == 1 && cpl_pcs)
 		diffusion = true;
 	//
 	dens_arg[1] = 293.15;
@@ -2778,7 +2817,7 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 				tort = MediaProp->TortuosityFunction(Index,
 				                                     unit,
 				                                     pcs->m_num->ls_theta);
-				tort *= (1.0 - Sw) * poro * 2.16e-5 * pow(TG / T_KILVIN_ZERO, 1.8);
+				tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
 				expfactor = COMP_MOL_MASS_WATER / (rhow * GAS_CONSTANT * TG);
 				rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
 				p_gw = rho_gw * GAS_CONSTANT * TG / COMP_MOL_MASS_WATER;
@@ -3513,7 +3552,7 @@ double CFiniteElementStd::CalCoefAdvection()
 	case C:                               // Componental flow
 		break;
 	case H:                               // heat transport
-		if(FluidProp->density_model == 14 && MediaProp->heat_diffusion_model == 273 &&
+		if(FluidProp->density_model == 14 && MediaProp->heat_diffusion_model == 1 &&
 		   cpl_pcs )
 		{
 			dens_arg[0] = interpolate(NodalValC1);
@@ -5893,7 +5932,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 		beta = poro * MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * Sw;
 		//Rv = GAS_CONSTANT;
 		humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
-		Dv = tort * (1.0 - Sw) * poro * 2.16e-5 * pow(TG / T_KILVIN_ZERO, 1.8);
+		Dv   = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
 		rhov = humi * FluidProp->vaporDensity(TG);
 		drdT =
 		        (FluidProp->vaporDensity_derivative(TG) * humi - rhov * PG /
@@ -9387,7 +9426,7 @@ void CFiniteElementStd::Assembly()
 		//    CalNodalEnthalpy();
 		//CMCD4213
 		AssembleMixedHyperbolicParabolicEquation();
-		if(FluidProp->density_model == 14 && MediaProp->heat_diffusion_model == 273 &&
+		if(FluidProp->density_model == 14 && MediaProp->heat_diffusion_model == 1 &&
 		   cpl_pcs )
 			Assemble_RHS_HEAT_TRANSPORT();  // This include when need pressure terms n dp/dt + nv.Nabla p//AKS
 		if(MediaProp->evaporation == 647)
@@ -9417,10 +9456,11 @@ void CFiniteElementStd::Assembly()
 		break;
 	//....................................................................
 	case R:                               // Richards flow
-		if(MediaProp->heat_diffusion_model == 273)
+		if(MediaProp->heat_diffusion_model == 1)
 			CalcRHS_by_ThermalDiffusion();
 		AssembleParabolicEquation(); //OK
 		Assemble_Gravity();
+		Assemble_RHS_LIQUIDFLOW();  //JM  (thermal expansion fluid)
 		if(dm_pcs)
 			Assemble_strainCPL();
 
@@ -9436,7 +9476,7 @@ void CFiniteElementStd::Assembly()
 		//To account advection like term nv.Nabla p
 		AssembleMixedHyperbolicParabolicEquation();
 		//AKS
-		if(MediaProp->heat_diffusion_model == 273 && cpl_pcs )
+		if(MediaProp->heat_diffusion_model == 1 && cpl_pcs )
 			Assemble_RHS_AIR_FLOW();  // n*drho/dt + Nabla.[rho*k/mu rho g]//AKS
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		add2GlobalMatrixII();
@@ -9447,7 +9487,7 @@ void CFiniteElementStd::Assembly()
 		// Multi-phase flow 24.02.2007 WW
 		AssembleParabolicEquation();
 		Assemble_Gravity();
-		if(cpl_pcs && MediaProp->heat_diffusion_model == 273)
+		if(cpl_pcs && MediaProp->heat_diffusion_model == 1)
 			Assemble_RHS_T_MPhaseFlow();
 		if(dm_pcs)
 			Assemble_RHS_M();
@@ -10419,8 +10459,7 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		//------------------------------------------------------------------------
 		// From grad (p_gw/p_g)
 		tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
-		tort *= (1.0 - Sw) * poro * 2.16e-5 * pow(TG / T_KILVIN_ZERO, 1.8);
-		//
+		tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
 		p_gw = rho_gw * GAS_CONSTANT * TG / COMP_MOL_MASS_WATER;
 		dens_arg[0] = PG2 - p_gw;
 		dens_arg[1] = TG;
@@ -10967,7 +11006,7 @@ void CFiniteElementStd::Assemble_RHS_Pc()
 void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
 {
     if (!isTemperatureCoupling()) return;
-    if (FluidProp->drho_dT == .0 && SolidProp->Thermal_Expansion()==.0) return;
+       if ((FluidProp->drho_dT == .0 && (FluidProp->density_model<8 || FluidProp->density_model>14))&& SolidProp->Thermal_Expansion()==.0) return;
 
     int dm_shift = 0;
     if(pcs->type / 10 == 4)
@@ -10999,10 +11038,29 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
         //  Evaluate material property
         //---------------------------------------------------------
         const double poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
-        const double alpha_T_s = 3.*SolidProp->Thermal_Expansion(); // multiply 3 for volumetrix expression
-        const double alpha_T_l = - FluidProp->drho_dT; //negative sign is required due to OGS input
-        // Effective thermal expansion = (biot-poro)*alpha_T^s + poro*alpha_T^f
-        const double eff_thermal_expansion = (SolidProp->biot_const-poro)*alpha_T_s + poro*alpha_T_l;
+        double alpha_T_s = 3.*SolidProp->Thermal_Expansion(); // multiply 3 for volumetrix expression
+        Sw = 1.0; 
+        double alpha_T_l;
+		if (FluidProp->density_model>7 && FluidProp->density_model<15){
+            double arg[2];
+				   arg[0]=interpolate(NodalVal1);  // p
+				   arg[1]=interpolate(NodalValC1); // T
+			alpha_T_l = - FluidProp->drhodT(arg)/FluidProp->Density(); 
+		}
+		else
+          alpha_T_l = - FluidProp->drho_dT; //negative sign is required due to OGS input
+        
+		if(PcsType==R){
+		//for Richards:
+          PG = interpolate(NodalVal1);
+		  if(PG<0.0){
+			 if(FluidProp->drho_dT_unsaturated) 
+			    Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);  
+			 else
+                alpha_T_l=alpha_T_s =0.0;
+		  }
+		}
+        const double eff_thermal_expansion = (SolidProp->biot_const-poro)*alpha_T_s + poro*Sw*alpha_T_l;
         //---------------------------------------------------------
         //  Compute RHS+=int{N^T alpha_T dT/dt}
         //---------------------------------------------------------
@@ -11545,7 +11603,7 @@ double CFiniteElementStd::CalCoef_RHS_M_MPhase(int dof_index)
 	double dens_aug[3];
 	dens_aug[1] = 293.15;
 	bool diffusion = false;               //08.05.2008 WW
-	if(MediaProp->heat_diffusion_model == 273 && cpl_pcs)
+	if(MediaProp->heat_diffusion_model == 1 && cpl_pcs)
 		diffusion = true;
 	//======================================================================
 	switch(dof_index)
