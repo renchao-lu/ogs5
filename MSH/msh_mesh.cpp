@@ -120,10 +120,7 @@ CFEMesh::CFEMesh(GEOLIB::GEOObjects* geo_obj, std::string* geo_name) :
 	_msh_n_tris(0), _msh_n_tets(0), _msh_n_prisms(0), _msh_n_pyras(0),
 	_min_edge_length(1e-3), _search_length(0.0), NodesNumber_Linear(0),
 	NodesNumber_Quadratic(0), useQuadratic(false), _axisymmetry(false), ncols(0), nrows(0),
-	x0(0.0), y0(0.0), csize(0.0), ndata_v(0.0)
-#ifndef NON_GEO
-	, _mesh_grid(NULL)
-#endif
+	x0(0.0), y0(0.0), csize(0.0), ndata_v(0.0), _mesh_grid(NULL)
 {
 	coordinate_system = 1;
 
@@ -145,10 +142,7 @@ CFEMesh::CFEMesh(GEOLIB::GEOObjects* geo_obj, std::string* geo_name) :
 // Copy-Constructor for CFEMeshes.
 // Programming: 2010/11/10 KR
 CFEMesh::CFEMesh(CFEMesh const& old_mesh) :
-	PT(NULL), _search_length(old_mesh._search_length)
-#ifndef NON_GEO
-		, _mesh_grid(NULL)
-#endif
+	PT(NULL), _search_length(old_mesh._search_length), _mesh_grid(NULL)
 {
 	std::cout << "Copying mesh object ... ";
 
@@ -224,9 +218,12 @@ CFEMesh::~CFEMesh(void)
 		delete face_normal[i];
 	face_normal.clear();
 
-#ifndef NON_GEO                             //WW
-	delete PT; // PCH
-#endif
+    if(PT)    //WW
+	{
+       delete PT; // PCH
+	   PT = NULL; 
+	}
+
 	// 1.11.2007 WW
 #ifdef NEW_EQS
 	delete sparse_graph;
@@ -235,9 +232,11 @@ CFEMesh::~CFEMesh(void)
 	sparse_graph_H = NULL;
 #endif
 
-#ifndef NON_GEO
-	delete _mesh_grid;
-#endif
+    if(_mesh_grid)
+	{
+       delete _mesh_grid;
+       _mesh_grid = NULL; 
+	}
 }
 
 void CFEMesh::setElementType(MshElemType::type type)
@@ -898,10 +897,8 @@ void CFEMesh::constructMeshGrid()
 //	std::cout << "CFEMesh::constructMeshGrid() ... " << std::flush;
 //	clock_t start(clock());
 //#endif
-#ifndef NON_GEO
 	if (_mesh_grid == NULL)
 		_mesh_grid = new GEOLIB::Grid<MeshLib::CNode>(this->getNodeVector(), 511);
-#endif
 //#ifndef NDEBUG
 //	clock_t end(clock());
 //	std::cout << "done, took " << (end-start)/(double)(CLOCKS_PER_SEC) << " s -- " << std::flush;
@@ -4004,7 +4001,7 @@ void CFEMesh::mHM2NeumannBC()
 	std::string aline;
 	std::stringstream ss;
 
-	std::string fname = FileName + ".pcp";
+	std::string fname = *_geo_name + ".pcp";
 
 	std::ifstream ins(fname.c_str());
 	if(!ins.good())
@@ -4033,8 +4030,20 @@ void CFEMesh::mHM2NeumannBC()
 	step = 0.;
 
 	std::string infiltration_files;
-	infiltration_files = FileName + ".ifl";
+	infiltration_files = *_geo_name + ".ifl";
 	std::ofstream infil(infiltration_files.c_str(), std::ios::trunc);
+
+	std::basic_string <char>::size_type indexChWin, indexChLinux;
+	indexChWin = indexChLinux = 0;
+	indexChWin =  _geo_name->find_last_of('\\');
+	indexChLinux = _geo_name->find_last_of('/');
+	//
+    std::string file_path; 
+	if(indexChWin != std::string::npos)
+		file_path = _geo_name->substr(0,indexChWin) + "\\";
+	else if(indexChLinux != std::string::npos)
+		file_path = _geo_name->substr(0,indexChLinux) + "/";
+
 	while(!ins.eof())
 	{
 		getline(ins, aline);
@@ -4050,10 +4059,10 @@ void CFEMesh::mHM2NeumannBC()
 
 		//sprintf(stro, "%f",step);
 		// ofname = stro;
-		ofname = FilePath + key + ".bin";
+		ofname = file_path + key + ".bin";
 		infil << step << " " << key + ".bin" << "\n";
 
-		key = FilePath + key;
+		key = file_path + key;
 		Precipitation2NeumannBC(key, ofname, ratio);
 
 		step += 1.0;
@@ -4089,7 +4098,7 @@ void CFEMesh::TopSurfaceIntegration()
 		val[i] = 0.0;
 	}
 
-	std::string ofname = FileName + "_top_surface_Neumann_BC.txt";
+	std::string ofname =  *_geo_name + "_top_surface_Neumann_BC.txt";
 	std::ofstream ofile_asci(ofname.c_str(), std::ios::trunc);
 	ofile_asci.setf(std::ios::scientific,std::ios::floatfield);
 	ofile_asci.precision(14);
@@ -4133,12 +4142,10 @@ void CFEMesh::TopSurfaceIntegration()
 }
 
 #ifndef NDEBUG
-#ifndef NON_GEO
 GEOLIB::Grid<MeshLib::CNode> const* CFEMesh::getGrid() const
 {
 	return _mesh_grid;
 }
-#endif
 #endif
 
 #ifdef USE_HydSysMshGen
@@ -4259,9 +4266,8 @@ void CFEMesh::HydroSysMeshGenerator(string fname,
 }
 #endif
 
-#ifndef NON_GEO                
-/*
-   Find the element by a point
+/*!
+   brief Find the element by a point
    YS/WW 05/2012
 */
 size_t CFEMesh::FindElementByPoint(const double* xyz)
@@ -4472,7 +4478,6 @@ size_t CFEMesh::FindElementByPoint(const double* xyz)
    // Not find
    return -1;
 }
-#endif
 
 // 09. 2012 WW
 /// Free the memory occupied by edges
