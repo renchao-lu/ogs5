@@ -69,6 +69,7 @@ OPTION(OGS_PACKAGING "Creating installers / packages" OFF)
 OPTION_REQUIRES(OGS_PACKAGING_ZIP "Do you want to package as zip?" OGS_PACKAGING)
 OPTION(OGS_PYTHON "Enable python scripting interface" OFF)
 OPTION(OGS_BUILD_UTILITIES "Build additional utility programs?" OFF)
+OPTION(OGS_BUILD_FEMTOOL_KITS "Build additional data process tool for FEM?" OFF)
 OPTION(OGS_CMAKE_DEBUG "Show additional cmake debug information" OFF)
 OPTION(OGS_ONE_BIG_GTEST "Should all gtests be collected to one ctest" ON)
 OPTION_REQUIRES(OGS_USE_OPENSG "VTK to OpenSG converter" OGS_USE_QT)
@@ -384,6 +385,10 @@ IF (OGS_BUILD_UTILITIES)
 		ADD_SUBDIRECTORY (UTL/FileConverter/OGSFileConverter)
 	ENDIF()
 ENDIF (OGS_BUILD_UTILITIES)
+	ADD_SUBDIRECTORY (UTL/GIS2FEM/)
+IF (OGS_BUILD_FEMTOOL_KITS)
+
+ENDIF()
 
 ## Documentation ##
 IF(DOXYGEN_FOUND)

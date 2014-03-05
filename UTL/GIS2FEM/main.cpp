@@ -87,11 +87,7 @@ int main(int argc, char* argv[])
 	case 3:
 		a_mesh = new CFEMesh();
 		a_mesh->ConvertShapeCells(FileName + ".asc");
-		ofname = FileName + ".msh";
-		ofile.open(ofname.c_str(), ios::out | ios::trunc);
-		a_mesh->Write(&ofile);
 		break;
-
 	default:
 
 		break;

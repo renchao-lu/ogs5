@@ -26,14 +26,18 @@
 #include "Point.h"
 #include "Polyline.h"
 #include "Surface.h"
+#ifndef NON_GEO
 #include "Grid.h"
+#endif
 
 // MSHLib
 #include "MSHEnums.h"                             // KR 2010/11/15
 #include "MeshNodesAlongPolyline.h"
 
 // FileIO
+#ifndef NON_PROCESS
 #include "MeshIO/OGSMeshIO.h"
+#endif
 
 #include "msh_elem.h"
 
@@ -176,7 +180,10 @@ public:
 
 	bool Read(std::ifstream*);
 
+#ifndef NON_PROCESS
 	friend class FileIO::OGSMeshIO;
+#endif
+
 	std::ios::pos_type GMSReadTIN(std::ifstream*);
 	//
 	void ConstructGrid();
@@ -502,7 +509,9 @@ public:
 	 * that is an instance of class Grid.
 	 * @return
 	 */
+#ifndef NON_GEO
 	GEOLIB::Grid<MeshLib::CNode> const* getGrid() const;
+#endif
 #endif
 
 private:
@@ -599,7 +608,9 @@ private:
 public:
 	void constructMeshGrid();
 private:
+#ifndef NON_GEO
 	GEOLIB::Grid<MeshLib::CNode> *_mesh_grid;
+#endif
 };
 
 } // namespace MeshLib

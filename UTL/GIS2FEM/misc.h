@@ -1,13 +1,16 @@
-#ifndef misc_INC
-#define misc_INC
+#ifndef MISC_FEMTOOLKITS_H
+#define MISC_FEMTOOLKITS_H
+
+#include <string>
 #include <vector>
-using namespace std;
 
 namespace  MeshLib
-{class CFEMesh;
+{
+   class CFEMesh;
 }
 using  MeshLib::CFEMesh;
-extern vector<MeshLib::CFEMesh*> fem_msh_vector;
+extern std::vector<MeshLib::CFEMesh*> fem_msh_vector;
 
-extern bool FEMRead(string);
+extern bool FEMRead(const std::string file_base_name);
+void writeOGSMesh(const MeshLib::CFEMesh &mesh, const std::string file_base_name);
 #endif
