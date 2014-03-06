@@ -52,7 +52,6 @@ using Math_Group::SparseTable;
 //------------------------------------------------------------------------
 namespace MeshLib
 {
-#ifndef NON_GEO
 /*!
    Class to handle topologic relationship among grids
    Designed by WW
@@ -76,7 +75,6 @@ public:
 	//void Write(std::ostream &os=cout);
 	~GridsTopo();
 };
-#endif                                         //#ifndef NON_GEO
 
 /// For parallel computing. 03.2012. WW
 #if defined(USE_PETSC) // || defined(using other parallel scheme)
@@ -106,11 +104,9 @@ public:
 	/// Destructor
 	~CFEMesh();
 
-#ifndef NON_GEO
 	GEOLIB::GEOObjects* getGEOObjects () const { return _geo_obj; }
 
 	std::string* getProjectName () const { return _geo_name; }
-#endif                                      //#ifndef NON_GEO
 
 	/**
 	 * sets the value for element type
@@ -284,7 +280,6 @@ public:
 	/// Free the memory occupied by edges
     void FreeEdgeMemory(); // 09.2012. WW
 
-#ifndef NON_GEO                             //WW
 	/**
 	 * @{
 	 * */
@@ -394,14 +389,7 @@ public:
 	void GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector) const;
 
 	/** @} */  // close doxygen group
-#endif                                      //WW #ifndef NON_GEO
-//#ifndef NON_GEO                             //  WW
-//         /**
-//          * Store border nodes among different grids.
-//          */
-//         std::vector<GridsTopo*> grid_neighbors;
-//         friend class ::Problem;
-//#endif
+
 	//....................................................................
 #ifdef ObsoleteGUI //WW 03.2012
 	// QUAD->HEX
@@ -462,7 +450,7 @@ public:
 	void FaceNormal();                        // YD
 	void SetNODPatchAreas();                  //OK4310
 	void SetNetworkIntersectionNodes();       //OK4319->PCH
-#ifndef NON_PROCESS                         // 05.03.2010 WW
+
 #ifdef NEW_EQS                              // 1.11.2007 WW
 	// Compute the graph of the sparse matrix related to this mesh. 1.11.2007 WW
 	void CreateSparseTable();
@@ -471,8 +459,7 @@ public:
 	const {if(!quad) return sparse_graph;
 	       else return sparse_graph_H; }
 #endif
-#endif
-
+ 
 	std::string pcs_name;
 	std::string geo_name;                     //MB
 	std::string geo_type_name;                //OK10_4310
@@ -585,11 +572,11 @@ private:
 	inline void Precipitation2NeumannBC(std::string const & fname,
 	                                    std::string const & ofname,
 	                                    double ratio = 0.8);
-#ifndef NON_GEO                             //  WW
+
 	/// Store border nodes among different grids.
 	std::vector<GridsTopo*> grid_neighbors;
 	friend class ::Problem;
-#endif                                      // #ifndef NON_GEO
+
 	//
 	// Sparse graph of this mesh. 1.11.2007 WW
 #ifdef NEW_EQS
@@ -597,10 +584,8 @@ private:
 	SparseTable* sparse_graph_H;              // For high order interpolation
 #endif
 
-#ifndef NON_GEO                             //WW
 	void CreateLineElementsFromMarkedEdges(CFEMesh* m_msh_ply,
 	                                       std::vector<long> &ele_vector_at_ply); //NW
-#endif                                      // #ifndef NON_GEO //WW
 public:
 	void constructMeshGrid();
 private:

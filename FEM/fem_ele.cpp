@@ -86,7 +86,7 @@ CElement::CElement(int CoordFlag, const int order)
 		break;
 	}
 	time_unit_factor = 1.0;
-#ifndef NON_PROCESS                         // 04.03.2010 WW
+
 	if(M_Process)
 		D_Flag = 4;
 	if(MH_Process)
@@ -97,7 +97,6 @@ CElement::CElement(int CoordFlag, const int order)
 	PT_Flag = 0;                          // PCH Initialize to be no RWPT.
 	RD_Flag = RD_Process;
 	MCF_Flag = MULTI_COMPONENTIAL_FLOW_Process;
-#endif
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	idxm = NULL;  //> global indices of local matrix rows 
@@ -413,7 +412,6 @@ double CElement::interpolate(double* nodalVal, const int order) const
 	return val;
 }
 
-#ifndef NON_PROCESS                            // 04.03.2010 WW
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -438,7 +436,7 @@ double CElement::interpolate(const int idx, CRFProcess* m_pcs, const int order)
 	for(int i = 0; i < nn; i++)
 		val += node_val[i] * inTerpo[i];
 	return val;
-}
+} 
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -461,7 +459,7 @@ double CElement::elemnt_average (const int idx, CRFProcess* m_pcs, const int ord
 		node_val[i] = m_pcs->GetNodeValue(nodes[i], idx);
 	return val / (double)nn;
 }
-#endif
+
 
 /**************************************************************************
    The generalized Jacobian caculation

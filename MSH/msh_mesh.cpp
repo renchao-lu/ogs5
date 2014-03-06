@@ -12,9 +12,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#ifndef NON_GEO                                   //WW
+
 #include "gs_project.h"
-#endif                                            //#ifndef NON_GEO
 
 // BaseLib
 #include "Histogram.h"
@@ -1203,22 +1202,18 @@ void CFEMesh::GenerateHighOrderNodes()
 void CFEMesh::FillTransformMatrix()
 {
 	CElem* elem = NULL;
-#ifndef NON_PROCESS                         //05.01.2011. WW
 	// PCH
 	CRFProcess* m_pcs = PCSGet("FLUID_MOMENTUM");
-#endif                                      //#ifndef NON_PROCESS
 	//
 	if ((_msh_n_hexs + _msh_n_tets + _msh_n_prisms + _msh_n_pyras)
 	    == ele_vector.size())
 		return;
 	else if (coordinate_system != 32 && !this->has_multi_dim_ele)
 	{
-#ifndef NON_PROCESS                      //05.01.2011. WW
 		if (m_pcs)
 			;  // Need to do FillTransformMatrix	// PCH
 		else
 			return;
-#endif                                   //#ifndef NON_PROCESS
 	}
 	bool tilted = false;
 	if (coordinate_system == 32 || coordinate_system == 21 || coordinate_system
@@ -1368,7 +1363,6 @@ void CFEMesh::RenumberNodesForGlobalAssembly()
    }
  */
 
-#ifndef NON_GEO
 /**************************************************************************
    FEMLib-Method:
    Task: Ermittelt den nahliegenden existierenden Knoten
@@ -2624,7 +2618,6 @@ void CFEMesh::GetNODOnSFC_PLY_Z(Surface* m_sfc,std::vector<long>&msh_nod_vector)
 		break;
 	}
 }
-#endif                                         //WW#ifndef NON_GEO
 /**************************************************************************
    GeoSys-Method:
    Task:
@@ -3217,7 +3210,6 @@ void CFEMesh::SetNetworkIntersectionNodes()
 	//      }
 }
 
-#ifndef NON_PROCESS                            // 05.03.2010 WW
 #ifdef NEW_EQS                                 // 1.11.2007 WW
 /**************************************************************************
    MSHLib-Method:
@@ -3256,8 +3248,7 @@ void CFEMesh::CreateSparseTable()
 	//ofstream Dum("sparse.txt", ios::out);
 	//sparse_graph_H->Write(Dum);
 }
-#endif                                         //#ifndef NON_PROCESS  // 05.03.2010 WW
-#endif
+#endif        //#ifndef NEW_EQS  // 05.03.2010 WW
 
 //---------------------------------------------------------------------------
 /*!
