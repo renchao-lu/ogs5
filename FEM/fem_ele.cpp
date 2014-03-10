@@ -266,6 +266,44 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 			Y[i] = coords[1];
 			Z[i] = coords[2];
 		}
+
+
+#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
+   if(!FaceIntegration)
+   {
+	//int dof_p_node = pcs->pcs_number_of_primary_nvals;
+        //if(pcs->GetContinnumType() == 1)
+	// dof_p_node = 1;
+
+	//int i_buff = 0;
+        if(MeshElement->g_index) // ghost nodes pcs->pcs_number_of_primary_nvals
+	  {
+	    act_nodes = MeshElement->g_index[0];
+	    act_nodes_h = MeshElement->g_index[1];
+
+	    for(i = 0; i < act_nodes_h; i++)
+	      {
+		local_idx[i] = MeshElement->g_index[i+2];
+	      }
+	  }
+	else
+	  {
+	    act_nodes = nnodes;
+	    act_nodes_h = nnodesHQ;
+	    for(i = 0; i < act_nodes_h; i++)
+	      {
+		local_idx[i] = i;
+	      }
+	  }
+
+
+	//i_buff = nn*nn;
+	//for(i = 0; i < i_buff; i++)
+	//  local_matrix[i] = 0.;
+	// If deformation related
+   }
+#endif
+
 }
 
 /**************************************************************************

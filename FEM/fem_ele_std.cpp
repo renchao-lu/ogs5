@@ -1451,7 +1451,7 @@ void CFiniteElementStd::CalNodalEnthalpy()
 **************************************************************************/
 double CFiniteElementStd::CalCoefMass()
 {
-    int Index = MeshElement->GetIndex();
+	int Index = MeshElement->GetIndex();
 	double val = 0.0;
 	double humi = 1.0;
 	double rhov = 0.0;
@@ -1461,11 +1461,10 @@ double CFiniteElementStd::CalCoefMass()
 	double saturation = 0.0;              // SB, BG
 	CompProperties* m_cp = NULL;
 	double drho_dp_rho=0.0;                  // drho/dp * 1/rho 
-		
-		if(pcs->m_num->ele_mass_lumping)
-		  ComputeShapefct(1);
 
- switch(PcsType)
+	if(pcs->m_num->ele_mass_lumping)
+		ComputeShapefct(1);
+	switch(PcsType)
 	{
 	default:
 		std::cout << "Fatal error in CalCoefMass: No valid PCS type" << "\n";
@@ -1492,15 +1491,14 @@ double CFiniteElementStd::CalCoefMass()
 		// Se = 1/M = poro/Kf + (alpha-poro)/Ks    ::    Cf = 1/Kf = 1/rho * drho/dp    ::    alpha = 1 - K/Ks
 		// Second term (of Se) below vanishes for incompressible grains
 		//WW if(D_Flag > 0  && rho_val > MKleinsteZahl)
-           if(dm_pcs  && MediaProp->storage_model == 7) // Add MediaProp->storage_model.  29.09.2011. WW
+        if(dm_pcs  && MediaProp->storage_model == 7) // Add MediaProp->storage_model.  29.09.2011. WW
 		{
 			biot_val = SolidProp->biot_const;
 			poro_val = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			val = 0.;//WX:04.2013
-	  
 
 			//WW if(SolidProp->K == 0) //WX: if HM Partitioned, K still 0 here
-               if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
+            if(fabs(SolidProp->K)<DBL_MIN) //WW 29.09.2011  
 			{
 				if(SolidProp->Youngs_mode<10||SolidProp->Youngs_mode>13)//JM,WX: 2013
 				SolidProp->K = SolidProp->E / 3 / (1 - 2 * SolidProp->PoissonRatio);
@@ -1666,7 +1664,7 @@ double CFiniteElementStd::CalCoefMass()
 			val += poro  * Sw * drho_dp_rho;
 		// Capillarity
 		 if(PG<0.0) // dSdp gives always a value>0, even if p>0!
-		  val += poro * dSdp;
+		val += poro * dSdp;
 		//WW
 		if(MediaProp->heat_diffusion_model == 1)
 		{
@@ -1844,7 +1842,6 @@ double CFiniteElementStd::CalCoefMassTNEQ(int dof_index)
 		{
 		case 0:
 		{
-
 		eos_arg[0] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1); //NW include theta
 		val=poro/eos_arg[0];
 
@@ -3820,7 +3817,7 @@ double CFiniteElementStd::CalCoefAdvection()
 		k_rel = MediaProp->NonlinearFlowFunction(Index, gp, pcs->m_num->ls_theta, this);
 		val = 1.0;
 #ifdef GAS_MASS_FORM
-		val = FluidProp->Density(eos_arg); //Moved here from CalcLaplace();
+		val = FluidProp->Density(eos_arg); //Moved here from CalcLaplace(); 
 #endif
 		val /= FluidProp->Viscosity(eos_arg);//Moved here from inside dim*dim loop
 
@@ -7859,7 +7856,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
          CalcAdvectionMCF();
          CalcContentMCF();
       }
-      if (PcsType==N) {
+      if (PcsType==N) {                              //AKS/NB
          CalcAdvectionTNEQ();
          CalcContentTNEQ();
       }
@@ -10538,6 +10535,7 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		//val = 0.0;
 		val = (1.0-poro)*q_r*H_vap;
 		val += gp_ele->rho_s_curr[gp]*(1.0-poro)*SolidProp->specific_heat_source;
+
 		if (MediaProp->getFrictionPhase() == FiniteElement::SOLID) {
 			// HS, implementing the friction term here. 
 			double * grad_pg; // gradient of gas pressure. 
@@ -11059,7 +11057,7 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
 			 if(FluidProp->drho_dT_unsaturated) 
 			    Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);  
 			 else
-                alpha_T_l=alpha_T_s =0.0;
+                alpha_T_l = alpha_T_s = 0.0;
 		  }
 		}
         const double eff_thermal_expansion = (SolidProp->biot_const-poro)*alpha_T_s + poro*Sw*alpha_T_l;

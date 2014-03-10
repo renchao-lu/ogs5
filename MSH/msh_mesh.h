@@ -80,7 +80,7 @@ public:
 #if defined(USE_PETSC) // || defined(using other parallel scheme)
 typedef struct
 {
-  int index;
+  long index;
   double x;
   double y;
   double z;
@@ -191,14 +191,14 @@ public:
            @param header  : mesh header
            @param s_nodes : mesh nodes
 	*/
-	void setSubdomainNodes(int *header, const MeshNodes *s_nodes);
+	void setSubdomainNodes(long *header, const MeshNodes *s_nodes);
 	/*!
 	   Fill data for subdomain mesh
            @param header    : mesh header
            @param elem_info : element information
            @param inside    : indicator for elements that are inside the subdomain
 	*/
-	void setSubdomainElements(int *header, const int *elem_info, const bool inside);
+	void setSubdomainElements(long *header, const long *elem_info, const bool inside);
 	int calMaximumConnectedNodes();
         /// Get number of nodes of the entire mesh       
         int getNumNodesGlobal() const
@@ -220,15 +220,6 @@ public:
         {
 	   return loc_NodesNumber_Quadratic; 
         }
-        
-        size_t NodesInUsagePETSC() const
-	{
-		if (useQuadratic)
-			return loc_NodesNumber_Quadratic;
-		else
-			return loc_NodesNumber_Linear;
-	}
-
 #endif
 
 	//
@@ -310,11 +301,11 @@ public:
 	/**
 	 * \brief depreciated method
 	 */
-	void GetNODOnSFC(Surface*, std::vector<long>&);
+	void GetNODOnSFC(Surface* m_sfc, std::vector<long>&msh_nod_vector,  const bool for_s_term = false);
 	/**
 	 * \brief depreciated method
 	 */
-	void GetNODOnSFC_PLY(Surface const*, std::vector<long>&) const;
+	void GetNODOnSFC_PLY(Surface const* m_sfc, std::vector<long>&msh_nod_vector,  const bool for_s_term = false) const;
 	/**
 	 * \brief depreciated method
 	 */
@@ -355,7 +346,7 @@ public:
 	 * @param msh_nod_vector the mesh node indices are saved in this vector
 	 * */
 	void GetNODOnPLY(const GEOLIB::Polyline* const ply,
-	                 std::vector<size_t>& msh_nod_vector);
+	                 std::vector<size_t>& msh_nod_vector, const bool for_s_term = false);
 
 	/**
 	 *
@@ -375,7 +366,7 @@ public:
 	/**
 	 * GetNODOnPLY search the nearest nodes to the Polyline
 	 * */
-	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector);
+	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector, const bool for_s_term = false);
 
 	/**
 	 * \brief gives the indices of CElement elements, which have an edge
@@ -386,7 +377,7 @@ public:
 	/**
 	 * \brief gives the indices of nodes, which are contained in the surface
 	 */
-	void GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector) const;
+	void GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector, const bool for_s_term = false) const;
 
 	/** @} */  // close doxygen group
 
