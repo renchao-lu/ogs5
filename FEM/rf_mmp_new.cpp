@@ -1564,8 +1564,8 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				}
 				break;
 			case 10:     // unconfined 3D GW. 5.3.07 JOD
-				in >> capillary_pressure_values[0]; // Pb
 				in >> capillary_pressure_values[1]; // Slr
+				in >> capillary_pressure_values[0]; // Pb
 				break;
 			default:
 				ScreenMessage("Error in MMPRead: no valid capillary pressure model.\n");
@@ -2460,15 +2460,19 @@ double CMediumProperties::PermeabilitySaturationFunction(const double wetting_sa
 			break;
 		//
 		case 10: // for unconfined 3D GW 5.3.07 JOD
+			//MW correct function. did only get constants before
+			/*
 			b = capillary_pressure_values[0];
 			slr = capillary_pressure_values[1];
-			if(sl > 0) {
+			if(sl > 0 && sl < 1) {
 			  kr = max(0., 1 - (sl / b));
 			  kr = pow(kr, 2* (1 - kr));    //
 			  kr = slr  + (1 - slr) * kr;
 			}
 			else
 			  kr = 1;
+			*/
+			kr = sl;
 			break;
 		case 33: // FUNCTION: LINEAR OR POWER --> NON-WETTING krg = (b*(1-Se))^m
 			slr = 1.0 - maximum_saturation[phase];  // slr = 1.0 - sgm
@@ -5113,14 +5117,15 @@ double CMediumProperties::SaturationCapillaryPressureFunction(const double capil
 			sl = MRange(slr+DBL_EPSILON,sl,slm-DBL_EPSILON);
 			break;
 		case 10: //  unconfined 3D GW.  5.3.07 JOD
-			/*pb = capillary_pressure_values[0];
+			//MW: remove comment to provide variables, not constants to PermeabilitySaturationFunction
+			pb = capillary_pressure_values[0];
 			slr = capillary_pressure_values[1];
 			if(pc > 0) {
 			  sl = max(0., 1 - (pc / pb));
-			  sl = pow(sl, 2* (1 - sl));    //
+			  sl = pow(sl, 2* (1 - sl));
 			  sl = slr  + (1 - slr) * sl;
 			}
-			else*/
+			else
 			  sl = 1;
 			break;
 	}
