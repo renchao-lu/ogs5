@@ -3156,7 +3156,7 @@ int REACT_GEM::CalcReactionRate ( long in, double temp,  TNode* m_Node )
 				dmdt[in * nPH + k] = 0.0; // no change!
 			}
 			// calculate max kinetic time step
-			if ( fabs(dmdt[in * nPH + k] > 0.0) && fabs(m_xDC[in * nDC + j]) > 0.0)
+			if ( fabs(dmdt[in * nPH + k]) > 0.0 && fabs(m_xDC[in * nDC + j]) > 0.0)
 			{
 				rwmutex.lock(); //
 				max_kinetic_timestep =
