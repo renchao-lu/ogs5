@@ -151,7 +151,7 @@ IF(NOT OGS_FEM_GEMS)
 	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
 ELSE()
 	# Boost with threads is required for GEMS
-	FIND_PACKAGE(Boost 1.50.0 COMPONENTS thread REQUIRED)
+	FIND_PACKAGE(Boost 1.50.0 COMPONENTS system thread REQUIRED)
         MESSAGE(STATUS "** Boost root: ${BOOST_ROOT}")
         MESSAGE(STATUS "** Boost include: ${Boost_INCLUDE_DIR}")
         MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARY_DIRS}")
