@@ -142,9 +142,10 @@ MARK_AS_ADVANCED(CMAKE_THREAD_PREFER_PTHREAD)
 
 ## boost (see FindBoost.cmake for more options) ##
 ##kg44 this configuration works for boost and petsc on a cray
-set(Boost_USE_STATIC_LIBS    ON)
-set(Boost_USE_MULTITHREADED  ON)
-set(Boost_USE_STATIC_RUNTIME ON)
+OPTION(Boost_USE_STATIC_LIBS "" ON)
+OPTION(Boost_USE_MULTITHREADED "" ON)
+OPTION(Boost_USE_STATIC_RUNTIME "" ON)
+MARK_AS_ADVANCED(Boost_USE_STATIC_LIBS Boost_USE_MULTITHREADED Boost_USE_STATIC_RUNTIME)
 
 IF(NOT OGS_FEM_GEMS)
 	FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
