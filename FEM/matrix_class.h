@@ -41,30 +41,71 @@ public:
 	void ReleaseMemory();                 //06.2010. WW
 
 	// Operators
-	virtual void operator= (double a);
-	virtual void operator*= (double a);
-	virtual void operator/= (double a);
-	virtual void operator+= (double a);
-	void operator= (const Matrix& m);
-	void operator+= (const Matrix& m);
-	void operator-= (const Matrix& m);
+	virtual inline void operator= (double a)
+	{
+	   for(size_t i = 0; i < size; i++)
+		  data[i] = a;
+	}
+	virtual inline void operator*= (double a)
+	{
+	   for(size_t i = 0; i < size; i++)
+		  data[i] *= a;
+	}
+
+	virtual inline void operator/= (double a)
+	{
+	   for(size_t i = 0; i < size; i++)
+		  data[i] /= a;
+	}
+
+	virtual inline void operator+= (double a)
+	{
+	    for(size_t i = 0; i < size; i++)
+		  data[i] += a;
+	}
+
+	virtual inline void operator= (const Matrix& m)
+	{
+        const double *m_data = m.getEntryArray_const() ; 
+	    for(size_t i = 0; i < size; i++)
+		  data[i] = m_data[i];
+	}
+
+	virtual inline void operator+= (const Matrix& m)
+	{
+        const double *m_data = m.getEntryArray_const() ; 
+	    for(size_t i = 0; i < size; i++)
+		  data[i] += m_data[i];
+	}
+
+	virtual inline void operator-= (const Matrix& m)
+	{
+        const double *m_data = m.getEntryArray_const() ; 
+	    for(size_t i = 0; i < size; i++)
+		  data[i] -= m_data[i];
+	}
 
 	void GetTranspose(Matrix& m);
 
-        double *getEntryArray() 
-        {
-          return data;
-        }
+     double *getEntryArray() 
+     {
+         return data;
+     }
 
-	// vec_result = This*vec. vec_result must be initialized
-	void multi(const double* vec, double* vec_result, double fac = 1.0);
-	// m_result = this*m. m_result must be initialized
-	void multi(const Matrix& m, Matrix& m_result, double fac = 1.0);
-	// m_result = this*m1*m2. m_result must be initialized
-	void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
+	 double *getEntryArray_const() const
+     {
+        return data;
+     }
+
+	// vec_result = This*vec. vec_result must be initialized.
+	virtual void multi(const double* vec, double* vec_result, double fac = 1.0);
+	// m_result = this*m. m_result must be initialized.
+	virtual void multi(const Matrix& m, Matrix& m_result, double fac = 1.0);
+	// m_result = this*m1*m2. m_result must be initialized.To be removed
+	virtual void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
 
 	// Access to members
-	virtual double& operator() (size_t i, size_t j = 0) const;
+	virtual double& operator() (const size_t i, const size_t j = 0) const;
 	void LimitSize(size_t nRows, size_t nCols = 1);
 
 	size_t Rows() const {return nrows; }
@@ -80,7 +121,6 @@ protected:
 	size_t ncols, ncols0;
 	size_t size;
 	double* data;
-	bool Sym;
 };
 
 // Symmetrical matrix. 12-01-2005. WW
@@ -94,17 +134,65 @@ public:
 	void resize(size_t dim);
 	~SymMatrix() {}
 
-	// Operators
-	void operator= (double a);
-	void operator*= (double a);
-	void operator+= (double a);
-	void operator= (const SymMatrix& m);
-	void operator+= (const SymMatrix& m);
-	void operator-= (const SymMatrix& m);
-	void LimitSize(size_t dim);
+	// Forwarded operators
+	virtual inline void operator= (double a)
+	{
+	   return Matrix::operator=(a);
+	}
+	virtual inline void operator*= (double a)
+	{
+	   return Matrix::operator*=(a);
+	}
+
+	virtual inline void operator/= (double a)
+	{
+	   return Matrix::operator/=(a);
+	}
+
+	virtual inline void operator+= (double a)
+	{
+	   return Matrix::operator+=(a);
+	}
+
+	virtual inline void operator= (const Matrix& m)
+	{
+	   return Matrix::operator=(m);
+	}
+
+	virtual inline void operator+= (const Matrix& m)
+	{
+	   return Matrix::operator+=(m);
+	}
+
+	virtual inline void operator-= (const Matrix& m)
+	{
+	   return Matrix::operator-=(m);
+	}
+
+	// Access the element
+    virtual inline double& SymMatrix::operator() (const size_t i, const size_t j) const
+    {
+	    	return data[getArrayIndex(i, j)];
+    }
 
 	// Access to members
-	double& operator() (size_t i, size_t j) const;
+	void LimitSize(size_t dim);
+
+	// vec_result = This*vec. vec_result must be initialized
+	virtual void multi(const double* vec, double* vec_result, double fac = 1.0);
+	// m_result = this*m. m_result must be initialized
+	virtual void multi(const Matrix& m, Matrix& m_result, double fac = 1.0);
+	// m_result = this*m1*m2. m_result must be initialized
+	virtual void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
+
+	inline size_t getArrayIndex(const size_t i, const size_t j)  const    
+    {
+     	if(i >= j)
+	    	return static_cast<size_t>(i * (i + 1) / 2) + j;
+	   else
+		   return static_cast<size_t>(j * (j + 1) / 2) + i;
+    }
+
 };
 
 class DiagonalMatrix : public Matrix
@@ -120,18 +208,64 @@ public:
 
 	~DiagonalMatrix() {}
 
-	// Operators
-	void operator = (double a);
-	void operator *= (double a);
-	void operator += (double a);
-	void operator = (const DiagonalMatrix& m);
-	void operator += (const DiagonalMatrix& m);
-	void operator -= (const DiagonalMatrix& m);
+	// Forwarded operators
+	virtual inline void operator= (double a)
+	{
+	   return Matrix::operator=(a);
+	}
+	virtual inline void operator*= (double a)
+	{
+	   return Matrix::operator*=(a);
+	}
+
+	virtual inline void operator+= (double a)
+	{
+	   return Matrix::operator+=(a);
+	}
+
+	virtual inline void operator= (const Matrix& m)
+	{
+	   return Matrix::operator=(m);
+	}
+
+	virtual inline void operator+= (const Matrix& m)
+	{
+	   return Matrix::operator+=(m);
+	}
+
+	virtual inline void operator-= (const Matrix& m)
+	{
+	   return Matrix::operator-=(m);
+	}
+
 	void LimitSize(size_t dim);
 
 	// Access to members
-	double& operator() (size_t i, size_t j) const;
-	double& operator() (size_t i) const;
+	double& operator() (const size_t i, const size_t j) const;
+	double& operator() (const size_t i) const;
+
+	// vec_result = This*vec. vec_result must be initialized
+	virtual void multi(const double* vec, double* vec_result, double fac = 1.0)
+	{
+		(void)vec;
+		(void)vec_result;
+		(void)fac;
+	}
+	// m_result = this*m. m_result must be initialized
+	virtual void multi(const Matrix& m, Matrix& m_result, double fac = 1.0)
+	{
+		(void)m;
+		(void)m_result;
+		(void)fac;
+	}
+	// m_result = this*m1*m2. m_result must be initialized
+	virtual void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
+	{
+		(void)m1;
+		(void)m2;
+		(void)m_result;
+	}
+
 };
 
 typedef Matrix Vec;
