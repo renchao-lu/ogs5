@@ -92,14 +92,14 @@ void Matrix::GetTranspose(Matrix& m)
     double *m_data = m.getEntryArray();
     const size_t mrows = m.Rows();
     const size_t mcols = m.Cols();
-	for(size_t i = 0; i < mrows; i++)
-	{
+    for(size_t i = 0; i < mrows; i++)
+    {
         double *row_m_data = &m_data[i * mcols] ;
-		for(size_t j = 0; j < mcols; j++)
-		{
+        for(size_t j = 0; j < mcols; j++)
+        {
             row_m_data[j] = data[j*ncols+i];
-		}
-	}
+        }
+    }
 }
 
 // m_results = this*m. m_results must be initialized
@@ -161,16 +161,16 @@ void Matrix::multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
 // vec_result = This*vec. vec_result must be  initialized
 void Matrix::multi(const double* vec, double* vec_result, double fac)
 {
-	for(size_t  i = 0; i < nrows; i++)
-	{
+    for(size_t  i = 0; i < nrows; i++)
+    {
         double val = 0.; 
         const double *row_data = &data[i * ncols] ;
 		for(size_t j = 0; j < ncols; j++)
-		{
-			val += row_data[j] * vec[j];
-		}
+        {
+            val += row_data[j] * vec[j];
+        }
         vec_result[i] += fac * val;
-	}
+    }
 }
 
 double& Matrix::operator() (size_t i, size_t j) const
