@@ -121,17 +121,17 @@ void Matrix::multi(const Matrix& m, Matrix& m_result, double fac)
 
 	for(size_t i = 0; i < r_rows; i++)
 	{
-        const size_t row_offset_r = i * r_cols; 
         const double *row_data = &data[i * ncols] ;
+        double *r_row_data = &r_data[i * r_cols] ;
 		for(size_t j = 0; j < r_cols; j++)
 		{
-			// r_data[row_offset_r + j] = 0.0;
+			// r_row_data[j] = 0.0;
             double val = 0.;
 			for(size_t k = 0; k < ncols; k++)
 			{
                 val += row_data[k] * m_data[k*mcols + j];
 			}
-            r_data[row_offset_r + j] += val * fac;
+            r_row_data[j] += val * fac;
 		}
 	}
 }
@@ -376,13 +376,13 @@ void SymMatrix::multi(const double* vec, double* vec_result, double fac)
 	for(size_t  i = 0; i < nrows; i++)
 	{
         double val = 0.; 
-        const size_t row_offset_r = static_cast<size_t>(i * (i + 1) / 2); 
-        const double *row_data = &data[row_offset_r] ;
 
+		const double *row_data = &data[static_cast<size_t>(i * (i + 1) / 2)] ;
 		for(size_t j = 0; j <= i; j++)
 		{
-			val += row_data[row_offset_r + j] * vec[j];
+			val += row_data[j] * vec[j];
 		}
+
 		for(size_t j = i+1; j <= ncols; j++)
 		{
 			val += data[static_cast<size_t>(j * (j + 1) / 2) + i] * vec[j];

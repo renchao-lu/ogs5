@@ -5,6 +5,7 @@
    Function:   See the declaration below
    Design and programm WW
    03/2010 some improvements TF
+   03/2014 Rewritten A*B and A*x functions WW
    ==========================================================================*/
 #ifndef matrix_class_INC
 #define matrix_class_INC
@@ -106,6 +107,13 @@ public:
 
 	// Access to members
 	virtual double& operator() (const size_t i, const size_t j = 0) const;
+
+    // Operator: set or get an entry of the raw data array. 03.2014. WW
+    double& operator[] (const size_t i) const
+    {
+        return data[i];
+    }
+
 	void LimitSize(size_t nRows, size_t nCols = 1);
 
 	size_t Rows() const {return nrows; }
