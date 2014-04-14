@@ -3721,7 +3721,7 @@ double CFiniteElementStd::CalCoefAdvection()
 
        // heat in gas
        case 4:
-           val = 0.0;
+           val = 0.0;//-phi_g^-1 * grad phi_g
            break;
        case 5:
            val = MediaProp->HeatTransferCoefficient(Index, pcs->m_num->ls_theta, this);
@@ -7757,9 +7757,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	long i_sh;
 	double relax0, relax1, pcs_time_step, dt_inverse;
 	long dm_shift = 0, cshift = 0;        //WW 05.01.07
-	bool H2_mono = false; // 15. 07.2011. WW
-	if(PcsType == V || PcsType == P || PcsType == S || PcsType == N) //TN DO I NEED IT
-		H2_mono = true;
+
 	//
 	// JT2012: Get the time step of this process! Now dt can be independently controlled.
 	pcs_time_step = pcs->Tim->time_step_length;
@@ -7792,7 +7790,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//----------------------------------------------------------------------
 	// Initialize.
 	// if (pcs->Memory_Type==2) skip the these initialization
-	if(H2_mono)
+	if(PcsType == V || PcsType == P || PcsType == S || PcsType == N)
 		(*Mass2) = 0.0;
 	else
 		(*Mass) = 0.0;
@@ -7884,7 +7882,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//Mass matrix
 	if(pcs->PartialPS != 1)               // PCH if not partial-pressure-based
 	{
-		if(H2_mono)
+		if(PcsType == V || PcsType == P || PcsType == S || PcsType == N)
 			*StiffMatrix    = *Mass2;
 		else
 			*StiffMatrix    = *Mass;
@@ -8103,7 +8101,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	}
 
 	//
-	if(H2_mono)
+	if(PcsType == V || PcsType == P || PcsType == S || PcsType == N)
 		{
 		int nDF = 2;
 		if(PcsType == S || PcsType == N) nDF=pcs->dof;

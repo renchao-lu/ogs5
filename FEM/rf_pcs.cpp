@@ -721,13 +721,14 @@ void CRFProcess::Create()
 #ifdef USE_MPI
      eqs_new = EQS_Vector[eqs_num * k];
 #else
-     if(getProcessType() == FiniteElement::MULTI_PHASE_FLOW || getProcessType() == FiniteElement::PS_GLOBAL)
+     if(getProcessType() == FiniteElement::MULTI_PHASE_FLOW || getProcessType() == FiniteElement::PS_GLOBAL || getProcessType() == FiniteElement::TNEQ)
 	 {
 	   eqs_new = EQS_Vector[eqs_num * k + 2 ];
      }
 	 else
 	 {
 	   eqs_new = EQS_Vector[eqs_num * k];
+	   eqs_new = EQS_Vector[2];
 	 }
 #endif
    } //WW 02.2013. Pardiso
