@@ -728,7 +728,6 @@ void CRFProcess::Create()
 	 else
 	 {
 	   eqs_new = EQS_Vector[eqs_num * k];
-	   eqs_new = EQS_Vector[2];
 	 }
 #endif
    } //WW 02.2013. Pardiso
@@ -5667,9 +5666,13 @@ void CRFProcess::CalIntegrationPointValue()
 			fem->ConfigElement(elem);
 			fem->Config(); //OK4709
 			// fem->m_dom = NULL; // To be used for parallization
-			if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW) fem->Cal_VelocityMCF();
+			if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW)
+				fem->Cal_VelocityMCF();
 			else 
-			fem->Cal_Velocity();
+				fem->Cal_Velocity();
+			//moved here from additional lower loop
+			if (getProcessType() == FiniteElement::TNEQ)
+				fem->CalcSolidDensityRate(); // HS, thermal storage reactions
 		}
 	}
    } else { //NW
@@ -5711,19 +5714,19 @@ void CRFProcess::CalIntegrationPointValue()
        std::cout << "  Local Picard iteration: itr. count = " << i_itr << "/" << v_itr_max << ", error(max. norm)=" << vel_error << std::endl;
    }
 
-    if (getProcessType() == FiniteElement::TNEQ) {
-        const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
-        for (size_t i = 0; i < mesh_ele_vector_size; i++)
-        {
-            elem = m_msh->ele_vector[i];
-            if (elem->GetMark())                        // Marked for use
-            {
-                fem->ConfigElement(elem);
-                fem->Config();                
-		        fem->CalcSolidDensityRate(); // HS, thermal storage reactions
-            }
-        }
-    }
+    //if (getProcessType() == FiniteElement::TNEQ) {
+    //    const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
+    //    for (size_t i = 0; i < mesh_ele_vector_size; i++)
+    //    {
+    //        elem = m_msh->ele_vector[i];
+    //        if (elem->GetMark())                        // Marked for use
+    //        {
+    //            fem->ConfigElement(elem);
+    //            fem->Config();                
+		  //      fem->CalcSolidDensityRate(); // HS, thermal storage reactions
+    //        }
+    //    }
+    //}
 
 
 	//	if (_pcs_type_name.find("TWO_PHASE_FLOW") != string::npos) //WW/CB
