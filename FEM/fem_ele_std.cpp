@@ -7730,7 +7730,7 @@ void CFiniteElementStd::AssembleRHS(int dimension)
 	  {
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	  //TODO
-#elif NEW_EQS                        //WW
+#elif defined(NEW_EQS)                        //WW
 		m_pcs->eqs_new->b[eqs_number[i]] += NodalVal[i];
 #else
 		m_pcs->eqs->b[eqs_number[i]] += NodalVal[i];
@@ -9138,7 +9138,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 					{
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	  //TODO
-#elif NEW_EQS
+#elif defined(NEW_EQS)
 						(*A)(i_sh + eqs_number[i], j_sh + eqs_number[j]) += \
 						        (*Mass)(i + ii_sh,j + jj_sh);
 #else
@@ -9161,7 +9161,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 			{
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 			  //TODO
-#elif NEW_EQS
+#elif defined(NEW_EQS)
 				(*A)(cshift + eqs_number[i], cshift + eqs_number[j]) += \
 				        (*Mass)(i,j);
 #else
@@ -9604,7 +9604,7 @@ void CFiniteElementStd::Assembly(int option, int dimension)
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	//TODO
-#elif NEW_EQS                              //PCH
+#elif defined(NEW_EQS)                              //PCH
 	eqs_rhs = pcs->eqs_new->b;
 #else
 	eqs_rhs = pcs->eqs->b;
@@ -11758,7 +11758,7 @@ void CFiniteElementStd::AssembleRHSVector()
 		//CB 04008
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	  // TODO
-#elif NEW_EQS
+#elif defined(NEW_EQS)
 		pcs->eqs_new->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
 #else
 		pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
@@ -11836,7 +11836,7 @@ void CFiniteElementStd::AssembleCapillaryEffect()
 		//CB 04008
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	  //TODO
-#elif NEW_EQS
+#elif defined(NEW_EQS)
 		pcs->eqs_new->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
 #else
 		pcs->eqs->b[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
