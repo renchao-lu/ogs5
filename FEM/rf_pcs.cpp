@@ -812,8 +812,8 @@ void CRFProcess::Create()
 		Tim->pcs_type_name = pcs_type_name;
 		time_vector.push_back(Tim); //21.08.2008. WW
 	}
-	if(Tim->time_control_name == "NONE" && Tim->time_step_vector.size() > 0)
-		Tim->time_control_name = "STEPS";
+	if(Tim->time_control_type == TimeControlType::INVALID && Tim->time_step_vector.size() > 0)
+		Tim->time_control_type = TimeControlType::FIXED_STEPS;
 	//
 	if (Tim->time_unit.find("MINUTE") != std::string::npos)
 		time_unit_factor = 60.0;
@@ -5473,7 +5473,7 @@ void CRFProcess::GlobalAssembly()
 					fem->ConfigElement(elem, Check2D3D);
 					fem->Assembly();
 					// NEUMANN CONTROL---------
-					if (Tim->time_control_name.compare("NEUMANN") == 0)
+					if (Tim->time_control_type == TimeControlType::NEUMANN)
 					{
 						Tim->time_step_length_neumann = MMin(
 						        Tim->time_step_length_neumann, timebuffer);

@@ -14,6 +14,7 @@
 //#include <string>
 //#include <vector>
 #include "makros.h" // JT2012
+#include "FEMEnums.h"
 // kg44 this is to synchronize time step size  for PETSC
 #if defined(USE_PETSC)
 #include "PETSC/PETScLinearSolver.h"
@@ -82,7 +83,7 @@ public:
 	std::string pcs_type_name;            //OK
 	// NUM
 	std::string time_type_name;           //OK
-	std::string time_control_name;
+	TimeControlType::type time_control_type;
 	std::string time_unit;                //WW
 	double iter_times;                    //YD
 	double multiply_coef;                 //YD
