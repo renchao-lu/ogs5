@@ -1139,7 +1139,7 @@ void Problem::Euler_TimeDiscretize()
     {
 		m_tim = total_processes[active_process_index[i]]->Tim;
 		std::cout << "\nFor process: " << convertProcessTypeToString(total_processes[active_process_index[i]]->getProcessType()) << "\n";
-		if(m_tim->time_control_name == "NONE"){
+		if(m_tim->time_control_type == TimeControlType::FIXED_STEPS){
 			std::cout << "No time control for this process." << "\n";
 		}
 		else{

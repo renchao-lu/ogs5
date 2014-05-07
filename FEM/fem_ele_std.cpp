@@ -7860,7 +7860,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
       }
 	if(RD_Flag)                           //YD /WW
 		Assemble_DualTransfer();
-	if(pcs->Tim->time_control_name.find("NEUMANN") != string::npos)
+	if(pcs->Tim->time_control_type == TimeControlType::NEUMANN)
 		pcs->timebuffer /= mat[0];  //YD
 	//======================================================================
 	// Assemble global matrix
