@@ -28,7 +28,7 @@ class CPARDomain;
 
 namespace Math_Group
 {
-
+class SymMatrix;
 class Matrix
 {
 public:
@@ -64,6 +64,8 @@ public:
 	    for(size_t i = 0; i < size; i++)
 		  data[i] += a;
 	}
+
+	//void operator= (const SymMatrix& m);
 
 	virtual inline void operator= (const Matrix& m)
 	{
@@ -136,7 +138,7 @@ class SymMatrix : public Matrix
 {
 public:
 	SymMatrix(size_t dim);
-	SymMatrix();
+	SymMatrix() : Matrix() { }
 	explicit SymMatrix(const SymMatrix& m);
 
 	void resize(size_t dim);
@@ -188,9 +190,9 @@ public:
 
 	// vec_result = This*vec. vec_result must be initialized
 	virtual void multi(const double* vec, double* vec_result, double fac = 1.0);
-	// m_result = this*m. m_result must be initialized
+	// m_result = this*m. m_result must be initialized. m_result must be a full stored matrix
 	virtual void multi(const Matrix& m, Matrix& m_result, double fac = 1.0);
-	// m_result = this*m1*m2. m_result must be initialized
+	// m_result = this*m1*m2. m_result must be initialized.  m_result must be a full stored matrix
 	virtual void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result);
 
 	inline size_t getArrayIndex(const size_t i, const size_t j)  const    

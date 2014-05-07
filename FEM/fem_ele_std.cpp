@@ -1969,7 +1969,7 @@ void CFiniteElementStd::CalCoefMassMCF()
 	for(in = 0; in<nDF; in++)
 	{
 		arg_PV[in] = interpolate(NodalValue[in]);
-		std::cout << "NB-debug: " << arg_PV[in] << "\n";
+//WW		std::cout << "NB-debug: " << arg_PV[in] << "\n";
 	}
 
 	rho = FluidProp->Density(arg_PV);

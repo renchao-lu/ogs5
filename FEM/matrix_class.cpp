@@ -78,6 +78,28 @@ void Matrix::ReleaseMemory()
 	data = NULL;
 }
 
+/*
+void Matrix::operator= (const SymMatrix& m)
+{
+    const double *m_data = m.getEntryArray_const();
+
+    for(size_t i = 0; i < nrows; i++)
+    {
+        double *row_data = &data[i * ncols] ;
+        const double *row_data_m = &data[(i * (i + 1) / 2)] ;
+           
+        // diagonal 
+        row_data[i] = row_data_m[i];
+
+        for(size_t j = 0; j<ncols; j++)
+        {
+           row_data[j] = row_data_m[j];
+           data[j*ncols + i] = row_data_m[j];
+        }
+    }
+}
+*/
+
 //
 void Matrix::GetTranspose(Matrix& m)
 {
@@ -246,7 +268,7 @@ void Matrix::Read_BIN(std::fstream& is)
 //-----------------------------------------------------
 // Symmetrical matrix
 SymMatrix::SymMatrix(size_t dim) :
-	Matrix(0)
+	Matrix()
 {
 	nrows = ncols = dim;
 	size = (int)nrows * (nrows + 1) / 2;
@@ -256,16 +278,7 @@ SymMatrix::SymMatrix(size_t dim) :
 		data[i] = 0.0;
 }
 
-SymMatrix::SymMatrix() : Matrix(0)
-{
-	nrows = 0;
-	ncols = 0;
-	nrows0 = 0;
-	ncols0 = 0;
-	size = 0;
-	data = 0;
-}
-SymMatrix::SymMatrix(const SymMatrix& m) : Matrix(0)
+SymMatrix::SymMatrix(const SymMatrix& m) : Matrix()
 {
 	nrows = m.nrows;
 	ncols = m.ncols;
@@ -274,7 +287,7 @@ SymMatrix::SymMatrix(const SymMatrix& m) : Matrix(0)
 	size = m.size;
 	data = new double[size];
 	for(size_t i = 0; i < size; i++)
-		data[i] = 0.0;
+		data[i] = m.data[i];
 }
 
 void SymMatrix::resize(size_t dim)
@@ -307,8 +320,6 @@ void SymMatrix::LimitSize(size_t dim)
 	size = nrows * (nrows + 1) / 2;
 }
 
-
-
 // m_results = this*m. m_results must be initialized
 void SymMatrix::multi(const Matrix& m, Matrix& m_result, double fac)
 {
@@ -319,7 +330,6 @@ void SymMatrix::multi(const Matrix& m, Matrix& m_result, double fac)
 		abort();
 	}
 #endif
-    const double *m_data = m.getEntryArray_const();
     const size_t mrows = m.Rows();
     const size_t mcols = m.Cols();
     double *r_data = m_result.getEntryArray();
@@ -328,22 +338,22 @@ void SymMatrix::multi(const Matrix& m, Matrix& m_result, double fac)
 
     for(size_t i = 0; i < r_rows; i++)
     {
-        const size_t row_offset_r = static_cast<size_t>(i * (i + 1) / 2); 
-        const double *row_data = &data[row_offset_r] ;
+        const double *row_data = &data[(i * (i + 1) / 2)] ;
+        double *row_data_r = &r_data[i * r_cols] ;
 
-        for(size_t j = 0; j <= i; j++)
+        for(size_t j = 0; j<r_cols; j++)
         {
-            // r_data[row_offset_r + j] = 0.0;
+            // row_data_r[j] = 0.0;
             double val = 0.;
             for(size_t k = 0; k <= i; k++)
             {
-                val += row_data[row_offset_r + k] * m_data[getArrayIndex(k,j)];
+                val += row_data[k] * m(k,j);
             }
-            for(size_t k = i+1; k <= ncols; k++)
+            for(size_t k = i+1; k < ncols; k++)
             {
-                val += data[static_cast<size_t>(k * (k + 1) / 2) + i] * m_data[getArrayIndex(k,j)];
+                val += data[(k * (k + 1) / 2) + i] * m(k,j);
             }
-            r_data[row_offset_r + j] += val * fac;
+            row_data_r[j] += val * fac;
         }
     }
 }
@@ -360,15 +370,26 @@ void SymMatrix::multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
 		abort();
 	}
 #endif
-	for(size_t i = 0; i < m_result.Rows(); i++)
-		for(size_t j = 0; j <= i; j++)
+    double *r_data = m_result.getEntryArray();
+    const size_t r_rows = m_result.Rows();
+	const size_t r_cols = m_result.Cols();
+
+	for(size_t i = 0; i < r_rows; i++)
+	{
+        double *row_data_r = &r_data[i * r_cols] ;
+		for(size_t j = 0; j < r_cols; j++)
 		{
 			//m_result(i,j) = 0.0;
+            double val = 0.;
 			for(size_t k = 0; k < ncols; k++)
+			{
+                const double entry_of_this = data[getArrayIndex(i,k)]; 
 				for(size_t l = 0; l < m2.Rows(); l++)
-					//                m_result(i,j) += data[i*ncols+k]*m1(k,l)*m2(l,j);
-					m_result(i,j) += (*this)(i,k) * m1(k,l) * m2(l,j);
+					val += entry_of_this * m1(k,l) * m2(l,j);
+			}
+            row_data_r[j] += val;
 		}
+	}
 }
 // vec_result = This*vec. vec_result must be  initialized
 void SymMatrix::multi(const double* vec, double* vec_result, double fac)
@@ -383,7 +404,7 @@ void SymMatrix::multi(const double* vec, double* vec_result, double fac)
             val += row_data[j] * vec[j];
         }
 
-        for(size_t j = i+1; j <= ncols; j++)
+        for(size_t j = i+1; j < ncols; j++)
         {
             val += data[static_cast<size_t>(j * (j + 1) / 2) + i] * vec[j];
         }
@@ -394,7 +415,7 @@ void SymMatrix::multi(const double* vec, double* vec_result, double fac)
 
 //-----------------------------------------------------
 // Diagonal matrix
-DiagonalMatrix::DiagonalMatrix(size_t dim) : Matrix(0)
+DiagonalMatrix::DiagonalMatrix(size_t dim) : Matrix()
 {
 	nrows = ncols = dim;
 	size = dim;
@@ -405,7 +426,7 @@ DiagonalMatrix::DiagonalMatrix(size_t dim) : Matrix(0)
 	dummy_zero = 0.0;
 }
 
-DiagonalMatrix::DiagonalMatrix() : Matrix(0)
+DiagonalMatrix::DiagonalMatrix() : Matrix()
 {
 	nrows = 0;
 	ncols = 0;
@@ -415,7 +436,7 @@ DiagonalMatrix::DiagonalMatrix() : Matrix(0)
 	data = 0;
 	dummy_zero = 0.0;
 }
-DiagonalMatrix::DiagonalMatrix(const DiagonalMatrix& m) : Matrix(0)
+DiagonalMatrix::DiagonalMatrix(const DiagonalMatrix& m) : Matrix()
 {
 	nrows = m.nrows;
 	ncols = m.ncols;
