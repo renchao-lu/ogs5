@@ -6,10 +6,12 @@
 
 ## Quickstart ##
 
-	cd [source-directory]
-	mkdir build
-	cd build
-	cmake .. -DOGS_FEM=ON
+``` bash
+cd [source-directory]
+mkdir build
+cd build
+cmake .. -DOGS_FEM=ON
+```
 
 Open the Visual Studio solution which was created in the build-directory or just type `make` on Linux.
 
@@ -31,10 +33,4 @@ Once the development branch is ready to release a new version (this can also be 
 
 ## Enable the Git to Subversion connection ##
 
-To be able to sync from and to the Subversion trunk you have to do the following steps on your local repository:
-
-    git svn init https://svn.ufz.de/svn/ogs/trunk/sources
-    git svn fetch
-    git svn rebase
-
-Now you sync the current branch (use **always** the **master** branch!) to Subversion with `git svn dcommit` (you may also want to append `--dry-run` to the command to see what gets synced before you actually sync).
+See [this wiki-page](https://github.com/envinf/ogs5-trunk/wiki) for instructions.
