@@ -717,13 +717,14 @@ void CreateEQS_LinearSolver()
           sparse_info[0] = max_cnct_nodes * dim;
           sparse_info[1] = 0; //max_cnct_nodes * dim;
           sparse_info[2] = max_cnct_nodes * dim;
-	  sparse_info[3] = mesh->getNumNodesLocal_Q() * dim;
+          sparse_info[3] = mesh->getNumNodesLocal_Q() * dim;
           eqs = new PETScLinearSolver(eqs_dim);
           eqs->Init(sparse_info);
           eqs->set_rank_size(rank_p, size_p);
       }
       else if(  (pcs_type == MULTI_PHASE_FLOW)
-	   ||(pcs_type == TWO_PHASE_FLOW) ) 
+	   ||(pcs_type == TWO_PHASE_FLOW)
+	   ||(pcs_type == PS_GLOBAL) ) 
       {
          sparse_info[0] = max_cnct_nodes * 2;
          sparse_info[1] = 0; //max_cnct_nodes * 2;
