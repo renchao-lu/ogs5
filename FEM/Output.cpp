@@ -13,6 +13,8 @@
 #include <iostream>
 #include <string>
 
+#include <cfloat> // DBL_EPSILON
+
 #include "Configure.h"
 
 #include "FEMIO/GeoIO.h"
@@ -72,6 +74,7 @@ COutput::COutput() :
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
     int_disp = 0;
     offset = 0;
+    domain_output_counter = 0;
 #endif
 }
 
@@ -86,6 +89,7 @@ COutput::COutput(size_t id) :
 	VARIABLESHARING = false;	//BG
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
     int_disp = 0;
+	domain_output_counter = 0;    
 #endif
 }
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
@@ -145,7 +149,6 @@ void COutput::init()
     {
       //dat_type_name = "BINARY";
        setDataArrayDisp();
-       DomainWrite_Header();
     }  
 #endif
 
@@ -944,24 +947,7 @@ void COutput::DomainWrite_Header()
   
    m_pcs =  GetPCS();
 
-   if(time_vector.size() > 0)
-   {
-
-      double time_end = m_pcs->GetTimeStepping()->GetEndTime();
-      int ntimes = 1;
-      for(size_t i=0; i<time_vector.size(); i++)
-      {
-	if(time_vector[i] < time_end || fabs(time_vector[i] - time_end) < DBL_EPSILON)
-            ntimes++;
-      }
-  
-      os  << ntimes << "\n";
-   }
-   else
-   {
-      os  << nSteps  <<  "\n";
-   }
-
+   os  << domain_output_counter  <<  "\n";
  
    const size_t num_prim_unknowns = m_pcs->GetPrimaryVNumber();
    const size_t num_2nd_unknowns = m_pcs->GetSecondaryVNumber();
@@ -1000,7 +986,8 @@ void COutput:: BinaryDomainWrite()
 
    file_name = file_base_name + "_" + convertProcessTypeToString(getProcessType()) + "_domain_variables" + ".bin";
    std::cout << "Name of the binary file for node and element data: " << file_name << "\n";
-  
+
+   domain_output_counter++;  
 
    if(!_new_file_opened)
    {

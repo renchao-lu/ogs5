@@ -249,6 +249,8 @@ private:
     MPI_Offset offset;
 
     void setDataArrayDisp();
+    
+    unsigned domain_output_counter; // WW 04.2014
 #endif
 };
 #endif // OUTPUT_H
