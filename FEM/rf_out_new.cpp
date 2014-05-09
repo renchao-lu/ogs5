@@ -276,6 +276,14 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				cout << "Data output: Domain" << "\n";
 				if (OutputBySteps)
 				{
+#if defined (USE_PETSC) // || defined (other parallel solver lib). 12.2012 WW
+			   if(m_out->dat_type_name.compare("BINARY") == 0) // 08.2012. WW
+                            {
+                                m_out->BinaryDomainWrite();
+                            }
+			    else
+                            {
+#endif
 					if (m_out->_pcon_value_vector.size() > 0)
 						m_out->PCONWriteDOMDataTEC();  //MX
 					else
@@ -283,6 +291,9 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						m_out->NODWriteDOMDataTEC();
 						m_out->ELEWriteDOMDataTEC();
 					}
+#if defined (USE_PETSC) // || defined (other parallel solver lib). 12.2012 WW
+			    }
+#endif
 					if (!m_out->_new_file_opened)
 						//WW
 						m_out->_new_file_opened = true;
@@ -293,7 +304,15 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						if ((time_current > m_out->time_vector[j]) || fabs(
 						            time_current - m_out->time_vector[j])
 						    < MKleinsteZahl) //WW MKleinsteZahl
+                               {
+#if defined (USE_PETSC) // || defined (other parallel solver lib). 01.2014 WW
+			       if(m_out->dat_type_name.compare("BINARY") == 0) // 01.2014. WW
+                               {
+                                  m_out->BinaryDomainWrite();
+                               }
+                               else
 						{
+#endif
 							if (m_out->_pcon_value_vector.size() > 0)
 								//MX
 								m_out->PCONWriteDOMDataTEC();
@@ -302,6 +321,9 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 								m_out->NODWriteDOMDataTEC();
 								m_out->ELEWriteDOMDataTEC();
 							}
+#if defined (USE_PETSC) // || defined (other parallel solver lib). 01.2014 WW
+			       }
+#endif
 							m_out->time_vector.erase(
 							        m_out->time_vector.begin()
 							        + j);

@@ -69,6 +69,10 @@ COutput::COutput() :
 	vtk = NULL; //NW
 	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
+    int_disp = 0;
+    offset = 0;
+#endif
 }
 
 COutput::COutput(size_t id) :
@@ -80,6 +84,9 @@ COutput::COutput(size_t id) :
 	vtk = NULL; //NW
 	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
+#if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
+    int_disp = 0;
+#endif
 }
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 void COutput::setMPI_Info(const int rank, const int size, std::string rank_str)
@@ -131,6 +138,16 @@ void COutput::init()
 	m_msh = FEMGet(convertProcessTypeToString(getProcessType()));
 
     setInternalVarialbeNames(m_msh); //NW
+
+    // For binary output of the domain data
+#if defined(USE_PETSC) // || defined(other solver libs)//01.3014. WW
+    if(getGeoType() == GEOLIB::GEODOMAIN)
+    {
+      //dat_type_name = "BINARY";
+       setDataArrayDisp();
+       DomainWrite_Header();
+    }  
+#endif
 
 }
 
@@ -841,6 +858,251 @@ void COutput::NODWriteDOMDataTEC()
 		//      tec_file.close(); // kg44 close file
 		//    }
 	}
+}
+
+/*!
+   \brief Set data array displacement for parallel output
+  
+    WW  12.2013
+*/
+#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
+void COutput::setDataArrayDisp()
+{
+
+   if(getGeoType() != GEOLIB::GEODOMAIN)
+      return;
+
+   //   MPI_Barrier (MPI_COMM_WORLD);
+
+   //
+   int *i_cnt;
+   int *i_disp;
+   int *i_recv;
+
+   i_cnt =  new int[msize];
+   i_disp = new int[msize];
+   i_recv = new int[msize];
+
+   for(int i=0; i<msize; i++)
+   {
+     i_cnt[i] = 1; 
+     i_disp[i] = i;
+   }
+
+   int size_local =  fem_msh_vector[0]->getNumNodesLocal();
+
+   MPI_Allgatherv(&size_local, 1, MPI_INT, i_recv, i_cnt, i_disp,
+                   MPI_INT, MPI_COMM_WORLD);  
+  
+   int_disp = 0;
+   for(int i=0; i<mrank; i++)
+   {
+       int_disp += i_recv[i]; 
+   }
+
+   delete [] i_cnt;
+   delete [] i_disp;
+   delete [] i_recv;
+   //   MPI_Barrier (MPI_COMM_WORLD);
+} 
+#endif
+
+/*!
+   \brief Write variable informations of the domain
+  
+    WW  12.2012
+*/
+void COutput::DomainWrite_Header()
+{
+#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
+
+   if(mrank != 0)
+      return;
+
+#endif
+
+   string file_name;
+
+   file_name = file_base_name +  "_" + convertProcessTypeToString(getProcessType()) + "_domain_" + "node_value_header.txt";
+   std::cout << "Name of the binary file for node and element data: " << file_name << "\n";
+
+
+   if(!_new_file_opened)
+   {
+	  remove(file_name.c_str());
+   }
+
+   ofstream os (file_name.data(), ios::trunc | ios::out);
+   if (!os.good())
+   {
+	  return;
+   }
+
+#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
+   os << msize << "\n";
+#endif
+  
+   m_pcs =  GetPCS();
+
+   if(time_vector.size() > 0)
+   {
+
+      double time_end = m_pcs->GetTimeStepping()->GetEndTime();
+      int ntimes = 1;
+      for(size_t i=0; i<time_vector.size(); i++)
+      {
+	if(time_vector[i] < time_end || fabs(time_vector[i] - time_end) < DBL_EPSILON)
+            ntimes++;
+      }
+  
+      os  << ntimes << "\n";
+   }
+   else
+   {
+      os  << nSteps  <<  "\n";
+   }
+
+ 
+   const size_t num_prim_unknowns = m_pcs->GetPrimaryVNumber();
+   const size_t num_2nd_unknowns = m_pcs->GetSecondaryVNumber();
+
+   os <<  convertProcessTypeToString(getProcessType()) << "\n";
+   os << num_prim_unknowns + num_2nd_unknowns <<  "\n";
+
+   for(size_t i=0; i < num_prim_unknowns; i++)
+   {
+      os <<  m_pcs->GetPrimaryVName(i) << " ";
+   } 
+   for(size_t i=0; i < num_2nd_unknowns; i++)
+   {
+       os << m_pcs->GetSecondaryVName(i) << " ";
+   } 
+   os << "\n";
+   // Write number of unknowns
+   size_t n_unknowns = 0; 
+#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
+   n_unknowns = static_cast<size_t>(m_pcs->m_msh->getNumNodesGlobal() );
+#else
+   n_unknowns = m_pcs->m_msh->GetNodesNumber(false);
+#endif
+   os << n_unknowns << "\n";
+
+   os.close();
+
+}
+
+/*!
+  WW 08.2012
+*/
+void COutput:: BinaryDomainWrite()
+{
+   string file_name;
+
+   file_name = file_base_name + "_" + convertProcessTypeToString(getProcessType()) + "_domain_variables" + ".bin";
+   std::cout << "Name of the binary file for node and element data: " << file_name << "\n";
+  
+
+   if(!_new_file_opened)
+   {
+      remove(file_name.c_str());      
+   }
+
+   m_pcs =  GetPCS();
+  
+#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
+   MPI_Barrier (MPI_COMM_WORLD);
+
+   MPI_Offset offset_new;
+   MPI_File fh;
+   int rc = 0;
+   
+   if(!_new_file_opened)
+   {
+      rc = MPI_File_open(MPI_COMM_WORLD, &file_name[0], MPI_MODE_WRONLY | MPI_MODE_CREATE,  MPI_INFO_NULL, &fh);
+      offset = 0;
+   }
+   else
+   {
+       rc = MPI_File_open(MPI_COMM_WORLD, &file_name[0], MPI_MODE_WRONLY | MPI_MODE_APPEND,  MPI_INFO_NULL, &fh);
+   }
+   if (rc ) 
+   {
+	   
+       MPI_Finalize();
+       cout<<"Cannot open "<<file_name<<"does not exist." <<"\n";
+       exit(0);
+   }
+
+ 
+   //MPI_File_get_position( fh, &offset ); 
+   // Write time and remember the number of processes#
+   string ftype = "native";
+  
+   offset_new = offset + mrank*sizeof(double); 
+   MPI_File_set_view(fh, offset_new, MPI_DOUBLE, MPI_DOUBLE,  &ftype[0], MPI_INFO_NULL);
+   MPI_File_write(fh, &_time, 1, MPI_DOUBLE, MPI_STATUS_IGNORE); //_all
+   offset += msize*sizeof(double); 
+
+   const size_t num_prim_unknowns = m_pcs->GetPrimaryVNumber();
+   const size_t num_2nd_unknowns = m_pcs->GetSecondaryVNumber();
+   // Write unknowns
+   size_t n_unknowns = 0; 
+   n_unknowns = m_pcs->m_msh->getNumNodesLocal();
+   const int nn = m_pcs->m_msh->getNumNodesGlobal();
+
+   // Write primary unknowns
+   for(size_t i=0; i < num_prim_unknowns; i++)
+   {
+      double *node_values = m_pcs->getNodeValue_per_Variable(2*i + 1);
+      offset_new = offset + int_disp*sizeof(double);
+      MPI_File_set_view(fh, offset_new, MPI_DOUBLE, MPI_DOUBLE,  &ftype[0], MPI_INFO_NULL);
+      MPI_File_write(fh, node_values, n_unknowns, MPI_DOUBLE, MPI_STATUS_IGNORE); //_all
+      offset += nn * sizeof(double);  
+   } 
+
+   // Write primary unknowns
+   for(size_t i=0; i < num_2nd_unknowns; i++)
+   {
+       double *node_values = m_pcs->getNodeValue_per_Variable(2*num_prim_unknowns + i);
+       offset_new = offset + int_disp*sizeof(double);
+       MPI_File_set_view(fh, offset_new, MPI_DOUBLE, MPI_DOUBLE,  &ftype[0], MPI_INFO_NULL);
+       MPI_File_write(fh, node_values, n_unknowns, MPI_DOUBLE, MPI_STATUS_IGNORE); //_all
+       offset += nn * sizeof(double);  
+   } 
+
+
+   MPI_File_sync( fh ) ; 
+   MPI_Barrier( MPI_COMM_WORLD ) ;
+   MPI_File_sync( fh ) ; 
+   MPI_File_close(&fh);
+#else
+   ofstream bin_file (file_name.data(), ios::app | ios::out | ios::binary);
+   if (!bin_file.good())
+   {
+	  return;
+   }
+
+   const size_t num_prim_unknowns = m_pcs->GetPrimaryVNumber();
+   const size_t num_2nd_unknowns = m_pcs->GetSecondaryVNumber();
+   // Write unknowns
+   size_t n_unknowns = 0; 
+   n_unknowns = m_pcs->m_msh->GetNodesNumber(false);
+   // Write primary unknowns
+   for(size_t i=0; i < num_prim_unknowns; i++)
+   {
+      const double *node_values = m_pcs->getNodeValue_per_Variable(2*i + 1);
+       bin_file.write((char*)(node_values), n_unknowns * sizeof(double));
+   } 
+ 
+   // Write primary unknowns
+   for(size_t i=0; i < num_2nd_unknowns; i++)
+   {
+      const double *node_values = m_pcs->getNodeValue_per_Variable(2*num_prim_unknowns + i);
+      bin_file.write((char*)(node_values), n_unknowns * sizeof(double));
+ 
+   }
+#endif
+
 }
 
 /**************************************************************************
