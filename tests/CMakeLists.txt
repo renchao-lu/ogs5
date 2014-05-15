@@ -8,7 +8,6 @@ ADD_SUBDIRECTORY( gtest )
 SET ( SOURCES
 	testrunner.cpp
 	testBase.cpp
-	Matrix/testMatrix.cpp
 )
 
 # Add tests here if they need testdata
