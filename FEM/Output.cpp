@@ -863,8 +863,8 @@ void COutput::NODWriteDOMDataTEC()
 	}
 }
 
-/*!
-   \brief Set data array displacement for parallel output
+/*
+   Set data array displacement for parallel output
   
     WW  12.2013
 */
@@ -910,10 +910,10 @@ void COutput::setDataArrayDisp()
 } 
 #endif
 
-/*!
-   \brief Write variable informations of the domain
+/*
+    Write variable informations of the domain
   
-    WW  12.2012
+    WW  12.2013
 */
 void COutput::DomainWrite_Header()
 {
@@ -977,8 +977,8 @@ void COutput::DomainWrite_Header()
 
 }
 
-/*!
-  WW 08.2012
+/*
+  WW 08.2013
 */
 void COutput:: BinaryDomainWrite()
 {
