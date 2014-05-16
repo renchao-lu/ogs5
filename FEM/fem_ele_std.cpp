@@ -5293,18 +5293,16 @@ void CFiniteElementStd::CalcLaplace()
 		    {
 		      const int jjsh = j + jsh;
 		      //  if(j>i) continue;  
-              double val = 0.;		      
 		      for (k = 0; k < dim; k++)
               {
                  const int ksh = k*nnodes + ia; 
                  const int km = dim *k ;
                  for(l=0; l< dim; l++)
                  {
-                    val += dshapefct[ksh] \
+                    (*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
                                * mat[km + l] * dshapefct[l*nnodes+j];			      
                  } 
               }
-              (*Laplace)(iish, jjsh) += fkt * val;
            } // j: nodes
         } // i: nodes	
 #else
@@ -5316,18 +5314,16 @@ void CFiniteElementStd::CalcLaplace()
 		   {
 		      const int jjsh = j + jsh;
 		      //  if(j>i) continue;  
-              double val = 0.; 		      
 		      for (k = 0; k < dim; k++)
               {
                  const int ksh = k*nnodes + i; 
                  const int km = dim *k ;
                  for(l=0; l< (int)dim; l++)
                  {
-                    val += dshapefct[ksh] \
+                    (*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
                           * mat[km + l] * dshapefct[l*nnodes+j];			      
                  } 
               }
-              (*Laplace)(iish, jjsh) += fkt * val;
            } // j: nodes
 		} // i: nodes	
 #endif    
