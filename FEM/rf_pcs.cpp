@@ -3503,13 +3503,13 @@ void CRFProcess::ConfigUnsaturatedFlow()
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
 		pcs_number_of_secondary_nvals++;
 #endif
-		/* if(adaption) //WW, JOD removed
+		 if(adaption) //WW, JOD removed	//MW added
 		   {
 		   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P";
 		   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
 		   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
 		   pcs_number_of_secondary_nvals++;
-		   }*/
+		   }
 		// Nodal velocity. WW
 		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
 		        = "VELOCITY_X1";
