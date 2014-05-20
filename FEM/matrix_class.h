@@ -180,7 +180,7 @@ public:
 	}
 
 	// Access the element
-    virtual inline double& SymMatrix::operator() (const size_t i, const size_t j) const
+	virtual inline double& operator() (const size_t i, const size_t j = 1) const
     {
 	    	return data[getArrayIndex(i, j)];
     }
