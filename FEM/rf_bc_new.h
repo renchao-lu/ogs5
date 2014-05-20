@@ -198,6 +198,8 @@ private:
 	int time_contr_curve;
 	// no displacement increment 12.2012
 	int NoDispIncre;
+	// give head bc for PRESSURE1 primary variable	//MW
+	bool pressure_as_head;
 };
 
 class CBoundaryConditionNode                      //OK raus
@@ -216,6 +218,7 @@ public:
 	int conditional;                      //OK
 	std::string bc_node_copy_geom;
 	std::string bc_node_copy_geom_name;
+	bool pressure_as_head;					//MW
 	CBoundaryConditionNode();
 
 	// 25.08.2011. WW
