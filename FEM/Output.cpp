@@ -64,7 +64,8 @@ using namespace std;
 
 COutput::COutput() :
 	GeoInfo(GEOLIB::GEODOMAIN), ProcessInfo(), _id(0), out_amplifier(0.0),
-	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT")
+	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT"),
+	domain_output_counter(0)
 {
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
@@ -74,13 +75,13 @@ COutput::COutput() :
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
     int_disp = 0;
     offset = 0;
-    domain_output_counter = 0;
 #endif
 }
 
 COutput::COutput(size_t id) :
 	GeoInfo(GEOLIB::GEODOMAIN), ProcessInfo(), _id(id), out_amplifier(0.0),
-	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT")
+	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT"),
+	domain_output_counter(0)
 {
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
@@ -89,7 +90,6 @@ COutput::COutput(size_t id) :
 	VARIABLESHARING = false;	//BG
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
     int_disp = 0;
-	domain_output_counter = 0;    
 #endif
 }
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
