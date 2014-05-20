@@ -192,6 +192,7 @@ const std::list<std::string> getAllPrimaryVariableNames();
 	SYSTEM_DEPENDENT,                     // ST
 	TRANSFER_SURROUNDING,
 	CLIMATE,	// climate data (by NB)
+	RECHARGE,	// MW
 	// Sort of Neumann BC //WW
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
