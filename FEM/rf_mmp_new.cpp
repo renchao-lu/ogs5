@@ -749,6 +749,8 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			case 1:       // S=const
 				in >> storage_model_values[0]; //Constant value in Pa
+				if ( permeability_saturation_model[0] == 10)	//MW
+					storage_model_values[0] = 1/(9.81*1000);
 				break;
 			case 2:
 				in >> storage_model_values[0]; //S0
@@ -7530,6 +7532,10 @@ double CMediumProperties::StorageFunction(long index,double* gp,double theta)
 	case 1:
 		// Konstanter Wert
 		storage = storage_model_values[0];
+
+		if(permeability_saturation_model[0]==10)	//MW
+			storage *= porosity_model_values[0];
+
 		break;
 
 	case 2:

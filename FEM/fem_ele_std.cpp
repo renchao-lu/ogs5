@@ -10054,8 +10054,8 @@ void CFiniteElementStd::CalcSatution()
 		// In case the node is on the material interface
 		if(eS > 1.0)
 			eS = 1.0;
-		//if(eS < MediaProp->capillary_pressure_values[1])	//MW: limit to non-negative 0saturation for stability
-		//	eS = MediaProp->capillary_pressure_values[1];
+		if(MediaProp->permeability_saturation_model[0] == 10 && eS < MediaProp->capillary_pressure_values[1])	//MW: limit to non-negative saturation for stability in unconfined gw
+			eS = MediaProp->capillary_pressure_values[1];
 		//
 		pcs->SetNodeValue (nodes[i], idx_S, eS);
 	}
