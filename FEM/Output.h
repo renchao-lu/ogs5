@@ -146,6 +146,12 @@ public:
 	void NODWriteWaterBalancePNT(double);	// 6/2012 JOD
 	void NODWritePointsCombined(double);	// 6/2012 JOD
 	void CalculateThroughflow(MeshLib::CFEMesh*, std::vector<long>&, std::vector<double>&);	// 6/2012 JOD
+      
+    //------------------------------------------------------
+    /// Binary output for parallel computing. 01.2014. WW
+	void DomainWrite_Header();
+	void BinaryDomainWrite();
+    //------------------------------------------------------
 
 	void setTime (double time) { _time = time; }
 	/**
@@ -238,6 +244,12 @@ private:
     int mrank;
     int msize;
     std::string mrank_str;
+
+    int int_disp;
+    MPI_Offset offset;
+
+    void setDataArrayDisp();    
 #endif
+    unsigned domain_output_counter; // WW 04.2014
 };
 #endif // OUTPUT_H
