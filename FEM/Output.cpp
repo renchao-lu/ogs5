@@ -64,8 +64,7 @@ using namespace std;
 
 COutput::COutput() :
 	GeoInfo(GEOLIB::GEODOMAIN), ProcessInfo(), _id(0), out_amplifier(0.0),
-	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT"),
-	domain_output_counter(0)
+	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT")
 {
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
@@ -73,15 +72,15 @@ COutput::COutput() :
 	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
-    int_disp = 0;
-    offset = 0;
+	int_disp = 0;
+	offset = 0;
+	domain_output_counter = 0;
 #endif
 }
 
 COutput::COutput(size_t id) :
 	GeoInfo(GEOLIB::GEODOMAIN), ProcessInfo(), _id(id), out_amplifier(0.0),
-	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT"),
-	domain_output_counter(0)
+	m_msh(NULL), nSteps(-1), _new_file_opened(false), dat_type_name("TECPLOT")
 {
 	tim_type_name = "TIMES";
 	m_pcs = NULL;
@@ -89,15 +88,16 @@ COutput::COutput(size_t id) :
 	tecplot_zone_share = false; // 10.2012. WW
 	VARIABLESHARING = false;	//BG
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//01.3014. WW
-    int_disp = 0;
+	int_disp = 0;
+	domain_output_counter = 0;
 #endif
 }
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 void COutput::setMPI_Info(const int rank, const int size, std::string rank_str)
 {
-  mrank = rank;
-  msize = size;
-  mrank_str = rank_str;
+	mrank = rank;
+	msize = size;
+	mrank_str = rank_str;
 }  
 #endif
 
@@ -908,21 +908,17 @@ void COutput::setDataArrayDisp()
    delete [] i_recv;
    //   MPI_Barrier (MPI_COMM_WORLD);
 } 
-#endif
 
 /*
     Write variable informations of the domain
   
     WW  12.2013
 */
-void COutput::DomainWrite_Header()
+void COutput::NODDomainWriteBinary_Header()
 {
-#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
 
    if(mrank != 0)
       return;
-
-#endif
 
    string file_name;
 
@@ -930,20 +926,13 @@ void COutput::DomainWrite_Header()
    std::cout << "Name of the binary file for node and element data: " << file_name << "\n";
 
 
-   if(!_new_file_opened)
-   {
-	  remove(file_name.c_str());
-   }
-
    ofstream os (file_name.data(), ios::trunc | ios::out);
    if (!os.good())
    {
 	  return;
    }
 
-#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
    os << msize << "\n";
-#endif
   
    m_pcs =  GetPCS();
 
@@ -964,23 +953,17 @@ void COutput::DomainWrite_Header()
        os << m_pcs->GetSecondaryVName(i) << " ";
    } 
    os << "\n";
+   
    // Write number of unknowns
-   size_t n_unknowns = 0; 
-#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
-   n_unknowns = static_cast<size_t>(m_pcs->m_msh->getNumNodesGlobal() );
-#else
-   n_unknowns = m_pcs->m_msh->GetNodesNumber(false);
-#endif
-   os << n_unknowns << "\n";
+   os << m_pcs->m_msh->getNumNodesGlobal()  << "\n";
 
    os.close();
-
 }
 
 /*
   WW 08.2013
 */
-void COutput:: BinaryDomainWrite()
+void COutput::NODDomainWriteBinary()
 {
    string file_name;
 
@@ -996,7 +979,6 @@ void COutput:: BinaryDomainWrite()
 
    m_pcs =  GetPCS();
   
-#if defined(USE_PETSC) // || defined(other solver libs)//01.2014. WW
    MPI_Barrier (MPI_COMM_WORLD);
 
    MPI_Offset offset_new;
@@ -1012,14 +994,13 @@ void COutput:: BinaryDomainWrite()
    {
        rc = MPI_File_open(MPI_COMM_WORLD, &file_name[0], MPI_MODE_WRONLY | MPI_MODE_APPEND,  MPI_INFO_NULL, &fh);
    }
+   
    if (rc ) 
-   {
-	   
+   {	   
        MPI_Finalize();
        cout<<"Cannot open "<<file_name<<"does not exist." <<"\n";
        exit(0);
    }
-
  
    //MPI_File_get_position( fh, &offset ); 
    // Write time and remember the number of processes#
@@ -1047,7 +1028,7 @@ void COutput:: BinaryDomainWrite()
       offset += nn * sizeof(double);  
    } 
 
-   // Write primary unknowns
+   // Write secondary unknowns
    for(size_t i=0; i < num_2nd_unknowns; i++)
    {
        double *node_values = m_pcs->getNodeValue_per_Variable(2*num_prim_unknowns + i);
@@ -1057,40 +1038,12 @@ void COutput:: BinaryDomainWrite()
        offset += nn * sizeof(double);  
    } 
 
-
    MPI_File_sync( fh ) ; 
    MPI_Barrier( MPI_COMM_WORLD ) ;
    MPI_File_sync( fh ) ; 
    MPI_File_close(&fh);
-#else
-   ofstream bin_file (file_name.data(), ios::app | ios::out | ios::binary);
-   if (!bin_file.good())
-   {
-	  return;
-   }
-
-   const size_t num_prim_unknowns = m_pcs->GetPrimaryVNumber();
-   const size_t num_2nd_unknowns = m_pcs->GetSecondaryVNumber();
-   // Write unknowns
-   size_t n_unknowns = 0; 
-   n_unknowns = m_pcs->m_msh->GetNodesNumber(false);
-   // Write primary unknowns
-   for(size_t i=0; i < num_prim_unknowns; i++)
-   {
-      const double *node_values = m_pcs->getNodeValue_per_Variable(2*i + 1);
-       bin_file.write((char*)(node_values), n_unknowns * sizeof(double));
-   } 
- 
-   // Write primary unknowns
-   for(size_t i=0; i < num_2nd_unknowns; i++)
-   {
-      const double *node_values = m_pcs->getNodeValue_per_Variable(2*num_prim_unknowns + i);
-      bin_file.write((char*)(node_values), n_unknowns * sizeof(double));
- 
-   }
-#endif
-
 }
+#endif //  end of USE_PETSC
 
 /**************************************************************************
    FEMLib-Method:

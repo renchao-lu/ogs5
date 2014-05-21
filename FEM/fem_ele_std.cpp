@@ -4824,7 +4824,7 @@ void CFiniteElementStd::CalcMassPSGLOBAL()
   //======================================================================
   // Loop over Gauss points
   for (gp = 0; gp < nGaussPoints; gp++)
-    {
+  {
       //---------------------------------------------------------
       //  Get local coordinates and weights
       //  Compute Jacobian matrix and its determinate
@@ -4832,30 +4832,37 @@ void CFiniteElementStd::CalcMassPSGLOBAL()
       fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
       // Compute geometry
       ComputeShapefct(1);       // Linear interpolation function
-     for(in = 0; in < dof_n; in++)
-      for(jn = 0; jn < dof_n; jn++)
-	  {
-	    // Material
-	    mat_fac = CalCoefMassPSGLOBAL(in * dof_n + jn);
-	    mat_fac *= fkt;
-	    // Calculate mass matrix
+      
+      for(in = 0; in < dof_n; in++)
+      {       
+         for(jn = 0; jn < dof_n; jn++)
+         {
+             // Material
+             mat_fac = CalCoefMassPSGLOBAL(in * dof_n + jn);
+             mat_fac *= fkt;
+             // Calculate mass matrix
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-	    for (i = 0; i < act_nodes; i++)
-	    {
-           const int  ia = local_idx[i];
-           for (j = 0; j < nnodes; j++)
-           {
-              (*Mass2)(ia + in * nnodes,j + jn *
-                        nnodes) += mat_fac * shapefct[ia] *  shapefct[j];
-           }
-        }
+             for (i = 0; i < act_nodes; i++)
+             {
+                 const int  ia = local_idx[i];
+                 for (j = 0; j < nnodes; j++)
+                 {
+                     (*Mass2)(ia + in * nnodes,j + jn *
+                            nnodes) += mat_fac * shapefct[ia] *  shapefct[j];
+                 }
+             }
 #else
-	    for (i = 0; i < nnodes; i++)
-	      for (j = 0; j < nnodes; j++)
-            (*Mass2)(i + in * nnodes,j + jn *
-                       nnodes) += mat_fac * shapefct[i] *  shapefct[j];
+             for (i = 0; i < nnodes; i++)
+             {             
+                 for (j = 0; j < nnodes; j++)
+                 {                  
+                     (*Mass2)(i + in * nnodes,j + jn *
+                                  nnodes) += mat_fac * shapefct[i] *  shapefct[j];
+                 } 
+             }                                                    
 #endif
-	  }
+          }
+       }         
     }
 }
 
@@ -5139,13 +5146,13 @@ void CFiniteElementStd::CalcStorage()
 		// Calculate mass matrix
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		for (i = 0; i < act_nodes; i++)
-		  {
-		    const int ia = local_idx[i];
-		    for (j = 0; j < nnodes; j++)
-		      {
-                  (*Storage)(ia, j) += fkt * shapefct[ia] * shapefct[j];
-		      }
-		  }
+		{
+			const int ia = local_idx[i];
+			for (j = 0; j < nnodes; j++)
+			{
+				(*Storage)(ia, j) += fkt * shapefct[ia] * shapefct[j];
+			}
+		}
 #else
 		for (i = 0; i < nnodes; i++)
 			for (j = 0; j < nnodes; j++)
@@ -5193,14 +5200,13 @@ void CFiniteElementStd::CalcContent()
 		// Calculate mass matrix
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		for (i = 0; i < act_nodes; i++)
-		  {
-		    const int ia = local_idx[i];
-		    for (j = 0; j < nnodes; j++)
-		      {
-                  (*Content)(ia,j) += fkt * shapefct[ia] * shapefct[j];
-		      }
-		  }
-
+		{
+			const int ia = local_idx[i];
+			for (j = 0; j < nnodes; j++)
+			{
+				(*Content)(ia,j) += fkt * shapefct[ia] * shapefct[j];
+			}
+		}
 #else
 		for (i = 0; i < nnodes; i++)
 			for (j = 0; j < nnodes; j++)
@@ -5280,12 +5286,12 @@ void CFiniteElementStd::CalcLaplace()
 		  else if (PcsType == P)
 		    CalCoefLaplacePSGLOBAL(false,ishd + jn);
 		}
-        else if (PcsType == N)
+		else if (PcsType == N)
 			  CalCoefLaplaceTNEQ(ishd + jn);
 	      const int jsh = jn*nnodes;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	    //---------------------------------------------------------
-	    for (i = 0; i < act_nodes; i++)
+		for (i = 0; i < act_nodes; i++)
 		{
 		  const int ia = local_idx[i];
 		  const int iish = ia + ish;

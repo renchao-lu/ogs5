@@ -187,7 +187,7 @@ void Matrix::multi(const double* vec, double* vec_result, double fac)
     {
         double val = 0.; 
         const double *row_data = &data[i * ncols] ;
-		for(size_t j = 0; j < ncols; j++)
+        for(size_t j = 0; j < ncols; j++)
         {
             val += row_data[j] * vec[j];
         }

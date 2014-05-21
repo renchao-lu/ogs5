@@ -1157,8 +1157,8 @@ void Problem::Euler_TimeDiscretize()
 #if defined(USE_PETSC) //05.2014. WW   
 	for (size_t i = 0; i < out_vector.size(); i++)
 	{
-       out_vector[i]->DomainWrite_Header();
-    }  
+		out_vector[i]->NODDomainWriteBinary_Header();
+	}  
 #endif
  
 	}

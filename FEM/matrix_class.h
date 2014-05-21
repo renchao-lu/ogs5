@@ -253,29 +253,6 @@ public:
 	// Access to members
 	double& operator() (const size_t i, const size_t j) const;
 	double& operator() (const size_t i) const;
-
-	// vec_result = This*vec. vec_result must be initialized
-	virtual void multi(const double* vec, double* vec_result, double fac = 1.0)
-	{
-		(void)vec;
-		(void)vec_result;
-		(void)fac;
-	}
-	// m_result = this*m. m_result must be initialized
-	virtual void multi(const Matrix& m, Matrix& m_result, double fac = 1.0)
-	{
-		(void)m;
-		(void)m_result;
-		(void)fac;
-	}
-	// m_result = this*m1*m2. m_result must be initialized
-	virtual void multi(const Matrix& m1, const Matrix& m2, Matrix& m_result)
-	{
-		(void)m1;
-		(void)m2;
-		(void)m_result;
-	}
-
 };
 
 typedef Matrix Vec;

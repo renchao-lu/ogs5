@@ -281,7 +281,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 #if defined (USE_PETSC) // || defined (other parallel solver lib). 12.2012 WW
 			   if(m_out->dat_type_name.compare("BINARY") == 0) // 08.2012. WW
                             {
-                                m_out->BinaryDomainWrite();
+                                m_out->NODDomainWriteBinary();
                             }
 			    else
                             {
@@ -306,14 +306,14 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						if ((time_current > m_out->time_vector[j]) || fabs(
 						            time_current - m_out->time_vector[j])
 						    < MKleinsteZahl) //WW MKleinsteZahl
-                               {
+                          {
 #if defined (USE_PETSC) // || defined (other parallel solver lib). 01.2014 WW
-			       if(m_out->dat_type_name.compare("BINARY") == 0) // 01.2014. WW
-                               {
-                                  m_out->BinaryDomainWrite();
-                               }
-                               else
-						{
+                            if(m_out->dat_type_name.compare("BINARY") == 0) // 01.2014. WW
+                            {
+                               m_out->NODDomainWriteBinary();
+                            }
+                            else
+                            {
 #endif
 							if (m_out->_pcon_value_vector.size() > 0)
 								//MX
@@ -324,7 +324,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 								m_out->ELEWriteDOMDataTEC();
 							}
 #if defined (USE_PETSC) // || defined (other parallel solver lib). 01.2014 WW
-			       }
+			            }
 #endif
 							m_out->time_vector.erase(
 							        m_out->time_vector.begin()
