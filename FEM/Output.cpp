@@ -923,7 +923,7 @@ void COutput::NODDomainWriteBinary_Header()
    string file_name;
 
    file_name = file_base_name +  "_" + convertProcessTypeToString(getProcessType()) + "_domain_" + "node_value_header.txt";
-   std::cout << "Name of the binary file for node and element data: " << file_name << "\n";
+   std::cout << "Name of the header file: " << file_name << "\n";
 
 
    ofstream os (file_name.data(), ios::trunc | ios::out);
