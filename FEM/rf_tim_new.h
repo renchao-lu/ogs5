@@ -113,6 +113,7 @@ public:
 	//Begin of function section for PI Time control ------------------------
 	int GetPITimeStepCrtlType() const {return PI_tsize_ctrl_type; }
 	double GetTimeStep() const {return this_stepsize; }
+	double GetEndTime() const { return time_end; }	
 	void SetTimeStep( double hnew)  {this_stepsize = hnew; }
 	double GetRTol() const { return relative_error; }
 	double GetATol() const { return absolute_error; }
