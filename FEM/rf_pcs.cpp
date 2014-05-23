@@ -508,8 +508,8 @@ CRFProcess::~CRFProcess(void)
 	}
 
     // HS, 11.2011
-	if (m_conversion_rate) 
-		delete m_conversion_rate; 
+	if (m_conversion_rate)
+		delete m_conversion_rate;
 	if (m_solver)
 		delete m_solver;
 
@@ -700,7 +700,7 @@ void CRFProcess::Create()
 	//WW CreateEQS();
 	std::cout << "->Create EQS" << '\n';
 #if !defined(USE_PETSC) // && !defined(other parallel solver lib). 04.2012 WW
-#if defined(NEW_EQS) 
+#if defined(NEW_EQS)
 	size_t k;
 	for(k = 0; k < fem_msh_vector.size(); k++)
 		if(m_msh == fem_msh_vector[k])
@@ -927,7 +927,7 @@ void CRFProcess::Create()
 	for (int i = 0; i < pcs_number_of_secondary_nvals; i++)
 		// new time
 		nod_val_name_vector.push_back(pcs_secondary_function_name[i]);
-	
+
 	long m_msh_nod_vector_size = m_msh->NodesNumber_Quadratic;
 	for (long j = 0; j < number_of_nvals; j++) // Swap number_of_nvals and mesh size. WW 19.12.2012
 	{
@@ -1205,14 +1205,14 @@ void CRFProcess:: WriteSolution()
 	//kg44 write out only between nwrite_restart timesteps
 	if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 )
 		return;
-	
+
 #if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
 	string rank_str;
     	int rank , msize;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &msize);
 	stringstream ss (stringstream::in | stringstream::out);
-	ss.clear(); 
+	ss.clear();
 	ss.str("");
 	ss << rank;
 	rank_str = ss.str();
@@ -1225,7 +1225,7 @@ void CRFProcess:: WriteSolution()
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
-#endif				  
+#endif
 	std::ofstream os ( m_file_name.c_str(), ios::trunc | ios::out );
 	if (!os.good() )
 	{
@@ -1264,14 +1264,14 @@ void CRFProcess:: WriteSolution()
 **************************************************************************/
 void CRFProcess:: ReadSolution()
 {
- 	
+
 #if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
         string rank_str;
 	int rank , msize;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &msize);
 	stringstream ss (stringstream::in | stringstream::out);
-	ss.clear(); 
+	ss.clear();
 	ss.str("");
 	ss << rank;
 	rank_str = ss.str();
@@ -1280,7 +1280,7 @@ void CRFProcess:: ReadSolution()
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value_"+rank_str+".asc";
 
-#else 
+#else
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
@@ -1965,7 +1965,7 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 			continue;
 		}
 
-	  
+
 		//....................................................................
 		// subkeyword found
 		if (line_string.find("$MEMORY_TYPE") != string::npos)
@@ -3689,11 +3689,11 @@ void CRFProcess::ConfigRandomWalk()
 	pcs_eval_unit[0]  = "kg/m3";
 
     for(size_t e = 0; e<m_msh->ele_vector.size(); e++)
-	{    
+	{
         m_msh->ele_vector[e]->AllocateMeomoryforAngle();
-        m_msh->ele_vector[e]->SetAngle(0, 0.); 
-        m_msh->ele_vector[e]->SetAngle(1, 0.); 
-        m_msh->ele_vector[e]->SetAngle(2, 0.); 
+        m_msh->ele_vector[e]->SetAngle(0, 0.);
+        m_msh->ele_vector[e]->SetAngle(1, 0.);
+        m_msh->ele_vector[e]->SetAngle(2, 0.);
 }
 
 }
@@ -3787,7 +3787,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
 	pcs_eval_name[pcs_number_of_evals] = "VELOCITY2_Z";
 	pcs_eval_unit[pcs_number_of_evals] = "m/s";
 	pcs_number_of_evals++;
-    // CB_merge_0513 added some additional ELE values 
+    // CB_merge_0513 added some additional ELE values
     pcs_eval_name[pcs_number_of_evals] = "PERMEABILITY";
     pcs_eval_unit[pcs_number_of_evals] = "m^2";
 	pcs_number_of_evals++;
@@ -3798,7 +3798,7 @@ void CRFProcess:: Def_Variable_MultiPhaseFlow()
     pcs_eval_unit[pcs_number_of_evals] = "m^2";
   	pcs_number_of_evals++;
     pcs_eval_name[pcs_number_of_evals] = "PERMEABILITY_ZZ";
-    pcs_eval_unit[pcs_number_of_evals] = "m^2";	
+    pcs_eval_unit[pcs_number_of_evals] = "m^2";
 	pcs_number_of_evals++;
 
        if(simulator.compare("ECLIPSE") == 0) //02.2013. WW
@@ -3998,14 +3998,14 @@ void CRFProcess::ConfigPS_Global()
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
 	pcs_number_of_secondary_nvals++;
 
-    // CB_merge_0513 added some ELE values 
+    // CB_merge_0513 added some ELE values
     //pcs_number_of_evals = 2;
     pcs_eval_name[pcs_number_of_evals] = "PERMEABILITY";
     pcs_eval_unit[pcs_number_of_evals] = "m^2";
-	pcs_number_of_evals++; 
+	pcs_number_of_evals++;
     pcs_eval_name[pcs_number_of_evals] = "POROSITY";
     pcs_eval_unit[pcs_number_of_evals] = "-";
-	pcs_number_of_evals++; 
+	pcs_number_of_evals++;
 
 
 	//
@@ -4089,12 +4089,12 @@ void CRFProcess::ConfigTNEQ()
    pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
    pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
    pcs_number_of_secondary_nvals++;
-   // this is the nodal based reaction rate of solid density in PTC flow. 
+   // this is the nodal based reaction rate of solid density in PTC flow.
    pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "REACT_RATE_N"; //TN TEST
    pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "kg/m3s";
    pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
    pcs_number_of_secondary_nvals++;
-   // this is the nodal based solid density in PTC flow. 
+   // this is the nodal based solid density in PTC flow.
    pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SOLID_DENSITY_N"; //TN TEST
    pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "kg/m3";
    pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
@@ -4133,17 +4133,17 @@ void CRFProcess::ConfigTNEQ()
    //// initialize the pointers for rho_s ODE calculation
    //rho_s = Eigen::VectorXd::Zero(1); // HS, temp storage for density of the solid phase
    //qR = Eigen::VectorXd::Zero(1);    // HS, temp storage for solid density change rate
-   //this->m_hydration  = new conversion_rate(400/*solid temperature*/, 
+   //this->m_hydration  = new conversion_rate(400/*solid temperature*/,
 	  //                                   600/*gass temperature*/,
-			//							 2.0/*pressure of gas phase*/, 
+			//							 2.0/*pressure of gas phase*/,
 			//							 0.2/*mass fraction of H2O in gas*/,
 			//							 1700/*initial solid density*/,
 			//							 0.0/*delta_time*/);
    //this->m_ode_solver = new StepperBulischStoer<conversion_rate>(rho_s/*y value vector*/,
-	  //                                                        qR/*dydx value vector*/, 
+	  //                                                        qR/*dydx value vector*/,
 			//												  this->GetTimeStepping()->time_current/*t0 value*/,
-			//												  1e-12 /*relative tolerance*/, 
-			//												  1e-12 /*relative tolerance*/, 
+			//												  1e-12 /*relative tolerance*/,
+			//												  1e-12 /*relative tolerance*/,
 			//												  false /*if dense output*/);
 
 
@@ -4163,10 +4163,10 @@ void CRFProcess::ConfigTNEQ()
 			                          573.0,     // T_gas, Kelvin
 			                          0.0,       // p_gas
 			                          0.0,       // w_water, mass fraction unitless
-			                          m_rho_s_0, //kg/m3, // rho_s_initial, 
+			                          m_rho_s_0, //kg/m3, // rho_s_initial,
 									  1.0-poro, //solid volume fraction
 			                          1.0,   // delta_t
-									  react_syst);      
+									  react_syst);
 
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
 	dydxx_rho_s = Eigen::VectorXd::Zero(1);
@@ -4179,7 +4179,7 @@ void CRFProcess::ConfigTNEQ()
 	// initialize the solver
 	m_solver = new StepperBulischStoer<conversion_rate>(yy_rho_s, dydxx_rho_s, start_t, 1e-6, 1e-6, true);
 	// }
-	// HS, end of thermal storage case-------------------------------------------------------------   
+	// HS, end of thermal storage case-------------------------------------------------------------
    //}
 }
 
@@ -4564,7 +4564,7 @@ double CRFProcess::Execute()
 #endif
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
-	eqs_new->Initialize(); 
+	eqs_new->Initialize();
 #elif defined(NEW_EQS)                                 //WW
 	if(!configured_in_nonlinearloop)
 #if defined(USE_MPI)
@@ -4616,7 +4616,7 @@ double CRFProcess::Execute()
 	if(m_num->nls_method < 1 )
 	{
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
-	   InitializeRHS_with_u0(); 
+	   InitializeRHS_with_u0();
 #else
 		for (int ii = 0; ii < pcs_number_of_primary_nvals; ii++)
 		{
@@ -4788,7 +4788,7 @@ double CRFProcess::Execute()
 	//----------------------------------------------------------------------
 
     //
-    // Save the solution of the prevoius iteration of the nonlinear step for 
+    // Save the solution of the prevoius iteration of the nonlinear step for
     // the automatic time stepping. Modified for PETsc solver. 03.07.2012. WW
     if(Tim->GetPITimeStepCrtlType() > 0)
     {
@@ -4797,14 +4797,14 @@ double CRFProcess::Execute()
        x_k= _problem->GetBufferArray(get_buffer_u_k);
        for (int i = 0; i < pcs_number_of_primary_nvals; i++)
        {
-          nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1;		  
+          nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1;
 #if !defined(USE_PETSC) // && !defined(other parallel libs)
           const long ish = i * g_nnodes;
 #endif
           for (j = 0; j < g_nnodes; j++)
           {
 #if defined(USE_PETSC) // || defined(other parallel libs)
-             x_k[j*pcs_number_of_primary_nvals + i] =  GetNodeValue(j, nidx1); 
+             x_k[j*pcs_number_of_primary_nvals + i] =  GetNodeValue(j, nidx1);
 #else
 	         x_k[j + ish] = GetNodeValue(m_msh->Eqs2Global_NodeIndex[j], nidx1);
 #endif
@@ -4830,14 +4830,14 @@ double CRFProcess::Execute()
 		//....................................................................
 		for (int i = 0; i < pcs_number_of_primary_nvals; i++)
 		{
-		  nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1;		  
+		  nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1;
 		  for (j = 0; j < g_nnodes; j++)
 		    {
 		      k =  m_msh->Eqs2Global_NodeIndex[j] * pcs_number_of_primary_nvals + i;
 		      SetNodeValue(j, nidx1, (1.-nl_theta )* GetNodeValue(j, nidx1) + nl_theta * eqs_x[k]);
 		    }
 		}
-				
+
 	}                                     // END PICARD
 #else
     // JT: Coupling error was wrong. Now ok.
@@ -4922,7 +4922,7 @@ void CRFProcess::CopyU_n()
 	int i, nidx1;
 	long g_nnodes, j;
 
-    double *temp_v = _problem->GetBufferArray(); 
+    double *temp_v = _problem->GetBufferArray();
 
 	for(i = 0; i < pcs_number_of_primary_nvals; i++)
 	{
@@ -4938,7 +4938,7 @@ void CRFProcess::CopyU_n()
 			g_nnodes = m_msh->GetNodesNumber(false); //DOF>1, WW
 		}
 #if !defined(USE_PETSC) // && !defined(other parallel libs)
-        const long ish = i * g_nnodes; 
+        const long ish = i * g_nnodes;
 #endif
         for(j = 0; j < g_nnodes; j++)
         {
@@ -5357,7 +5357,7 @@ void CRFProcess::AddFCT_CorrectionVector()
    01/2006 OK/TK Tests
    12/2007 WW Spase matrix class and condensation sequential and parallel loop
    10/2010 TF changed access to process type
-   06/2012 WW Node based decompostion   
+   06/2012 WW Node based decompostion
  **************************************************************************/
 void CRFProcess::GlobalAssembly()
 {
@@ -5513,7 +5513,7 @@ void CRFProcess::GlobalAssembly()
 		SetCPL();                 //OK
 #endif
 
-#if defined(USE_PETSC)  // || defined(other parallel libs)//03~04.3012. 
+#if defined(USE_PETSC)  // || defined(other parallel libs)//03~04.3012.
 		eqs_new->AssembleRHS_PETSc();
 		eqs_new->AssembleMatrixPETSc(MAT_FINAL_ASSEMBLY );
 #endif
@@ -5538,7 +5538,7 @@ void CRFProcess::GlobalAssembly()
 
 		//		  MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
 #if defined(USE_PETSC)  // || defined(other parallel libs)//03~04.3012.
-		MPI_Barrier (MPI_COMM_WORLD); 
+		MPI_Barrier (MPI_COMM_WORLD);
 		  //	eqs_new->AssembleRHS_PETSc();
 		//eqs_new->AssembleMatrixPETSc(MAT_FINAL_ASSEMBLY );
 #endif
@@ -5668,7 +5668,7 @@ void CRFProcess::CalIntegrationPointValue()
 			// fem->m_dom = NULL; // To be used for parallization
 			if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW)
 				fem->Cal_VelocityMCF();
-			else 
+			else
 				fem->Cal_Velocity();
 			//moved here from additional lower loop
 			if (getProcessType() == FiniteElement::TNEQ)
@@ -5683,7 +5683,7 @@ void CRFProcess::CalIntegrationPointValue()
        //std::cout << "  Start local Picard iteration: tolerance = " << this->m_num->local_picard1_tolerance << std::endl;
        size_t i_itr = 0;
        double vel_error = .0;
-       for (i_itr=0; i_itr<v_itr_max; ++i_itr) 
+       for (i_itr=0; i_itr<v_itr_max; ++i_itr)
        {
            //std::cout << "  non-linear iteration: " << i_itr << "/" << v_itr_max << std::endl;
            vel_error = .0;
@@ -5694,11 +5694,11 @@ void CRFProcess::CalIntegrationPointValue()
                {
                    ElementValue* gp_ele = ele_gp_value[i];
                    gp_ele->GetEleVelocity(pre_v);
-                   
+
                    fem->ConfigElement(elem);
                    fem->Config();                           //OK4709
                    // fem->m_dom = NULL; // To be used for parallization
-                   
+
                    fem->Cal_Velocity();
 
                    gp_ele->GetEleVelocity(new_v);
@@ -5722,7 +5722,7 @@ void CRFProcess::CalIntegrationPointValue()
     //        if (elem->GetMark())                        // Marked for use
     //        {
     //            fem->ConfigElement(elem);
-    //            fem->Config();                
+    //            fem->Config();
 		  //      fem->CalcSolidDensityRate(); // HS, thermal storage reactions
     //        }
     //    }
@@ -5824,7 +5824,7 @@ void CRFProcess::AllocateLocalMatrixMemory()
 	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
-// CB THMBM     
+// CB THMBM
         // CB removed if condition due to conflict with deactivated subdomains
 //		if (elem->GetMark()) {     // Marked for use
 			eleMatrix = new ElementMatrix();
@@ -6236,7 +6236,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		bool quadr = false;
 #endif
 		if(type == 4 || type / 10 == 4)
-		  {   
+		  {
 			fac = Scaling;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		        quadr = true;
@@ -6391,7 +6391,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			      dof_per_node =  m_msh->GetCoordinateFlag() / 10;
 			    shift = m_bc_node->msh_node_number / m_msh->NodesNumber_Quadratic;
 			  }
- 
+
 
 #else
 			shift = m_bc_node->msh_node_number - m_bc_node->geo_node_number;
@@ -6474,13 +6474,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					// get value from last time step
 					std::string help;
 					help = m_bc_node->pcs_pv_name;
-					if(this->pcs_type_name_vector[0] == "MASS_TRANSPORT") 
+					if(this->pcs_type_name_vector[0] == "MASS_TRANSPORT")
 						help = this->pcs_primary_function_name[0];
 					int ind = this->GetNodeValueIndex(help) + 1; // new time level
 					time_fac = this->GetNodeValue(msh_node_id, ind);
 					std::cout << " Copy value " << time_fac << " from " << m_bc_node->bc_node_copy_geom << " " << m_bc_node->bc_node_copy_geom_name << " to POLYLINE " <<  "\n";
 
-				} 
+				}
 				//................................................................
 				// Conditions
 				if(m_bc_node->conditional)
@@ -6575,7 +6575,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						//bc_value = 0.;
 					}
 				}
-#if !defined(USE_PETSC) // && !defined(other parallel solver). //WW 04.2012. WW 
+#if !defined(USE_PETSC) // && !defined(other parallel solver). //WW 04.2012. WW
 				bc_eqs_index += shift;
 #endif
 
@@ -6639,7 +6639,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				  bc_eqs_id.push_back(static_cast<int>( m_msh->nod_vector[bc_msh_node]->GetEquationIndex()
 									* dof_per_node + shift));
 				  bc_eqs_value.push_back(bc_value);
-				  
+
 #elif defined(NEW_EQS)                        //WW
 				eqs_p->SetKnownX_i(bc_eqs_index, bc_value);
 #else
@@ -6654,13 +6654,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		int nbc = static_cast<int>(bc_eqs_id.size());
 		if(nbc>0)
 		  {
-		    eqs_new->setArrayValues(0, nbc, &bc_eqs_id[0], &bc_eqs_value[0], INSERT_VALUES); 
+		    eqs_new->setArrayValues(0, nbc, &bc_eqs_id[0], &bc_eqs_value[0], INSERT_VALUES);
 		    eqs_new->setArrayValues(1, nbc, &bc_eqs_id[0], &bc_eqs_value[0], INSERT_VALUES);
-		  } 
+		  }
 
 #ifdef petsc_zero_row_test
 		//We have do the following collection because MatZeroR must be called by all processes
-		const int mpi_size = eqs_new->getMPI_Size(); 
+		const int mpi_size = eqs_new->getMPI_Size();
 		vector <int> r_cnt(mpi_size);
 		vector <int> r_disp(mpi_size);
 		vector <int> r_vec(mpi_size);
@@ -6676,7 +6676,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		for(k=0; k<mpi_size; k++)
 		  {
 		    r_disp[k] = v_disp;
-		    v_disp += r_vec[k]; 
+		    v_disp += r_vec[k];
 		  }
 		r_cnt.resize(v_disp);
 		r_vec.resize(v_disp);
@@ -6690,10 +6690,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		    r_cnt[v_shift+k] = bc_eqs_id[k];
 		  }
 		MPI_Allreduce(&r_cnt[0], &r_vec[0], v_disp, MPI_INT, MPI_SUM,  PETSC_COMM_WORLD);
-		
-		MPI_Barrier (MPI_COMM_WORLD); 
+
+		MPI_Barrier (MPI_COMM_WORLD);
 		eqs_new->zeroRows_in_Matrix(v_disp, &r_vec[0]);
-#endif //  petsc_zero_row_test    
+#endif //  petsc_zero_row_test
 		eqs_new->AssembleUnkowns_PETSc();
 		eqs_new->AssembleRHS_PETSc();
 
@@ -6705,8 +6705,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 		eqs_new->zeroRows_in_Matrix(nbc, &bc_eqs_id[0]);
 		eqs_new->AssembleMatrixPETSc();
-		
-#endif		
+
+#endif
 	}
 
 /**************************************************************************
@@ -6761,7 +6761,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		{
 			begin = 0;
 			end = (long)bc_node_value.size();
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW		     
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 #ifdef NEW_EQS                              //WW
 			eqs_p = eqs_new;
 			eqs_rhs = eqs_new->b; //27.11.2007 WW
@@ -6770,7 +6770,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #endif
 #endif
 		}
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW		     
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 		else
 		{
 			m_dom = dom_vector[rank];
@@ -6809,8 +6809,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 #if defined(USE_PETSC) // ||defined(other parallel libs)//03~04.3012. WW
 				bc_msh_node = m_bc_node->geo_node_number;
-				
-#else		     
+
+#else
 				shift = m_bc_node->msh_node_number - m_bc_node->geo_node_number;
 				//
 				if(rank > -1)
@@ -7084,7 +7084,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					shift = m_dom->shift[dim_space];
 				}
 				else
-#endif 
+#endif
 					bc_msh_node = m_bc_node->geo_node_number;
 				//------------------------------------------------------------WW
 				if(m_msh) //OK
@@ -7414,7 +7414,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			      dof_per_node =  m_msh->GetCoordinateFlag() / 10;
 			    shift = cnodev->msh_node_number / m_msh->NodesNumber_Quadratic;
 			  }
- 
+
 
 #else
 			shift = cnodev->msh_node_number - cnodev->geo_node_number;
@@ -7569,10 +7569,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			//------------------------------------------------------------------
 			// EQS->RHS
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-			
+
 			st_eqs_id.push_back(static_cast<int>(m_msh->nod_vector[msh_node]->GetEquationIndex() * dof_per_node + shift));
 			st_eqs_value.push_back(value);
-			
+
 #else
 			if (rank > -1)
 				bc_eqs_index = msh_node + shift;
@@ -7615,7 +7615,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					glocalindex = stgem_local_index_in_dom[i];
 					//				cout << " gem_node_index " << gem_node_index << "\n";
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-			
+
 					st_eqs_id.push_back(static_cast<int>(m_msh->nod_vector[glocalindex]->GetEquationIndex()));
 					st_eqs_value.push_back(Water_ST_vec[gindex].water_st_value);
 #else
@@ -7647,13 +7647,13 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		if(st_eqs_id.size()>0)
 		  {
 		    eqs_new->setArrayValues(1, static_cast<int>(st_eqs_id.size()),
-					    &st_eqs_id[0], &st_eqs_value[0]); 
+					    &st_eqs_id[0], &st_eqs_value[0]);
 		    //eqs_new->AssembleRHS_PETSc();
 		  }
-#endif		
+#endif
 	}
 
-#if !defined(USE_PETSC) && !defined(NEW_EQS)// || defined(other parallel libs)//03~04.3012.   
+#if !defined(USE_PETSC) && !defined(NEW_EQS)// || defined(other parallel libs)//03~04.3012.
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -9082,13 +9082,13 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 
 	double CRFProcess::ExecuteNonLinear(int loop_process_number, bool print_pcs)
 	{
-		double nonlinear_iteration_error;
+		double nonlinear_iteration_error = 0.0;
 		double nl_theta, damping, norm_x0, norm_b0, norm_x, norm_b, val;
-		double error_x1, error_x2, error_b1, error_b2, error, last_error, percent_difference;
+		double error_x1, error_x2, error_b1, error_b2 = 0, error, last_error, percent_difference;
 		//double* eqs_x = NULL;     //
 		double* eqs_b = NULL;
 		bool converged, diverged;
-		int ii, nidx1, num_fail;
+		int ii, nidx1, num_fail = 0;
 		size_t j, g_nnodes;
 
 		string delim = " ";
@@ -9210,7 +9210,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 						//
 #if defined(USE_PETSC) // || defined(other parallel libs)//06.3012. WW
 		               norm_x = eqs_new->GetVecNormX();
-		               norm_b = eqs_new->GetVecNormRHS();			  
+		               norm_b = eqs_new->GetVecNormRHS();
 #else
 						norm_x = pcs_unknowns_norm; // JT: this is already obtained in CalcIterationNodeError.
 						norm_b = 0.0; // must calculate this
@@ -9959,7 +9959,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			{
 				m_pcs = pcs_vector[i];
 				found = true;
-			}			
+			}
 			if (found)
 				return m_pcs;
 		}
@@ -10064,27 +10064,27 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
    GeoSys-FEM Function:
 Task: Updating rho_s values in TNEQ
 
-Programming: 
+Programming:
 11/2011 HS Implementation for thermal storage project
 **************************************************************************/
 void CRFProcess::CalcSecondaryVariablesTNEQ()
 {
 	CElem* elem = NULL;
-	size_t i; 
+	size_t i;
 
-    // loop over all the nodes, 
+    // loop over all the nodes,
     // clean the nodal reaction rate values
-    const size_t node_vector_size(m_msh->nod_vector.size()); 
+    const size_t node_vector_size(m_msh->nod_vector.size());
     const int idx_nodal_react_rate = this->GetNodeValueIndex("REACT_RATE_N");
 	const int idx_nodal_solid_density = this->GetNodeValueIndex("SOLID_DENSITY_N");
 
     for (size_t idx_node=0; idx_node<node_vector_size; idx_node++)
     {
-        this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 ); 
+        this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
 		this->SetNodeValue( idx_node, idx_nodal_solid_density, 0.0);
     }
 
-	// loop over all the elements and update the rho_s values. 
+	// loop over all the elements and update the rho_s values.
 	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
     for (i = 0; i < mesh_ele_vector_size; i++)
     {
@@ -10202,7 +10202,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
    ndx_dens = GetNodeValueIndex("DENSITY1");
 
    CRFProcess *m_pcs = NULL;
-   if((m_pcs = PCSGet("HEAT_TRANSPORT"))) 
+   if((m_pcs = PCSGet("HEAT_TRANSPORT")))
      heattransport=true;
 
    CFluidProperties* m_mfp = NULL;
@@ -10214,7 +10214,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 	   // get pressure
 	   var[0] = this->GetNodeValue(i,this->GetNodeValueIndex("PRESSURE1"));
 	   // get temperature
-		  if(heattransport) 
+		  if(heattransport)
       var[1] = m_pcs->GetNodeValue(i,m_pcs->GetNodeValueIndex("TEMPERATURE1"));
 	   // Set salinity
 		  var[2] = 0.0;
@@ -10222,7 +10222,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
     // Assigning the secondary variable
     SetNodeValue(i,ndx_dens,dens);
    }
- 
+
 }
 
 /**************************************************************************
@@ -10429,7 +10429,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 		       idx = m_pcs->GetNodeValueIndex(var_name);  // +timelevel; CB SATURATION1 in PS_GLOBAL is only for old time level
 		       cplpcs = m_pcs;
 		     }
-		     break;    
+		     break;
 		case 22:                  // Richards flow
 			m_pcs = PCSGet(FiniteElement::RICHARDS_FLOW);
 			if(m_pcs)
@@ -13013,7 +13013,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		int dof = 1;
 		//
         //size_t dof_nonDM (1);     //WW 02.2023. Pardiso
-        size_t dof_nonDM (0);    
+        size_t dof_nonDM (0);
 
 		for(i = 0; i < pcs_vector.size(); i++)
 		{
@@ -13246,7 +13246,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 
 		double* u_n = _problem->GetBufferArray();
 
-        double *eqs_x = NULL;	
+        double *eqs_x = NULL;
         if (m_num->nls_method == 1) // Newton-Raphson
 	    {
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
@@ -13387,7 +13387,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 		{
 			nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
-			g_nnodes = m_msh->getNumNodesLocal(); 
+			g_nnodes = m_msh->getNumNodesLocal();
 #else
 			g_nnodes = m_msh->GetNodesNumber(false);
 #endif
@@ -13400,7 +13400,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
                   k = j;
                   l = pcs_number_of_primary_nvals * j + ii;
-#else		
+#else
                   k = m_msh->Eqs2Global_NodeIndex[j];
                   l = j + ii * g_nnodes;
 #endif
@@ -13416,7 +13416,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
                   k = j;
                   l = pcs_number_of_primary_nvals * j + ii;
-#else		
+#else
                   k = m_msh->Eqs2Global_NodeIndex[j];
                   l = j + ii * g_nnodes;
 #endif
@@ -13559,7 +13559,7 @@ CRFProcess* PCSGetMass(size_t component_number)
 #ifdef NEW_EQS                           //15.12.2008. WW
 				eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;
 #elif defined(USE_PETSC)
-				// eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;				
+				// eqs_new->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;
 #else
 				eqs->b[it] -= m_vec_GEM->m_xDC_Chem_delta[it * nDC + i] / Tim->time_step_length;
 #endif
@@ -15246,7 +15246,7 @@ double coef = 0.0, fkt=0.0;
 int i_idx;
 double Conc, valence, diff_coeff, gradConc[3], S_gradConc[3];
 double *node_concs, conc, conc_help;
-node_concs = new double [20]; 
+node_concs = new double [20];
 int ele_dim, i_dim;
 
 string _ctx_SpeciesName = "Substrate";
@@ -15281,7 +15281,7 @@ for(k=0;k<cp_vec.size();k++){
 m_pcs2 = PCSGet("MASS_TRANSPORT", _ctx_SpeciesName);
 
 // element loop
-for(i = 0; i < nelements; i++) { 
+for(i = 0; i < nelements; i++) {
   // get each element
   //if(i<5) cout << "\n" << " ele: " << i << "\n";
   elem = m_pcs->m_msh->ele_vector[i];
@@ -15289,7 +15289,7 @@ for(i = 0; i < nelements; i++) {
   nnodes = elem->nodes_index.Size();
 
   if (elem->GetMark()){
-	// for each element calculate grad(Substrate) 
+	// for each element calculate grad(Substrate)
 	// get number of gauss points for this element
 	m_fem = m_pcs->GetAssember();
 	m_fem->ConfigElement(elem);
@@ -15300,13 +15300,13 @@ for(i = 0; i < nelements; i++) {
     for(gp=0;gp<n_gauss;gp++){
 	  // if(i<5) cout << "\n"<< "gauss point " <<  gp << "\n";
 	  sum_C = 0.0;
-	  for(i_dim=0;i_dim < ele_dim;i_dim++){ 
+	  for(i_dim=0;i_dim < ele_dim;i_dim++){
 		  sum_gradC[i_dim] = 0.0;
 	  }
 
 	  //gp_ele->getIPvalue_vec(gp,vel);
 	  //for(i_dim=0;i_dim < ele_dim;i_dim++) cout << " i_dim " << i_dim << ", vel:   " << vel[i_dim] << "\n";
-  	
+
 	  i_idx = 1; // as this is in the end of transport loop,  take c_new
 
 	  fkt = m_fem->GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -15315,7 +15315,7 @@ for(i = 0; i < nelements; i++) {
 
         // Get C of substrate at Meshnodes of this ele
         for(int l=0; l<nnodes; l++){
-		  conc_help = m_pcs2->GetNodeValue(elem->GetNodeIndex(l), i_idx); 
+		  conc_help = m_pcs2->GetNodeValue(elem->GetNodeIndex(l), i_idx);
 		  node_concs[l] = fabs(conc_help);
 		  //if(i<5) cout << " l, node_conc[l]:  " << l << "   " << node_concs[l] << "\n";
 	  }
@@ -15325,16 +15325,16 @@ for(i = 0; i < nelements; i++) {
 	  //if(i< 5) cout << " Conc[gp]: " << Conc << "     " << "\n";
 
       // calc grad_C
-      for(i_dim=0; i_dim < ele_dim; i_dim++) 
+      for(i_dim=0; i_dim < ele_dim; i_dim++)
         gradConc[i_dim] = 0.0;
 	  for(i_dim=0; i_dim < ele_dim; i_dim++){
-        for(int l=0; l<nnodes; l++){         
+        for(int l=0; l<nnodes; l++){
 	    	gradConc[i_dim] += node_concs[l]* m_fem->Getdshapefct(i_dim*nnodes+l);
 			//if(i< 5) cout << "i_dim, l, gradConc, node_concs, shapefunction : " << i_dim << ",  " << l ;
 			//if(i< 5) cout << " ,  " << gradConc[i_dim] << ", " << node_concs[l] << " ,  " << m_fem->Getdshapefct(i_dim*m_fem->Getnnodes()+l) << "\n";
 		}
 	  }
-        
+
 
       // save result for element in gauss point
       for(i_dim=0; i_dim < ele_dim; i_dim++){
@@ -15342,9 +15342,9 @@ for(i = 0; i < nelements; i++) {
 	    //if(fabs(sum_C) > 1.0e-15)
 		S_gradConc[i_dim] = -1.0 * X_s *  gradConc[i_dim] ;
 	    //if(i<5) cout << el_field[i_dim] << "  " << sum_gradC[i_dim] << "  " << sum_vC[i_dim] << "  "  << sum_C << "\n";
-	   
+
         m_fem->Set_ctx_(i,S_gradConc[i_dim], gp, i_dim);
-       
+
         //gp_ele->_ctx_Gauss(i_dim,gp) = el_field[i_dim];
 	    //if(i<500) cout  << "   (" << gp << ", " << el_field[i_dim] << ") " << "\n";
 	    //cout << " Test: GetElectricField2: " << m_fem->GetElField(i,gp,i_dim) << "\n";
