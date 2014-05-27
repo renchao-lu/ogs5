@@ -163,7 +163,7 @@ EvalInfo* eval_data = NULL;
 string project_title("New project");              //OK41
 
 bool hasAnyProcessDeactivatedSubdomains = false;  //NW
-
+extern double gravity_constant;
 //--------------------------------------------------------
 // Coupling Flag. WW
 bool T_Process = false;					// Heat
@@ -6508,45 +6508,11 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					//MW calculate pressure from given head at bc with density, gravity constant and geodetic height for PRESSURE as primary variable
 					if ( m_bc_node->pressure_as_head )
 					{
-
-						CRFProcess *local_richards_flow = PCSGet("PRESSURE1",true);		//might also work with LIQUID_FLOW, but not tested
-						CRFProcess *local_heat_transport = PCSGet("TEMPERATURE1",true);
-						CRFProcess *local_mass_transport = PCSGet("CONCENTRATION1",true);
-						int nidx0, local_node_number = m_bc_node->msh_node_number;
-						double local_args[3];
-
-						if ( local_richards_flow != NULL )		//MW: pressure dependency with given head is probably not really working and would need iteration
-						{
-							nidx0 = local_richards_flow->GetNodeValueIndex("PRESSURE1",0);
-							local_args[0] = local_richards_flow->GetNodeValue(local_node_number,nidx0);
-						}
-						else
-							local_args[0] = 0;
-
-						if ( local_heat_transport != NULL )
-						{
-							nidx0 = local_heat_transport->GetNodeValueIndex("TEMPERATURE1",0);
-							local_args[1] = local_heat_transport->GetNodeValue(local_node_number,nidx0);
-						}
-						else
-							local_args[1] = 0;
-
-
-						if ( local_mass_transport != NULL )
-						{
-							nidx0 = local_mass_transport->GetNodeValueIndex("CONCENTRATION1",0);
-							local_args[2] = local_mass_transport->GetNodeValue(local_node_number,nidx0);
-						}
-						else
-							local_args[2] = 0;
-
-						double local_density = mfp_vector[0]->Density(local_args),
-								local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z(),
-								local_gravity_constant = 9.81;
+						const double local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
+						const double local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z();
 
 						// pressure = gravitational_constant * density * ( head - geodetic_height )
-						bc_value = fac * local_gravity_constant * local_density * ( time_fac * m_bc_node->node_value - local_node_elevation );
-
+						bc_value = fac * gravity_constant * local_density * ( time_fac * m_bc_node->node_value - local_node_elevation );
 					}
 					else
 					{
