@@ -1052,7 +1052,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 				//YD/WW
 				m_node_value->pcs_pv_name = _pcs_pv_name;
 				m_node_value->msh_node_number_subst = msh_node_number_subst;
-				m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 				pcs->bc_node.push_back(bc); //WW
 				//WW
 				pcs->bc_node_value.push_back(m_node_value);
@@ -1102,7 +1101,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							// SB copy values 09.2012
 							m_node_value->bc_node_copy_geom = bc->copy_geom;
 							m_node_value->bc_node_copy_geom_name = bc->copy_geom_name;
-							m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 
 							//WW
 							pcs->bc_node.push_back(bc);
@@ -1150,7 +1148,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							m_node_value->CurveIndex =
 							        bc->getCurveIndex();
 							m_node_value->pcs_pv_name = _pcs_pv_name;
-							m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 							pcs->bc_node.push_back(bc);
 							pcs->bc_node_value.push_back(m_node_value);
 						}
@@ -1173,7 +1170,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							m_node_value->CurveIndex = bc->getCurveIndex();
 							m_node_value->pcs_pv_name = _pcs_pv_name;
 							m_node_value->msh_node_number_subst = msh_node_number_subst;
-							m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 							pcs->bc_node.push_back(bc);
 							pcs->bc_node_value.push_back(m_node_value);
 						}
@@ -1243,7 +1239,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							m_node_value->pcs_pv_name = _pcs_pv_name;
 							m_node_value->CurveIndex =
 							        bc->getCurveIndex();
-							m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 							//WW
 							pcs->bc_node.push_back(bc);
 							//WW
@@ -1366,7 +1361,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							}
 						}
 						m_node_value->CurveIndex = bc->getCurveIndex();
-						m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 						//OK
 						bc->node_number_vector = nodes_vector;
 						pcs->bc_node.push_back(bc); //WW
@@ -1490,7 +1484,6 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 							m_node_value->pcs_pv_name = _pcs_pv_name;
 							m_node_value->CurveIndex =
 							        bc->getCurveIndex();
-							m_node_value->pressure_as_head = bc->pressure_as_head;	//MW
 							//WW
 							pcs->bc_node.push_back(bc);
 							//WW

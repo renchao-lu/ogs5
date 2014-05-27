@@ -135,6 +135,9 @@ public:
 	int getTimeContrCurve() {return time_contr_curve; } //WX:12.2010 get bc ativity controlled curve
 	int getNoDispIncre() {return NoDispIncre;};	//WX:12.2012
 
+	// give head bc for PRESSURE1 primary variable	//MW
+	bool PressureAsHead() const {return pressure_as_head;}
+
 private:
 	std::vector<std::string> _PointsFCTNames;
 	std::vector<int> _PointsHaveDistribedBC;
@@ -218,7 +221,6 @@ public:
 	int conditional;                      //OK
 	std::string bc_node_copy_geom;
 	std::string bc_node_copy_geom_name;
-	bool pressure_as_head;					//MW
 	CBoundaryConditionNode();
 
 	// 25.08.2011. WW
