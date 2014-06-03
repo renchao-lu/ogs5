@@ -77,6 +77,8 @@ void rotatePointsToXZ(MathLib::Vector &plane_normal, std::vector<GEOLIB::Point*>
  * @param a edge node of triangle
  * @param b edge node of triangle
  * @param c edge node of triangle
+ * @param eps size of neighbourhood (orthogonal distance to the plane
+ * spaned by triangle)
  * @return true if the test point p is within the 'epsilon'-neighbourhood of the triangle
  */
 bool isPointInTriangle (const GEOLIB::Point* p,
