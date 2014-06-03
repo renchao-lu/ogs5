@@ -130,7 +130,7 @@ else
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
 
 	cd $BUILD_LOCATION/build_petsc_gems
-	ctest -VV -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
+	ctest -E 'FILE|EXCEED|Tests' -j $NUM_PROCESSORS >> ../benchOut.txt
 	ctest -R 'FILECOMPARE' -E 'EXCEED' >> ../benchOut.txt
 
 	cd $BUILD_LOCATION/build_mpi

@@ -269,4 +269,25 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 
 } // end namespace FiniteElement
 
+struct TimeControlType
+{
+	enum type
+	{
+		INVALID,
+		FIXED_STEPS,
+		PI_AUTO_STEP_SIZE,
+		DYNAMIC_VARIABLE,
+		DYNAMIC_COURANT,
+		DYNAMIC_PRESSURE,
+		STEP_SIZE_RESTRICTION,
+		NEUMANN,
+		ERROR_CONTROL_ADAPTIVE,
+		SELF_ADAPTIVE
+	};
+};
+
+TimeControlType::type convertTimeControlType(const std::string &str);
+
+std::string convertTimeControlTypeToString(TimeControlType::type st_type);
+
 #endif                                            //FEMENUMS_H

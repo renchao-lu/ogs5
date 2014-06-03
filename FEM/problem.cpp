@@ -1139,7 +1139,7 @@ void Problem::Euler_TimeDiscretize()
     {
 		m_tim = total_processes[active_process_index[i]]->Tim;
 		std::cout << "\nFor process: " << convertProcessTypeToString(total_processes[active_process_index[i]]->getProcessType()) << "\n";
-		if(m_tim->time_control_name == "NONE"){
+		if(m_tim->time_control_type == TimeControlType::FIXED_STEPS){
 			std::cout << "No time control for this process." << "\n";
 		}
 		else{
@@ -1152,7 +1152,15 @@ void Problem::Euler_TimeDiscretize()
 		}
     }
     std::cout<<"\n----------------------------------------------------\n";
-#if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)  || defined(USE_MPI_KRC) 
+#if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)  || defined(USE_MPI_KRC)
+
+#if defined(USE_PETSC) //05.2014. WW   
+	for (size_t i = 0; i < out_vector.size(); i++)
+	{
+		out_vector[i]->NODDomainWriteBinary_Header();
+	}  
+#endif
+ 
 	}
 #endif
 }
