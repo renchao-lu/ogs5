@@ -32,6 +32,9 @@ SET( UIS
 # Find installed Qt4 libraries and headers
 find_package( Qt4 REQUIRED )
 
+ADD_SUBDIRECTORY( ../../../Qt/DataView )
+ADD_SUBDIRECTORY( ../../../Qt/VtkVis )
+
 # Run Qts user interface compiler uic on .ui files
 QT4_WRAP_UI( UI_HEADERS ${UIS} )
 
