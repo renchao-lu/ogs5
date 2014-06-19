@@ -10137,7 +10137,7 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
 			// between two fluids is big. To prevent negative Snw, the
 			// saturation restriction added.
 			CMediumProperties* mmp = NULL;
-			if(mmp_vector.size() > 1)
+			if(sat2 != .0 && mmp_vector.size() > 1)
 			{
 				double sum = 0.0;
 				CNode* thisNode = m_msh->nod_vector[i];
@@ -10167,23 +10167,20 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
 			//	SetNodeValue(i,ndx_s_nonwetting+1,sat2);
 
 			// Assigning the secondary variable, Pc
-			if(mmp->capillary_pressure_model == 6)
+			if(mmp->capillary_pressure_model == 6 && fabs(mmp->capillary_pressure_values[0]) < DBL_EPSILON)
 			{
-                             if( fabs(mmp->capillary_pressure_values[0]) < DBL_EPSILON)
-	                     {
-				 p_cap = 0.;
-			     }
+				p_cap = 0.;
 			}
 			else
 			{
-	    		if(mmp_vector.size() > 1)
-		    		p_cap = GetCapillaryPressureOnNodeByNeighobringElementPatches(
-				        i,
-				        2,
-				        1.0 -
-				        sat2);
-	    		else
-		    		p_cap = mmp->CapillaryPressureFunction(1.0 - sat2);
+				if(mmp_vector.size() > 1)
+					p_cap = GetCapillaryPressureOnNodeByNeighobringElementPatches(
+							i,
+							2,
+							1.0 -
+							sat2);
+				else
+					p_cap = mmp->CapillaryPressureFunction(1.0 - sat2);
 			}
 
 			SetNodeValue(i,ndx_p_cap,p_cap);
