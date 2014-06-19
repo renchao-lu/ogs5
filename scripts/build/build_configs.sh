@@ -110,7 +110,13 @@ cmake --build . --config Release --target package $BUILD_ARGS
 if [ "${?}" -ne "0" ] ; then
 	returncode=1
 fi
-cp *.tar.gz ../Release/
+
+if [ "$OSTYPE" == 'msys' ]; then
+	cp *.zip ../Release/
+else	
+	cp *.tar.gz ../Release/
+fi
+
 cd ..
 
 echo "exit code is ${returncode}"
