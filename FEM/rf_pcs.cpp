@@ -10167,7 +10167,8 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
 			//	SetNodeValue(i,ndx_s_nonwetting+1,sat2);
 
 			// Assigning the secondary variable, Pc
-			if(mmp->capillary_pressure_model == 6 && fabs(mmp->capillary_pressure_values[0]) < DBL_EPSILON)
+			if((mmp->capillary_pressure_model == 4 || mmp->capillary_pressure_model == 6)
+				&& fabs(mmp->capillary_pressure_values[0]) < DBL_EPSILON)
 			{
 				p_cap = 0.;
 			}
