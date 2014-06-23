@@ -88,6 +88,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	StrainCoupling = NULL;
 	RHS = NULL;
 	FCT_MassL = NULL;                     //NW
+	GasProp = NULL;
 
 	//
 	edlluse =  edttuse = NULL;
@@ -855,9 +856,8 @@ void CFiniteElementStd::SetMaterial(int phase)
 	}
 	// 03.2009 PCH
 	// or JFNK. 10.08.2010. WW
-	if((PCSGet("RICHARDS_FLOW") &&
-	    PCSGet("HEAT_TRANSPORT")) || pcs->type == 1212 || pcs->type == 1313 || pcs->type ==
-	   42)
+	if(pcs->type == 1212 || pcs->type == 1313 || pcs->type == 42
+		|| (pcs->getProcessType()==FiniteElement::HEAT_TRANSPORT && (PCSGet("PS_GLOBAL") || PCSGet("RICHARDS_FLOW"))))
 	{
 		FluidProp = MFPGet("LIQUID");
 		FluidProp->Fem_Ele_Std = this;
