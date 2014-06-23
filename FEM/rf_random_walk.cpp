@@ -50,7 +50,6 @@ RandomWalk::RandomWalk(int srand_seed)
 	FDMIndexSwitch = 0;
 	GridOption = 0;
 	ChanceOfIrreversed = NULL;            //YS: judgement for decay
-	srand_seed = 0;
 
 	// To produce a different pseudo-random series each time your program is run.
 	if(srand_seed == 0)
