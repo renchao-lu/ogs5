@@ -6789,8 +6789,7 @@ void CFiniteElementStd::Cal_Velocity()
 				vel[i] += NodalVal[j] * dshapefct[i * nnodes + j];
 			//			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 		}
-		if(PcsType == V || PcsType == P) // PCH 05.2009
-
+		if(PcsType == V) {
 			for (size_t i = 0; i < dim; i++)
 			{
 				vel_g[i] = 0.0;
@@ -6798,6 +6797,15 @@ void CFiniteElementStd::Cal_Velocity()
 					// Change   NodalVal2 to NodalVal1. 02.2010. WW
 					vel_g[i] += NodalVal2[j] * dshapefct[i * nnodes + j];
 			}
+		} else if(PcsType == P) { // PCH 05.2009
+			for (size_t i = 0; i < dim; i++)
+			{
+				vel_g[i] = 0.0;
+				for(int j = 0; j < nnodes; j++)
+					vel_g[i] += NodalVal1[j] * dshapefct[i * nnodes + j];
+			}
+		}
+
 		// Gravity term
 		//NW
 		if(k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
