@@ -286,8 +286,9 @@ int main ( int argc, char* argv[] )
 	aproblem->Euler_TimeDiscretize();
 	delete aproblem;
 	aproblem = NULL;
-  if(ClockTimeVec.size()>0)
-    ClockTimeVec[0]->PrintTimes();  //CB time
+	if(ClockTimeVec.size()>0)
+		ClockTimeVec[0]->PrintTimes();  //CB time
+	DestroyClockTime();
 #ifdef TESTTIME
 #if defined(USE_MPI)
      if(myrank == 0)
