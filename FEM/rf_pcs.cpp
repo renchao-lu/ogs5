@@ -2876,7 +2876,7 @@ void CRFProcess::ConfigMassTransport()
 	// 1 NOD values
 	// 1.1 primary variables
 	pcs_number_of_primary_nvals = 1;
-	pcs_primary_function_name[0] = new char[80];
+	pcs_primary_function_name[0] = "";
 	//  sprintf(pcs_primary_function_name[0], "%s%li","CONCENTRATION",comp);
 	//----------------------------------------------------------------------
 	// Tests
@@ -2905,13 +2905,13 @@ void CRFProcess::ConfigMassTransport()
 	pcs_secondary_function_name[0] = new char[80];
 	char pcs_secondary_function_name_tmp [80];
 	sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
-	pcs_secondary_function_name[0] = pcs_secondary_function_name_tmp;
+	strncpy((char*)pcs_secondary_function_name[0], pcs_secondary_function_name_tmp, 80);
 	//      pcs_secondary_function_name[0] = "MASS_FLUX1";
 	pcs_secondary_function_unit[0] = "kg/m3/s";
 	pcs_secondary_function_timelevel[0] = 0;
 	pcs_secondary_function_name[1] = new char[80];
 	sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
-	pcs_secondary_function_name[1] = pcs_secondary_function_name_tmp;
+	strncpy((char*)pcs_secondary_function_name[1], pcs_secondary_function_name_tmp, 80);
 	pcs_secondary_function_unit[1] = "kg/m3/s";
 	pcs_secondary_function_timelevel[1] = 1;
 	//KG44 added secondary function for adaptive time stepping
@@ -2920,7 +2920,7 @@ void CRFProcess::ConfigMassTransport()
 		pcs_number_of_secondary_nvals = 3;
 		pcs_secondary_function_name[2] = new char[80];
 		sprintf(pcs_secondary_function_name_tmp, "%s%li","CONC_BACK_",comp);
-		pcs_secondary_function_name[2] = pcs_secondary_function_name_tmp;
+		strncpy((char*)pcs_secondary_function_name[2], pcs_secondary_function_name_tmp, 80);
 		pcs_secondary_function_unit[2] = "kg/m3";
 		pcs_secondary_function_timelevel[2] = 0;
 	}
