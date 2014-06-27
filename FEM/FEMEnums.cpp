@@ -368,6 +368,8 @@ DistributionType convertDisType(const std::string& dis_type_string)
 		return PRECIPITATION;
 	if (dis_type_string.compare("DIRECT") == 0)
 		return DIRECT;
+	if (dis_type_string.compare("DOMAIN") == 0)
+		return NODESCONSTANT;
 	if (dis_type_string.compare("CLIMATE") == 0)
 		return CLIMATE;
 	if (dis_type_string.compare("FUNCTION") == 0)
@@ -417,6 +419,8 @@ std::string convertDisTypeToString(DistributionType dis_type)
 		return "PRECIPITATION";
 	if (dis_type == DIRECT)
 		return "DIRECT";
+	if (dis_type == NODESCONSTANT)
+		return "DOMAIN";
 	if (dis_type == CLIMATE)
 		return "CLIMATE";
 	if (dis_type == FUNCTION)

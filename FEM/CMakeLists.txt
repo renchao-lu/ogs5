@@ -211,7 +211,7 @@ endif (WIN32)
 
 if (UNIX)
 	if (OGS_FEM_BRNS)
-		target_link_libraries( FEM dl )
+		target_link_libraries( FEM dl ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 	endif (OGS_FEM_BRNS)
 
 	if (LIS)

@@ -191,6 +191,7 @@ const std::list<std::string> getAllPrimaryVariableNames();
 	PRECIPITATION,
 	SYSTEM_DEPENDENT,                     // ST
 	TRANSFER_SURROUNDING,
+	NODESCONSTANT,                        // IC (for DOMAIN keyword)
 	CLIMATE,	// climate data (by NB)
 	// Sort of Neumann BC //WW
 	// make sure that this is always the last entry (important for iterating over the enum entries)!

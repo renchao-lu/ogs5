@@ -101,17 +101,5 @@ do
 
 done
 
-# Redistributable FEM config
-rm -rf build_fem_redist
-mkdir build_fem_redist && cd build_fem_redist
-cmake -DOGS_FEM=ON -DOGS_NO_EXTERNAL_LIBS=ON -DOGS_PACKAGING=ON -DCMAKE_BUILD_TYPE=Release -G "$CMAKE_GENERATOR" $SOURCE_LOCATION
-cmake -G "$CMAKE_GENERATOR" $SOURCE_LOCATION
-cmake --build . --config Release --target package $BUILD_ARGS
-if [ "${?}" -ne "0" ] ; then
-	returncode=1
-fi
-cp *.tar.gz ../Release/
-cd ..
-
 echo "exit code is ${returncode}"
 exit ${returncode}

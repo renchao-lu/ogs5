@@ -88,6 +88,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	StrainCoupling = NULL;
 	RHS = NULL;
 	FCT_MassL = NULL;                     //NW
+	GasProp = NULL;
 
 	//
 	edlluse =  edttuse = NULL;
@@ -855,9 +856,8 @@ void CFiniteElementStd::SetMaterial(int phase)
 	}
 	// 03.2009 PCH
 	// or JFNK. 10.08.2010. WW
-	if((PCSGet("RICHARDS_FLOW") &&
-	    PCSGet("HEAT_TRANSPORT")) || pcs->type == 1212 || pcs->type == 1313 || pcs->type ==
-	   42)
+	if(pcs->type == 1212 || pcs->type == 1313 || pcs->type == 42
+		|| (pcs->getProcessType()==FiniteElement::HEAT_TRANSPORT && (PCSGet("PS_GLOBAL") || PCSGet("RICHARDS_FLOW"))))
 	{
 		FluidProp = MFPGet("LIQUID");
 		FluidProp->Fem_Ele_Std = this;
@@ -6789,8 +6789,7 @@ void CFiniteElementStd::Cal_Velocity()
 				vel[i] += NodalVal[j] * dshapefct[i * nnodes + j];
 			//			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 		}
-		if(PcsType == V || PcsType == P) // PCH 05.2009
-
+		if(PcsType == V) {
 			for (size_t i = 0; i < dim; i++)
 			{
 				vel_g[i] = 0.0;
@@ -6798,6 +6797,15 @@ void CFiniteElementStd::Cal_Velocity()
 					// Change   NodalVal2 to NodalVal1. 02.2010. WW
 					vel_g[i] += NodalVal2[j] * dshapefct[i * nnodes + j];
 			}
+		} else if(PcsType == P) { // PCH 05.2009
+			for (size_t i = 0; i < dim; i++)
+			{
+				vel_g[i] = 0.0;
+				for(int j = 0; j < nnodes; j++)
+					vel_g[i] += NodalVal1[j] * dshapefct[i * nnodes + j];
+			}
+		}
+
 		// Gravity term
 		//NW
 		if(k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
