@@ -135,7 +135,7 @@ TEST(MATRIX, test_class_SymMatrix)
 
     x = 1.0;
     b = 0.0;
-    m.multi(x.getEntryArray_const(), b.getEntryArray());
+    m.multi(x.getEntryArray(), b.getEntryArray());
     ASSERT_EQ ( 12., b[0]);
     ASSERT_EQ ( 17., b[1]);
     ASSERT_EQ ( 24., b[2]);
@@ -143,7 +143,7 @@ TEST(MATRIX, test_class_SymMatrix)
     // Copy constructor
     SymMatrix m1(m);
     b = 0.0;
-    m1.multi(x.getEntryArray_const(), b.getEntryArray());
+    m1.multi(x.getEntryArray(), b.getEntryArray());
     ASSERT_EQ ( 12., b[0]);
     ASSERT_EQ ( 17., b[1]);
     ASSERT_EQ ( 24., b[2]);
