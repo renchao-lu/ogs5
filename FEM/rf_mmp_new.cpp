@@ -749,8 +749,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 			case 1:       // S=const
 				in >> storage_model_values[0]; //Constant value in Pa
-				if ( permeability_saturation_model[0] == 10)	//MW
-					storage_model_values[0] = 1/(9.81*1000);
 				break;
 			case 2:
 				in >> storage_model_values[0]; //S0
@@ -788,6 +786,9 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				in >> storage_model_values[7]; //Maximum thickness of shear zone
 				in >> storage_model_values[8]; //Fracture density
 				pcs_name_vector.push_back("PRESSURE1");
+				break;
+			case 10: 	// S=const for permeability_saturation_model = 10
+				storage_model_values[0] = 1/(9.81*1000);
 				break;
 			default:
 				cout << "Error in MMPRead: no valid storativity model" << "\n";
