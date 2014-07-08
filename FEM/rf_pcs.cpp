@@ -1240,8 +1240,8 @@ void CRFProcess:: WriteSolution()
 	int* idx(new int [2 * pcs_number_of_primary_nvals]);
 	for ( j = 0; j < pcs_number_of_primary_nvals; j++ )
 	{
-		idx[j] = GetNodeValueIndex ( pcs_primary_function_name[j] ) + 1;		//WW-MW modified for properly reading reload 1 1 solution with reload 2
-		idx[j + pcs_number_of_primary_nvals] = idx[j];							//WW-MW modified for properly reading reload 1 1 solution with reload 2
+		idx[j] = GetNodeValueIndex ( pcs_primary_function_name[j] );
+		idx[j + pcs_number_of_primary_nvals] = idx[j] + 1;
 	}
 	for (size_t i = 0; i < m_msh->GetNodesNumber ( false ); i++ )
 	{
