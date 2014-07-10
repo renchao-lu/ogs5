@@ -720,6 +720,11 @@ public:
 	// This function is a part of the monolithic scheme
 	//  and it is related to ST, BC, IC, TIM and OUT. WW
 	void SetOBJNames();
+
+
+	//MW
+	int getFirstNodeBelowGWL(size_t i);
+
 	// ST
 	void IncorporateSourceTerms(const int rank = -1);
 	//WW void CheckSTGroup(); //OK
