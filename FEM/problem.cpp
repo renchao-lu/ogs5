@@ -486,6 +486,7 @@ Problem::Problem (char* filename) :
 			max_time_steps = m_tim->time_step_vector.size();
 		if (m_tim->GetPITimeStepCrtlType() > 0)
 			time_ctr = true;
+		m_tim->last_active_time = start_time; //NW
 	}
 	if(max_time_steps == 0)
 		max_time_steps = std::numeric_limits<std::size_t>::max()-1; // ULONG_MAX-1;  //kg44 increased the number to maximum number (size_t)
