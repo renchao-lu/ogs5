@@ -90,7 +90,7 @@ public:
 	double max_time_step;                 //YD
 	double min_time_step;
 	double ini_time_step;
-	bool coupled_adapt_tim_step;	//MW
+	IterationType::type adapt_itr_type;
 
 
 	//
@@ -134,7 +134,6 @@ public:
 	double ErrorControlAdaptiveTimeControl();
 	double NeumannTimeControl();
 	double SelfAdaptiveTimeControl();
-	double SelfAdaptiveTimeControl_Coupled();
 	double DynamicVariableTimeControl(); //JT2012
 	double DynamicTimeSmoothing(double suggested_time_step_change);		//JT2012
 	//

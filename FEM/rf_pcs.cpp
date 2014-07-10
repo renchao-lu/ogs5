@@ -223,6 +223,12 @@ CRFProcess::CRFProcess(void) :
 #endif
 	ele_val_name_vector (std::vector<std::string>())
 {
+	iter_lin = 0;
+	iter_lin_max = 0;
+	iter_nlin = 0;
+	iter_nlin_max = 0;
+	iter_inner_cpl = 0;
+	iter_outer_cpl = 0;
 	TempArry = NULL;
 	//SB:GS4  pcs_component_number=0; //SB: counter for transport components
 	pcs_component_number = pcs_no_components - 1;
@@ -4677,6 +4683,7 @@ double CRFProcess::Execute()
 #else
 	iter_lin = ExecuteLinearSolver();
 #endif
+	iter_lin_max = std::max(iter_lin_max, iter_lin);
 
 	//----------------------------------------------------------------------
 	// Linearized Flux corrected transport (FCT) by Kuzmin 2009
@@ -9635,6 +9642,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				break;
 			}
 		}
+		iter_nlin_max = std::max(iter_nlin_max, iter_nlin);
 		// ------------------------------------------------------------
 		// NON-LINEAR ITERATIONS COMPLETE
 		// ------------------------------------------------------------
