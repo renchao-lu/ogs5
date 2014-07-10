@@ -1541,6 +1541,16 @@ bool CTimeDiscretization::isDynamicTimeFailureSuggested(CRFProcess *m_pcs)
 			}
 		}
 	}
+	else if (time_control_type == TimeControlType::SELF_ADAPTIVE) {
+		int n_itr = 0;
+		if (adapt_itr_type==IterationType::LINEAR) {
+			n_itr = m_pcs->iter_lin_max;
+		} else if (adapt_itr_type==IterationType::NONLINEAR) {
+			n_itr = m_pcs->iter_nlin_max;
+		}
+		if (n_itr>=time_adapt_tim_vector.back())
+			return true;
+	}
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 
 	else{ // Alright, this is annoying. Unfortunately we have to recalculate the node errors.
@@ -1553,6 +1563,7 @@ bool CTimeDiscretization::isDynamicTimeFailureSuggested(CRFProcess *m_pcs)
 		}
 	}
 #endif
+
 	//
 	return false;
 }
