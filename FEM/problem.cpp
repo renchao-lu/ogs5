@@ -1059,7 +1059,18 @@ void Problem::Euler_TimeDiscretize()
 #if defined(USE_MPI) || defined(USE_MPI_KRC) 
 		}
 #endif
-	
+
+	// check if this is a steady state simulation
+	bool isSteadySimulation = true;
+	for(i=0; i<(int)active_process_index.size(); i++)
+	{
+		if (total_processes[active_process_index[i]]->tim_type!=TimType::STEADY)
+		{
+			isSteadySimulation = false;
+			break;
+		}
+	}
+
 	//
 	// ------------------------------------------
 	// PERFORM TRANSIENT SIMULATION
@@ -1140,6 +1151,10 @@ void Problem::Euler_TimeDiscretize()
 				m_tim = total_processes[active_process_index[i]]->Tim;
 				if(m_tim->time_active) m_tim->accepted_step_count++;
 			}
+		}
+		else if (isSteadySimulation)
+		{
+			ScreenMessage("This step is rejected.\n");
 		}
 		else
 		{
