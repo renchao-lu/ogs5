@@ -135,6 +135,9 @@ public:
 	int getTimeContrCurve() {return time_contr_curve; } //WX:12.2010 get bc ativity controlled curve
 	int getNoDispIncre() {return NoDispIncre;};	//WX:12.2012
 
+	// give head bc for PRESSURE1 primary variable	//MW
+	bool PressureAsHead() const {return pressure_as_head;}
+
 private:
 	std::vector<std::string> _PointsFCTNames;
 	std::vector<int> _PointsHaveDistribedBC;
@@ -198,6 +201,8 @@ private:
 	int time_contr_curve;
 	// no displacement increment 12.2012
 	int NoDispIncre;
+	// give head bc for PRESSURE1 primary variable	//MW
+	bool pressure_as_head;
 };
 
 class CBoundaryConditionNode                      //OK raus

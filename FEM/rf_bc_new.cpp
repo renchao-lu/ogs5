@@ -130,7 +130,8 @@ CBoundaryCondition::CBoundaryCondition() :
 	NoDispIncre = -1;								//WX:12.2012
     gradient_ref_depth = 0;             //CB
     gradient_ref_depth_value = 0;       //CB
-    gradient_ref_depth_gradient = 0;    //CB	
+    gradient_ref_depth_gradient = 0;    //CB
+    pressure_as_head=false;	//MW
 }
 
 // KR: Conversion from GUI-BC-object to CBoundaryCondition
@@ -452,6 +453,14 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 		//....................................................................
+		if (line_string.find("$PRESSURE_AS_HEAD") != std::string::npos)
+		{
+			pressure_as_head=true;
+			in.clear();
+		}
+		//....................................................................
+
+
 	}
 	return position;
 }
