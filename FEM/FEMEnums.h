@@ -287,6 +287,22 @@ TimType::type convertTimType(const std::string& str);
 
 std::string convertTimTypeToString(TimType::type type);
 
+
+struct IterationType
+{
+	enum type
+	{
+		INVALID,
+		LINEAR,
+		NONLINEAR,
+		COUPLED
+	};
+};
+
+IterationType::type convertIterationType(const std::string& str);
+
+std::string convertIterationTypeToString(IterationType::type type);
+
 struct TimeControlType
 {
 	enum type
