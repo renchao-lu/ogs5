@@ -1249,7 +1249,7 @@ bool Problem::CouplingLoop()
 		}
 		else
 		{   //21.05.2010.  WW
-			if(total_processes[i] && total_processes[i]->tim_type_name.find("STEADY") != std::string::npos) {
+			if(total_processes[i] && total_processes[i]->tim_type == TimType::STEADY) {
 				acounter++;
                 m_tim = total_processes[i]->Tim;
                 m_tim->step_current++; //NW increment needed to get correct time step length in CTimeDiscretization::CalcTimeStep()
@@ -1586,7 +1586,7 @@ inline double Problem::LiquidFlow()
 		PCSCalcSecondaryVariables(); // PCS member function
 #endif
 		m_pcs->CalIntegrationPointValue(); //WW
-		if(m_pcs->tim_type_name.compare("STEADY") == 0)
+		if(m_pcs->tim_type == TimType::STEADY)
 			m_pcs->selected = false;
 	}
 
@@ -1598,7 +1598,7 @@ inline double Problem::LiquidFlow()
 		success = m_pcs->EclipseData->RunEclipse(m_pcs->Tim->step_current, m_pcs);
 		if (success == 0)
 			std::cout << "Error running Eclipse!" << "\n";
-		if(m_pcs->tim_type_name.compare("STEADY") == 0)
+		if(m_pcs->tim_type == TimType::STEADY)
 			m_pcs->selected = false;
 	}
 
@@ -1815,7 +1815,7 @@ inline double Problem::MultiPhaseFlow()
 		}
 	}
 
-	if(m_pcs->tim_type_name.compare("STEADY") == 0)
+	if(m_pcs->tim_type == TimType::STEADY)
 		m_pcs->selected = false;
 
 	//TestOutputEclipse(m_pcs);
@@ -2926,7 +2926,7 @@ inline double Problem::GroundWaterFlow()
 	// ELE values
 #if !defined(USE_PETSC) && !defined(NEW_EQS) // && defined(other parallel libs)//03~04.3012. WW
 	//#ifndef NEW_EQS                                //WW. 07.11.2008
-	if(m_pcs->tim_type_name.compare("STEADY") == 0) //CMCD 05/2006
+	if(m_pcs->tim_type == TimType::STEADY) //CMCD 05/2006
 	{
 		//std::cout << "      Calculation of secondary ELE values" << "\n";
 		m_pcs->AssembleParabolicEquationRHSVector(); //WW LOPCalcNODResultants();
@@ -3298,7 +3298,7 @@ inline double Problem::RandomWalker()
 	    }
 
 		// Do I need velocity fileds solved by the FEM?
-		if(m_pcs->tim_type_name.compare("PURERWPT") == 0)
+		if(m_pcs->tim_type == TimType::PURERWPT)
 		{
 			rw_pcs->PURERWPT = 1;
 			char* dateiname = NULL;

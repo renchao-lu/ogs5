@@ -272,6 +272,21 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 
 } // end namespace FiniteElement
 
+struct TimType
+{
+	enum type
+	{
+		INVALID_TIM_TYPE = 0,
+		STEADY,
+		TRANSIENT,
+		PURERWPT
+	};
+};
+
+TimType::type convertTimType(const std::string& str);
+
+std::string convertTimTypeToString(TimType::type type);
+
 struct TimeControlType
 {
 	enum type

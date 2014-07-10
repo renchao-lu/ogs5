@@ -278,7 +278,7 @@ CRFProcess::CRFProcess(void) :
 	PCSSetIC_USER = NULL;
 	//----------------------------------------------------------------------
 	// TIM
-	tim_type_name = "TRANSIENT";          //OK
+	tim_type = TimType::TRANSIENT;
 	time_unit_factor = 1.0;
 	timebuffer = 1.0e-5;                  //WW
 	//_pcs_type_name.empty();
@@ -1903,7 +1903,9 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		// subkeyword found
 		if (line_string.find("$TIM_TYPE") != string::npos)
 		{
+			std::string tim_type_name;
 			*pcs_file >> tim_type_name;
+			tim_type = convertTimType(tim_type_name);
 			pcs_file->ignore(MAX_ZEILE, '\n');
 			continue;
 		}
@@ -2189,7 +2191,7 @@ void CRFProcess::Write(std::fstream* pcs_file)
 	*pcs_file << "  " << cpl_type_name << "\n";
 
 	*pcs_file << " $TIM_TYPE" << "\n";
-	*pcs_file << "  " << tim_type_name << "\n";
+	*pcs_file << "  " << convertTimTypeToString(tim_type) << "\n";
 
 	if (msh_type_name.size() > 0)
 	{
