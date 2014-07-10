@@ -1177,12 +1177,22 @@ void Problem::Euler_TimeDiscretize()
 					continue;
 				m_tim->rejected_step_count++;
 				m_tim->last_active_time -= dt;
+				m_tim->step_current--;
+				m_tim->repeat = true;
 				//
 				// Copy nodal values in reverse
 				if(isDeformationProcess(total_processes[active_process_index[i]]->getProcessType()))
 					continue;
 				total_processes[active_process_index[i]]->CopyTimestepNODValues(false);
 				// JT: This wasn't done before. Is it needed? // total_processes[active_process_index[i]]->CopyTimestepELEValues(false);
+			}
+			for(i = 0; i < (int)total_processes.size(); i++)
+			{
+				if(!active_processes[i] && total_processes[i] && total_processes[i]->tim_type==TimType::STEADY) {
+					m_tim = total_processes[i]->Tim;
+					m_tim->step_current--;
+					m_tim->repeat = true;
+				}
 			}
 		}
 		ScreenMessage("\n#############################################################\n");
@@ -1429,7 +1439,7 @@ bool Problem::CouplingLoop()
 			break;
 
 	    //MW
-	    if(max_outer_error > 1 && outer_index+1 == cpl_overall_max_iterations)	//m_tim->step_current>1 &&
+	    if(max_outer_error > 1 && outer_index+1 == cpl_overall_max_iterations && cpl_overall_max_iterations>1)	//m_tim->step_current>1 &&
 	    {
 	    	accept = false;
 	    	break;
