@@ -3361,7 +3361,8 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 		break;
 	}
 
-	std::vector<double> arguments(vec_var_names->size());
+	//std::vector<double> arguments(vec_var_names->size());
+	std::vector<double> arguments(5);
 	for (unsigned i=0; i<vec_var_names->size(); i++) {
 		CRFProcess* pcs = PCSGet((*vec_var_names)[i],true);
 		if (pcs) {
@@ -3387,7 +3388,9 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	case 0: mfp_value = m_mfp->Viscosity(&arguments[0]);
 		break;
 	//NB 4.8.01
-	case 1: mfp_value = m_mfp->Density(&arguments[0]);
+	case 1:
+		arguments[2]=arguments[0];
+		mfp_value = m_mfp->Density(&arguments[0]);
 		break;
 	case 2: mfp_value = m_mfp->HeatConductivity(&arguments[0]);
 		break;
