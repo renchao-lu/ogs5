@@ -787,6 +787,9 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				in >> storage_model_values[8]; //Fracture density
 				pcs_name_vector.push_back("PRESSURE1");
 				break;
+			case 10: 	// S=const for permeability_saturation_model = 10
+				storage_model_values[0] = 1/gravity_constant;
+				break;
 			default:
 				cout << "Error in MMPRead: no valid storativity model" << "\n";
 				break;
@@ -7829,6 +7832,12 @@ double CMediumProperties::StorageFunction(long index,double* gp,double theta)
 		break;
 	case 7:                               // poroelasticity RW
 		storage = storage_model_values[1];
+		break;
+	case 10:
+		if(permeability_saturation_model[0]==10)	//MW
+			storage = porosity_model_values[0] * storage_model_values[0] / mfp_vector[0]->Density();
+		else
+			std::cout << "Wrong PERMEABILITY_SATURATION_MODEL for STORAGE model 10." << std::endl;
 		break;
 	default:
 		storage = 0.0;            //OK DisplayMsgLn("The requested storativity model is unknown!!!");

@@ -3012,6 +3012,25 @@ inline double Problem::MassTrasport()
 	{
 		m_pcs = transport_processes[i]; //18.08.2008 WW
 		                                //Component Mobile ?
+
+		//MW reduce CONCENTRATION1 to non-negative values above water table for stability for Sugio approach with RICHARDS
+		if (mmp_vector[0]->permeability_saturation_model[0] == 10)
+		{
+			int nidx0 = m_pcs->GetNodeValueIndex("CONCENTRATION1",0);
+			CRFProcess *local_richards_flow = PCSGet("PRESSURE1",true);
+			if (local_richards_flow != NULL)
+			{
+				int nidx1 = local_richards_flow->GetNodeValueIndex("PRESSURE1",0);
+				for (int j=0; j<m_pcs->m_msh->GetNodesNumber(false);j++)
+				{
+					double local_conc = m_pcs->GetNodeValue(j,nidx0+1);
+					double local_pressure = local_richards_flow->GetNodeValue(j,nidx1+1);
+					if (local_pressure < 0 && local_conc < 0)
+						m_pcs->SetNodeValue(j,nidx0+1,0);
+				}
+			}
+		}
+
 		if(CPGetMobil(m_pcs->GetProcessComponentNumber()) > 0)
 			error = m_pcs->ExecuteNonLinear(loop_process_number);  //NW. ExecuteNonLinear() is called to use the adaptive time step scheme
 

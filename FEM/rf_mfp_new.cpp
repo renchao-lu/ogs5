@@ -289,9 +289,9 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 				in >> rho_0;
 				in >> C_0;
 				in >> drho_dC;
-				//        density_pcs_name_vector.push_back("CONCENTRATION1");
+				density_pcs_name_vector.push_back("CONCENTRATION1");
 				// PCH
-				density_pcs_name_vector.push_back("Isochlor");
+				//density_pcs_name_vector.push_back("Isochlor");		//MW set to CONCENTRATION1 for consistency
 			}
 			if(density_model == 4) // rho(T) = rho_0*(1+beta_T*(T-T_0))
 			{

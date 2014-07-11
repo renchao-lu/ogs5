@@ -1306,8 +1306,10 @@ void CRFProcess:: ReadSolution()
 		for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
 			is >> val[j];
 		is >> ws;
-		for (j = 0; j < 2 * pcs_number_of_primary_nvals; j++ )
-			SetNodeValue ( i,idx[j], val[j] );
+		for (int j = 0; j < pcs_number_of_primary_nvals; j++ ) {
+			SetNodeValue (i, idx[j], val[j+pcs_number_of_primary_nvals] );
+			SetNodeValue (i, idx[j+pcs_number_of_primary_nvals], val[j+pcs_number_of_primary_nvals] );
+		}
 	}
 	is.close();
 	delete [] idx;
