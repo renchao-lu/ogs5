@@ -3817,11 +3817,17 @@ void CSourceTermGroup::DistributeVolumeFlux(CSourceTerm* st, std::vector<long> c
 	else
 		std::cout << "GEO_TYPE not supported in CSourceTermGroup::DistributeVolumeFlux()" << "\n";
 
-	for(int i=0; i<(int)nod_val_vector_area.size();i++)
-	   area +=nod_val_vector_area[i];
-     	 
-	for(int i=0; i<(int)nod_val_vector.size();i++)
-       nod_val_vector[i] /= area;
+	if(area>0)
+	{
+		for(int i=0; i<(int)nod_val_vector_area.size();i++)
+			area +=nod_val_vector_area[i];
+		for(int i=0; i<(int)nod_val_vector.size();i++)
+	       nod_val_vector[i] /= area;
+	}
+	else
+	{
+		std::cout << "Using the geometric object " << st->geo_name << " does not find any nearby nodes. No ST applied there!" << std::endl;
+	}
 
 }
 
