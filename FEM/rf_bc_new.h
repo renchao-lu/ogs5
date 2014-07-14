@@ -137,6 +137,12 @@ public:
 
 	// give head bc for PRESSURE1 primary variable	//MW
 	bool PressureAsHead() const {return pressure_as_head;}
+	// constrain a BC by other process
+	bool isConstrainedBC() const {return constrainedBC;}
+	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
+	std::string getConstrainedPrimVar() const {return constrainedPrimVar;}
+	double getConstrainedBCValue() const {return constrainedBCValue;}
+	std::string getConstrainedDirection() const {return constrainedDirection;}
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -203,6 +209,12 @@ private:
 	int NoDispIncre;
 	// give head bc for PRESSURE1 primary variable	//MW
 	bool pressure_as_head;
+	// constrain a BC by other process
+	bool constrainedBC;
+	double constrainedBCValue;
+	FiniteElement::ProcessType constrainedProcessType;
+	std::string constrainedPrimVar;
+	std::string constrainedDirection;
 };
 
 class CBoundaryConditionNode                      //OK raus
