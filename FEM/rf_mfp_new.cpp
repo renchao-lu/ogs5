@@ -3362,7 +3362,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	}
 
 	//std::vector<double> arguments(vec_var_names->size());
-	std::vector<double> arguments(5);
+	std::vector<double> arguments(std::max(static_cast<size_t>(3),vec_var_names->size()));
 	for (unsigned i=0; i<vec_var_names->size(); i++) {
 		CRFProcess* pcs = PCSGet((*vec_var_names)[i],true);
 		if (pcs) {
@@ -3374,7 +3374,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 			else if( (*vec_var_names)[i] == "CONCENTRATION1")
 				arguments[2] = pcs->GetNodeValue(node,var_idx);
 			else
-				std::cout << "This variable is not supported in MFPGetNodeValue." << std::endl;
+				std::cout << "The variable " << (*vec_var_names)[i] << " is not supported in MFPGetNodeValue." << std::endl;
 		} else {
 			arguments[i] = 0.0;
 		}
