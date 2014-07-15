@@ -906,7 +906,7 @@ private:
 	 */
 	void configMaterialParameters ();
 	// method to check on constrained boundary conditions
-	bool checkConstrainedBC(std::vector<CRFProcess*> const & pcs_vector, CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node);
+	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node);
 
 };
 

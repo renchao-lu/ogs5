@@ -527,6 +527,25 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 	return "INVALID_REACTIVE_SYSTEM";
 }
 
+ConstrainedBCType convertConstrainedBCType(const std::string &str)
+{
+	if (str.compare("SMALLER") == 0)
+		return SMALLER;
+	else if (str.compare("GREATER") == 0)
+		return GREATER;
+	return INVALID_CONSTRAINED_TYPE;
+}
+
+std::string convertConstrainedBCTypeToString(ConstrainedBCType constrained_BC_type)
+{
+	if (constrained_BC_type == SMALLER)
+		return "SMALLER";
+	else if (constrained_BC_type == GREATER)
+		return "GREATER";
+	return "INVALID_CONSTRAINED_TYPE";
+
+}
+
 } // end namespace FiniteElement
 
 TimeControlType::type convertTimeControlType(const std::string &str)

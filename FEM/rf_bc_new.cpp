@@ -463,9 +463,12 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 		{
 			constrainedBC = true;
 			in.str(readNonBlankLineFromInputStream(*bc_file));
-			std::string temp;
-			in >> temp >> constrainedPrimVar >> constrainedBCValue >> constrainedDirection;
+			std::string temp, temp2, temp3;
+			in >> temp >> temp2 >> constrainedBCValue >> temp3;
 			constrainedProcessType = FiniteElement::convertProcessType(temp);
+			constrainedPrimVar = FiniteElement::convertPrimaryVariable(temp2);
+			constrainedDirection = FiniteElement::convertConstrainedBCType(temp3);
+			in.clear();
 
 		}
 		//....................................................................
