@@ -72,6 +72,20 @@ double cputime(double x)
 CBoundaryConditionNode::CBoundaryConditionNode()
 {
 	conditional = false;
+	for (std::size_t i = 0; i < 3; i++)
+	_normal_vector[i] = 0;
+}
+
+void CBoundaryConditionNode::SetNormalVector(double const*const normal_vector)
+{
+	_normal_vector[0] = normal_vector[0];
+	_normal_vector[1] = normal_vector[1];
+	_normal_vector[2] = normal_vector[2];
+}
+
+double const*const CBoundaryConditionNode::GetNormalVector()
+{
+	return this->_normal_vector;
 }
 
 /**************************************************************************
@@ -132,6 +146,7 @@ CBoundaryCondition::CBoundaryCondition() :
     gradient_ref_depth_value = 0;       //CB
     gradient_ref_depth_gradient = 0;    //CB
     pressure_as_head=false;	//MW
+	constrainedBC = false;
 }
 
 // KR: Conversion from GUI-BC-object to CBoundaryCondition
@@ -1335,6 +1350,12 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 					}
 					size_t nodes_vector_length (nodes_vector.size());
 
+					if (bc->constrainedBC == true && nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
+					{
+						//calculate normals of triangles
+						sfc->calculateTriangleNormals();
+					}
+
 					if (bc->getProcessDistributionType() == FiniteElement::LINEAR) {
 						std::vector<CGLPolyline*>::iterator p =
 										m_surface->polyline_of_surface_vector.begin();
@@ -1401,29 +1422,26 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 						pcs->bc_node_value.push_back(m_node_value);
 						//WW group_vector.push_back(m_node_value);
 						//WW bc_group_vector.push_back(bc); //OK
-					}
 
-					if (nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
-					{
-						//calculate normals of triangles
-
-						/*surface_vector = GetSurfaceVector();
-						std::vector<Surface*>::iterator ps = surface_vector.begin();
-						Surface* m_surface2 = NULL;
-						// Go through the existing surfaces (GEO_type)
-						while(ps != surface_vector.end())
+						if (bc->constrainedBC == true && nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
 						{
-							m_surface2 = *ps;
-							std::cout << m_surface2->TIN->Triangles.size() << std::endl;
-						}*/
+							const double const*const coords(m_msh->nod_vector[m_node_value->geo_node_number]->getData());
+							std::size_t triangle_id(sfc->getTriangleIDOfPoint(coords));
+							if (triangle_id != -1)
+								m_node_value->SetNormalVector(sfc->getTriangleNormal(triangle_id));
+							else
+								std::cout << "Could not find current BC node " << m_node_value->geo_node_number
+									<< " on given SURFACE " << m_surface->name << std::endl;
 
-						std::cout << sfc->getNTriangles() << std::endl;
-
-						if (!m_surface->triangleNormalsCalculated)
-							m_surface->calculateTriangleNormals(m_surface);
+							/*
+#ifndef NDEBUG
+							double const*const temp_norm(m_node_value->GetNormalVector());
+							std::cout << temp_norm[0] << " " << temp_norm[1] << " " << temp_norm[2] << std::endl;
+#endif
+							*/
+						}
 
 					}
-
 					node_value.clear();
 				}
 			}

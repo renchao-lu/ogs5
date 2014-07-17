@@ -13,7 +13,6 @@ public:
 	double y[3];
 	double z[3];
 	long msh_numbers[3];
-	double normal_vector[3];
 };
 //-------------------------------------------------------------------------
 class CTIN
@@ -90,8 +89,6 @@ public:
 	bool PointInSurface(CGLPoint*); //OK
 	//material
 	long profile_code; //YD
-	void calculateTriangleNormals(Surface* m_sfc);
-	bool triangleNormalsCalculated;		//need to initialize this... where?
 
 private:
   //

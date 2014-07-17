@@ -235,9 +235,15 @@ public:
 	std::string bc_node_copy_geom_name;
 	CBoundaryConditionNode();
 
+	void SetNormalVector(double const*const normal_vector);
+	double const*const GetNormalVector();
+
 	// 25.08.2011. WW
 	void Read(std::istream& is);
 	void Write(std::ostream& os) const;
+
+private:
+	double _normal_vector[3];
 };
 
 class CBoundaryConditionsGroup
