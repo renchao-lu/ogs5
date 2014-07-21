@@ -1350,7 +1350,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 					}
 					size_t nodes_vector_length (nodes_vector.size());
 
-					if (bc->constrainedBC == true && nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
+					if (bc->isConstrainedBC() && nodes_vector_length > 0 && bc->getConstrainedVariable() == FiniteElement::VELOCITY)
 					{
 						//calculate normals of triangles
 						sfc->calculateTriangleNormals();
