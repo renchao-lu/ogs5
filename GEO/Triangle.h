@@ -85,7 +85,7 @@ public:
 	 */
 	bool containsPoint2D (const double* pnt) const;
 	void calculateNormal();
-	double const*const getNormal() const
+	double const* getNormal() const
 	{
 		return _normal_vector;
 	}
