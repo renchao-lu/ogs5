@@ -7243,14 +7243,14 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			int nidx0 = m_pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(bc.getConstrainedPrimVar()),0);
 			double local_value = m_pcs->GetNodeValue(bc_node.geo_node_number,nidx0);
 
-			if (bc.getConstrainedDirection() == FiniteElement::GREATER)	//exclude greater and equal values
+			if (bc.getConstrainedDirection() == ConstrainedBCType::GREATER)	//exclude greater and equal values
 			{
 				if (local_value >= bc.getConstrainedBCValue())
 				{
 					return true;
 				}
 			}
-			else if (bc.getConstrainedDirection() == FiniteElement::SMALLER) // exclude smaller values
+			else if (bc.getConstrainedDirection() == ConstrainedBCType::SMALLER) // exclude smaller values
 			{
 				if (local_value < bc.getConstrainedBCValue())
 				{

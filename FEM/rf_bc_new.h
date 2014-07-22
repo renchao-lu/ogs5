@@ -142,7 +142,7 @@ public:
 	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
 	FiniteElement::PrimaryVariable getConstrainedPrimVar() const {return constrainedPrimVar;}
 	double getConstrainedBCValue() const {return constrainedBCValue;}
-	FiniteElement::ConstrainedBCType getConstrainedDirection() const {return constrainedDirection;}
+	ConstrainedBCType::type getConstrainedDirection() const {return constrainedDirection;}
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -214,7 +214,7 @@ private:
 	double constrainedBCValue;
 	FiniteElement::ProcessType constrainedProcessType;
 	FiniteElement::PrimaryVariable constrainedPrimVar;
-	FiniteElement::ConstrainedBCType constrainedDirection;
+	ConstrainedBCType::type constrainedDirection;
 };
 
 class CBoundaryConditionNode                      //OK raus
