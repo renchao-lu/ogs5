@@ -487,32 +487,6 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 						   line.clear();
 						   }
 						 */
-
-						//MW changed read as commented break by kg44 will cause re-read of this
-						else if(line_string.find("MULTIPLIER") !=
-								std::string::npos)
-						{
-							while(!tim_file->eof())
-							{
-								position = tim_file->tellg();
-								line_string = GetLineFromFile1(tim_file);
-								line.str(line_string);
-								line >> iter_times;
-								line >> multiply_coef;
-								if (line.fail()) {
-									tim_file->seekg(position,std::ios::beg);
-									line.clear();
-									break;
-								}
-								time_adapt_tim_vector.push_back(iter_times);
-								time_adapt_coe_vector.push_back(multiply_coef);
-								line.clear();
-							}
-							if (time_adapt_tim_vector.size()<2) {
-								std::cout << "ERROR: at least two multipliers should be provided for SELF_ADAPTIVE time stepping" << std::endl;
-								exit(1);
-							}
-						}
 						else if(line_string.find("INI_TIME_STEP") !=
 								std::string::npos)
 						{
@@ -527,6 +501,36 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 							*tim_file >> line_string;
 							adapt_itr_type = convertIterationType(line_string);
 							line.clear();
+						}
+						else if(line_string.find("MULTIPLIER") != std::string::npos
+								|| (!line_string.empty() && std::isdigit(line_string[0])))
+						{
+							if (line_string.find("MULTIPLIER") != std::string::npos) {
+								position = tim_file->tellg();
+								line_string = GetLineFromFile1(tim_file);
+							}
+
+							while(!tim_file->eof())
+							{
+								line.str(line_string);
+								line >> iter_times;
+								line >> multiply_coef;
+								if (line.fail()) {
+									tim_file->seekg(position,std::ios::beg);
+									line.clear();
+									break;
+								}
+								time_adapt_tim_vector.push_back(iter_times);
+								time_adapt_coe_vector.push_back(multiply_coef);
+								line.clear();
+
+								position = tim_file->tellg();
+								line_string = GetLineFromFile1(tim_file);
+							}
+							if (time_adapt_tim_vector.size()<2) {
+								std::cout << "ERROR: at least two multipliers should be provided for SELF_ADAPTIVE time stepping" << std::endl;
+								exit(1);
+							}
 						}
 					} // end of while loop adaptive
 				// end of if "SELF_ADAPTIVE"
