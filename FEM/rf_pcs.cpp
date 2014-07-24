@@ -6546,13 +6546,23 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				{
 
 					//MW calculate pressure from given head at bc with density, gravity constant and geodetic height for PRESSURE as primary variable
-					if ( m_bc->PressureAsHead() )
+					if ( m_bc->PressureAsHead() == 0 )
 					{
+						//use current density at node
 						const double local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
 						const double local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z();
 
 						// pressure = gravitational_constant * density * ( head - geodetic_height )
 						bc_value = fac * gravity_constant * local_density * ( time_fac * m_bc_node->node_value - local_node_elevation );
+					}
+					else if (m_bc->PressureAsHead() == 1)
+					{
+						//use given density
+						const double local_density = m_bc->getPressureAsHeadDensity();
+						const double local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z();
+
+						// pressure = gravitational_constant * density * ( head - geodetic_height )
+						bc_value = fac * gravity_constant * local_density * (time_fac * m_bc_node->node_value - local_node_elevation);
 					}
 					else
 					{

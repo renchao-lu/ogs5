@@ -136,7 +136,9 @@ public:
 	int getNoDispIncre() {return NoDispIncre;};	//WX:12.2012
 
 	// give head bc for PRESSURE1 primary variable	//MW
-	bool PressureAsHead() const {return pressure_as_head;}
+	int PressureAsHead() const {return pressure_as_head;}
+	// return given density
+	double getPressureAsHeadDensity() const { return pressure_as_head_density; };
 	// constrain a BC by other process
 	bool isConstrainedBC() const {return constrainedBC;}
 	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
@@ -209,7 +211,9 @@ private:
 	// no displacement increment 12.2012
 	int NoDispIncre;
 	// give head bc for PRESSURE1 primary variable	//MW
-	bool pressure_as_head;
+	int pressure_as_head;
+	// given density for pressure_as_head BC
+	double pressure_as_head_density;
 	// constrain a BC by other process
 	bool constrainedBC;
 	double constrainedBCValue;
