@@ -1,10 +1,6 @@
 # Source files
 SET( SOURCES
-	MeshFromRasterDialog.cpp
 	QVtkDataSetMapper.cpp
-	VisPrefsDialog.cpp
-	VisualizationWidget.cpp
-	VtkAddFilterDialog.cpp
 	VtkAlgorithmPropertyCheckbox.cpp
 	VtkAlgorithmPropertyLineEdit.cpp
 	VtkAlgorithmPropertyVectorEdit.cpp
@@ -30,7 +26,6 @@ SET( SOURCES
 	VtkMeshSource.cpp
 	VtkPolylinesSource.cpp
 	VtkPointsSource.cpp
-	VtkRaster.cpp
 	VtkSelectionFilter.cpp
 	VtkStationSource.cpp
 	VtkSurfacesSource.cpp
@@ -40,27 +35,19 @@ SET( SOURCES
 	VtkVisImageItem.cpp
 	VtkVisPipeline.cpp
 	VtkVisPipelineItem.cpp
-	VtkVisPipelineView.cpp
 	VtkVisPointSetItem.cpp
-	VtkVisTabWidget.cpp
 	VtkAlgorithmProperties.cpp
 )
 
 # Moc headers
 SET( MOC_HEADERS
-	MeshFromRasterDialog.h
 	QVtkDataSetMapper.h
-	VisPrefsDialog.h
-	VisualizationWidget.h
-	VtkAddFilterDialog.h
 	VtkAlgorithmProperties.h
 	VtkAlgorithmPropertyLineEdit.h
 	VtkAlgorithmPropertyCheckbox.h
 	VtkAlgorithmPropertyVectorEdit.h
 	VtkTrackedCamera.h
 	VtkVisPipeline.h
-	VtkVisPipelineView.h
-	VtkVisTabWidget.h
 )
 
 # Header files
@@ -87,7 +74,6 @@ SET( HEADERS
 	VtkMeshSource.h
 	VtkPolylinesSource.h
 	VtkPointsSource.h
-	VtkRaster.h
 	VtkSelectionFilter.h
 	VtkStationSource.h
 	VtkSurfacesSource.h
@@ -98,14 +84,36 @@ SET( HEADERS
 	VtkVisPointSetItem.h
 )
 
-# UI files
-SET ( UIS
-	MeshFromRaster.ui
-	VtkAddFilterDialogBase.ui
-	VtkVisTabWidgetBase.ui
-	VisualizationWidgetBase.ui
-	VisPrefs.ui
-)
+IF(QVTK_LIBRARY)
+	LIST(APPEND SOURCES
+		MeshFromRasterDialog.cpp
+		VisPrefsDialog.cpp
+		VisualizationWidget.cpp
+		VtkAddFilterDialog.cpp
+		VtkVisTabWidget.cpp
+		VtkVisPipelineView.cpp
+	)
+	LIST(APPEND MOC_HEADERS
+		MeshFromRasterDialog.h
+                VisPrefsDialog.h
+                VisualizationWidget.h
+                VtkAddFilterDialog.h
+                VtkVisTabWidget.h
+		VtkVisPipelineView.h
+	)
+	LIST(APPEND UIS
+		MeshFromRaster.ui
+	        VtkAddFilterDialogBase.ui
+        	VtkVisTabWidgetBase.ui
+	        VisualizationWidgetBase.ui
+        	VisPrefs.ui
+	)
+ENDIF() # QVTK
+
+IF(GEOTIFF_FOUND)
+	LIST(APPEND SOURCES VtkRaster.cpp)
+	LIST(APPEND HEADERS VtkRaster.h)
+ENDIF() # GEOTIFF_FOUND
 
 # Put moc files in a project folder
 SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
@@ -151,10 +159,10 @@ ADD_LIBRARY( VtkVis STATIC
 	${UIS}
 )
 
-IF (libgeotiff_FOUND)
-	INCLUDE_DIRECTORIES( ${libgeotiff_INCLUDE_DIR} ${libgeotiff_INCLUDE_DIR}/libxtiff ${VTK_DIR}/../Utilities/vtktiff )
-	TARGET_LINK_LIBRARIES( VtkVis ${libgeotiff_LIBRARIES} )
-ENDIF () # libgeotiff_FOUND
+IF (GEOTIFF_FOUND)
+	INCLUDE_DIRECTORIES( ${GEOTIFF_INCLUDE_DIRS} )
+	TARGET_LINK_LIBRARIES( VtkVis ${GEOTIFF_LIBRARIES} )
+ENDIF () # GEOTIFF_FOUND
 
 TARGET_LINK_LIBRARIES( VtkVis ${QT_LIBRARIES} )
 
