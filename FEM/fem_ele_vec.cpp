@@ -1419,7 +1419,6 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
 #ifdef assmb_petsc_test
 	      os_t<<"("<<local_idx[in]<<") "<<local_matrix_asy[i*dim_full +j]<<" ";
 #endif //#ifdef assmb_petsc_test
-
 	      
 	    }
 	  

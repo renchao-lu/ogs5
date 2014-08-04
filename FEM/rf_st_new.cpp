@@ -1429,12 +1429,11 @@ std::vector<double>&node_value_vector) const
       }
    }
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-      long id_limit = 0;
- 
-      if(msh->getOrder())
-	   id_limit = msh->getNumNodesLocal_Q();
-	else  
-       id_limit = msh->getNumNodesLocal();
+      const size_t id_act_l_max = static_cast<size_t>(msh->getNumNodesLocal());
+      const size_t id_act_h_min =   msh-> GetNodesNumber(false);
+      const size_t id_act_h_max =  id_act_h_min 
+                                   + static_cast<size_t>(msh->getNumNodesLocal_Q()
+                                    - msh->getNumNodesLocal() );
 #endif
 
    for (i = 0; i < (long) msh->edge_vector.size(); i++)
@@ -1461,15 +1460,18 @@ std::vector<double>&node_value_vector) const
             if (Const && (!msh->isAxisymmetry()))
             {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[0]->GetIndex()<id_limit)
+	      const size_t n_id0 = e_nodes[0]->GetIndex();
+	      const size_t n_id1 = e_nodes[1]->GetIndex();
+	      const size_t n_id2 = e_nodes[2]->GetIndex();
+              if(n_id0 < id_act_l_max || (n_id0 >= id_act_h_min && n_id0 < id_act_h_max) )
 #endif
                NVal[G2L[e_nodes[0]->GetIndex()]] += Jac * v1 / 3.0;
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[1]->GetIndex()<id_limit)
+              if(n_id1 < id_act_l_max || (n_id1 >= id_act_h_min && n_id1 < id_act_h_max) )
 #endif
                NVal[G2L[e_nodes[1]->GetIndex()]] += Jac * v1 / 3.0;
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[2]->GetIndex()<id_limit)
+              if(n_id2 < id_act_l_max || (n_id2 >= id_act_h_min && n_id2 < id_act_h_max) )
 #endif
                NVal[G2L[e_nodes[2]->GetIndex()]] += 4.0 * Jac * v1 / 3.0;
 
@@ -1479,7 +1481,8 @@ std::vector<double>&node_value_vector) const
                for (k = 0; k < 3; k++)            // Three nodes
                {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-                 if(e_nodes[k]->GetIndex() >= id_limit)
+                 const size_t n_id = e_nodes[k]->GetIndex();
+                 if(!(n_id < id_act_l_max || (n_id >= id_act_h_min && n_id < id_act_h_max) ) )
                     continue;
 #endif
                   // Numerical integration
@@ -1516,23 +1519,27 @@ std::vector<double>&node_value_vector) const
                if (Const)
                {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[0]->GetIndex()<id_limit)
+	      const size_t n_id0 = e_nodes[0]->GetIndex();
+	      const size_t n_id1 = e_nodes[1]->GetIndex();
+              if(n_id0 < id_act_l_max || (n_id0 >= id_act_h_min && n_id0 < id_act_h_max) )
 #endif
                   NVal[G2L[e_nodes[0]->GetIndex()]] += Jac * v1;
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[1]->GetIndex()<id_limit)
+              if(n_id1 < id_act_l_max || (n_id1 >= id_act_h_min && n_id1 < id_act_h_max) )
 #endif
                   NVal[G2L[e_nodes[1]->GetIndex()]] += Jac * v1;
                }
                else
                {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[0]->GetIndex()<id_limit)
+	      const size_t n_id0 = e_nodes[0]->GetIndex();
+	      const size_t n_id1 = e_nodes[1]->GetIndex();
+              if(n_id0 < id_act_l_max || (n_id0 >= id_act_h_min && n_id0 < id_act_h_max) )
 #endif
                   NVal[G2L[e_nodes[0]->GetIndex()]] += Jac * (2.0 * v1
                      + v2) / 3.0;
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-               if(e_nodes[1]->GetIndex()<id_limit)
+              if(n_id1 < id_act_l_max || (n_id1 >= id_act_h_min && n_id1 < id_act_h_max) )
 #endif
                   NVal[G2L[e_nodes[1]->GetIndex()]] += Jac * (v1 + 2.0
                      * v2) / 3.0;
@@ -1543,9 +1550,9 @@ std::vector<double>&node_value_vector) const
                for (k = 0; k < 2; k++)            // Three nodes
                {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-                 if(e_nodes[k]->GetIndex()>=id_limit)
+                 const size_t n_id = e_nodes[k]->GetIndex();
+                 if(!(n_id < id_act_l_max || (n_id >= id_act_h_min && n_id < id_act_h_max) ) )
                     continue; 
-
 #endif
                   // Numerical integration
                   for (l = 0; l < 3; l++)         // Gauss points
@@ -3183,7 +3190,6 @@ const int ShiftInNodeVector)
  **************************************************************************/
 void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 {
-	const bool ply_for_source = true; // 17.05.2013
 	CGLPolyline* old_ply (GEOGetPLYByName(st->geo_name));
 	if (old_ply) {
 		std::vector<long> ply_nod_vector;
@@ -3192,7 +3198,7 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 
 		double min_edge_length (m_msh->getMinEdgeLength());
 		m_msh->setMinEdgeLength (old_ply->epsilon);
-		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector, ply_for_source);
+		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector);
 		m_msh->setMinEdgeLength (min_edge_length);
 
 		if (st->isCoupled())
