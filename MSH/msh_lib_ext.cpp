@@ -257,11 +257,6 @@ void FEMRead_ASCII(const int msize, const int mrank,
              vector<MeshLib::CFEMesh*>& mesh_vec,
              GEOLIB::GEOObjects* geo_obj, string* unique_name)
 {
-  //long i;
-  // long j;
-  // long k;      
-
-
   //0 long size_sbd_nodes = 0;
   //1 long size_sbd_nodes_l = 0;
   //2 ong size_sbd_nodes_h = 0;
@@ -282,19 +277,49 @@ void FEMRead_ASCII(const int msize, const int mrank,
   //MPI_Request send_request, recv_request;
   MPI_Status status;  
 
+  // 
+  string s_msize;
+  stringstream ss;
+  ss << msize;
+  ss >> s_msize;
+  ss.clear();
 
-  ifstream is;
+  ifstream is_cfg;
+  ifstream is_node;
+  ifstream is_elem;
 #ifdef MULTI_MESH_FILE 
   stringstream ss (stringstream::in | stringstream::out);
 #endif
   
   if(mrank == 0)
   {      
-     str_var = file_base_name+"_partitioned.msh"; 
-     is.open(str_var.c_str()); 
-     getline(is, str_var); 
+     str_var = file_base_name+"_partitioned_msh_cfg"+ s_msize + ".msh"; // "_partitioned.msh"; 
+     is_cfg.open(str_var.c_str());
+     if( !is_cfg.good() )
+     {
+         std::cout << "Cannot open file "<<  str_var << " Quit now! "<< std::endl;
+         exit(1);
+     } 
+
+     str_var = file_base_name + "_partitioned_nodes_" + s_msize + ".msh"; // "_partitioned.msh"; 
+     is_node.open(str_var.c_str());
+     if( !is_node.good() )
+     {
+         std::cout << "Cannot open file "<<  str_var << " Quit now! "<< std::endl;
+         exit(1);
+     }  
+
+     str_var = file_base_name + "_partitioned_elems_" + s_msize + ".msh"; // "_partitioned.msh"; 
+     is_elem.open(str_var.c_str());
+     if( !is_elem.good() )
+     {
+         std::cout << "Cannot open file "<<  str_var << " Quit now! "<< std::endl;
+         exit(1);
+     }  
+
+     getline(is_cfg, str_var); 
      int num_parts;
-     is >> num_parts >>ws;
+     is_cfg >> num_parts >>ws;
      if(num_parts != msize) 
      {
        string str_m = "Sorry, I have to quit the simulation now because that "
@@ -329,33 +354,31 @@ void FEMRead_ASCII(const int msize, const int mrank,
       cout<<"-->Parallel reading the partitioned mesh: "<<i<<endl;
      
       for(int j=0; j< nheaders; j++)                   
-         is>>mesh_header[j];
-       is>>ws;
+         is_cfg >> mesh_header[j];
+       is_cfg >> ws;
     }
     MPI_Bcast(mesh_header,  nheaders, MPI_LONG, 0, MPI_COMM_WORLD);
     //cout<<"\ncccccccccc "<<mesh_header[0]<<"    "<<mesh_header[1]
     //	<<"   " <<mesh_header[2]<<"  "<<mesh_header[3]<<endl;
  
-
     //-------------------------------------------------------------------------
     //Node
     s_nodes = (MeshNodes *)realloc(s_nodes, sizeof(MeshNodes) * mesh_header[0]);
    
-    if(i>0)
-    
+    if(i>0)    
       BuildNodeStruc(s_nodes, &MPI_node);       
+
     if(mrank == 0)
     {
        // Nodes
        for(long k=0; k<mesh_header[0]; k++)
        {
           MeshNodes *anode = &s_nodes[k];
-          is>>anode->index;
+          is_node >> anode->index;
 	   
-	  is>>anode->x>>anode->y>>anode->z>>ws;
-	  	                     
+	  is_node >> anode->x >> anode->y >> anode->z >> ws;	  	                     
        }
-      
+     
        /* 
 	 //TEST
        for(k=0; k<mesh_header[0]; k++)
@@ -368,7 +391,7 @@ void FEMRead_ASCII(const int msize, const int mrank,
         }
        */
          
-       if(i==0)
+      if(i==0)
       { 
 	 mesh->setSubdomainNodes(&mesh_header[0], s_nodes); 
       }      
@@ -400,6 +423,8 @@ void FEMRead_ASCII(const int msize, const int mrank,
       }
 	  
     } 
+    free(s_nodes);
+    s_nodes = NULL;
 
     //-------------------------------------------------------------------------
     // Element
@@ -411,20 +436,19 @@ void FEMRead_ASCII(const int msize, const int mrank,
        for(long j=0; j<mesh_header[2]; j++)
        {
            elem_info[j] = counter;
-           is>> elem_info[counter];  //mat. idx
+           is_elem >> elem_info[counter];  //mat. idx
            counter++;
-           is>> elem_info[counter];  //type
+           is_elem >> elem_info[counter];  //type
            counter++;
-           is>> elem_info[counter];  //nnodes
+           is_elem >> elem_info[counter];  //nnodes
            const int nn_e =  elem_info[counter]; 
            counter++;
            for(int k=0; k<nn_e; k++)
            {
-              is>> elem_info[counter];
+              is_elem >> elem_info[counter];
               counter++; 
            }
        }
-
 
        if(i==0)
 	 {
@@ -447,8 +471,8 @@ void FEMRead_ASCII(const int msize, const int mrank,
     
     //if(elem_info)
     //  {
-    //free(elem_info);
-    //elem_info = NULL;
+    free(elem_info);
+    elem_info = NULL;
     //  }
    
     //-------------------------------------------------------------------------
@@ -461,31 +485,30 @@ void FEMRead_ASCII(const int msize, const int mrank,
        for(long j=0; j<mesh_header[3]; j++)
        {
            elem_info[j] = counter;
-           is>> elem_info[counter];  //mat. idx
+           is_elem >> elem_info[counter];  //mat. idx
            counter++;
-           is>> elem_info[counter];  //type
+           is_elem >> elem_info[counter];  //type
            counter++;
-           is>> elem_info[counter];  //nnodes
+           is_elem >> elem_info[counter];  //nnodes
            const int nn_e =  elem_info[counter]; 
            counter++;
            for(int k=0; k<nn_e; k++)
            {
-              is>> elem_info[counter];
+              is_elem >> elem_info[counter];
               counter++; 
            }
-           is>> elem_info[counter];
+           is_elem >> elem_info[counter];
 	   //           const int nn_e_g =  elem_info[counter]; 
            counter++;
 	   // ghost nodes for linear element
-           is>> elem_info[counter];
+           is_elem >> elem_info[counter];
            const int nn_e_g =  elem_info[counter]; 
            counter++;
            for(int k=0; k<nn_e_g; k++)
            {
-              is>> elem_info[counter];
+              is_elem >> elem_info[counter];
               counter++; 
            }
-
        }
 
        if(i==0)
@@ -506,7 +529,9 @@ void FEMRead_ASCII(const int msize, const int mrank,
 	  mesh->setSubdomainElements(mesh_header, elem_info, false);         
       }
     }
-     
+ 
+    free(elem_info);
+    elem_info = NULL;   
   }
 
   if(s_nodes)  
@@ -522,8 +547,12 @@ void FEMRead_ASCII(const int msize, const int mrank,
 
   if(mrank == 0)
   {
-     is.clear();
-     is.close();  
+     is_cfg.clear();
+     is_cfg.close();  
+     is_node.clear();
+     is_node.close();  
+     is_elem.clear();
+     is_elem.close();  
   }
 
   MPI_Type_free(&MPI_node);
@@ -702,13 +731,8 @@ void CFEMesh::setSubdomainElements(MyInt *header, const MyInt *elem_info, const 
      new_elem->InitializeMembers();
 
      //new_elem->WriteIndex();
-
-
   }
 }
-
-
-
 
 /*!
     Configure the high order elements for parallel computing
