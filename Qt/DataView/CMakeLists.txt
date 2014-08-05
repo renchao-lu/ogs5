@@ -26,7 +26,6 @@ set( SOURCES
 	MshModel.cpp
 	MshQualitySelectionDialog.cpp
 	MshTabWidget.cpp
-	NetCdfConfigureDialog.cpp
 	NewProcessDialog.cpp
 	ProcessModel.cpp
 	ProcessView.cpp
@@ -35,7 +34,7 @@ set( SOURCES
 	SetNameDialog.cpp
 	StationTabWidget.cpp
 	StationTreeModel.cpp
-	StationTreeView.cpp	
+	StationTreeView.cpp
 )
 
 # Moc Header files
@@ -62,7 +61,6 @@ set( MOC_HEADERS
 	MshModel.h
 	MshQualitySelectionDialog.h
 	MshTabWidget.h
-	NetCdfConfigureDialog.h
 	NewProcessDialog.h
 	ProcessModel.h
 	ProcessView.h
@@ -78,14 +76,14 @@ set( MOC_HEADERS
 set( HEADERS
 	BaseItem.h
 	CondItem.h
-	DirectConditionGenerator.h	
+	DirectConditionGenerator.h
 	CondObjectListItem.h
 	GeoObjectListItem.h
 	GeoTreeItem.h
 	ModelTreeItem.h
 	MshItem.h
 	MshLayerMapper.h
-	ProcessItem.h	
+	ProcessItem.h
 )
 
 # UI files
@@ -103,7 +101,6 @@ set( UIS
 	MshEdit.ui
 	MshQualitySelection.ui
 	MshTabWidgetBase.ui
-	NetCdfConfigure.ui
 	NewProcess.ui
 	StationTabWidgetBase.ui
 )
@@ -113,6 +110,12 @@ IF (Shapelib_FOUND)
 	SET( MOC_HEADERS ${MOC_HEADERS} SHPImportDialog.h)
 	INCLUDE_DIRECTORIES( ${Shapelib_INCLUDE_DIR} )
 ENDIF () # Shapelib_FOUND
+
+IF(NETCDF_INCLUDES)
+	SET( SOURCES ${SOURCES} NetCdfConfigureDialog.cpp)
+	SET( MOC_HEADERS ${MOC_HEADERS} NetCdfConfigureDialog.h)
+	SET( UIS ${UIS} NetCdfConfigure.ui)
+ENDIF()
 
 # Put filter in a folder
 SOURCE_GROUP("Dialog Header Files" REGULAR_EXPRESSION "[.]*Dialog.h")
@@ -134,7 +137,7 @@ include_directories(
 	${CMAKE_BINARY_DIR}/Qt/DataView
 	${CMAKE_BINARY_DIR}/Qt/DataView/DiagramView
 	${CMAKE_BINARY_DIR}/Qt/DataView/StratView
-	
+
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/MathLib
 	${CMAKE_SOURCE_DIR}/GEO

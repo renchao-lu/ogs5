@@ -15,8 +15,7 @@ SET( SOURCES
 	VtkCompositeImageToCylindersFilter.cpp
 	VtkCompositeLineToTubeFilter.cpp
 	VtkCompositePointToGlyphFilter.cpp
-	VtkCompositeSelectionFilter.cpp	
-	VtkCompositeTextureOnSurfaceFilter.cpp
+	VtkCompositeSelectionFilter.cpp
 	VtkCompositeThresholdFilter.cpp
 	VtkConditionSource.cpp
 	VtkFilterFactory.cpp
@@ -64,7 +63,6 @@ SET( HEADERS
 	VtkCompositeLineToTubeFilter.h
 	VtkCompositePointToGlyphFilter.h
 	VtkCompositeSelectionFilter.h
-	VtkCompositeTextureOnSurfaceFilter.h
 	VtkCompositeThresholdFilter.h
 	VtkConditionSource.h
 	VtkFilterFactory.h
@@ -95,18 +93,18 @@ IF(QVTK_LIBRARY)
 	)
 	LIST(APPEND MOC_HEADERS
 		MeshFromRasterDialog.h
-                VisPrefsDialog.h
-                VisualizationWidget.h
-                VtkAddFilterDialog.h
-                VtkVisTabWidget.h
+		VisPrefsDialog.h
+		VisualizationWidget.h
+		VtkAddFilterDialog.h
+		VtkVisTabWidget.h
 		VtkVisPipelineView.h
 	)
 	LIST(APPEND UIS
 		MeshFromRaster.ui
-	        VtkAddFilterDialogBase.ui
-        	VtkVisTabWidgetBase.ui
-	        VisualizationWidgetBase.ui
-        	VisPrefs.ui
+		VtkAddFilterDialogBase.ui
+		VtkVisTabWidgetBase.ui
+		VisualizationWidgetBase.ui
+		VisPrefs.ui
 	)
 ENDIF() # QVTK
 
@@ -114,6 +112,11 @@ IF(GEOTIFF_FOUND)
 	LIST(APPEND SOURCES VtkRaster.cpp)
 	LIST(APPEND HEADERS VtkRaster.h)
 ENDIF() # GEOTIFF_FOUND
+
+IF(NETCDF_INCLUDES)
+	LIST(APPEND SOURCES VtkCompositeTextureOnSurfaceFilter.cpp)
+	LIST(APPEND HEADERS VtkCompositeTextureOnSurfaceFilter.h)
+ENDIF()
 
 # Put moc files in a project folder
 SOURCE_GROUP("UI Files" REGULAR_EXPRESSION "\\w*\\.ui")
