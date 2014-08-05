@@ -1751,15 +1751,6 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
       G2L[k] = i;
    }
 
-#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-    long id_limit = 0;
- 
-    if(msh->getOrder())
-       id_limit = msh->getNumNodesLocal_Q();
-   else  
-       id_limit = msh->getNumNodesLocal();
-#endif
-
    //----------------------------------------------------------------------
    // NW 15.01.2010
    // 1) search element faces on the surface
@@ -1792,7 +1783,16 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
          msh->ele_vector[l]->selected += 1;       // remember how many nodes of an element are on the surface
       }
    }
+
    //search elements & face integration
+#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
+      const size_t id_act_l_max = static_cast<size_t>(msh->getNumNodesLocal());
+      const size_t id_act_h_min =   msh-> GetNodesNumber(false);
+      const size_t id_act_h_max =  id_act_h_min 
+                                   + static_cast<size_t>(msh->getNumNodesLocal_Q()
+                                                       - msh->getNumNodesLocal() );
+#endif
+
    int count;
    double fac = 1.0;
    for (i = 0; i < (long) vec_possible_elements.size(); i++)
@@ -1842,7 +1842,10 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
             e_node = elem->GetNode(nodesFace[k]);
 
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
-            if(e_node->GetIndex() < id_limit)
+            if(     (e_node->GetIndex() < id_act_l_max) 
+                ||  (    e_node->GetIndex() >= id_act_h_min
+			 &&  e_node->GetIndex() < id_act_h_max)
+             )
 #endif
             NVal[G2L[e_node->GetIndex()]] += fac * nodesFVal[k];
          }
@@ -3198,7 +3201,7 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 
 		double min_edge_length (m_msh->getMinEdgeLength());
 		m_msh->setMinEdgeLength (old_ply->epsilon);
-		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector);
+		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(st->getGeoObj()), ply_nod_vector, true);
 		m_msh->setMinEdgeLength (min_edge_length);
 
 		if (st->isCoupled())
