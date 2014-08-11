@@ -1382,14 +1382,31 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
   long node_id = -1;
   
-  const size_t nodes_in_usage = loc_NodesNumber_Quadratic;
+  const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
+  const size_t id_act_h_min =  GetNodesNumber(false);
+  const size_t id_act_h_max =   id_act_h_min 
+                              + static_cast<size_t>(getNumNodesLocal_Q()
+                                    - getNumNodesLocal() );
 
   double sqr_dist = 0.0;
   double distmin = getMinEdgeLength()/10.0;
   if(distmin < 0.)
     distmin = DBL_EPSILON;
   
-  for (size_t i = 0; i < nodes_in_usage; i++)
+  for (size_t i = 0; i < id_act_l_max; i++)
+    {
+      sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
+      if (sqr_dist < distmin)
+	{
+	  node_id = i;
+	  break;
+	}
+    }
+
+   if(!useQuadratic)
+      return node_id;
+
+  for (size_t i = id_act_h_min; i < id_act_h_max; i++)
     {
       sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
       if (sqr_dist < distmin)
@@ -1483,7 +1500,7 @@ inline double dotProduction(const double* x1, const double* x2,
    05/3013 WW Add restriction for the ply for the sources term
 **************************************************************************/
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
-                          std::vector<size_t>& msh_nod_vector, const bool for_s_term)
+                          std::vector<size_t>& msh_nod_vector)
 {
 	msh_nod_vector.clear();
 
@@ -1517,7 +1534,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
 	}
 
 	// compute nodes (and supporting points) along polyline
-	_mesh_nodes_along_polylines.push_back(MeshNodesAlongPolyline(ply, this, for_s_term));
+	_mesh_nodes_along_polylines.push_back(MeshNodesAlongPolyline(ply, this));
 	const std::vector<size_t>
 	node_ids(
 	        _mesh_nodes_along_polylines[_mesh_nodes_along_polylines.size()
@@ -1587,12 +1604,35 @@ void CFEMesh::getPointsForInterpolationAlongPolyline(
 }
 
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
-                          std::vector<long>& msh_nod_vector,  const bool for_s_term)
+                          std::vector<long>& msh_nod_vector, const bool for_s_term)
 {
 	std::vector<size_t> tmp_msh_node_vector;
-	GetNODOnPLY(ply, tmp_msh_node_vector, for_s_term);
+	GetNODOnPLY(ply, tmp_msh_node_vector);
+
+#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 08.2014
+        if(for_s_term)
+        {
+            for(size_t k(0); k < tmp_msh_node_vector.size(); k++)
+               msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+        }
+        else
+        {    
+	    const size_t start_act_node_h =  NodesNumber_Linear;         
+	    const size_t end_act_node_h =  NodesNumber_Linear 
+                                   + static_cast<size_t>(loc_NodesNumber_Quadratic - loc_NodesNumber_Linear);         
+            for(size_t k(0); k < tmp_msh_node_vector.size(); k++)
+            {
+                const size_t n_id = nod_vector[tmp_msh_node_vector[k]]->GetIndex();
+                if(   n_id < static_cast<size_t>(loc_NodesNumber_Linear)
+		      || ( n_id >= start_act_node_h && n_id < end_act_node_h )
+                   ) 
+                   msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+            }
+        }
+#else
 	for (size_t k(0); k < tmp_msh_node_vector.size(); k++)
 		msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+#endif        
 }
 
 /**************************************************************************
@@ -1660,22 +1700,9 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 	begin = clock();
 #endif
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-  size_t nodes_in_usage;
   if(for_s_term)
   {
-	  nodes_in_usage = (size_t) NodesInUsage();
-  }
-  else
-  {
-	if (useQuadratic)
-       nodes_in_usage = getNumNodesLocal_Q();
-	else
-       nodes_in_usage = getNumNodesLocal();
-  }
-
-#else
-	const size_t nodes_in_usage((size_t) NodesInUsage());
-#endif
+       const  size_t nodes_in_usage = (size_t) NodesInUsage();
 	for (size_t j(0); j < nodes_in_usage; j++) {
 		if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
 			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
@@ -1683,6 +1710,45 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 			}
 		}
 	}
+  }
+  else
+  {
+        const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
+        const size_t id_act_h_min =   GetNodesNumber(false);
+        const size_t id_act_h_max =  id_act_h_min 
+                                   + static_cast<size_t>(getNumNodesLocal_Q()
+                                    - getNumNodesLocal() );
+
+        for (size_t j=0; j < id_act_l_max; j++) {
+           if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
+              if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+                  msh_nod_vector.push_back(nod_vector[j]->GetIndex());
+              }
+           }
+        }
+
+        if (!useQuadratic)
+            return;
+
+        for (size_t j=id_act_h_min; j < id_act_h_max; j++) {
+           if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
+              if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+                  msh_nod_vector.push_back(nod_vector[j]->GetIndex());
+              }
+           }
+        }
+  }
+
+#else
+	const size_t nodes_in_usage((size_t) NodesInUsage());
+	for (size_t j(0); j < nodes_in_usage; j++) {
+		if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
+			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+				msh_nod_vector.push_back(nod_vector[j]->GetIndex());
+			}
+		}
+	}
+#endif
 
 #ifdef TIME_MEASUREMENT
 	end = clock();
@@ -1758,21 +1824,9 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 		//....................................................................
 		// Check nodes by comparing area
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-       size_t nn;
-       if(for_s_term)
-       {
-	      nn =  NodesInUsage();
-       }
-       else
-       {
-	     if (useQuadratic)
-            nn =  getNumNodesLocal_Q();
-	     else
-            nn =  getNumNodesLocal();
-        }
-#else
-		const size_t nn =  NodesInUsage();
-#endif
+              if(for_s_term)
+              {
+	        const size_t nn =  NodesInUsage();
 		for (j = 0; j < nn; j++)
 		{
 			Area2 = 0.0;
@@ -1793,6 +1847,90 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 				msh_nod_vector.push_back(
 				        nod_vector[j]->GetIndex());
 		}
+             }
+             else
+             {
+                const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
+
+		for (j = 0; j < id_act_l_max; j++)
+		{
+			Area2 = 0.0;
+			for (i = 0; i < nPointsPly; i++)
+			{
+				p1[0] = m_ply->point_vector[i]->x;
+				p1[1] = m_ply->point_vector[i]->y;
+				p1[2] = m_ply->point_vector[i]->z;
+				k = i + 1;
+				if (i == nPointsPly - 1)
+					k = 0;
+				p2[0] = m_ply->point_vector[k]->x;
+				p2[1] = m_ply->point_vector[k]->y;
+				p2[2] = m_ply->point_vector[k]->z;
+				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+			}
+			if (fabs(Area1 - Area2) < Tol)
+				msh_nod_vector.push_back(
+				        nod_vector[j]->GetIndex());
+		}
+
+
+	        if(useQuadratic)
+	        {
+
+                const size_t id_act_h_min =  GetNodesNumber(false);
+                const size_t id_act_h_max =  id_act_h_min 
+                                   + static_cast<size_t>(getNumNodesLocal_Q()
+                                                        - getNumNodesLocal() );
+
+		for (j = id_act_h_min; j < id_act_h_max; j++)
+		{
+			Area2 = 0.0;
+			for (i = 0; i < nPointsPly; i++)
+			{
+				p1[0] = m_ply->point_vector[i]->x;
+				p1[1] = m_ply->point_vector[i]->y;
+				p1[2] = m_ply->point_vector[i]->z;
+				k = i + 1;
+				if (i == nPointsPly - 1)
+					k = 0;
+				p2[0] = m_ply->point_vector[k]->x;
+				p2[1] = m_ply->point_vector[k]->y;
+				p2[2] = m_ply->point_vector[k]->z;
+				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+			}
+			if (fabs(Area1 - Area2) < Tol)
+				msh_nod_vector.push_back(
+				        nod_vector[j]->GetIndex());
+		}
+
+                }
+
+
+
+              }
+#else
+		const size_t nn =  NodesInUsage();
+		for (j = 0; j < nn; j++)
+		{
+			Area2 = 0.0;
+			for (i = 0; i < nPointsPly; i++)
+			{
+				p1[0] = m_ply->point_vector[i]->x;
+				p1[1] = m_ply->point_vector[i]->y;
+				p1[2] = m_ply->point_vector[i]->z;
+				k = i + 1;
+				if (i == nPointsPly - 1)
+					k = 0;
+				p2[0] = m_ply->point_vector[k]->x;
+				p2[1] = m_ply->point_vector[k]->y;
+				p2[2] = m_ply->point_vector[k]->z;
+				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+			}
+			if (fabs(Area1 - Area2) < Tol)
+				msh_nod_vector.push_back(
+				        nod_vector[j]->GetIndex());
+		}
+#endif
 		p_ply++;
 	}
 }

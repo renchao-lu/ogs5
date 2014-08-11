@@ -74,8 +74,6 @@
 /*-----------------------------------------------------------------------*/
 /* Tools */
 
-
-
 #ifdef MFC                                        //WW
 #include "rf_fluid_momentum.h"
 #endif
@@ -393,6 +391,12 @@ Problem* CRFProcess::getProblemObjectPointer () const
 **************************************************************************/
 CRFProcess::~CRFProcess(void)
 {
+#ifdef USE_PETSC
+       if(myrank == 0)
+	 PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total Wall clock time in the assembly for %s (with PETSC):%f s\n", 
+		     FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str(), cpu_time_assembly);
+  
+#endif
 	long i;
 	//----------------------------------------------------------------------
 	// Finite element
@@ -514,6 +518,8 @@ CRFProcess::~CRFProcess(void)
 		delete m_solver;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//10.3012. WW
+        PetscPrintf(PETSC_COMM_WORLD,"\n>>PETSc solver info for %s :\n",\
+                    FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str());
 	delete eqs_new;
         eqs_new = NULL;
 #endif
@@ -5368,6 +5374,15 @@ void CRFProcess::AddFCT_CorrectionVector()
  **************************************************************************/
 void CRFProcess::GlobalAssembly()
 {
+#ifdef USE_PETSC
+      PetscLogDouble v1,v2;
+#ifdef USEPETSC34
+       PetscTime(&v1);
+#else
+       PetscGetTime(&v1);
+#endif
+#endif
+
 	// Tests
 	if (!Tim)
 		Tim = TIMGet(convertProcessTypeToString(this->getProcessType()));
@@ -5550,6 +5565,15 @@ void CRFProcess::GlobalAssembly()
 		//eqs_new->AssembleMatrixPETSc(MAT_FINAL_ASSEMBLY );
 #endif
 	}
+
+#ifdef USE_PETSC
+#ifdef USEPETSC34
+       PetscTime(&v2);
+#else
+       PetscGetTime(&v2);
+#endif
+       cpu_time_assembly += v2 - v1;
+#endif
 }
 
 //--------------------------------------------------------------------

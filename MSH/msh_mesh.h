@@ -78,13 +78,14 @@ public:
 
 /// For parallel computing. 03.2012. WW
 #if defined(USE_PETSC) // || defined(using other parallel scheme)
-typedef struct
+typedef long MyInt;
+struct MeshNodes
 {
-  long index;
+  MyInt index;
   double x;
   double y;
   double z;
-} MeshNodes;
+};
 
 #endif 
 
@@ -191,14 +192,14 @@ public:
            @param header  : mesh header
            @param s_nodes : mesh nodes
 	*/
-	void setSubdomainNodes(long *header, const MeshNodes *s_nodes);
+	void setSubdomainNodes(MyInt *header, const MeshNodes *s_nodes);
 	/*!
 	   Fill data for subdomain mesh
            @param header    : mesh header
            @param elem_info : element information
            @param inside    : indicator for elements that are inside the subdomain
 	*/
-	void setSubdomainElements(long *header, const long *elem_info, const bool inside);
+	void setSubdomainElements(MyInt *header, const MyInt *elem_info, const bool inside);
 	int calMaximumConnectedNodes();
         /// Get number of nodes of the entire mesh       
         int getNumNodesGlobal() const
@@ -346,7 +347,7 @@ public:
 	 * @param msh_nod_vector the mesh node indices are saved in this vector
 	 * */
 	void GetNODOnPLY(const GEOLIB::Polyline* const ply,
-	                 std::vector<size_t>& msh_nod_vector, const bool for_s_term = false);
+	                 std::vector<size_t>& msh_nod_vector);
 
 	/**
 	 *
@@ -366,7 +367,7 @@ public:
 	/**
 	 * GetNODOnPLY search the nearest nodes to the Polyline
 	 * */
-	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector, const bool for_s_term = false);
+	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector, const bool for_s_term = false );
 
 	/**
 	 * \brief gives the indices of CElement elements, which have an edge
@@ -472,7 +473,7 @@ public:
 	void ConvertShapeCells(std::string const & fname);
 #ifdef USE_HydSysMshGen
 	// Be activated if it is still needed.
-	// WW
+	// WWmesh_header
 	/// Generate Column-surface grid system for the modeling of surafce-subsuface coupled processes
 	//15.05.2009. WW // removed useless const TF
 	void HydroSysMeshGenerator(std::string fname, int nlayers, double thickness, int mapping);
