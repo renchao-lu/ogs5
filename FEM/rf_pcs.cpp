@@ -7288,7 +7288,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			//m_msh->nod_vector[1]->getConnectedNodes()	//averaging needed?
 
 			//check if velocity is zero
-			double magn_vel_v(calcVelMagn(&vel_v[0]));
+			double magn_vel_v(MVekNorm2(&vel_v[0], 3));
 			if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
 				return false;
 
@@ -7394,11 +7394,6 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 	}
 
 	//return vel_nod;
-}
-
-double CRFProcess::calcVelMagn(double const * const vel_v)
-{
-	return std::pow( (std::pow(vel_v[0], 2) + std::pow(vel_v[1], 2) + std::pow(vel_v[2], 2)) , 0.5);
 }
 
 	int CRFProcess::getFirstNodeBelowGWL(size_t current_node)
