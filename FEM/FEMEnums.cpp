@@ -576,3 +576,22 @@ std::string convertTimeControlTypeToString(TimeControlType::type tc_type)
     return "INVALID";
 
 }
+
+
+ConstrainedBCType::type convertConstrainedBCType(const std::string &str)
+{
+	if (str.compare("SMALLER") == 0)
+		return ConstrainedBCType::SMALLER;
+	else if (str.compare("GREATER") == 0)
+		return ConstrainedBCType::GREATER;
+	return ConstrainedBCType::INVALID_CONSTRAINED_TYPE;
+}
+
+std::string convertConstrainedBCTypeToString(ConstrainedBCType::type constrained_BC_type)
+{
+	if (constrained_BC_type == ConstrainedBCType::SMALLER)
+		return "SMALLER";
+	else if (constrained_BC_type == ConstrainedBCType::GREATER)
+		return "GREATER";
+	return "INVALID_CONSTRAINED_TYPE";
+}

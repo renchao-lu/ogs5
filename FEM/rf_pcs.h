@@ -905,6 +905,8 @@ private:
 	 * PERMEABILITY_X1 and POROSITY
 	 */
 	void configMaterialParameters ();
+	// method to check on constrained boundary conditions
+	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node);
 
 };
 
