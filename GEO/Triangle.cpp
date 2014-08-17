@@ -24,7 +24,7 @@ Triangle::Triangle (std::vector<Point*> const &pnt_vec) :
 	_pnt_ids[1] = std::numeric_limits<size_t>::max();
 	_pnt_ids[2] = std::numeric_limits<size_t>::max();
 	for (int i = 0; i < 3; ++i)
-	_normal_vector[i] = std::numeric_limits<double>::max();
+		_normal_vector[i] = std::numeric_limits<double>::max();
 }
 
 Triangle::Triangle (std::vector<Point*> const &pnt_vec, size_t pnt_a, size_t pnt_b, size_t pnt_c) :

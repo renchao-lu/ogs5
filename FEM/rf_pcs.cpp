@@ -4899,8 +4899,9 @@ double CRFProcess::Execute()
 			}
 		}
 
+		// maybe works also for other processes involving velocities
 		// update nod velocity if constrained BC
-		if (this->accepted		// do I really need to check every single bc node, or how can I access a bc group?
+		if (this->accepted // do I really need to check every single bc node, or how can I access a bc group?
 			&& (this->getProcessType() == FiniteElement::RICHARDS_FLOW
 				|| this->getProcessType() == FiniteElement::LIQUID_FLOW) )
 		{
@@ -6333,12 +6334,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				                 &valid) < MKleinsteZahl)
 					continue;
 
-//			if(m_bc->isConstrainedBC())
-//			{
-//				if (checkConstrainedBC(*m_bc, *m_bc_node))
-//					continue;
-//			}
-
 			//WX: 01.2011. for excavation bc, check if excavated and if on boundary
 			if(m_bc->getExcav() > 0)
 			{
@@ -7285,12 +7280,10 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			std::vector<double>vel_v(3);
 			this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
 
-			//m_msh->nod_vector[1]->getConnectedNodes()	//averaging needed?
-
 			//check if velocity is zero
 			double magn_vel_v(MVekNorm2(&vel_v[0], 3));
 			if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
-				return false;
+				continue;
 
 			//nomalize velocity vector
 			NormalizeVector(&vel_v[0], 3);
@@ -7316,17 +7309,16 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			|| local_constrained.constrainedPrimVar == FiniteElement::TEMPERATURE)
 		{
 			//other process
-			CRFProcess* m_pcs = NULL;
-			m_pcs = PCSGet(local_constrained.constrainedProcessType);
+			CRFProcess* pcs(PCSGet(local_constrained.constrainedProcessType));
 
 			//other variable
 			for (std::size_t k = 0; k < m_pcs->GetPrimaryVNumber(); k++)
 			{
-				if (m_pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
+				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
 				{
 					//value of PrimVar of other process at current node
-					int nidx0 = m_pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar), 0);
-					double local_value = m_pcs->GetNodeValue(bc_node.geo_node_number, nidx0);
+					int nidx0 = pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar), 0);
+					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, nidx0);
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
