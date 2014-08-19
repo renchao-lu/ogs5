@@ -527,46 +527,6 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 	return "INVALID_REACTIVE_SYSTEM";
 }
 
-ConstrainedBCType convertConstrainedBCType(const std::string &str)
-{
-	if (str.compare("SMALLER") == 0)
-		return SMALLER;
-	else if (str.compare("GREATER") == 0)
-		return GREATER;
-	else if (str.compare("POSITIVE") == 0)
-		return POSITIVE;
-	else if (str.compare("NEGATIVE") == 0)
-		return NEGATIVE;
-	return INVALID_CONSTRAINED_TYPE;
-}
-
-std::string convertConstrainedBCTypeToString(ConstrainedBCType constrained_BC_type)
-{
-	if (constrained_BC_type == SMALLER)
-		return "SMALLER";
-	else if (constrained_BC_type == GREATER)
-		return "GREATER";
-	else if (constrained_BC_type == POSITIVE)
-		return "POSITIVE";
-	else if (constrained_BC_type == NEGATIVE)
-		return "NEGATIVE";
-	return "INVALID_CONSTRAINED_TYPE";
-}
-
-ConstrainedVariable convertConstrainedVariable(const std::string &str)
-{
-	if (str.compare("VELOCITY") == 0)
-		return VELOCITY;
-	return INVALID_CONSTRAINED_VARIABLE;
-}
-
-std::string convertConstrainedVariableToString(ConstrainedVariable constrained_variable)
-{
-	if (constrained_variable == VELOCITY)
-		return "VELOCITY";
-	return "INVALID_CONSTRAINED_VARIABLE";
-}
-
 } // end namespace FiniteElement
 
 TimeControlType::type convertTimeControlType(const std::string &str)
@@ -617,21 +577,44 @@ std::string convertTimeControlTypeToString(TimeControlType::type tc_type)
 
 }
 
-
-ConstrainedBCType::type convertConstrainedBCType(const std::string &str)
+ConstrainedType::type convertConstrainedType(const std::string &str)
 {
 	if (str.compare("SMALLER") == 0)
-		return ConstrainedBCType::SMALLER;
+		return ConstrainedType::SMALLER;
 	else if (str.compare("GREATER") == 0)
-		return ConstrainedBCType::GREATER;
-	return ConstrainedBCType::INVALID_CONSTRAINED_TYPE;
+		return ConstrainedType::GREATER;
+	else if (str.compare("POSITIVE") == 0)
+		return ConstrainedType::POSITIVE;
+	else if (str.compare("NEGATIVE") == 0)
+		return ConstrainedType::NEGATIVE;
+	return ConstrainedType::INVALID_CONSTRAINED_TYPE;
 }
 
-std::string convertConstrainedBCTypeToString(ConstrainedBCType::type constrained_BC_type)
+std::string convertConstrainedTypeToString(ConstrainedType::type constrained_type)
 {
-	if (constrained_BC_type == ConstrainedBCType::SMALLER)
+	if (constrained_type == ConstrainedType::SMALLER)
 		return "SMALLER";
-	else if (constrained_BC_type == ConstrainedBCType::GREATER)
+	else if (constrained_type == ConstrainedType::GREATER)
 		return "GREATER";
+	else if (constrained_type == ConstrainedType::POSITIVE)
+		return "POSITIVE";
+	else if (constrained_type == ConstrainedType::NEGATIVE)
+		return "NEGATIVE";
 	return "INVALID_CONSTRAINED_TYPE";
 }
+
+
+ConstrainedVariable::type convertConstrainedVariable(const std::string &str)
+{
+	if (str.compare("VELOCITY") == 0)
+		return ConstrainedVariable::VELOCITY;
+	return ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
+}
+
+std::string convertConstrainedVariableToString(ConstrainedVariable::type constrained_variable)
+{
+	if (constrained_variable == ConstrainedVariable::VELOCITY)
+		return "VELOCITY";
+	return "INVALID_CONSTRAINED_VARIABLE";
+}
+

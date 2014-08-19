@@ -7267,75 +7267,78 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node)
 {
-	if (bc.getConstrainedVariable() == FiniteElement::VELOCITY)
+	for (std::size_t i=0; i < bc.getNumberOfConstrainedBCs(); i++)
 	{
-		//get velocity vector at node
-		std::vector<double>vel_v(3);
-		this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
-		
-		//m_msh->nod_vector[1]->getConnectedNodes()	//averaging needed?
-
-		//check if velocity is zero
-		double magn_vel_v(calcVelMagn(&vel_v[0]));
-		if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
-			return false;
-
-		//nomalize velocity vector
-		NormalizeVector(&vel_v[0], 3);
-
-		//calculate scalar product of velocity vector and BC surface normal
-		double const scalar_prod(MathLib::scpr(&(vel_v)[0], bc_node.GetNormalVector(), 3));
-		
-		
-
-		//select case to handle BC
-		if (scalar_prod <= 1.01 && scalar_prod >= 0)	// velocity vector points in same direction as bc surface normal
+		Constrained local_constrained(bc.getConstrainedBC(i));
+		if (local_constrained.constrainedVariable == ConstrainedVariable::VELOCITY)
 		{
-			return false;	//continue with normal BC
-		}
-		else if (scalar_prod < 0 && scalar_prod >= -1.01)	// velocity vector and bc surface normal point in opposite directions
-		{
-			return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
-		}
-		else
-			std::cout << "Wrong value for scalar product of normalized vectors (BC SURFACE normal + velocity vector)!" << std::endl;
-	}
-	else if (bc.getConstrainedPrimVar() == FiniteElement::PRESSURE
-		|| bc.getConstrainedPrimVar() == FiniteElement::CONCENTRATION
-		|| bc.getConstrainedPrimVar() == FiniteElement::TEMPERATURE)
-	{
-		//other process
-		CRFProcess* m_pcs = NULL;
-		m_pcs = PCSGet(bc.getConstrainedProcessType());
+			//get velocity vector at node
+			std::vector<double>vel_v(3);
+			this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
 
-		//other variable
-		for (std::size_t k = 0; k < m_pcs->GetPrimaryVNumber(); k++)
-		{
-			if (m_pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(bc.getConstrainedPrimVar()))
+			//m_msh->nod_vector[1]->getConnectedNodes()	//averaging needed?
+
+			//check if velocity is zero
+			double magn_vel_v(calcVelMagn(&vel_v[0]));
+			if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
+				return false;
+
+			//nomalize velocity vector
+			NormalizeVector(&vel_v[0], 3);
+
+			//calculate scalar product of velocity vector and BC surface normal
+			double const scalar_prod(MathLib::scpr(&(vel_v)[0], bc_node.GetNormalVector(), 3));
+
+			//select case to handle BC
+			if (scalar_prod < 0 && scalar_prod >= -1.01
+					&& local_constrained.constrainedDirection == ConstrainedType::NEGATIVE)	// velocity vector and bc surface normal point in opposite directions
 			{
-				//value of PrimVar of other process at current node
-				int nidx0 = m_pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(bc.getConstrainedPrimVar()), 0);
-				double local_value = m_pcs->GetNodeValue(bc_node.geo_node_number, nidx0);
+				return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
+			}
+			else if(scalar_prod <= 1.01 && scalar_prod >= 0
+					&& local_constrained.constrainedDirection == ConstrainedType::POSITIVE)	// velocity vector points in same direction as bc surface normal
+			{
+				return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
+			}
 
-				if (bc.getConstrainedDirection() == FiniteElement::GREATER)	//exclude greater and equal values
+		}
+		else if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
+			|| local_constrained.constrainedPrimVar == FiniteElement::CONCENTRATION
+			|| local_constrained.constrainedPrimVar == FiniteElement::TEMPERATURE)
+		{
+			//other process
+			CRFProcess* m_pcs = NULL;
+			m_pcs = PCSGet(local_constrained.constrainedProcessType);
+
+			//other variable
+			for (std::size_t k = 0; k < m_pcs->GetPrimaryVNumber(); k++)
+			{
+				if (m_pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
 				{
-					if (local_value >= bc.getConstrainedBCValue())
-						return true;
+					//value of PrimVar of other process at current node
+					int nidx0 = m_pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar), 0);
+					double local_value = m_pcs->GetNodeValue(bc_node.geo_node_number, nidx0);
+
+					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
+					{
+						if (local_value >= local_constrained.constrainedBCValue)
+							return true;
+					}
+					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
+					{
+						if (local_value < local_constrained.constrainedBCValue)
+							return true;
+					}
+					/*else	is already checked when reading
+						return false;*/
 				}
-				else if (bc.getConstrainedDirection() == FiniteElement::SMALLER) // exclude smaller values
-				{
-					if (local_value < bc.getConstrainedBCValue())
-						return true;
-				}
-				else
-					return false;
 			}
 		}
-	}
-	else
-	{
-		std::cout << "Non existing combination for constrained BC direction given. Using normal BC." << std::endl;
-		return false;
+		else
+		{
+			std::cout << "Non existing combination for constrained BC direction given. Using normal BC." << std::endl;
+			return false;
+		}
 	}
 	return false;
 }
