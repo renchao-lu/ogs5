@@ -144,6 +144,7 @@ public:
 	bool isConstrainedBC() const {return _isConstrainedBC;}
 	Constrained const & getConstrainedBC(std::size_t i) const { return _constrainedBC[i]; }
 	std::size_t getNumberOfConstrainedBCs() const { return _constrainedBC.size(); }
+	bool isSeepageBC() const { return _isSeepageBC; }
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -215,6 +216,7 @@ private:
 	// constrain a BC by other process
 	bool _isConstrainedBC;
 	std::vector<Constrained> _constrainedBC;
+	bool _isSeepageBC;
 
 };
 
