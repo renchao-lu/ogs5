@@ -83,7 +83,7 @@ void CBoundaryConditionNode::SetNormalVector(double const*const normal_vector)
 	_normal_vector[2] = normal_vector[2];
 }
 
-double const*const CBoundaryConditionNode::GetNormalVector()
+double const*const CBoundaryConditionNode::GetNormalVector() const
 {
 	return this->_normal_vector;
 }
@@ -1425,8 +1425,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 
 						if (bc->constrainedBC == true && nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
 						{
-							const double const*const coords(m_msh->nod_vector[m_node_value->geo_node_number]->getData());
-							std::size_t triangle_id(sfc->getTriangleIDOfPoint(coords));
+							double const * const coords(m_msh->nod_vector[m_node_value->geo_node_number]->getData());
+							int triangle_id(sfc->getTriangleIDOfPoint(coords));
 							if (triangle_id != -1)
 								m_node_value->SetNormalVector(sfc->getTriangleNormal(triangle_id));
 							else
