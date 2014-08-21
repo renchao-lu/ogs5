@@ -70,10 +70,6 @@
 #include "fem_ele_vec.h"//WX:08.2011
 #include "StepperBulischStoer.h"
 
-/*-----------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------*/
-/* Tools */
-
 #ifdef MFC                                        //WW
 #include "rf_fluid_momentum.h"
 #endif
@@ -5375,11 +5371,11 @@ void CRFProcess::AddFCT_CorrectionVector()
 void CRFProcess::GlobalAssembly()
 {
 #ifdef USE_PETSC
-      PetscLogDouble v1,v2;
+	PetscLogDouble v1,v2;
 #ifdef USEPETSC34
-       PetscTime(&v1);
+	PetscTime(&v1);
 #else
-       PetscGetTime(&v1);
+	PetscGetTime(&v1);
 #endif
 #endif
 
@@ -5568,11 +5564,11 @@ void CRFProcess::GlobalAssembly()
 
 #ifdef USE_PETSC
 #ifdef USEPETSC34
-       PetscTime(&v2);
+	PetscTime(&v2);
 #else
-       PetscGetTime(&v2);
+	PetscGetTime(&v2);
 #endif
-       cpu_time_assembly += v2 - v1;
+	cpu_time_assembly += v2 - v1;
 #endif
 }
 

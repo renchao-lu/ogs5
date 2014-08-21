@@ -217,10 +217,16 @@ public:
 	   return loc_NodesNumber_Linear; 
         }
         /// Get number of nodes of the subdomain mesh of quadratic elements      
-        int getNumNodesLocal_Q() const
-        {
+	int getNumNodesLocal_Q() const
+	{
 	   return loc_NodesNumber_Quadratic; 
-        }
+	}
+        /// Get the largest ID of active nodes for higher order interpolation
+        size_t getLargestActiveNodeID_Quadratic() const
+        {
+	  return static_cast<size_t> ( NodesNumber_Linear + loc_NodesNumber_Quadratic 
+                                    - loc_NodesNumber_Linear );          
+        } 
 #endif
 
 	//
