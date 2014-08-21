@@ -509,10 +509,10 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			else
 			{
 				temp.constrainedProcessType = FiniteElement::convertProcessType(tempst);
-				if (temp.constrainedProcessType != FiniteElement::MASS_TRANSPORT ||
-					temp.constrainedProcessType != FiniteElement::HEAT_TRANSPORT ||
-					temp.constrainedProcessType != FiniteElement::LIQUID_FLOW ||
-					temp.constrainedProcessType != FiniteElement::RICHARDS_FLOW) {
+				if ( !(temp.constrainedProcessType == FiniteElement::MASS_TRANSPORT ||
+					temp.constrainedProcessType == FiniteElement::HEAT_TRANSPORT ||
+					temp.constrainedProcessType == FiniteElement::LIQUID_FLOW ||
+					temp.constrainedProcessType == FiniteElement::RICHARDS_FLOW) ) {
 					_isConstrainedBC = false;
 					break;
 				}
