@@ -1715,9 +1715,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
   {
         const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
         const size_t id_act_h_min =   GetNodesNumber(false);
-        const size_t id_act_h_max =  id_act_h_min 
-                                   + static_cast<size_t>(getNumNodesLocal_Q()
-                                    - getNumNodesLocal() );
+        const size_t id_act_h_max =  getLargestActiveNodeID_Quadratic();
 
         for (size_t j=0; j < id_act_l_max; j++) {
            if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
@@ -1755,6 +1753,42 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 	std::cout << "done, took " << (end-begin)/(double)(CLOCKS_PER_SEC) << " s, " << msh_nod_vector.size() << "nodes found" << "\n";
 #endif
 }
+
+#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2014
+void CFEMesh::findNodesInTriangle(const double area_orig, const double tol,
+				  const size_t start_id, const size_t end_id,
+				  const CGLPolyline *ply,
+				  std::vector<long> &node_id_vector) const
+{
+  double x1[3];
+  double x2[3];
+  const size_t np = ply->point_vector.size(); 
+  for (size_t j = start_id; j < end_id; j++)
+    {
+      double area_calculated = 0.0;
+      for (size_t i = 0; i < np; i++)
+	{
+	  CGLPoint *point = ply->point_vector[i]; 
+	  x1[0] = point->x;
+	  x1[1] = point->y;
+	  x1[2] = point->z;
+	  
+	  size_t k = i + 1;
+	  if (i == np - 1)
+	    k = 0;
+	  point = ply->point_vector[k];
+	  x2[0] = point->x;
+	  x2[1] = point->y;
+	  x2[2] = point->z;
+	  
+	  area_calculated += fabs(ComputeDetTri(x1, nod_vector[j]->getData(), x2));
+	}
+
+      if (fabs(area_orig - area_calculated) < tol)
+	node_id_vector.push_back( nod_vector[j]->GetIndex());
+    }
+};
+#endif
 
 /**************************************************************************
    MSHLib-Method:
@@ -1824,104 +1858,29 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 		//....................................................................
 		// Check nodes by comparing area
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-              if(for_s_term)
-              {
-                 const size_t nn =  NodesInUsage();
-                 for (j = 0; j < nn; j++)
-                 {
-                    Area2 = 0.0;
-                    for (i = 0; i < nPointsPly; i++)
-                    {
-                        p1[0] = m_ply->point_vector[i]->x;
-                        p1[1] = m_ply->point_vector[i]->y;
-                        p1[2] = m_ply->point_vector[i]->z;
-                        k = i + 1;
-                        if (i == nPointsPly - 1)
-                           k = 0;
-                        p2[0] = m_ply->point_vector[k]->x;
-                        p2[1] = m_ply->point_vector[k]->y;
-                        p2[2] = m_ply->point_vector[k]->z;
-                        Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-                    }
-                    if (fabs(Area1 - Area2) < Tol)
-                       msh_nod_vector.push_back( nod_vector[j]->GetIndex() );
-                 }
-             }
-             else
-             {
-                const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
+		if(for_s_term)
+		  {
+		    findNodesInTriangle(Area1, Tol, 0, NodesInUsage(),
+					m_ply, msh_nod_vector);
+		  }
+		else
+		  {
+		    findNodesInTriangle(Area1, Tol, 0, getNumNodesLocal(),
+					m_ply, msh_nod_vector);
 
-                for (j = 0; j < id_act_l_max; j++)
-                {
-                    Area2 = 0.0;
-                    for (i = 0; i < nPointsPly; i++)
-                    {
-                        p1[0] = m_ply->point_vector[i]->x;
-                        p1[1] = m_ply->point_vector[i]->y;
-                        p1[2] = m_ply->point_vector[i]->z;
-                        k = i + 1;
-                        if (i == nPointsPly - 1)
-                           k = 0;
-                        p2[0] = m_ply->point_vector[k]->x;
-                        p2[1] = m_ply->point_vector[k]->y;
-                        p2[2] = m_ply->point_vector[k]->z;
-                        Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-                    }
-                    if (fabs(Area1 - Area2) < Tol)
-                         msh_nod_vector.push_back( nod_vector[j]->GetIndex());
-                }
-
-                if(useQuadratic)
-                {
-                    const size_t id_act_h_min =  GetNodesNumber(false);
-                    const size_t id_act_h_max =  id_act_h_min 
-                                   + static_cast<size_t>(getNumNodesLocal_Q()
-                                                        - getNumNodesLocal() );
-
-                    for (j = id_act_h_min; j < id_act_h_max; j++)
-                    {
-                        Area2 = 0.0;
-                        for (i = 0; i < nPointsPly; i++)
-                        {
-                           p1[0] = m_ply->point_vector[i]->x;
-                           p1[1] = m_ply->point_vector[i]->y;
-                           p1[2] = m_ply->point_vector[i]->z;
-                           k = i + 1;
-                           if (i == nPointsPly - 1)
-                              k = 0;
-                           p2[0] = m_ply->point_vector[k]->x;
-                           p2[1] = m_ply->point_vector[k]->y;
-                           p2[2] = m_ply->point_vector[k]->z;
-                           Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-                        }
-                        if (fabs(Area1 - Area2) < Tol)
-                           msh_nod_vector.push_back( nod_vector[j]->GetIndex());
-                    }
-                 }
-              }
+		    if(useQuadratic)
+		      {
+			findNodesInTriangle(Area1, Tol, GetNodesNumber(false), 
+					    getLargestActiveNodeID_Quadratic(),
+					    m_ply, msh_nod_vector);
+			
+		      }
+		  }
 #else
-              const size_t nn =  NodesInUsage();
-              for (j = 0; j < nn; j++)
-              {
-                  Area2 = 0.0;
-                  for (i = 0; i < nPointsPly; i++)
-                  {
-                      p1[0] = m_ply->point_vector[i]->x;
-                      p1[1] = m_ply->point_vector[i]->y;
-                      p1[2] = m_ply->point_vector[i]->z;
-                      k = i + 1;
-                      if (i == nPointsPly - 1)
-                          k = 0;
-                      p2[0] = m_ply->point_vector[k]->x;
-                      p2[1] = m_ply->point_vector[k]->y;
-                      p2[2] = m_ply->point_vector[k]->z;
-                      Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-                  }
-                  if (fabs(Area1 - Area2) < Tol)
-                     msh_nod_vector.push_back( nod_vector[j]->GetIndex());
-             }
+		findNodesInTriangle(Area1, Tol, 0, NodesInUsage(),
+				    m_ply, msh_nod_vector);
 #endif
-              p_ply++;
+		p_ply++;
 	}
 }
 

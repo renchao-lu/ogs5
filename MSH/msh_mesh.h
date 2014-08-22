@@ -217,10 +217,10 @@ public:
 	   return loc_NodesNumber_Linear; 
         }
         /// Get number of nodes of the subdomain mesh of quadratic elements      
-	int getNumNodesLocal_Q() const
-	{
+        int getNumNodesLocal_Q() const
+        {
 	   return loc_NodesNumber_Quadratic; 
-	}
+        }
         /// Get the largest ID of active nodes for higher order interpolation
         size_t getLargestActiveNodeID_Quadratic() const
         {
@@ -546,6 +546,11 @@ private:
 	int glb_NodesNumber_Quadratic;
 	int loc_NodesNumber_Linear; //index of shadow nodes starts from this number
 	int loc_NodesNumber_Quadratic;
+
+	void findNodesInTriangle(const double area_orig, const double tol,
+				 const size_t start_id, const size_t end_id, 
+				 const CGLPolyline *ply, 
+				 std::vector<long> &node_id_vector) const;
 #endif
 	bool useQuadratic;
 	bool _axisymmetry;
