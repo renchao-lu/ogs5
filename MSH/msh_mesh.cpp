@@ -1754,7 +1754,6 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 #endif
 }
 
-#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2014
 void CFEMesh::findNodesInTriangle(const double area_orig, const double tol,
 				  const size_t start_id, const size_t end_id,
 				  const CGLPolyline *ply,
@@ -1788,7 +1787,6 @@ void CFEMesh::findNodesInTriangle(const double area_orig, const double tol,
 	node_id_vector.push_back( nod_vector[j]->GetIndex());
     }
 };
-#endif
 
 /**************************************************************************
    MSHLib-Method:
@@ -1804,11 +1802,10 @@ void CFEMesh::findNodesInTriangle(const double area_orig, const double tol,
 void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
                               std::vector<long>&msh_nod_vector, const bool for_s_term) const
 {
-	long i, k;
-	size_t j;
+	long i;
 	int nPointsPly = 0;
 	double gC[3], p1[3], p2[3];
-	double Area1, Area2;
+	double Area1;
 	double Tol = m_sfc->epsilon;
 	CGLPolyline* m_ply = NULL;
 	std::vector<CGLPolyline*>::const_iterator p_ply(

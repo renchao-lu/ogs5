@@ -547,10 +547,6 @@ private:
 	int loc_NodesNumber_Linear; //index of shadow nodes starts from this number
 	int loc_NodesNumber_Quadratic;
 
-	void findNodesInTriangle(const double area_orig, const double tol,
-				 const size_t start_id, const size_t end_id, 
-				 const CGLPolyline *ply, 
-				 std::vector<long> &node_id_vector) const;
 #endif
 	bool useQuadratic;
 	bool _axisymmetry;
@@ -593,6 +589,10 @@ private:
 
 	void CreateLineElementsFromMarkedEdges(CFEMesh* m_msh_ply,
 	                                       std::vector<long> &ele_vector_at_ply); //NW
+	void findNodesInTriangle(const double area_orig, const double tol,
+				 const size_t start_id, const size_t end_id, 
+				 const CGLPolyline *ply, 
+				 std::vector<long> &node_id_vector) const;
 public:
 	void constructMeshGrid();
 private:
