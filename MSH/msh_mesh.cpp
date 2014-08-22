@@ -1754,7 +1754,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 #endif
 }
 
-void CFEMesh::findNodesInTriangle(const double area_orig, const double tol,
+void CFEMesh::findNodesInPolygon(const double area_orig, const double tol,
 				  const size_t start_id, const size_t end_id,
 				  const CGLPolyline *ply,
 				  std::vector<long> &node_id_vector) const
@@ -1857,24 +1857,24 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
 		if(for_s_term)
 		  {
-		    findNodesInTriangle(Area1, Tol, 0, NodesInUsage(),
+		    findNodesInPolygon(Area1, Tol, 0, NodesInUsage(),
 					m_ply, msh_nod_vector);
 		  }
 		else
 		  {
-		    findNodesInTriangle(Area1, Tol, 0, getNumNodesLocal(),
+		    findNodesInPolygon(Area1, Tol, 0, getNumNodesLocal(),
 					m_ply, msh_nod_vector);
 
 		    if(useQuadratic)
 		      {
-			findNodesInTriangle(Area1, Tol, GetNodesNumber(false), 
+			findNodesInPolygon(Area1, Tol, GetNodesNumber(false), 
 					    getLargestActiveNodeID_Quadratic(),
 					    m_ply, msh_nod_vector);
 			
 		      }
 		  }
 #else
-		findNodesInTriangle(Area1, Tol, 0, NodesInUsage(),
+		findNodesInPolygon(Area1, Tol, 0, NodesInUsage(),
 				    m_ply, msh_nod_vector);
 #endif
 		p_ply++;
