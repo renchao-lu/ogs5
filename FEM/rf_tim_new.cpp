@@ -73,6 +73,8 @@ CTimeDiscretization::CTimeDiscretization(void)
 	for(size_t ii=0; ii<DOF_NUMBER_MAX+1; ii++){
 		dynamic_control_tolerance[ii] = -1.0;
 	}
+	last_rejected_timestep = 0;
+	stay_steps_after_rejection = 0;
 }
 
 /**************************************************************************
@@ -500,6 +502,13 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 						{
 							*tim_file >> line_string;
 							adapt_itr_type = convertIterationType(line_string);
+							line.clear();
+						}
+						else if(line_string.find("STAY") !=
+								std::string::npos)
+						{
+							*tim_file >> line_string;
+							stay_steps_after_rejection = strtod(line_string.data(),NULL);
 							line.clear();
 						}
 						else if(line_string.find("MULTIPLIER") != std::string::npos
@@ -1311,8 +1320,16 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 			break;
 		}
 	}
-	if (!m_pcs->accepted)
+	if (!m_pcs->accepted) {
 		multiplier = time_adapt_coe_vector.back();
+	} else if (stay_steps_after_rejection > 0 && multiplier > 1.0) {
+		// don't increase time step size if a simulation has experienced rejection recently
+		double consecutive_successful_steps = aktueller_zeitschritt - last_rejected_timestep;
+		if (consecutive_successful_steps <= stay_steps_after_rejection) {
+			multiplier = 1.0;
+			std::cout << "Time step size will not be increased because of rejection experienced in last time steps. \n";
+		}
+	}
 
 	// update the time step length
 	time_step_length *= multiplier;

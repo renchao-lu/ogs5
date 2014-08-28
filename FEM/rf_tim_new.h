@@ -91,6 +91,8 @@ public:
 	double min_time_step;
 	double ini_time_step;
 	IterationType::type adapt_itr_type;
+	size_t last_rejected_timestep;
+	size_t stay_steps_after_rejection;
 
 
 	//

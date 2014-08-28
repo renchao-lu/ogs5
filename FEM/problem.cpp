@@ -1186,6 +1186,7 @@ void Problem::Euler_TimeDiscretize()
 				m_tim->last_active_time -= dt;
 				m_tim->step_current--;
 				m_tim->repeat = true;
+				m_tim->last_rejected_timestep = aktueller_zeitschritt+1;
 				//
 				// Copy nodal values in reverse
 				if(isDeformationProcess(total_processes[active_process_index[i]]->getProcessType()))
