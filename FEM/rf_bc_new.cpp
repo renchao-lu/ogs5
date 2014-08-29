@@ -1384,7 +1384,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 					{
 						for (std::size_t i=0; i < bc->getNumberOfConstrainedBCs(); i++)
 						{
-							Constrained temp(bc->getConstrainedBC(i));
+							const Constrained &temp(bc->getConstrainedBC(i));
 							if (temp.constrainedVariable == ConstrainedVariable::VELOCITY)
 							{
 								//calculate normals of triangles
@@ -1464,7 +1464,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 						{
 							for (std::size_t i=0; i < bc->getNumberOfConstrainedBCs(); i++)
 							{
-								Constrained temp(bc->getConstrainedBC(i));	//delete object, else previous elements will reside here.
+								const Constrained &temp(bc->getConstrainedBC(i));	//delete object, else previous elements will reside here.
 								if (temp.constrainedVariable == ConstrainedVariable::VELOCITY)
 								{
 									double const * const coords(m_msh->nod_vector[m_node_value->geo_node_number]->getData());
