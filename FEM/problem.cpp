@@ -1161,7 +1161,8 @@ void Problem::Euler_TimeDiscretize()
 		}
 		else if (isSteadySimulation)
 		{
-			ScreenMessage("This step is rejected.\n");
+			ScreenMessage("This time step is rejected. We stop the simulation because this is steady state simulation.\n");
+			break;
 		}
 		else
 		{
@@ -1295,9 +1296,9 @@ bool Problem::CouplingLoop()
 		{   //21.05.2010.  WW
 			if(total_processes[i] && total_processes[i]->tim_type == TimType::STEADY) {
 				acounter++;
-                m_tim = total_processes[i]->Tim;
-                m_tim->step_current++; //NW increment needed to get correct time step length in CTimeDiscretization::CalcTimeStep()
-            }
+				m_tim = total_processes[i]->Tim;
+				m_tim->step_current++; //NW increment needed to get correct time step length in CTimeDiscretization::CalcTimeStep()
+			}
 			exe_flag[i] = false;
 		}
 	}
