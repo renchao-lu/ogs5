@@ -7378,14 +7378,17 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 	for (i = 0; i<3; i++)
 		vel_nod[i] = 0;
 	
+	/*
 	// get the indices of velocity of flow process
 	idxVx = m_pcs->GetNodeValueIndex("VELOCITY_X1", true);
 	idxVy = m_pcs->GetNodeValueIndex("VELOCITY_Y1", true);
 	idxVz = m_pcs->GetNodeValueIndex("VELOCITY_Z1", true);
+	*/
+
 	// Get the velocity components
-	vel_nod[0] = m_pcs->GetNodeValue(node_id, idxVx);
-	vel_nod[1] = m_pcs->GetNodeValue(node_id, idxVy);
-	vel_nod[2] = m_pcs->GetNodeValue(node_id, idxVz);
+	vel_nod[0] = m_pcs->GetNodeValue(node_id, this->_idxVx);
+	vel_nod[1] = m_pcs->GetNodeValue(node_id, this->_idxVy);
+	vel_nod[2] = m_pcs->GetNodeValue(node_id, this->_idxVz);
 	
 	const int dimensions(m_msh->GetCoordinateFlag());
 	if (dimensions == 22)

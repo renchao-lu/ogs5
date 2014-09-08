@@ -213,6 +213,7 @@ private:
 
 	std::vector<std::string> pcs_type_name_vector;
 	bool _hasConstrainedBC;
+	long _idxVx, _idxVy, _idxVz;
 
 protected:                                        //WW
 	friend class FiniteElement::CFiniteElementStd;
