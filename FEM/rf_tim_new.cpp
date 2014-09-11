@@ -48,7 +48,7 @@ CTimeDiscretization::CTimeDiscretization(void)
 	time_unit = "SECOND";
 	max_time_step = 1.e10;                //YD
 	min_time_step = DBL_EPSILON;          //YD//JT Minimum allowed timestep, this process
-	ini_time_step = 1;
+	initial_step_size = 1;
 	adapt_itr_type = IterationType::LINEAR;
 	repeat = false;                       //OK/YD
 	step_current = 0;                     //WW
@@ -489,15 +489,15 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 						   line.clear();
 						   }
 						 */
-						else if(line_string.find("INI_TIME_STEP") !=
+						else if(line_string.find("INITIAL_STEP_SIZE") !=
 								std::string::npos)
 						{
 							*tim_file >> line_string;
-							ini_time_step = strtod(
+							initial_step_size = strtod(
 							line_string.data(),NULL);
 							line.clear();
 						}
-						else if(line_string.find("ITR_TYPE") !=
+						else if(line_string.find("ITERATIVE_TYPE") !=
 								std::string::npos)
 						{
 							*tim_file >> line_string;
@@ -944,7 +944,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 //	m_mfp = MFPGet("LIQUID");             //WW
 //	double density_fluid = m_mfp->Density(); //WW // TF: set, but never used
 
-	const double initial_time_step = std::max(ini_time_step, min_time_step);
+	const double initial_time_step = std::max(initial_step_size, min_time_step);
 
 	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++)
 	{
@@ -967,7 +967,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 			if(time_control_type == TimeControlType::SELF_ADAPTIVE)	//MW
 			{
 				// time step will be reduced in an exponential way until min_time_step.
-				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * ini_time_step;
+				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * initial_step_size;
 
 				if (time_step_length<=min_time_step) {
 					std::cout << "-> ***ERROR*** Next time step size is less than or equal to the given minimum size. The simulation is aborted." << std::endl;
@@ -1026,7 +1026,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 				//					time_step_length=ini_time_step;
 				//				else
 				//				{
-				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * ini_time_step;
+				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * initial_step_size;
 
 				if (time_step_length<=min_time_step)
 				{
