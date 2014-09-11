@@ -212,6 +212,8 @@ private:
     double *eqs_x;     //> Pointer to x array of eqs (added due to PETSC)
 
 	std::vector<std::string> pcs_type_name_vector;
+	bool _hasConstrainedBC;
+	long _idxVx, _idxVy, _idxVz;
 
 protected:                                        //WW
 	friend class FiniteElement::CFiniteElementStd;
@@ -722,7 +724,8 @@ public:
 
 	//MW
 	int getFirstNodeBelowGWL(size_t i);
-
+	bool hasConstrainedBC(){ return _hasConstrainedBC; }
+	
 	// ST
 	void IncorporateSourceTerms(const int rank = -1);
 	//WW void CheckSTGroup(); //OK
@@ -907,7 +910,8 @@ private:
 	 */
 	void configMaterialParameters ();
 	// method to check on constrained boundary conditions
-	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node);
+	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
+	void getNodeVelocityVector(const long node_id, double * vel_nod);
 
 };
 

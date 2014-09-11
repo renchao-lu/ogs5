@@ -24,6 +24,7 @@ class BoundaryConditionIO;
 #include "GeoInfo.h"                              // TF
 #include "LinearFunctionData.h" // TF
 #include "ProcessInfo.h"                          // KR
+#include "Constrained.h"
 
 // GEOLib
 //#include "geo_ply.h"
@@ -136,13 +137,14 @@ public:
 	int getNoDispIncre() {return NoDispIncre;};	//WX:12.2012
 
 	// give head bc for PRESSURE1 primary variable	//MW
-	bool PressureAsHead() const {return pressure_as_head;}
+	int getPressureAsHeadModel() const {return _pressure_as_head_model;}
+	// return given density
+	double getPressureAsHeadDensity() const { return _pressure_as_head_density; };
 	// constrain a BC by other process
-	bool isConstrainedBC() const {return constrainedBC;}
-	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
-	FiniteElement::PrimaryVariable getConstrainedPrimVar() const {return constrainedPrimVar;}
-	double getConstrainedBCValue() const {return constrainedBCValue;}
-	ConstrainedBCType::type getConstrainedDirection() const {return constrainedDirection;}
+	bool isConstrainedBC() const {return _isConstrainedBC;}
+	Constrained const & getConstrainedBC(std::size_t i) const { return _constrainedBC[i]; }
+	std::size_t getNumberOfConstrainedBCs() const { return _constrainedBC.size(); }
+	bool isSeepageBC() const { return _isSeepageBC; }
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -208,13 +210,14 @@ private:
 	// no displacement increment 12.2012
 	int NoDispIncre;
 	// give head bc for PRESSURE1 primary variable	//MW
-	bool pressure_as_head;
+	int _pressure_as_head_model;
+	// given density for pressure_as_head BC
+	double _pressure_as_head_density;
 	// constrain a BC by other process
-	bool constrainedBC;
-	double constrainedBCValue;
-	FiniteElement::ProcessType constrainedProcessType;
-	FiniteElement::PrimaryVariable constrainedPrimVar;
-	ConstrainedBCType::type constrainedDirection;
+	bool _isConstrainedBC;
+	std::vector<Constrained> _constrainedBC;
+	bool _isSeepageBC;
+
 };
 
 class CBoundaryConditionNode                      //OK raus
@@ -225,6 +228,7 @@ public:
 	long msh_node_number_subst;           //WW
 
 	double node_value;
+	double node_value_last_calc;
 	int CurveIndex;                       // Time dependent function index
 	std::string pcs_pv_name;              //YD/WW
 	//
@@ -235,9 +239,15 @@ public:
 	std::string bc_node_copy_geom_name;
 	CBoundaryConditionNode();
 
+	void SetNormalVector(double const*const normal_vector);
+	double const* GetNormalVector() const;
+
 	// 25.08.2011. WW
 	void Read(std::istream& is);
 	void Write(std::ostream& os) const;
+
+private:
+	double _normal_vector[3];
 };
 
 class CBoundaryConditionsGroup

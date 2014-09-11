@@ -293,19 +293,31 @@ TimeControlType::type convertTimeControlType(const std::string &str);
 
 std::string convertTimeControlTypeToString(TimeControlType::type st_type);
 
-
-struct ConstrainedBCType
+struct ConstrainedType
 {
 	enum type
 	{
-		INVALID_CONSTRAINED_TYPE=0,
+		INVALID_CONSTRAINED_TYPE = 0,
 		SMALLER,
-		GREATER
+		GREATER,
+		POSITIVE,
+		NEGATIVE
 	};
 };
 
-ConstrainedBCType::type convertConstrainedBCType(const std::string &str);
-std::string convertConstrainedBCTypeToString(ConstrainedBCType::type constrained_BC_type);
+ConstrainedType::type convertConstrainedType(const std::string &str);
+std::string convertConstrainedTypeToString(ConstrainedType::type constrained_type);
 
+struct ConstrainedVariable
+{
+	enum type
+	{
+		INVALID_CONSTRAINED_VARIABLE = 0,
+		VELOCITY
+	};
+};
+
+ConstrainedVariable::type convertConstrainedVariable(const std::string &str);
+std::string convertConstrainedVariableToString(ConstrainedVariable::type constrained_variable);
 
 #endif                                            //FEMENUMS_H

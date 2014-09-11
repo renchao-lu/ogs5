@@ -362,6 +362,7 @@ CRFProcess::CRFProcess(void) :
    m_solver  = NULL;                              //WW
 	isRSM = false; //WW
 	eqs_x = NULL;
+	_hasConstrainedBC=false;
 }
 
 
@@ -4898,6 +4899,16 @@ double CRFProcess::Execute()
 			   }
 			}
 		}
+
+		// maybe works also for other processes involving velocities
+		// update nod velocity if constrained BC
+		if (this->accepted		// do I really need to check every single bc node, or how can I access a bc group?
+			&& (this->getProcessType() == FiniteElement::RICHARDS_FLOW
+				|| this->getProcessType() == FiniteElement::LIQUID_FLOW) )
+		{
+			this->CalIntegrationPointValue();
+			this->Extropolation_GaussValue();
+		}
 	}
 	//----------------------------------------------------------------------
 	// END OF PICARD
@@ -6324,12 +6335,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				                 &valid) < MKleinsteZahl)
 					continue;
 
-			if(m_bc->isConstrainedBC())
-			{
-				if (checkConstrainedBC(*m_bc, *m_bc_node))
-					continue;
-			}
-
 			//WX: 01.2011. for excavation bc, check if excavated and if on boundary
 			if(m_bc->getExcav() > 0)
 			{
@@ -6537,18 +6542,34 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				{
 
 					//MW calculate pressure from given head at bc with density, gravity constant and geodetic height for PRESSURE as primary variable
-					if ( m_bc->PressureAsHead() )
+					if (m_bc->getPressureAsHeadModel() == -1)	//this is the default case
 					{
-						const double local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
+						// time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+						bc_value = time_fac * fac * m_bc_node->node_value;
+					}
+					else	//this is the PressureAsHead case
+					{
+						double local_density;
+						switch (m_bc->getPressureAsHeadModel())
+						{
+						case 0:
+							//use current density at node
+							local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
+							break;
+						case 1:
+							//use given density
+							local_density = m_bc->getPressureAsHeadDensity();
+							break;
+						default:
+							std::cout << "Warning! No PressureAsHeadDensity specified. Calculating density (i.e. PressureAsHeadModel 0)!" << std::endl;
+							local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
+							break;
+						}
+						
 						const double local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z();
 
 						// pressure = gravitational_constant * density * ( head - geodetic_height )
 						bc_value = fac * gravity_constant * local_density * ( time_fac * m_bc_node->node_value - local_node_elevation );
-					}
-					else
-					{
-						// time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
-						bc_value = time_fac * fac * m_bc_node->node_value;
 					}
 				}
 				//----------------------------------------------------------------
@@ -6679,6 +6700,15 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				}
 #endif //end defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 
+
+				//save last bc_value for later usage (in constrained BC)
+				m_bc_node->node_value_last_calc = bc_value;
+
+				if(m_bc->isConstrainedBC())
+				{
+					if (checkConstrainedBC(*m_bc, *m_bc_node, bc_value))
+						continue;
+				}
 				//////////////////////////////////
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -7246,45 +7276,135 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 
-bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node)
+bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value)
 {
-	//other process
-	CRFProcess* m_pcs = NULL;
-	m_pcs = PCSGet(bc.getConstrainedProcessType());
-
-	//other variable
-	for (std::size_t k=0; k<m_pcs->GetPrimaryVNumber(); k++)
+	for (std::size_t i=0; i < bc.getNumberOfConstrainedBCs(); i++)
 	{
-		if (m_pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(bc.getConstrainedPrimVar()))
+		const Constrained &local_constrained(bc.getConstrainedBC(i));
+		if (local_constrained.constrainedVariable == ConstrainedVariable::VELOCITY)
 		{
-			//value of PrimVar of other process at current node
-			int nidx0 = m_pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(bc.getConstrainedPrimVar()),0);
-			double local_value = m_pcs->GetNodeValue(bc_node.geo_node_number,nidx0);
+			//get velocity vector at node
+			std::vector<double>vel_v(3);
+			this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
 
-			if (bc.getConstrainedDirection() == ConstrainedBCType::GREATER)	//exclude greater and equal values
+			//check if velocity is zero
+			double magn_vel_v(MVekNorm2(&vel_v[0], 3));
+			if (magn_vel_v < std::numeric_limits<size_t>::epsilon()*1e-10 || magn_vel_v == 0)
 			{
-				if (local_value >= bc.getConstrainedBCValue())
-				{
-					return true;
-				}
+				std::cout << "No constrained applied at node " << bc_node.msh_node_number
+						<< " as magnitude of velocity " << magn_vel_v
+						<< " is < than epsilon() " << std::numeric_limits<size_t>::epsilon()*1e-10
+						<< std::endl;
+				continue;
 			}
-			else if (bc.getConstrainedDirection() == ConstrainedBCType::SMALLER) // exclude smaller values
+
+
+			//nomalize velocity vector
+			NormalizeVector(&vel_v[0], 3);
+
+			//calculate scalar product of velocity vector and BC surface normal
+			double const scalar_prod(MathLib::scpr(&(vel_v)[0], bc_node.GetNormalVector(), 3));
+
+			//select case to handle BC
+			if (scalar_prod < 0 && scalar_prod >= -1.01
+					&& local_constrained.constrainedDirection == ConstrainedType::NEGATIVE)	// velocity vector and bc surface normal point in opposite directions
 			{
-				if (local_value < bc.getConstrainedBCValue())
-				{
-					return true;
-				}
+				return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
 			}
-			else
+			else if(scalar_prod <= 1.01 && scalar_prod >= 0
+					&& local_constrained.constrainedDirection == ConstrainedType::POSITIVE)	// velocity vector points in same direction as bc surface normal
 			{
-				std::cout << "Non existing constrained BC direction given. Using normal BC." << std::endl;
-				return false;
+				return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
+			}
+
+		}
+		if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
+			|| local_constrained.constrainedPrimVar == FiniteElement::CONCENTRATION
+			|| local_constrained.constrainedPrimVar == FiniteElement::TEMPERATURE)
+		{
+			//other process
+			CRFProcess* pcs(PCSGet(local_constrained.constrainedProcessType));
+
+			//other variable
+			for (std::size_t k = 0; k < pcs->GetPrimaryVNumber(); k++)
+			{
+				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
+				{
+					//value of PrimVar of other process at current node
+					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, k);
+
+					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
+					{
+						if (local_value >= local_constrained.constrainedBCValue 		//check if calculated value (eg of other process) meets criterium
+								|| bc_node.node_value_last_calc >= local_constrained.constrainedBCValue)		//check if BC value meets criterium
+							return true;
+					}
+					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
+					{
+						if (local_value < local_constrained.constrainedBCValue
+								|| bc_node.node_value_last_calc < local_constrained.constrainedBCValue)
+						{
+							if (bc.isSeepageBC()		//this probably only makes sense if constrained primary variable is pressure
+									&& local_value > bc_node.node_value_last_calc	//could add a check, but don't want to limit it
+									&& local_value > local_constrained.constrainedBCValue)
+								bc_value = local_constrained.constrainedBCValue;
+							else
+								return true;
+						}
+					}
+					/*else	is already checked when reading
+						return false;*/
+				}
 			}
 		}
 	}
 	return false;
 }
 
+
+/**************************************************************************
+Copied & modified from 
+rf_kinreact.cpp (Reaction-Method:)
+**************************************************************************/
+void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
+{
+	CRFProcess *m_pcs = NULL;
+	long i;
+	long idxVx, idxVy, idxVz; 
+	
+	m_pcs = PCSGetFlow();
+	
+	// initialize data structures
+	for (i = 0; i<3; i++)
+		vel_nod[i] = 0;
+	
+	/*
+	// get the indices of velocity of flow process
+	idxVx = m_pcs->GetNodeValueIndex("VELOCITY_X1", true);
+	idxVy = m_pcs->GetNodeValueIndex("VELOCITY_Y1", true);
+	idxVz = m_pcs->GetNodeValueIndex("VELOCITY_Z1", true);
+	*/
+
+	// Get the velocity components
+	vel_nod[0] = m_pcs->GetNodeValue(node_id, this->_idxVx);
+	vel_nod[1] = m_pcs->GetNodeValue(node_id, this->_idxVy);
+	vel_nod[2] = m_pcs->GetNodeValue(node_id, this->_idxVz);
+	
+	const int dimensions(m_msh->GetCoordinateFlag());
+	if (dimensions == 22)
+	{
+		vel_nod[2] = vel_nod[1];
+		vel_nod[1] = 0;
+	}
+	else if (dimensions == 23)
+	{
+		vel_nod[2] = vel_nod[1];
+		vel_nod[1] = vel_nod[0];
+		vel_nod[0] = 0;
+	}
+
+	//return vel_nod;
+}
 
 	int CRFProcess::getFirstNodeBelowGWL(size_t current_node)
 	{

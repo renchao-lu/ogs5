@@ -841,19 +841,21 @@ void CFEMesh::ConstructGrid()
 
 	//check dimension of the domain to select appropriate coordinate system
 	if (xyz_dim[0] > 0.0 && xyz_dim[1] < MKleinsteZahl && xyz_dim[2]
-	    < MKleinsteZahl)
+		< MKleinsteZahl)	// only x-direction
 		coordinate_system = 10;
 	else if (xyz_dim[1] > 0.0 && xyz_dim[0] < MKleinsteZahl && xyz_dim[2]
-	         < MKleinsteZahl)
+	         < MKleinsteZahl)	// only y-direction
 		coordinate_system = 11;
 	else if (xyz_dim[2] > 0.0 && xyz_dim[0] < MKleinsteZahl && xyz_dim[1]
-	         < MKleinsteZahl)
+	         < MKleinsteZahl)	// only z-direction
 		coordinate_system = 12;
 	else if (xyz_dim[0] > 0.0 && xyz_dim[1] > 0.0 && xyz_dim[2] < MKleinsteZahl)
-		coordinate_system = 21;
+		coordinate_system = 21;	// x & y direction
 	else if (xyz_dim[0] > 0.0 && xyz_dim[2] > 0.0 && xyz_dim[1] < MKleinsteZahl)
-		coordinate_system = 22;
-	else if (xyz_dim[0] > 0.0 && xyz_dim[1] > 0.0 && xyz_dim[2] > 0.0)
+		coordinate_system = 22;	// x & z direction
+	else if (xyz_dim[1] > 0.0 && xyz_dim[2] > 0.0 && xyz_dim[0] < MKleinsteZahl)
+		coordinate_system = 23;	// y & z direction
+	else if (xyz_dim[0] > 0.0 && xyz_dim[1] > 0.0 && xyz_dim[2] > 0.0)	// x, y & z direction
 		coordinate_system
 		        = 32;
 

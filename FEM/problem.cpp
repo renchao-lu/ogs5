@@ -152,6 +152,45 @@ Problem::Problem (char* filename) :
 		print_result = false;     //OK
 		return;
 	}
+
+	// set bool for existing constrained BCs
+	for (size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		for (size_t j=0;j<pcs_vector[i]->bc_node.size();j++)
+		{
+			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
+			{
+				pcs_vector[i]->_hasConstrainedBC = true;
+				break;
+			}
+		}
+	}
+
+	// get the indices of velocity of flow process if contrained BC
+	for (size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		if (pcs_vector[i]->_hasConstrainedBC)
+		{
+			bool not_found(true);
+			for (size_t j=0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
+			{
+				for (size_t k=0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
+				{
+					Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
+					if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
+					{
+						CRFProcess *pcs = PCSGetFlow();
+						pcs_vector[i]->_idxVx = pcs->GetNodeValueIndex("VELOCITY_X1", true);
+						pcs_vector[i]->_idxVy = pcs->GetNodeValueIndex("VELOCITY_Y1", true);
+						pcs_vector[i]->_idxVz = pcs->GetNodeValueIndex("VELOCITY_Z1", true);
+						//jump out of j & k loop
+						not_found=false;
+					}
+				}
+			}
+		}
+	}
+
 	//
 	//JT: Set to true to force node copy at end of loop
 	force_post_node_copy = true;
@@ -1337,6 +1376,10 @@ bool Problem::CouplingLoop()
 				a_pcs->first_coupling_iteration = false; // No longer true.
 				// Check for break criteria
 				max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
+
+				// Reapply BCs if constrained BC
+				 if(a_pcs->hasConstrainedBC())
+					 a_pcs->IncorporateBoundaryConditions();
 			}
 			if(!accept) break;
 		}
@@ -1410,7 +1453,6 @@ void Problem::PostCouplingLoop()
 	if (total_processes[12])
 	{
 		CRFProcessDeformation* dm_pcs = (CRFProcessDeformation*)(total_processes[12]);
-		
 		bool doPostExcav = false;//WX
 		for(size_t l=0; l<msp_vector.size(); l++)
 		{

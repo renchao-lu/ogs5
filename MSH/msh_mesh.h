@@ -553,12 +553,13 @@ private:
 	bool top_surface_checked;                 // 07.06.2010.  WW
 
 	// Coordinate indicator
-	// 1:  X component only
-	// 12: Y component only
-	// 13: Z component only
-	// 2:  X, Y component
-	// 23:  X, Z component
-	// 3:  X, Y, Z component
+	// 10:  X component only
+	// 11: Y component only
+	// 12: Z component only
+	// 21:  X, Y component
+	// 22:  X, Z component
+	// 23:  Y, Z component
+	// 32:  X, Y, Z component
 	int coordinate_system;
 	bool has_multi_dim_ele;
 	int max_ele_dim;
