@@ -7643,15 +7643,6 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 		for (i = begin; i < end; i++)
 		{
 
-			// MW Recharge applied at GW Surface (p>0), tested only with LIQUID_FLOW or RICHARDS_FLOW and mmp  $PERMEABILITY_SATURATION = 10
-			if(st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE
-					|| st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE_DIRECT)
-			{
-				st_node_value[i]->msh_node_number=getFirstNodeBelowGWL(st_node_value[i]->msh_node_number);
-				st_node_value[i]->geo_node_number=st_node_value[i]->msh_node_number;
-			}
-
-
 			gindex = i;
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 			if (rank > -1)
@@ -7659,6 +7650,14 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 #endif
 
 			cnodev = st_node_value[gindex];
+
+			// MW Recharge applied at GW Surface (p>0), tested only with LIQUID_FLOW or RICHARDS_FLOW and mmp  $PERMEABILITY_SATURATION = 10
+			if(cnodev->getProcessDistributionType()==FiniteElement::RECHARGE
+					|| cnodev->getProcessDistributionType()==FiniteElement::RECHARGE_DIRECT)
+			{
+				cnodev->msh_node_number = getFirstNodeBelowGWL(cnodev->msh_node_number);
+				cnodev->geo_node_number = cnodev->msh_node_number;
+			}
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 			msh_node = cnodev->geo_node_number;
