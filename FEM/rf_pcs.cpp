@@ -7288,7 +7288,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
 
 			//check if velocity is zero
-			double magn_vel_v(MVekNorm2(&vel_v[0], 3));
+			double magn_vel_v(MBtrgVec(&vel_v[0], 3));
 			if (magn_vel_v < std::numeric_limits<size_t>::epsilon()*1e-10 || magn_vel_v == 0)
 			{
 				std::cout << "No constrained applied at node " << bc_node.msh_node_number
