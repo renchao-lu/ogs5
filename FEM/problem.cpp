@@ -191,6 +191,15 @@ Problem::Problem (char* filename) :
 		}
 	}
 
+	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
+	if (pcs_fluid_momentum)
+	{
+		pcs_fluid_momentum->_idxVx = pcs_fluid_momentum->GetNodeValueIndex("VELOCITY1_X", true);
+		pcs_fluid_momentum->_idxVy = pcs_fluid_momentum->GetNodeValueIndex("VELOCITY1_Y", true);
+		pcs_fluid_momentum->_idxVz = pcs_fluid_momentum->GetNodeValueIndex("VELOCITY1_Z", true);
+	}
+	//delete pcs_fluid_momentum;
+
 	//
 	//JT: Set to true to force node copy at end of loop
 	force_post_node_copy = true;
