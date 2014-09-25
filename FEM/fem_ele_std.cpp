@@ -5568,7 +5568,7 @@ void CFiniteElementStd::CalcAdvection()
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
-	double vel_fluid_momentum[3];
+	double nodal_vel_x[10], nodal_vel_y[10], nodal_vel_z[10];
 	if(pcs_fluid_momentum)
 	{
 		/*
@@ -5578,7 +5578,6 @@ void CFiniteElementStd::CalcAdvection()
 		 */
 		std::vector<size_t> connected_nodes;
 		this->MeshElement->getNodeIndices(connected_nodes);
-		double nodal_vel_x[10], nodal_vel_y[10], nodal_vel_z[10];
 
 		for (std::size_t i(0); i < connected_nodes.size(); i++)
 		{
@@ -5586,10 +5585,6 @@ void CFiniteElementStd::CalcAdvection()
 			nodal_vel_y[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
 			nodal_vel_z[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
 		}
-		vel_fluid_momentum[0] = interpolate(nodal_vel_x);
-		vel_fluid_momentum[1] = interpolate(nodal_vel_y);
-		vel_fluid_momentum[2] = interpolate(nodal_vel_z);
-
 	}
 
 
@@ -5654,30 +5649,30 @@ void CFiniteElementStd::CalcAdvection()
 			switch (coordinate_system)
 			{
 			case 10:	// only x-direction
-				vel[0] = mat_factor * vel_fluid_momentum[0];
+				vel[0] = mat_factor * interpolate(nodal_vel_x);
 				break;
 			case 11:	// only y-direction
-				vel[0] = mat_factor * vel_fluid_momentum[1];
+				vel[0] = mat_factor * interpolate(nodal_vel_y);
 				break;
 			case 12:	// only z-direction
-				vel[0] = mat_factor * vel_fluid_momentum[2];
+				vel[0] = mat_factor * interpolate(nodal_vel_z);
 				break;
 			case 21:	// x & y direction
-				vel[0] = mat_factor * vel_fluid_momentum[0];
-				vel[1] = mat_factor * vel_fluid_momentum[1];
+				vel[0] = mat_factor * interpolate(nodal_vel_x);
+				vel[1] = mat_factor * interpolate(nodal_vel_y);
 				break;
 			case 22:	// x & z direction
-				vel[0] = mat_factor * vel_fluid_momentum[0];
-				vel[1] = mat_factor * vel_fluid_momentum[2];
+				vel[0] = mat_factor * interpolate(nodal_vel_x);
+				vel[1] = mat_factor * interpolate(nodal_vel_z);
 				break;
 			case 23:	// y & z direction
-				vel[0] = mat_factor * vel_fluid_momentum[1];
-				vel[1] = mat_factor * vel_fluid_momentum[2];
+				vel[0] = mat_factor * interpolate(nodal_vel_y);
+				vel[1] = mat_factor * interpolate(nodal_vel_z);
 				break;
 			case 32:	// x, y & z direction
-				vel[0] = mat_factor * vel_fluid_momentum[0];
-				vel[1] = mat_factor * vel_fluid_momentum[1];
-				vel[2] = mat_factor * vel_fluid_momentum[2];
+				vel[0] = mat_factor * interpolate(nodal_vel_x);
+				vel[1] = mat_factor * interpolate(nodal_vel_y);
+				vel[2] = mat_factor * interpolate(nodal_vel_z);
 				break;
 			default:
 				std::cout << "  Invalid coordinate_system: " << coordinate_system << ". Exiting now." << std::endl;
