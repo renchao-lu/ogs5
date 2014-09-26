@@ -223,6 +223,12 @@ CRFProcess::CRFProcess(void) :
 #endif
 	ele_val_name_vector (std::vector<std::string>())
 {
+	iter_lin = 0;
+	iter_lin_max = 0;
+	iter_nlin = 0;
+	iter_nlin_max = 0;
+	iter_inner_cpl = 0;
+	iter_outer_cpl = 0;
 	TempArry = NULL;
 	//SB:GS4  pcs_component_number=0; //SB: counter for transport components
 	pcs_component_number = pcs_no_components - 1;
@@ -278,7 +284,7 @@ CRFProcess::CRFProcess(void) :
 	PCSSetIC_USER = NULL;
 	//----------------------------------------------------------------------
 	// TIM
-	tim_type_name = "TRANSIENT";          //OK
+	tim_type = TimType::TRANSIENT;
 	time_unit_factor = 1.0;
 	timebuffer = 1.0e-5;                  //WW
 	//_pcs_type_name.empty();
@@ -1903,7 +1909,9 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		// subkeyword found
 		if (line_string.find("$TIM_TYPE") != string::npos)
 		{
+			std::string tim_type_name;
 			*pcs_file >> tim_type_name;
+			tim_type = convertTimType(tim_type_name);
 			pcs_file->ignore(MAX_ZEILE, '\n');
 			continue;
 		}
@@ -2189,7 +2197,7 @@ void CRFProcess::Write(std::fstream* pcs_file)
 	*pcs_file << "  " << cpl_type_name << "\n";
 
 	*pcs_file << " $TIM_TYPE" << "\n";
-	*pcs_file << "  " << tim_type_name << "\n";
+	*pcs_file << "  " << convertTimTypeToString(tim_type) << "\n";
 
 	if (msh_type_name.size() > 0)
 	{
@@ -3503,13 +3511,13 @@ void CRFProcess::ConfigUnsaturatedFlow()
 		pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
 		pcs_number_of_secondary_nvals++;
 #endif
-		/* if(adaption) //WW, JOD removed
+		 if(adaption) //WW, JOD removed	//MW added
 		   {
 		   pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "STORAGE_P";
 		   pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "Pa";
 		   pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
 		   pcs_number_of_secondary_nvals++;
-		   }*/
+		   }
 		// Nodal velocity. WW
 		pcs_secondary_function_name[pcs_number_of_secondary_nvals]
 		        = "VELOCITY_X1";
@@ -4675,6 +4683,7 @@ double CRFProcess::Execute()
 #else
 	iter_lin = ExecuteLinearSolver();
 #endif
+	iter_lin_max = std::max(iter_lin_max, iter_lin);
 
 	//----------------------------------------------------------------------
 	// Linearized Flux corrected transport (FCT) by Kuzmin 2009
@@ -4924,6 +4933,12 @@ double CRFProcess::Execute()
 		eqs_new->Clean();
 #endif
 #endif
+
+	if(std::isnan(pcs_error))
+	{
+		accepted = false;
+	}
+
 	return pcs_error;
 }
 
@@ -9633,6 +9648,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				break;
 			}
 		}
+		iter_nlin_max = std::max(iter_nlin_max, iter_nlin);
 		// ------------------------------------------------------------
 		// NON-LINEAR ITERATIONS COMPLETE
 		// ------------------------------------------------------------

@@ -529,6 +529,52 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 
 } // end namespace FiniteElement
 
+TimType::type convertTimType(const std::string& str)
+{
+    if (str.compare("STEADY") == 0)
+        return TimType::STEADY;
+    if (str.compare("TRANSIENT") == 0)
+        return TimType::TRANSIENT;
+    if (str.compare("PURERWPT") == 0)
+        return TimType::PURERWPT;
+    return TimType::INVALID_TIM_TYPE;
+}
+
+std::string convertTimTypeToString(TimType::type type)
+{
+    if (type == TimType::STEADY)
+        return "STEADY";
+    if (type == TimType::TRANSIENT)
+        return "TRANSIENT";
+    if (type == TimType::PURERWPT)
+        return "PURERWPT";
+    return "INVALID_TIM_TYPE";
+}
+
+IterationType::type convertIterationType(const std::string& str)
+{
+	if (str.find("LINEAR")!=std::string::npos)
+		return IterationType::LINEAR;
+	else if (str.find("NONLINEAR")!=std::string::npos)
+		return IterationType::NONLINEAR;
+	else if (str.find("COUPLED")!=std::string::npos)
+		return IterationType::COUPLED;
+	else
+		return IterationType::INVALID;
+
+}
+
+std::string convertIterationTypeToString(IterationType::type itr_type)
+{
+    if (itr_type == IterationType::LINEAR)
+        return "LINEAR";
+    else if (itr_type == IterationType::NONLINEAR)
+        return "NONLINEAR";
+    else if (itr_type == IterationType::COUPLED)
+        return "COUPLED";
+    return "INVALID";
+}
+
 TimeControlType::type convertTimeControlType(const std::string &str)
 {
     if (str == "STEPS")

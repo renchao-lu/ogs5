@@ -575,7 +575,7 @@ public:
 	int rwpt_count;                       //YS 05.2013 Count the number of particles.
 	int srand_seed;
 	const char* pcs_num_name[2];          //For monolithic scheme
-	std::string tim_type_name;            //OK
+	TimType::type tim_type;
 	const char* pcs_sol_name;
 	std::string cpl_type_name;
 	CNumerics* m_num;
@@ -759,7 +759,9 @@ public:
 	int num_diverged;
 	int num_notsatisfied;
 	int iter_nlin;
+	int iter_nlin_max;
 	int iter_lin;
+	int iter_lin_max;
 	int iter_outer_cpl;							// JT2012
 	int iter_inner_cpl;							// JT2012
 	int pcs_num_dof_errors;						// JT2012
