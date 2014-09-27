@@ -9,7 +9,7 @@
 //#include <math.h>
 //#include <iostream>
 #include <cfloat>
-#include <locale>
+#include <cctype>
 // FEM-Makros
 #include "makros.h"
 // GeoSys-GeoLib
@@ -513,7 +513,7 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 							line.clear();
 						}
 						else if(line_string.find("MULTIPLIER") != std::string::npos
-								|| (!line_string.empty() && std::isdigit(line_string[0])))
+								|| (!line_string.empty() && isdigit(line_string[0])))
 						{
 							if (line_string.find("MULTIPLIER") != std::string::npos) {
 								position = tim_file->tellg();
