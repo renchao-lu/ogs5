@@ -1276,8 +1276,10 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 {
 	// First calculate maximum time step according to Neumann and Courant criteria
 #ifdef GEM_REACT
-	my_max_time_step = MMin(max_time_step,MaxTimeStep());
+	const double my_max_time_step = MMin(max_time_step,MaxTimeStep());
 	std::cout << "Self_Adaptive Time Step: max time step " << my_max_time_step << "\n";
+#else
+	const double my_max_time_step = max_time_step;
 #endif
 
 	// get iteration number
@@ -1325,7 +1327,7 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 
 	// update the time step length
 	time_step_length *= multiplier;
-	time_step_length = std::min(time_step_length, max_time_step);
+	time_step_length = std::min(time_step_length, my_max_time_step);
 	time_step_length = std::max(time_step_length, min_time_step);
 
 #if defined(USE_PETSC)
