@@ -9,6 +9,7 @@
 //#include <math.h>
 //#include <iostream>
 #include <cfloat>
+#include <locale>
 // FEM-Makros
 #include "makros.h"
 // GeoSys-GeoLib
