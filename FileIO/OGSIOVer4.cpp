@@ -659,10 +659,10 @@ void writeGLIFileV4 (const std::string& fname,
 			}
 	}
 
-    // writing surfaces as TIN files
-    std::string path;
+	// writing surfaces as TIN files
+	std::string path;
 	BaseLib::extractPath(fname, path);
-    size_t sfcs_cnt (0);
+	size_t sfcs_cnt (0);
 	const GEOLIB::SurfaceVec* sfcs_vec (geo.getSurfaceVecObj (geo_name));
 	if (sfcs_vec) {
 		const std::vector<GEOLIB::Surface*>* sfcs (sfcs_vec->getVector());
