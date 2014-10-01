@@ -5568,7 +5568,7 @@ void CFiniteElementStd::CalcAdvection()
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
-	double *nodal_vel[3];
+	std::vector<std::vector<double> > nodal_vel(3);
 	if(pcs_fluid_momentum)
 	{
 		/*
@@ -5580,7 +5580,7 @@ void CFiniteElementStd::CalcAdvection()
 		this->MeshElement->getNodeIndices(connected_nodes);
 
 		for (std::size_t i(0); i < dim; i++)
-			nodal_vel[i] = new double[connected_nodes.size()];
+			nodal_vel[i].resize(connected_nodes.size());
 
 		for (std::size_t i(0); i < connected_nodes.size(); i++)
 		{
@@ -5680,7 +5680,7 @@ void CFiniteElementStd::CalcAdvection()
 		if(pcs_fluid_momentum)
 		{
 			for (std::size_t i(0); i < dim; i++)
-				vel[i] = mat_factor * interpolate(nodal_vel[i]);
+				vel[i] = mat_factor * interpolate(&nodal_vel[i][0]);
 		}
 
 
