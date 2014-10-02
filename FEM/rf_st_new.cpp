@@ -3208,14 +3208,14 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 		if (st->isCoupled())
 			SetPolylineNodeVectorConditional(st, ply_nod_vector, ply_nod_vector_cond);
 		
+		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
 		if (st->distribute_volume_flux)   // 5.3.07 JOD
 			DistributeVolumeFlux(st, ply_nod_vector, ply_nod_val_vector);
+
 		st->st_node_ids.clear();
 		st->st_node_ids.resize(ply_nod_vector.size());
 		st->st_node_ids = ply_nod_vector;
-
-		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
 		st->SetNodeValues(ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector, ShiftInNodeVector);
 	} // end polyline
