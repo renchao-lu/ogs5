@@ -369,6 +369,7 @@ CRFProcess::CRFProcess(void) :
 	isRSM = false; //WW
 	eqs_x = NULL;
 	_hasConstrainedBC=false;
+	_hasConstrainedST = false;
 }
 
 
@@ -7291,6 +7292,46 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 
+bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & st_node)
+{
+	for (std::size_t i = 0; i < st.getNumberOfConstrainedSTs(); i++)
+	{
+		const Constrained &local_constrained(st.getConstrainedST(i));
+		
+		if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
+			|| local_constrained.constrainedPrimVar == FiniteElement::CONCENTRATION
+			|| local_constrained.constrainedPrimVar == FiniteElement::TEMPERATURE)
+		{
+			//other process
+			CRFProcess* pcs(PCSGet(local_constrained.constrainedProcessType));
+
+			//other variable
+			for (std::size_t k = 0; k < pcs->GetPrimaryVNumber(); k++)
+			{
+				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
+				{
+					//value of PrimVar of other process at current node
+					double local_value = pcs->GetNodeValue(st_node.geo_node_number, k);
+
+					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
+					{
+						if (local_value >= local_constrained.constrainedBCValue) 		//check if calculated value (eg of other process) meets criterium
+							return true;
+					}
+					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
+					{
+						if (local_value < local_constrained.constrainedBCValue)
+							return true;
+					}
+					/*else	is already checked when reading
+					return false;*/
+				}
+			}
+		}
+	}
+	return false;
+}
+
 bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value)
 {
 	for (std::size_t i=0; i < bc.getNumberOfConstrainedBCs(); i++)
@@ -7385,7 +7426,6 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 {
 	CRFProcess *m_pcs = NULL;
 	long i;
-	long idxVx, idxVy, idxVz; 
 	
 	m_pcs = PCSGetFlow();
 	
@@ -7737,6 +7777,13 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 			if (st_node.size() > 0 && (long) st_node.size() > i)
 			{
 				m_st = st_node[gindex];
+
+				if (m_st->isConstrainedST())
+				{
+					if (checkConstrainedST(*m_st, *cnodev))
+						continue;
+				}
+
 				//--------------------------------------------------------------------
 				// CPL
 				//if(m_st->_pcs_type_name_cond.size()>0) continue; // this is a CPL source term, JOD removed
