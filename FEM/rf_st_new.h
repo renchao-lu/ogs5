@@ -250,6 +250,10 @@ private:                                          // TF, KR
 	// including climate data into source terms
 	MathLib::InverseDistanceInterpolation<GEOLIB::PointWithID*, GEOLIB::Station*> *_distances; // NB
 	std::vector<GEOLIB::Station*> _weather_stations; //NB
+
+	bool _isConstrainedBC;
+	std::vector<Constrained> _constrainedBC;
+
 };
 
 class CSourceTermGroup
