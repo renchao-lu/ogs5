@@ -380,8 +380,13 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			if(density_model == 19) // KG44 get node densities from GEMS calculations
 			{
 			}
-			if (density_model == 26 && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			if (density_model == 26) // && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			{
 				std::cout << "Warning: This density model requires two components and their molar masses defined in the mcp file!\n";
+				density_pcs_name_vector.push_back("PRESSURE1");
+				density_pcs_name_vector.push_back("TEMPERATURE1");
+				density_pcs_name_vector.push_back("CONCENTRATION1");
+			}
 			//      mfp_file->ignore(MAX_ZEILE,'\n');
 			in.clear();
 			continue;
@@ -472,8 +477,13 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			if(viscosity_model == 19) // KG44 extract viscosity from GEMS
 			{
 			}
-			if (viscosity_model == 26 && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			if (viscosity_model == 26) // && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			{
 				std::cout << "Warning: This viscosity model requires two components and their molar masses defined in the mcp file!\n";
+				viscosity_pcs_name_vector.push_back("PRESSURE1");
+				viscosity_pcs_name_vector.push_back("TEMPERATURE1");
+				viscosity_pcs_name_vector.push_back("CONCENTRATION1");
+			}
 			
 
 			//    mfp_file->ignore(MAX_ZEILE,'\n');
@@ -530,8 +540,13 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> cp[0] >> cp[1] >> cp[2] >> cp[3];
 			}
 
-			if ((heat_capacity_model == 11 || heat_capacity_model == 12) && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			if ((heat_capacity_model == 11 || heat_capacity_model == 12)) // && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			{
 				std::cout << "Warning: This heat capacity model requires two components and their molar masses defined in the mcp file!\n";
+				specific_heat_capacity_pcs_name_vector.push_back("PRESSURE1");
+				specific_heat_capacity_pcs_name_vector.push_back("TEMPERATURE1");
+				specific_heat_capacity_pcs_name_vector.push_back("CONCENTRATION1");
+			}
 
 			in.clear();
 			continue;
@@ -578,8 +593,13 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> kappa[0] >> kappa[1] >> kappa[2] >> kappa[3];
 			}
 
-			if (heat_conductivity_model == 11 && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			if (heat_conductivity_model == 11) // && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ)
+			{
 				std::cout << "Warning: This heat conductivity model requires two components and their molar masses defined in the mcp file!\n";
+				heat_conductivity_pcs_name_vector.push_back("PRESSURE1");
+				heat_conductivity_pcs_name_vector.push_back("TEMPERATURE1");
+				heat_conductivity_pcs_name_vector.push_back("CONCENTRATION1");
+			}
 
 			in.clear();   //OK
 			continue;
