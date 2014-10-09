@@ -5568,6 +5568,59 @@ void CFiniteElementStd::CalcAdvection()
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
+	std::vector<std::vector<double> > nodal_vel(3);
+	if(pcs_fluid_momentum)
+	{
+		/*
+		 * get connected nodes
+		 * get vel at nodes
+		 * interpolate vel
+		 */
+		std::vector<size_t> connected_nodes;
+		this->MeshElement->getNodeIndices(connected_nodes);
+
+		for (std::size_t i(0); i < dim; i++)
+			nodal_vel[i].resize(connected_nodes.size());
+
+		for (std::size_t i(0); i < connected_nodes.size(); i++)
+		{
+			switch (coordinate_system)
+			{
+			case 10:	// only x-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				break;
+			case 11:	// only y-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				break;
+			case 12:	// only z-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 21:	// x & y direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				break;
+			case 22:	// x & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 23:	// y & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 32:	// x, y & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				nodal_vel[2][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			default:
+				std::cout << "  Invalid coordinate_system: " << coordinate_system << ". Exiting now." << std::endl;
+				exit(0);
+				break;
+			}
+		}
+	}
+
+
 	//Initial values
 	gp_t = 0;
 	(*Advection) = 0.0;
@@ -5626,18 +5679,10 @@ void CFiniteElementStd::CalcAdvection()
 		// Velocity by Fluid_Momentum - 13.11.2009  PCH
 		if(pcs_fluid_momentum)
 		{
-			CRFProcess* m_pcs = pcs_fluid_momentum;
-
-			vel[0] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_X") + 1);
-			vel[1] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_Y") + 1);
-			vel[2] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_Z") + 1);
+			for (std::size_t i(0); i < dim; i++)
+				vel[i] = mat_factor * interpolate(&nodal_vel[i][0]);
 		}
+
 
 #if defined(USE_PETSC) //|| defined (other parallel solver)
 		for (i = 0; i < act_nodes; i++)

@@ -24,6 +24,7 @@
 // kg44 not found #include "elements.h"
 #include "rfmat_cp.h"
 #include "tools.h"
+#include <cctype>
 //WW #include "elements.h" //set functions for stability criteria
 // ToDo
 double aktuelle_zeit;
