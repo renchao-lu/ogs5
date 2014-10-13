@@ -7311,7 +7311,7 @@ bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & s
 				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
 				{
 					//value of PrimVar of other process at current node
-					double local_value = pcs->GetNodeValue(st_node.geo_node_number, k);
+					double local_value = pcs->GetNodeValue(st_node.geo_node_number, 2k+1);
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
@@ -7387,7 +7387,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
 				{
 					//value of PrimVar of other process at current node
-					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, k);
+					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, 2k+1);
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
