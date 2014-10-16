@@ -7317,12 +7317,12 @@ bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & s
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
-						if (local_value >= local_constrained.constrainedBCValue) 		//check if calculated value (eg of other process) meets criterium
+						if (local_value >= local_constrained.constrainedValue) 		//check if calculated value (eg of other process) meets criterium
 							return true;
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
-						if (local_value < local_constrained.constrainedBCValue)
+						if (local_value < local_constrained.constrainedValue)
 							return true;
 					}
 					/*else	is already checked when reading
@@ -7393,19 +7393,19 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
-						if (local_value >= local_constrained.constrainedBCValue 		//check if calculated value (eg of other process) meets criterium
-								|| bc_node.node_value_last_calc >= local_constrained.constrainedBCValue)		//check if BC value meets criterium
+						if (local_value >= local_constrained.constrainedValue 		//check if calculated value (eg of other process) meets criterium
+								|| bc_node.node_value_last_calc >= local_constrained.constrainedValue)		//check if BC value meets criterium
 							return true;
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
-						if (local_value < local_constrained.constrainedBCValue
-								|| bc_node.node_value_last_calc < local_constrained.constrainedBCValue)
+						if (local_value < local_constrained.constrainedValue
+								|| bc_node.node_value_last_calc < local_constrained.constrainedValue)
 						{
 							if (bc.isSeepageBC()		//this probably only makes sense if constrained primary variable is pressure
 									&& local_value > bc_node.node_value_last_calc	//could add a check, but don't want to limit it
-									&& local_value > local_constrained.constrainedBCValue)
-								bc_value = local_constrained.constrainedBCValue;
+									&& local_value > local_constrained.constrainedValue)
+								bc_value = local_constrained.constrainedValue;
 							else
 								return true;
 						}
