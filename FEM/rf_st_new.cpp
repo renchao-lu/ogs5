@@ -103,6 +103,7 @@ CSourceTerm::CSourceTerm() :
    pressureBoundaryCondition = false;
    //  display_mode = false; //OK
    this->TimeInterpolation = 0;                   //BG
+   _isConstrainedST = false;
 }
 
 // KR: Conversion from GUI-ST-object to CSourceTerm
@@ -432,6 +433,45 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          }
          continue;
       }
+
+	  if (line_string.find("$CONSTRAINED") != std::string::npos)
+	  {
+		  Constrained temp;
+		  _isConstrainedST = true;
+		  in.str(readNonBlankLineFromInputStream(*st_file));
+		  std::string tempst;
+
+		  in >> tempst;
+
+		  temp.constrainedProcessType = FiniteElement::convertProcessType(tempst);
+		  if (!(temp.constrainedProcessType == FiniteElement::MASS_TRANSPORT ||
+			  temp.constrainedProcessType == FiniteElement::HEAT_TRANSPORT ||
+			  temp.constrainedProcessType == FiniteElement::LIQUID_FLOW ||
+			  temp.constrainedProcessType == FiniteElement::RICHARDS_FLOW)) {
+			  _isConstrainedST = false;
+			  break;
+		  }
+
+		  in >> tempst;
+		  temp.constrainedPrimVar = FiniteElement::convertPrimaryVariable(tempst);
+
+		  in >> temp.constrainedBCValue;
+
+		  in >> tempst;
+		  temp.constrainedDirection = convertConstrainedType(tempst);
+		  temp.constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
+		  if (!(temp.constrainedDirection == ConstrainedType::SMALLER || temp.constrainedDirection == ConstrainedType::GREATER))
+		  {
+			  std::cout << "No valid constrainedDirection for " << FiniteElement::convertProcessTypeToString(temp.constrainedProcessType)
+				  << " (" << tempst << ")" << std::endl;
+			  _isConstrainedST = false;
+		  }
+
+		  if (_isConstrainedST)
+			  this->_constrainedST.push_back(temp);
+		  in.clear();
+	  }
+
    }                                              // end !new_keyword
    return position;
 }
@@ -3208,14 +3248,14 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 		if (st->isCoupled())
 			SetPolylineNodeVectorConditional(st, ply_nod_vector, ply_nod_vector_cond);
 		
+		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
 		if (st->distribute_volume_flux)   // 5.3.07 JOD
 			DistributeVolumeFlux(st, ply_nod_vector, ply_nod_val_vector);
+
 		st->st_node_ids.clear();
 		st->st_node_ids.resize(ply_nod_vector.size());
 		st->st_node_ids = ply_nod_vector;
-
-		SetPolylineNodeValueVector(st, ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector);
 
 		st->SetNodeValues(ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector, ShiftInNodeVector);
 	} // end polyline

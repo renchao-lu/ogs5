@@ -164,6 +164,18 @@ Problem::Problem (char* filename) :
 				break;
 			}
 		}
+
+		if (!(pcs_vector[i]->_hasConstrainedBC))
+		{
+			for (size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
+			{
+				if (pcs_vector[i]->st_node[j]->isConstrainedST())
+				{
+					pcs_vector[i]->_hasConstrainedST = true;
+					break;
+				}
+			}
+		}
 	}
 
 	// get the indices of velocity of flow process if contrained BC

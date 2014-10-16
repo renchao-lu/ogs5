@@ -140,6 +140,11 @@ public:
 	bool isCoupled () const { return _coupled; }
 	double getNormalDepthSlope () const { return normaldepth_slope; }
 
+	// constrain a ST by other process
+	bool isConstrainedST() const { return _isConstrainedST; }
+	Constrained const & getConstrainedST(std::size_t i) const { return _constrainedST[i]; }
+	std::size_t getNumberOfConstrainedSTs() const { return _constrainedST.size(); }
+
 	const std::string& getFunctionName () const { return fct_name; }
 	int getFunctionMethod () const { return fct_method; }
 
@@ -250,6 +255,10 @@ private:                                          // TF, KR
 	// including climate data into source terms
 	MathLib::InverseDistanceInterpolation<GEOLIB::PointWithID*, GEOLIB::Station*> *_distances; // NB
 	std::vector<GEOLIB::Station*> _weather_stations; //NB
+
+	bool _isConstrainedST;
+	std::vector<Constrained> _constrainedST;
+
 };
 
 class CSourceTermGroup
