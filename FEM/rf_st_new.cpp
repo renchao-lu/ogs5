@@ -3159,9 +3159,13 @@ const int ShiftInNodeVector)
    }
 
    st->st_node_ids.push_back(nod_val->geo_node_number);
-   st->_constrainedSTNodesIndices.push_back(-1);
-   for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
-	   st->pushBackConstrainedSTNode(i,false);
+
+   if (st->isConstrainedST())
+   {
+	   st->_constrainedSTNodesIndices.push_back(-1);
+	   for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
+		   st->pushBackConstrainedSTNode(i,false);
+   }
 
    //WW        group_vector.push_back(m_node_value);
    //WW        st_group_vector.push_back(st); //OK
@@ -3264,11 +3268,14 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 		st->st_node_ids.resize(ply_nod_vector.size());
 		st->st_node_ids = ply_nod_vector;
 
-		for (std::size_t i(0); i < st->st_node_ids.size(); i++)
+		if (st->isConstrainedST())
 		{
-			st->_constrainedSTNodesIndices.push_back(-1);
-			for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
-				st->pushBackConstrainedSTNode(i, false);
+			for (std::size_t i(0); i < st->st_node_ids.size(); i++)
+			{
+				st->_constrainedSTNodesIndices.push_back(-1);
+				for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
+					st->pushBackConstrainedSTNode(i, false);
+			}
 		}
 
 		st->SetNodeValues(ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector, ShiftInNodeVector);
@@ -3372,11 +3379,14 @@ void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector)
 	  m_st->st_node_ids.resize(sfc_nod_vector.size());
 	  m_st->st_node_ids = sfc_nod_vector;
 
-	  for (std::size_t i(0); i < m_st->st_node_ids.size(); i++)
+	  if (m_st->isConstrainedST())
 	  {
-		  m_st->_constrainedSTNodesIndices.push_back(-1);
-		  for (std::size_t i(0); i < m_st->getNumberOfConstrainedSTs(); i++)
-			  m_st->pushBackConstrainedSTNode(i, false);
+		  for (std::size_t i(0); i < m_st->st_node_ids.size(); i++)
+		  {
+			  m_st->_constrainedSTNodesIndices.push_back(-1);
+			  for (std::size_t i(0); i < m_st->getNumberOfConstrainedSTs(); i++)
+				  m_st->pushBackConstrainedSTNode(i, false);
+		  }
 	  }
 
       m_st->SetNodeValues(sfc_nod_vector, sfc_nod_vector_cond,
@@ -4004,7 +4014,8 @@ void CSourceTerm::SetNodeValues(const std::vector<long>& nodes, const std::vecto
 
 	  m_nod_val->setSTVectorIndex(i);
 	  m_nod_val->setSTVectorGroup(this->getSTVectorGroup());
-	  st_vector[m_nod_val->getSTVectorGroup()]->setConstrainedSTNodesIndex(m_nod_val->geo_node_number, m_nod_val->getSTVectorIndex());
+	  if(st_vector[m_nod_val->getSTVectorGroup()]->isConstrainedST())
+		  st_vector[m_nod_val->getSTVectorGroup()]->setConstrainedSTNodesIndex(m_nod_val->geo_node_number, m_nod_val->getSTVectorIndex());
       _pcs->st_node_value.push_back(m_nod_val);   //WW
       _pcs->st_node.push_back(this);              //WW
    }                                              // end nodes
