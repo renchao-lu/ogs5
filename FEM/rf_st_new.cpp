@@ -466,6 +466,12 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
 			  _isConstrainedST = false;
 		  }
 
+		  in >> tempst;	//full constrain option 
+		  if (tempst == "COMPLETE_CONSTRAIN")
+		  {
+			  temp._isCompleteConstrained = true;
+		  }
+
 		  if (_isConstrainedST)
 			  this->_constrainedST.push_back(temp);
 		  in.clear();
@@ -1088,6 +1094,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
       for (long i = 0; i < no_st; i++)
       {
          CSourceTerm *source_term (st_vector[i]);
+		 source_term->setSTVectorGroup(i);
 
          // 07.01.2011. WW
          if(source_term->getProcessDistributionType()==FiniteElement::PRECIPITATION)
@@ -3144,16 +3151,17 @@ const int ShiftInNodeVector)
 		//st->node_value_vectorArea[0] = mmp_vector[group]->geo_area;
 		if (m_msh->isAxisymmetry() && m_msh->GetMaxElementDim() == 1)
 			st->node_value_vectorArea[0] *= m_msh->nod_vector[nod_val->geo_node_number]->X(); //2pi is mulitplicated during the integration process
-
-		st->st_node_ids.push_back(nod_val->geo_node_number);
-
-		
    }
 
    if (st->getProcessDistributionType()==FiniteElement::RECHARGE)	//MW
    {
 	   nod_val->setProcessDistributionType (st->getProcessDistributionType());
    }
+
+   st->st_node_ids.push_back(nod_val->geo_node_number);
+   st->_constrainedSTNodesIndices.push_back(-1);
+   for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
+	   st->pushBackConstrainedSTNode(i,false);
 
    //WW        group_vector.push_back(m_node_value);
    //WW        st_group_vector.push_back(st); //OK
@@ -3256,6 +3264,13 @@ void CSourceTermGroup::SetPLY(CSourceTerm* st, int ShiftInNodeVector)
 		st->st_node_ids.resize(ply_nod_vector.size());
 		st->st_node_ids = ply_nod_vector;
 
+		for (std::size_t i(0); i < st->st_node_ids.size(); i++)
+		{
+			st->_constrainedSTNodesIndices.push_back(-1);
+			for (std::size_t i(0); i < st->getNumberOfConstrainedSTs(); i++)
+				st->pushBackConstrainedSTNode(i, false);
+		}
+
 		st->SetNodeValues(ply_nod_vector, ply_nod_vector_cond, ply_nod_val_vector, ShiftInNodeVector);
 	} // end polyline
 }
@@ -3352,6 +3367,17 @@ void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector)
 
 	  if (m_st->distribute_volume_flux)   // 5.3.07 JOD
 		  DistributeVolumeFlux(m_st, sfc_nod_vector, sfc_nod_val_vector);
+
+	  m_st->st_node_ids.clear();
+	  m_st->st_node_ids.resize(sfc_nod_vector.size());
+	  m_st->st_node_ids = sfc_nod_vector;
+
+	  for (std::size_t i(0); i < m_st->st_node_ids.size(); i++)
+	  {
+		  m_st->_constrainedSTNodesIndices.push_back(-1);
+		  for (std::size_t i(0); i < m_st->getNumberOfConstrainedSTs(); i++)
+			  m_st->pushBackConstrainedSTNode(i, false);
+	  }
 
       m_st->SetNodeValues(sfc_nod_vector, sfc_nod_vector_cond,
          sfc_nod_val_vector, ShiftInNodeVector);
@@ -3976,6 +4002,9 @@ void CSourceTerm::SetNodeValues(const std::vector<long>& nodes, const std::vecto
          m_nod_val->node_area = node_value_vectorArea[i];
       }
 
+	  m_nod_val->setSTVectorIndex(i);
+	  m_nod_val->setSTVectorGroup(this->getSTVectorGroup());
+	  st_vector[m_nod_val->getSTVectorGroup()]->setConstrainedSTNodesIndex(m_nod_val->geo_node_number, m_nod_val->getSTVectorIndex());
       _pcs->st_node_value.push_back(m_nod_val);   //WW
       _pcs->st_node.push_back(this);              //WW
    }                                              // end nodes

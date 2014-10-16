@@ -143,8 +143,22 @@ public:
 
 	// constrain a ST by other process
 	bool isConstrainedST() const { return _isConstrainedST; }
-	Constrained const & getConstrainedST(std::size_t i) const { return _constrainedST[i]; }
+	Constrained const & getConstrainedST(std::size_t constrainedID) const { return _constrainedST[constrainedID]; }
 	std::size_t getNumberOfConstrainedSTs() const { return _constrainedST.size(); }
+	bool isCompleteConstrainST(std::size_t constrainedID) const { return _constrainedST[constrainedID]._isCompleteConstrained; }
+	bool getCompleteConstrainedSTStateOff(std::size_t constrainedID) const { return _constrainedST[constrainedID]._completeConstrainedStateOff; }
+	void setCompleteConstrainedSTStateOff(bool status, std::size_t i) { _constrainedST[i]._completeConstrainedStateOff = status; }
+
+	void pushBackConstrainedSTNode(std::size_t constrainedID, bool constrainedStatus) { _constrainedST[constrainedID]._constrainedNodes.push_back(constrainedStatus); }
+	bool getConstrainedSTNode(std::size_t constrainedID, int position) const { return _constrainedST[constrainedID]._constrainedNodes[position]; }
+	void setConstrainedSTNode(std::size_t constrainedID, bool node_status, int position) { _constrainedST[constrainedID]._constrainedNodes[position] = node_status; }
+	std::size_t getNumberOfConstrainedSTNodes(std::size_t constrainedID) const { return _constrainedST[constrainedID]._constrainedNodes.size(); }
+	int getConstrainedSTNodesIndex(int position) const { return _constrainedSTNodesIndices[position]; }
+	void setConstrainedSTNodesIndex(int st_node_index, int position) { _constrainedSTNodesIndices[position]=st_node_index; }
+
+
+	std::size_t getSTVectorGroup() const { return _st_vector_group; }
+	void setSTVectorGroup(int group) { _st_vector_group = group; }
 
 	const std::string& getFunctionName () const { return fct_name; }
 	int getFunctionMethod () const { return fct_method; }
@@ -259,6 +273,10 @@ private:                                          // TF, KR
 
 	bool _isConstrainedST;
 	std::vector<Constrained> _constrainedST;
+	//std::vector<bool> _constrainedSTNodes;
+	std::vector<int> _constrainedSTNodesIndices;
+
+	std::size_t _st_vector_group;
 
 };
 

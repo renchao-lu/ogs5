@@ -154,9 +154,9 @@ Problem::Problem (char* filename) :
 	}
 
 	// set bool for existing constrained BCs
-	for (size_t i = 0; i < pcs_vector.size(); i++)
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
 	{
-		for (size_t j=0;j<pcs_vector[i]->bc_node.size();j++)
+		for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size(); j++)
 		{
 			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
 			{
@@ -165,28 +165,25 @@ Problem::Problem (char* filename) :
 			}
 		}
 
-		if (!(pcs_vector[i]->_hasConstrainedBC))
+		for (std::size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
 		{
-			for (size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
+			if (pcs_vector[i]->st_node[j]->isConstrainedST())
 			{
-				if (pcs_vector[i]->st_node[j]->isConstrainedST())
-				{
-					pcs_vector[i]->_hasConstrainedST = true;
-					break;
-				}
+				pcs_vector[i]->_hasConstrainedST = true;
+				break;
 			}
 		}
 	}
 
 	// get the indices of velocity of flow process if contrained BC
-	for (size_t i = 0; i < pcs_vector.size(); i++)
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
 	{
 		if (pcs_vector[i]->_hasConstrainedBC)
 		{
 			bool not_found(true);
-			for (size_t j=0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
+			for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
 			{
-				for (size_t k=0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
+				for (std::size_t k = 0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
 				{
 					Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
 					if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
