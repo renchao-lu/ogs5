@@ -1,4 +1,7 @@
 
+#ifndef CONSTRAINED_H_
+#define CONSTRAINED_H_
+
 #include "FEMEnums.h"
 
 struct Constrained {
@@ -9,3 +12,4 @@ struct Constrained {
 	ConstrainedVariable::type constrainedVariable;
 };
 
+#endif
