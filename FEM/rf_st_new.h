@@ -14,6 +14,7 @@
 #include "LinearFunctionData.h" // TF
 #include "ProcessInfo.h"                          // TF
 #include "fem_ele.h"
+#include "Constrained.h"
 
 class CNodeValue;
 class CGLPolyline;
