@@ -47,7 +47,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 	# -g
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra -fno-nonansi-builtins")
 
-	execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+	STRING(REPLACE "\n" "" GCC_VERSION ${GCC_VERSION})
 	MESSAGE(STATUS "GCC_VERSION: ${GCC_VERSION}")
 	IF (NOT (GCC_VERSION VERSION_LESS 4.8) ) 
 	  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs") # suppress warnings in Eigen
@@ -63,15 +64,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 		SET(PROFILE_FLAGS "-pg -fno-omit-frame-pointer -O2 -DNDEBUG -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROFILE_FLAGS}")
 	ENDIF (OGS_PROFILE)
-
-	IF(OGS_BUILD_INFO)
-		# Get compiler version info, only first line, remove linebreaks
-		EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} --version
-			COMMAND sed -n 1p
-			OUTPUT_VARIABLE GCC_VERSION)
-		STRING(REPLACE "\n" "" GCC_VERSION ${GCC_VERSION})
-	ENDIF() # OGS_BUILD_INFO
-	
 ENDIF() # CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC
 
 IF(OGS_COVERAGE)
