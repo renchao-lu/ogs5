@@ -726,7 +726,14 @@ public:
 	//MW
 	int getFirstNodeBelowGWL(size_t i);
 	bool hasConstrainedBC(){ return _hasConstrainedBC; }
+	bool hasConstrainedST(){ return _hasConstrainedST; }
+	void sethasConstrainedBC(bool state){ _hasConstrainedBC = state; }
+	void sethasConstrainedST(bool state){ _hasConstrainedST = state; }
 	
+	void setidxVx(int index){ _idxVx = index; }
+	void setidxVy(int index){ _idxVy = index; }
+	void setidxVz(int index){ _idxVz = index; }
+
 	// ST
 	void IncorporateSourceTerms(const int rank = -1);
 	//WW void CheckSTGroup(); //OK
@@ -1044,6 +1051,8 @@ extern int GetRFProcessNumContinua(void);
 extern int GetRFProcessNumElectricFields(void);
 extern int GetRFProcessNumTemperatures(void);
 extern int GetRFProcessSimulation(void);
+
+extern void initializeConstrainedProcesses(std::vector<CRFProcess*> pcs_vector);
 
 // Coupling Flag. WW
 extern bool T_Process;					// Heat

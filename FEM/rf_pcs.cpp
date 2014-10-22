@@ -1059,6 +1059,58 @@ void CRFProcess::Create()
 }
 
 
+void initializeConstrainedProcesses(std::vector<CRFProcess*> pcs_vector)
+{
+	// set bool for existing constrained BCs
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size(); j++)
+		{
+			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
+			{
+				pcs_vector[i]->sethasConstrainedBC(true);
+				break;
+			}
+		}
+
+		for (std::size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
+		{
+			if (pcs_vector[i]->st_node[j]->isConstrainedST())
+			{
+				pcs_vector[i]->sethasConstrainedST(true);
+				break;
+			}
+		}
+	}
+
+	// get the indices of velocity of flow process if contrained BC
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		if (pcs_vector[i]->hasConstrainedBC())
+		{
+			bool not_found(true);
+			for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
+			{
+				for (std::size_t k = 0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
+				{
+					Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
+					if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
+					{
+						CRFProcess *pcs = PCSGetFlow();
+						pcs_vector[i]->setidxVx(pcs->GetNodeValueIndex("VELOCITY_X1", true));
+						pcs_vector[i]->setidxVy(pcs->GetNodeValueIndex("VELOCITY_Y1", true));
+						pcs_vector[i]->setidxVz(pcs->GetNodeValueIndex("VELOCITY_Z1", true));
+						//jump out of j & k loop
+						not_found=false;
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
 /**************************************************************************
    FEMLib-Method:
    Task: Write the contribution of ST or Neumann BC to RHS to a file after
