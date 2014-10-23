@@ -971,8 +971,8 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 				// time step will be reduced in an exponential way until min_time_step.
 				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * initial_step_size;
 
-				if (time_step_length<=min_time_step) {
-					std::cout << "-> ***ERROR*** Next time step size is less than or equal to the given minimum size. The simulation is aborted." << std::endl;
+				if (time_step_length < min_time_step) {
+					std::cout << "-> ***ERROR*** Next time step size is less than the given minimum size. The simulation is aborted." << std::endl;
 					exit(1);
 				}
 			}
