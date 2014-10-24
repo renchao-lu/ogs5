@@ -56,7 +56,7 @@ class CNodeValue
       void Write(std::ostream& os=std::cout) const;
       void Read(std::istream& is=std::cin);       //WW
       bool check_me;                              //OK
-	  bool _isConstrainedSTNode;
+      bool _isConstrainedSTNode;
 
 	  std::size_t getSTVectorIndex() const { return _st_vector_index; }
 	  void setSTVectorIndex(int index) { _st_vector_index = index; }

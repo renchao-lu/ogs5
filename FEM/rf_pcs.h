@@ -1052,7 +1052,7 @@ extern int GetRFProcessNumElectricFields(void);
 extern int GetRFProcessNumTemperatures(void);
 extern int GetRFProcessSimulation(void);
 
-extern void initializeConstrainedProcesses(std::vector<CRFProcess*> pcs_vector);
+extern void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector);
 
 // Coupling Flag. WW
 extern bool T_Process;					// Heat

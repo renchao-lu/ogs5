@@ -1094,7 +1094,7 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
       for (long i = 0; i < no_st; i++)
       {
          CSourceTerm *source_term (st_vector[i]);
-		 source_term->setSTVectorGroup(i);
+         source_term->setSTVectorGroup(i);
 
          // 07.01.2011. WW
          if(source_term->getProcessDistributionType()==FiniteElement::PRECIPITATION)
