@@ -101,6 +101,9 @@ protected:
 };
 
 void getPlaneCoefficients(Triangle const & tri, double c[3]);
+
+std::ostream & operator<<(std::ostream & out, GEOLIB::Triangle const& tri);
+
 } // end namespace GEOLIB
 
 #endif /* TRIANGLE_H_ */
