@@ -1367,18 +1367,22 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 //#endif
 					std::vector<size_t> msh_nod_vec;
 					m_msh->GetNODOnSFC(sfc, msh_nod_vec);
-//#ifndef NDEBUG
-//					debug_fname = "MeshNodesNew-BC-" + sfc_name + ".gli";
-//					debug_out.open (debug_fname.c_str());
-//					debug_out << "#POINTS" << "\n";
-//					for (size_t k(0); k<msh_nod_vec.size(); k++) {
-//						debug_out << k << " " <<
-//							GEOLIB::Point((m_msh->getNodeVector())[msh_nod_vec[k]]->getData()) <<
-//							" $NAME " << msh_nod_vec[k] << "\n";
-//					}
-//					debug_out << "#STOP" << "\n";
-//					debug_out.close();
-//#endif
+#ifndef NDEBUG
+#ifdef MESHNODESEARCH
+					{
+						std::string const debug_fname(bc->geo_name+"-FoundNodes.gli");
+						std::ofstream debug_out(debug_fname.c_str());
+						debug_out << "#POINTS\n";
+						for (size_t k(0); k<msh_nod_vec.size(); k++) {
+							debug_out << k << " " <<
+								GEOLIB::Point((m_msh->getNodeVector())[msh_nod_vec[k]]->getData()) <<
+								" $NAME " << msh_nod_vec[k] << "\n";
+						}
+						debug_out << "#STOP" << "\n";
+						debug_out.close();
+					}
+#endif
+#endif
 //					nodes_vector.clear();
 					for (size_t k(0); k < msh_nod_vec.size(); k++) {
 //						std::cout << "\t" << k << "\t" << nodes_vector_old[k] << "\t" << msh_nod_vec[k] << "\n";
