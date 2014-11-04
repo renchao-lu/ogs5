@@ -239,9 +239,9 @@ else
       # read benchmark job output
       if  ci.commit_info
         BenchmarkRunsLoader.new(ARGV[1], ci.commit_info)
-      else
-        puts "Aborting: Commit already processed."
-        Process.exit 1
+#      else
+#        puts "Aborting: Commit already processed."
+#        Process.exit 1
       end
     else
       puts "File #{ARGV[1]} does not exist!"
