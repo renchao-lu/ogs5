@@ -3359,6 +3359,7 @@ void CSourceTermGroup::SetCOL(CSourceTerm *m_st, const int ShiftInNodeVector)
 void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector)
 {
    std::vector<long> sfc_nod_vector;
+   std::vector<std::size_t> sfc_node_ids;
    std::vector<long> sfc_nod_vector_cond;
    std::vector<double> sfc_nod_val_vector;
    Surface* m_sfc = NULL;
@@ -3367,8 +3368,17 @@ void CSourceTermGroup::SetSFC(CSourceTerm* m_st, const int ShiftInNodeVector)
 
    if (m_sfc)
    {
+      GEOLIB::Surface const& sfc(
+		*(dynamic_cast<GEOLIB::Surface const*>(m_st->getGeoObj()))
+      );
+      std::cout << "Surface " << m_st->geo_name << ": " << sfc.getNTriangles()  << "\n";
+      SetSurfaceNodeVector(&sfc, sfc_node_ids);
 
+/*
       SetSurfaceNodeVector(m_sfc, sfc_nod_vector);
+*/
+      sfc_nod_vector.insert(sfc_nod_vector.begin(),
+         sfc_node_ids.begin(), sfc_node_ids.end());
       if (m_st->isCoupled())
          m_st->SetSurfaceNodeVectorConditional(sfc_nod_vector,
             sfc_nod_vector_cond);
@@ -3462,6 +3472,12 @@ void CSourceTermGroup::SetSurfaceNodeVector(Surface* m_sfc,
    m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector, for_source);
 }
 
+void CSourceTermGroup::SetSurfaceNodeVector(GEOLIB::Surface const* sfc,
+		std::vector<std::size_t> & sfc_nod_vector)
+{
+   const bool for_source = true;
+   m_msh->GetNODOnSFC(sfc, sfc_nod_vector, for_source);
+}
 
 /**************************************************************************
  MSHLib-Method:

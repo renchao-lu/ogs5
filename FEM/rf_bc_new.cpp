@@ -1368,7 +1368,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 					std::vector<size_t> msh_nod_vec;
 					m_msh->GetNODOnSFC(sfc, msh_nod_vec);
 #ifndef NDEBUG
-#ifdef MESHNODESEARCH
+#ifdef DEBUGMESHNODESEARCH
 					{
 						std::string const debug_fname(bc->geo_name+"-FoundNodes.gli");
 						std::ofstream debug_out(debug_fname.c_str());
