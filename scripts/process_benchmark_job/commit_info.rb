@@ -96,8 +96,7 @@ class CommitInfoLoader
         else
 	        puts "Commit info of git revision #{git_revision} and revision #{revision} already read."
 	      end
-      end
-#      else
+      else
         puts revision
         puts git_revision
         puts read_date
@@ -109,7 +108,7 @@ class CommitInfoLoader
                                         :is_svn_commit => is_svn_commit)
         @commit_info.author = author
         @commit_info.save
-#      end
+      end
 
     end
   end
