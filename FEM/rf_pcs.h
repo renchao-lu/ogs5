@@ -727,8 +727,8 @@ public:
 	int getFirstNodeBelowGWL(size_t i);
 	bool hasConstrainedBC(){ return _hasConstrainedBC; }
 	bool hasConstrainedST(){ return _hasConstrainedST; }
-	void sethasConstrainedBC(bool state){ _hasConstrainedBC = state; }
-	void sethasConstrainedST(bool state){ _hasConstrainedST = state; }
+	void hasConstrainedBC(const bool state){ _hasConstrainedBC = state; }
+	void hasConstrainedST(const bool state){ _hasConstrainedST = state; }
 	
 	void setidxVx(int index){ _idxVx = index; }
 	void setidxVy(int index){ _idxVy = index; }
