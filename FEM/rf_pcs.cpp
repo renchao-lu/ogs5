@@ -1059,6 +1059,62 @@ void CRFProcess::Create()
 }
 
 
+void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector)
+{
+	// set bool for existing constrained BCs
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size(); j++)
+		{
+			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
+			{
+				pcs_vector[i]->hasConstrainedBC(true);
+				break;
+			}
+		}
+
+		for (std::size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
+		{
+			if (pcs_vector[i]->st_node[j]->isConstrainedST())
+			{
+				pcs_vector[i]->hasConstrainedST(true);
+				break;
+			}
+		}
+	}
+
+	// get the indices of velocity of flow process if contrained BC
+	for (std::size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		if ( !(pcs_vector[i]->hasConstrainedBC()) )
+			continue;
+
+		bool found(false);
+		for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size(); j++)
+		{
+			if (found)
+				break;
+			for (std::size_t k = 0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs(); k++)
+			{
+				if (found)
+					break;
+				Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
+				if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
+				{
+					CRFProcess *pcs = PCSGetFlow();
+					pcs_vector[i]->setidxVx(pcs->GetNodeValueIndex("VELOCITY_X1", true));
+					pcs_vector[i]->setidxVy(pcs->GetNodeValueIndex("VELOCITY_Y1", true));
+					pcs_vector[i]->setidxVz(pcs->GetNodeValueIndex("VELOCITY_Z1", true));
+					//jump out of j & k loop
+					found=true;
+				}
+			}
+		}
+	}
+}
+
+
+
 /**************************************************************************
    FEMLib-Method:
    Task: Write the contribution of ST or Neumann BC to RHS to a file after
@@ -7294,10 +7350,12 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 
-bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & st_node)
+bool CRFProcess::checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSourceTerm const & st, CNodeValue const & st_node)
 {
+	bool return_value(false);
 	for (std::size_t i = 0; i < st.getNumberOfConstrainedSTs(); i++)
 	{
+		bool constrained_bool(false);
 		const Constrained &local_constrained(st.getConstrainedST(i));
 		
 		if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
@@ -7317,21 +7375,27 @@ bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & s
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
-						if (local_value >= local_constrained.constrainedBCValue) 		//check if calculated value (eg of other process) meets criterium
-							return true;
+						if (local_value >= local_constrained.constrainedValue) 		//check if calculated value (eg of other process) meets criterium
+							constrained_bool = true;
+
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
-						if (local_value < local_constrained.constrainedBCValue)
-							return true;
+						if (local_value < local_constrained.constrainedValue)
+							constrained_bool = true;
 					}
 					/*else	is already checked when reading
 					return false;*/
 				}
 			}
 		}
+		st_vector[st_node.getSTVectorGroup()]->setConstrainedSTNode(
+			i, constrained_bool, st_node.getSTVectorIndex());
+		if (constrained_bool)
+			return_value=true;
 	}
-	return false;
+
+	return return_value;
 }
 
 bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value)
@@ -7393,19 +7457,19 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
-						if (local_value >= local_constrained.constrainedBCValue 		//check if calculated value (eg of other process) meets criterium
-								|| bc_node.node_value_last_calc >= local_constrained.constrainedBCValue)		//check if BC value meets criterium
+						if (local_value >= local_constrained.constrainedValue 		//check if calculated value (eg of other process) meets criterium
+								|| bc_node.node_value_last_calc >= local_constrained.constrainedValue)		//check if BC value meets criterium
 							return true;
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
-						if (local_value < local_constrained.constrainedBCValue
-								|| bc_node.node_value_last_calc < local_constrained.constrainedBCValue)
+						if (local_value < local_constrained.constrainedValue
+								|| bc_node.node_value_last_calc < local_constrained.constrainedValue)
 						{
 							if (bc.isSeepageBC()		//this probably only makes sense if constrained primary variable is pressure
 									&& local_value > bc_node.node_value_last_calc	//could add a check, but don't want to limit it
-									&& local_value > local_constrained.constrainedBCValue)
-								bc_value = local_constrained.constrainedBCValue;
+									&& local_value > local_constrained.constrainedValue)
+								bc_value = local_constrained.constrainedValue;
 							else
 								return true;
 						}
@@ -7582,9 +7646,31 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 
 //###############################
 //NB Climate Data
+//MW Use loop for constrained ST evaluation
 
 		for (size_t i=0; i<st_vector.size();i++)
 		{
+			// for constrainedST
+			if ( !(st_vector[i]->isConstrainedST()) )
+				continue;
+
+			for (std::size_t j(0); j < st_vector[i]->getNumberOfConstrainedSTs(); j++)
+			{
+				if ( !(st_vector[i]->isCompleteConstrainST(j)) )
+					continue;
+
+				st_vector[i]->setCompleteConstrainedSTStateOff(false,j);
+				size_t end = st_vector[i]->getNumberOfConstrainedSTNodes(j);
+				for (std::size_t k(0); k < end; k++)
+				{
+					if (st_vector[i]->getConstrainedSTNode(j,k))
+					{
+						st_vector[i]->setCompleteConstrainedSTStateOff(true,j);
+						break;
+					}
+				}
+			}
+
 			// NOTE (KR): This only works correctly if there is only ONE source term with DisType CLIMATE! TODO
 			// If more are needed pls let me know
 			if (st_vector[i]->getProcessDistributionType()==FiniteElement::CLIMATE)
@@ -7781,7 +7867,20 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 
 				if (m_st->isConstrainedST())
 				{
-					if (checkConstrainedST(*m_st, *cnodev))
+					bool continue_bool(false);
+					continue_bool = checkConstrainedST(st_vector, *m_st, *cnodev);
+
+					for (std::size_t temp_i(0); temp_i < m_st->getNumberOfConstrainedSTs(); temp_i++)
+					{
+						if (st_vector[cnodev->getSTVectorGroup()]->isCompleteConstrainST(temp_i)
+							&& st_vector[cnodev->getSTVectorGroup()]->getCompleteConstrainedSTStateOff(temp_i))
+						{
+							continue_bool = true;
+							break;
+						}
+					}
+
+					if (continue_bool)
 						continue;
 				}
 

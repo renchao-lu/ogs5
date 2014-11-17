@@ -153,55 +153,7 @@ Problem::Problem (char* filename) :
 		return;
 	}
 
-	// set bool for existing constrained BCs
-	for (size_t i = 0; i < pcs_vector.size(); i++)
-	{
-		for (size_t j=0;j<pcs_vector[i]->bc_node.size();j++)
-		{
-			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
-			{
-				pcs_vector[i]->_hasConstrainedBC = true;
-				break;
-			}
-		}
-
-		if (!(pcs_vector[i]->_hasConstrainedBC))
-		{
-			for (size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
-			{
-				if (pcs_vector[i]->st_node[j]->isConstrainedST())
-				{
-					pcs_vector[i]->_hasConstrainedST = true;
-					break;
-				}
-			}
-		}
-	}
-
-	// get the indices of velocity of flow process if contrained BC
-	for (size_t i = 0; i < pcs_vector.size(); i++)
-	{
-		if (pcs_vector[i]->_hasConstrainedBC)
-		{
-			bool not_found(true);
-			for (size_t j=0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
-			{
-				for (size_t k=0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
-				{
-					Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
-					if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
-					{
-						CRFProcess *pcs = PCSGetFlow();
-						pcs_vector[i]->_idxVx = pcs->GetNodeValueIndex("VELOCITY_X1", true);
-						pcs_vector[i]->_idxVy = pcs->GetNodeValueIndex("VELOCITY_Y1", true);
-						pcs_vector[i]->_idxVz = pcs->GetNodeValueIndex("VELOCITY_Z1", true);
-						//jump out of j & k loop
-						not_found=false;
-					}
-				}
-			}
-		}
-	}
+	initializeConstrainedProcesses(pcs_vector);
 
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 	if (pcs_fluid_momentum)

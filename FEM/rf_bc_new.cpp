@@ -484,19 +484,20 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 		//....................................................................
-		if (line_string.find("$CONSTRAINED") != std::string::npos)		//need to check if GEO_TYPE==SURFACE
+		if (line_string.find("$CONSTRAINED") != std::string::npos)
 		{
 			Constrained temp;
+
 			_isConstrainedBC = true;
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			std::string tempst, tempst2;
 
-			in >> tempst >> tempst2;
+			in >> tempst >> tempst2;	//VELOCITY and DIRECTION (positive/negative scalar product between velocity vector and surface normal); or PROCESS_TYPE and associated PRIMARY_VARIABLE
 			if (tempst == "VELOCITY")
 			{
 				temp.constrainedVariable = convertConstrainedVariable(tempst);
 				temp.constrainedDirection = convertConstrainedType(tempst2);
-				temp.constrainedBCValue = std::numeric_limits<size_t>::max();
+				temp.constrainedValue = std::numeric_limits<size_t>::max();
 				temp.constrainedPrimVar = FiniteElement::INVALID_PV;
 				temp.constrainedProcessType = FiniteElement::INVALID_PROCESS;
 				if ( !(temp.constrainedDirection == ConstrainedType::POSITIVE || temp.constrainedDirection == ConstrainedType::NEGATIVE))
@@ -505,6 +506,9 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 						<< "(" << tempst2 << ")" << std::endl;
 					_isConstrainedBC = false;
 				}
+
+				if (getGeoType() != GEOLIB::SURFACE)
+					std::cout << "\n Warning! Make sure, that a velocity constrained BC is a SURFACE!" << std::endl;
 			}
 			else
 			{
@@ -518,7 +522,8 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 				}
 
 				temp.constrainedPrimVar = FiniteElement::convertPrimaryVariable(tempst2);
-				in >> temp.constrainedBCValue >> tempst;
+
+				in >> temp.constrainedValue >> tempst;	//Constrained Value; and constrain direction (greater/smaller than value)
 				temp.constrainedDirection = convertConstrainedType(tempst);
 				temp.constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
 				if ( !(temp.constrainedDirection == ConstrainedType::SMALLER || temp.constrainedDirection == ConstrainedType::GREATER))
@@ -527,7 +532,8 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 						<< " (" << tempst << ")" << std::endl;
 					_isConstrainedBC = false;
 				}
-				in >> tempst;
+
+				in >> tempst;	//Seepage face option (set BC to constrained value, if calculated value > constrained value)
 				if (tempst == "SEEPAGE")
 				{
 					_isSeepageBC = true;

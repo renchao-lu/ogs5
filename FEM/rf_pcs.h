@@ -726,7 +726,14 @@ public:
 	//MW
 	int getFirstNodeBelowGWL(size_t i);
 	bool hasConstrainedBC(){ return _hasConstrainedBC; }
+	bool hasConstrainedST(){ return _hasConstrainedST; }
+	void hasConstrainedBC(const bool state){ _hasConstrainedBC = state; }
+	void hasConstrainedST(const bool state){ _hasConstrainedST = state; }
 	
+	void setidxVx(int index){ _idxVx = index; }
+	void setidxVy(int index){ _idxVy = index; }
+	void setidxVz(int index){ _idxVz = index; }
+
 	// ST
 	void IncorporateSourceTerms(const int rank = -1);
 	//WW void CheckSTGroup(); //OK
@@ -913,7 +920,7 @@ private:
 	 */
 	void configMaterialParameters ();
 	// method to check on constrained source terms
-	bool checkConstrainedST(CSourceTerm const & bc, CNodeValue const & bc_node);
+	bool checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSourceTerm const & st, CNodeValue const & st_node);
 	// method to check on constrained boundary conditions
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
 	void getNodeVelocityVector(const long node_id, double * vel_nod);
@@ -1044,6 +1051,8 @@ extern int GetRFProcessNumContinua(void);
 extern int GetRFProcessNumElectricFields(void);
 extern int GetRFProcessNumTemperatures(void);
 extern int GetRFProcessSimulation(void);
+
+extern void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector);
 
 // Coupling Flag. WW
 extern bool T_Process;					// Heat
