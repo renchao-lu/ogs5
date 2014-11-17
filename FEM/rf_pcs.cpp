@@ -12,6 +12,7 @@
 **************************************************************************/
 #include "FEMEnums.h"
 #include "Output.h"
+#include "MathTools.h"
 
 /*--------------------- MPI Parallel  -------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
@@ -2971,7 +2972,7 @@ void CRFProcess::ConfigMassTransport()
 	      pcs_ic_name_mass = pcs_primary_function_name[0];
 	 */
 	// 1.2 secondary variables
-	pcs_number_of_secondary_nvals = 2;    //SB3909
+	pcs_number_of_secondary_nvals = 3;    //SB3909 
 	pcs_secondary_function_name[0] = new char[80];
 	char pcs_secondary_function_name_tmp [80];
 	sprintf(pcs_secondary_function_name_tmp, "%s%li","MASS_FLUX_",comp);
@@ -2985,14 +2986,21 @@ void CRFProcess::ConfigMassTransport()
 	pcs_secondary_function_unit[1] = "kg/m3/s";
 	pcs_secondary_function_timelevel[1] = 1;
 	//KG44 added secondary function for adaptive time stepping
+	string comp_name = "DELTA_" + convertPrimaryVariableToString(this->getProcessPrimaryVariable());// JOD 2014-11-10
+	pcs_secondary_function_name[2] = new char[80];  
+	strncpy((char*)pcs_secondary_function_name[2], comp_name.c_str(), 80);
+	pcs_secondary_function_unit[2] = "kg/m3";
+	pcs_secondary_function_timelevel[2] = 0;
+	
+
 	if (adaption)
 	{
-		pcs_number_of_secondary_nvals = 3;
-		pcs_secondary_function_name[2] = new char[80];
+		pcs_number_of_secondary_nvals = 4; 
+		pcs_secondary_function_name[3] = new char[80];
 		sprintf(pcs_secondary_function_name_tmp, "%s%li","CONC_BACK_",comp);
-		strncpy((char*)pcs_secondary_function_name[2], pcs_secondary_function_name_tmp, 80);
-		pcs_secondary_function_unit[2] = "kg/m3";
-		pcs_secondary_function_timelevel[2] = 0;
+		strncpy((char*)pcs_secondary_function_name[3], pcs_secondary_function_name_tmp, 80);
+		pcs_secondary_function_unit[3] = "kg/m3";
+		pcs_secondary_function_timelevel[3] = 0;
 	}
 	//OK  LOPCalcSecondaryVariables_USER = MTM2CalcSecondaryVariables;  //SB:todo
 	// 2 ELE values
@@ -3030,7 +3038,13 @@ void CRFProcess::ConfigHeatTransport()
 		pcs_number_of_primary_nvals = 1;
 		pcs_primary_function_name[0] = "TEMPERATURE1";
 		pcs_primary_function_unit[0] = "K";
-		pcs_number_of_secondary_nvals = 0;
+		pcs_number_of_secondary_nvals = 1; //JOD 2014-11-10
+		pcs_secondary_function_name[0] = "DELTA_TEMPERATURE1";
+		pcs_secondary_function_unit[0] = "K";
+		pcs_secondary_function_timelevel[0] = 0;
+
+
+
 #ifdef REACTION_ELEMENT
 		pcs_number_of_evals = 1;  //MX
 		pcs_eval_name[0] = "TEMPERATURE1";
@@ -3934,6 +3948,11 @@ void CRFProcess:: Def_Variable_LiquidFlow()
 	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
 	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
 	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	// JOD 2014-11-10
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "DELTA_PRESSURE1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "PA";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
 	pcs_number_of_secondary_nvals++;
 
 	if(Neglect_H_ini==2)
@@ -5751,6 +5770,8 @@ void CRFProcess::CalIntegrationPointValue()
 	    || getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW  //AKS/NB
 	    || getProcessType() == FiniteElement::DEFORMATION_FLOW //NW
 	    || getProcessType() == FiniteElement::TNEQ //HS, TN
+		|| getProcessType() == FiniteElement::HEAT_TRANSPORT //JOD 2014-11-10
+		|| getProcessType() == FiniteElement::MASS_TRANSPORT // JOD 2014-11-10
 	    )
 		cal_integration_point_value = true;
 	if (!cal_integration_point_value)
@@ -5773,6 +5794,8 @@ void CRFProcess::CalIntegrationPointValue()
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark())      // Marked for use
 		{
+			if ((getProcessType() == FiniteElement::HEAT_TRANSPORT || getProcessType() == FiniteElement::MASS_TRANSPORT) && !elem->selected)
+				continue;   // not selected for TOTAL_FLUX calculation JOD 2014-11-10
 			fem->ConfigElement(elem);
 			fem->Config(); //OK4709
 			// fem->m_dom = NULL; // To be used for parallization
@@ -5840,7 +5863,8 @@ void CRFProcess::CalIntegrationPointValue()
 
 
 	//	if (_pcs_type_name.find("TWO_PHASE_FLOW") != string::npos) //WW/CB
-	if (getProcessType() == FiniteElement::TWO_PHASE_FLOW) //WW/CB
+   if (getProcessType() == FiniteElement::TWO_PHASE_FLOW || getProcessType() == FiniteElement::MASS_TRANSPORT
+	   || getProcessType() == FiniteElement::HEAT_TRANSPORT) //WW/CB/JOD 2014-11-10
 		cal_integration_point_value = false;
 }
 
@@ -11445,8 +11469,9 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
     PCSLib-Method:
     08/2006 OK Implementation
 	04/2012 BG Extension to 2 Phases
+	11/2014 JOD replaced by TOTAL_FLUX calculation
 **************************************************************************/
-void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result)
+/*void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result)
 {
 	int coordinateflag, dimension = 0, axis = 0;
 	bool Edge_already_used;
@@ -11479,7 +11504,8 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 		m_pcs_flow = this;
 	else m_pcs_flow = PCSGet(FiniteElement::GROUNDWATER_FLOW);
 
-	// calculates element velocity based on 1 GP
+	// calculates element 
+	based on 1 GP
 	//CalcELEVelocities();
 
 	int v_eidx[3];
@@ -11673,7 +11699,7 @@ void CRFProcess::CalcELEFluxes(const GEOLIB::Polyline* const ply, double *result
 	ele_vector_at_geo.clear();
 
 }
-
+*/
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -11756,9 +11782,9 @@ GeoSys - Function: CalcELEMassFluxes
 Task: Calculate the Mass Flux for Elements at Polylines
 Return: MassFlux
 Programming: 05/2011 BG
-Modification:
+Modification: removed by JOD 2014-11-10, replaced by TOTAL_FLUX calculation
  **************************************************************************/
-void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::string const& NameofPolyline, double* result)
+/*void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::string const& NameofPolyline, double* result)
 {
 	CRFProcess* m_pcs_flow = NULL;
 	std::vector<size_t> ele_vector_at_geo;
@@ -11820,6 +11846,7 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 	else
 	{
 		m_pcs_flow = PCSGet(FiniteElement::GROUNDWATER_FLOW);
+	
 	}
 
 	// get the indices of the velocity
@@ -11849,8 +11876,6 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 	for (size_t i = 0; i < ele_vector_at_geo.size(); i++)
 	{
 		m_ele = m_msh->ele_vector[ele_vector_at_geo[i]];
-		if (m_ele->GetIndex() == 4421)
-			cout << i << "\n";
 		m_ele->SetNormalVector();
 		m_ele->GetNodeIndeces(element_nodes);
 		Use_Element = true;
@@ -11904,6 +11929,8 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 		{
 			// edge projection // edge marked
 			m_ele->GetEdges(ele_edges_vector);
+			
+			
 			//cout << "Element: " << "\n";
 			edg_length = 0;
 			//loop over the edges of the element to find the edge at the polyline
@@ -11950,6 +11977,13 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 				{
 					vecConsideredEdges.push_back(m_edg->GetIndex());		//all edges that were already used are stored
 					m_edg->SetNormalVector(m_ele->normal_vector, edg_normal_vector);
+
+					if (axis == 2) //  xz-axis 
+					{
+						edg_normal_vector[1] = edg_normal_vector[2];
+						edg_normal_vector[2] = 0;
+					}
+
 					edg_length = m_edg->getLength();
 					//cout << "Element: " << m_ele->GetIndex() << " LÃ¤nge: " << edg_length << " Normalvektor: x=" << edg_normal_vector[0] << " y=" << edg_normal_vector[1] << " z=" << edg_normal_vector[2] << "\n";
 					m_edg->GetEdgeVector(edge_vector);
@@ -12123,14 +12157,15 @@ void CRFProcess::CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::strin
 
 	delete [] ConcentrationGradient;
 }
-
+*/
 /**************************************************************************
 GeoSys - Function: Calc2DElementGradient
 Task: Calculate the Gradient for an 2D Element
 Return: nothing
 Programming: 05/2011 BG
-Modification:
+Modification: 11/2014 JOD, replaced by TOTAL_FLUX calculation
  **************************************************************************/
+/*
 void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConcentration[4], double *grad)
 {
 	double coord_Point1[3];
@@ -12169,10 +12204,19 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			double const* const p2 (vecElementNodes[2]->getData());
 			double const* const p3 (vecElementNodes[3]->getData());
 
-			coord_Point1[0] = p0[0]; coord_Point1[1] = p0[1]; coord_Point1[2] = ElementConcentration[0];
-			coord_Point2[0] = p1[0]; coord_Point2[1] = p1[1]; coord_Point2[2] = ElementConcentration[1];
-			coord_Point3[0] = p2[0]; coord_Point3[1] = p2[1]; coord_Point3[2] = ElementConcentration[2];
-			coord_Point4[0] = p3[0]; coord_Point4[1] = p3[1]; coord_Point4[2] = ElementConcentration[3];
+			if (m_msh->GetCoordinateFlag() == 22) { // xz-axis 
+				coord_Point1[0] = p0[0]; coord_Point1[1] = p0[2]; coord_Point1[2] = ElementConcentration[0];
+				coord_Point2[0] = p1[0]; coord_Point2[1] = p1[2]; coord_Point2[2] = ElementConcentration[1];
+				coord_Point3[0] = p2[0]; coord_Point3[1] = p2[2]; coord_Point3[2] = ElementConcentration[2];
+				coord_Point4[0] = p3[0]; coord_Point4[1] = p3[2]; coord_Point4[2] = ElementConcentration[3];
+			}
+			else {
+				coord_Point1[0] = p0[0]; coord_Point1[1] = p0[1]; coord_Point1[2] = ElementConcentration[0];
+				coord_Point2[0] = p1[0]; coord_Point2[1] = p1[1]; coord_Point2[2] = ElementConcentration[1];
+				coord_Point3[0] = p2[0]; coord_Point3[1] = p2[1]; coord_Point3[2] = ElementConcentration[2];
+				coord_Point4[0] = p3[0]; coord_Point4[1] = p3[1]; coord_Point4[2] = ElementConcentration[3];
+			}
+		
 
 			//Calculate the plane equation
 			PlaneEquation->CalculatePlaneEquationFrom3Points(coord_Point1, coord_Point2, coord_Point4);
@@ -12180,8 +12224,8 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			if (PlaneEquation->CheckIfPointInPlane(coord_Point3)==false)
 				return;
 		}
-
-		if (m_ele->GetElementType() == MshElemType::TRIANGLE)
+		
+		else if (m_ele->GetElementType() == MshElemType::TRIANGLE)
 		{
 			//define the points used for the plane equation
 			// order of points: 1, 2, 3 against clock direction -> points are given in the order 2, 3, 1 to get a positive normal vector
@@ -12189,10 +12233,16 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 			double const* const p1 (vecElementNodes[1]->getData());
 			double const* const p2 (vecElementNodes[2]->getData());
 
-			coord_Point1[0] = p0[0]; coord_Point1[1] = p0[1]; coord_Point1[2] = ElementConcentration[0];
-			coord_Point2[0] = p1[0]; coord_Point2[1] = p1[1]; coord_Point2[2] = ElementConcentration[1];
-			coord_Point3[0] = p2[0]; coord_Point3[1] = p2[1]; coord_Point3[2] = ElementConcentration[2];
-
+			if (m_msh->GetCoordinateFlag() == 22) { // xz-axis 
+				coord_Point1[0] = p0[0]; coord_Point1[1] = p0[2]; coord_Point1[2] = ElementConcentration[0];
+				coord_Point2[0] = p1[0]; coord_Point2[1] = p1[2]; coord_Point2[2] = ElementConcentration[1];
+				coord_Point3[0] = p2[0]; coord_Point3[1] = p2[2]; coord_Point3[2] = ElementConcentration[2];
+			}
+			else {
+				coord_Point1[0] = p0[0]; coord_Point1[1] = p0[1]; coord_Point1[2] = ElementConcentration[0];
+				coord_Point2[0] = p1[0]; coord_Point2[1] = p1[1]; coord_Point2[2] = ElementConcentration[1];
+				coord_Point3[0] = p2[0]; coord_Point3[1] = p2[1]; coord_Point3[2] = ElementConcentration[2];
+			}
 			//Calculate the plane equation
 			PlaneEquation->CalculatePlaneEquationFrom3Points(coord_Point2, coord_Point3, coord_Point1);
 		}
@@ -12209,6 +12259,7 @@ void CRFProcess::Calc2DElementGradient(MeshLib::CElem* m_ele, double ElementConc
 	else
 		cout << "This element option is not yet considered for calculating the concentration gradient!" << "\n";
 }
+*/
 
 /*************************************************************************
    GeoSys-FEM Function:
