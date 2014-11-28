@@ -1676,10 +1676,15 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
    //C =  2.1641e-02;
    //D = -1.5990e-05;
    
-	ln_my = A + B / T + C * T + D * T * T;
-    my = exp(ln_my);                      /* in cP */
-    //my = pow(10, ln_my); 
-	my = my * 1.e-3;                      /* in Pa s */
+	if (T>0)
+	{
+		ln_my = A + B / T + C * T + D * T * T;
+		my = exp(ln_my);                      /* in cP */
+		//my = pow(10, ln_my);
+		my = my * 1.e-3;                      /* in Pa s */
+	}
+	else
+		my = 1e-3;
 	return my;
 }
 
