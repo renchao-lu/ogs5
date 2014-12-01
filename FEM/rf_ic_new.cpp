@@ -630,7 +630,7 @@ void CInitialCondition::SetPolyline(int nidx)
 {
  	if (this->getProcessDistributionType() == FiniteElement::CONSTANT)
 	{
-		//		CGLPolyline* m_polyline = polyline_vector[getGeoObjIdx()];
+		//CGLPolyline* m_polyline = polyline_vector[getGeoObjIdx()];
 		//		if (m_polyline) {
 		//			std::vector<long> nodes_vector;
 		//			m_msh->GetNODOnPLY(m_polyline, nodes_vector);
@@ -641,19 +641,37 @@ void CInitialCondition::SetPolyline(int nidx)
 		//			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
 		//					<< geo_name << " not found" << "\n";
 		//		}
-		if (getGeoObj())
-		{
-			std::vector<long> nodes_vector;
-			m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(getGeoObj()), nodes_vector);
-			for (size_t i = 0; i < nodes_vector.size(); i++)
-				this->getProcess()->SetNodeValue(nodes_vector[i],
-				                                 nidx,
-				                                 geo_node_value);
-		}
-		else
+		if (! getGeoObj()) {
 			std::cout << "Error in CInitialCondition::SetPolyline - polyline: "
 			          << geo_name << " not found" << "\n";
+			return;
+		}
+
+		std::vector<long> nodes_vector;
+		m_msh->GetNODOnPLY(static_cast<const GEOLIB::Polyline*>(getGeoObj()),
+			nodes_vector, false, 1e-7);
+		for (size_t i = 0; i < nodes_vector.size(); i++)
+			this->getProcess()->SetNodeValue(nodes_vector[i],
+			                                 nidx,
+			                                 geo_node_value);
+#ifndef NDEBUG
+#ifdef DEBUGMESHNODESEARCH
+	{
+		std::string const debug_fname(geo_name+"-FoundNodes.gli");
+		std::ofstream debug_out(debug_fname.c_str());
+		debug_out << "#POINTS\n";
+		for (size_t k(0); k<nodes_vector.size(); k++) {
+			debug_out << k << " " <<
+				GEOLIB::Point((m_msh->getNodeVector())[nodes_vector[k]]->getData()) <<
+				" $NAME " << nodes_vector[k] << "\n";
+		}
+		debug_out << "#STOP" << "\n";
+		debug_out.close();
 	}
+#endif
+#endif
+	}
+
 	//	if (dis_type_name.find("LINEAR") != string::npos) {
 	//	}
 }
