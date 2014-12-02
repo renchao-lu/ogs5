@@ -1676,10 +1676,15 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
    //C =  2.1641e-02;
    //D = -1.5990e-05;
    
-	ln_my = A + B / T + C * T + D * T * T;
-    my = exp(ln_my);                      /* in cP */
-    //my = pow(10, ln_my); 
-	my = my * 1.e-3;                      /* in Pa s */
+	if (T>0)
+	{
+		ln_my = A + B / T + C * T + D * T * T;
+		my = exp(ln_my);                      /* in cP */
+		//my = pow(10, ln_my);
+		my = my * 1.e-3;                      /* in Pa s */
+	}
+	else
+		my = 1e-3;
 	return my;
 }
 
@@ -1695,9 +1700,17 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 **************************************************************************/
 double CFluidProperties::LiquidViscosity_Marsily_1986(double T)
 {
-	double my;
-	my = 2.285e-5 + 1.01e-3 * log(T);
-	return my;
+	const double A = 2.29E-03, B = -1.01E-03;
+
+	//MW:	coefficients are wrong!
+	//		log(T) gives natural logarithm, here decadal log is needed.
+	//		There is no benchmark for this, so nobody noticed...
+	//my = 2.285e-5 + 1.01e-3 * log(T);
+
+	if (T>0)
+		return A + B * log10(T);	// T in Celsius needed
+	else
+		return 0.001758784;
 }
 
 /**************************************************************************
