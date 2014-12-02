@@ -841,9 +841,25 @@ public:
 	void PrimaryVariableReloadTransport(); //kg44
 	void PrimaryVariableStorageTransport(); //kg44
 	//double GetNewTimeStepSizeTransport(double mchange); //kg44
+	// FLX
+	void CalcELEFluxes(const GEOLIB::Polyline* const ply, double* result);
+	/**
+	 * Necessary for the output of mass fluxes over polylines, BG 08/2011
+	 * @param ply a pointer to a GEOLIB::Polyline
+	 * @param NameofPolyline the name of the polyline
+	 * @param result
+	 */
+	void CalcELEMassFluxes(const GEOLIB::Polyline* const ply, std::string const& NameofPolyline, double *result);
 	double TotalMass[10];																				// Necessary for the output of mass fluxes over polylines, BG 08/2011
 	std::vector <std::string> PolylinesforOutput;														// Necessary for the output of mass fluxes over polylines, BG 08/2011
 
+	/**
+	 * Necessary for the output of mass fluxes over polylines, BG 08/2011
+	 * @param ele
+	 * @param ElementConcentration
+	 * @param grad
+	 */
+	void Calc2DElementGradient(MeshLib::CElem* ele, double ElementConcentration[4], double *grad);
 	// NEW
 	CRFProcess* CopyPCStoDM_PCS();
 	bool OBJRelations();                  //OK
