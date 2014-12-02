@@ -1502,7 +1502,7 @@ inline double dotProduction(const double* x1, const double* x2,
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
                           std::vector<size_t>& msh_nod_vector)
 {
-	msh_nod_vector.clear();
+	msh_nod_vector.clear();  
 
 	// search for nodes along polyline in previous computed polylines
 	std::vector<MeshNodesAlongPolyline>::const_iterator it(
@@ -1606,6 +1606,8 @@ void CFEMesh::getPointsForInterpolationAlongPolyline(
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
                           std::vector<long>& msh_nod_vector, const bool for_s_term)
 {
+	msh_nod_vector.clear(); // JOD 2014-11-10
+	//----------------------------------------------------------------------
 	std::vector<size_t> tmp_msh_node_vector;
 	GetNODOnPLY(ply, tmp_msh_node_vector);
 
@@ -4601,6 +4603,43 @@ void CFEMesh::FreeEdgeMemory()
       ele_vector[i]->FreeEdgeMemory();
    }
 }
+
+
+
+/**************************************************************************
+MSHLib-Method:
+Task: For TOTAL_FLUX calculation
+Programing:
+11/2014 JOD
+last modification:
+**************************************************************************/
+void CFEMesh::GetConnectedElements(std::vector<long>&nodes_on_sfc, std::vector<long>&vec_elements)
+{
+	std::set<long>  set_nodes_on_sfc;
+	long i, j, k, l;
+
+	//----------------------------------------------------------------------
+	// -->PETSC
+
+
+	// init 
+	for (i = 0; i < (long)ele_vector.size(); i++) {
+		ele_vector[i]->selected = 0; //TODO can use a new variable
+	}
+	// ---- search elements ------------------------------------------------------------------
+	for (i = 0; i < (long)nodes_on_sfc.size(); i++) {
+		k = nodes_on_sfc[i];
+		for (j = 0; j < (long)nod_vector[k]->getConnectedElementIDs().size(); j++) {
+			l = nod_vector[k]->getConnectedElementIDs()[j];
+			if (ele_vector[l]->selected == 0)
+				vec_elements.push_back(l);
+			ele_vector[l]->selected += 1; // number of elements at surface
+		}
+	}
+
+
 }
 
+
+}
 // namespace MeshLib

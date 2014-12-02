@@ -1980,7 +1980,7 @@ void CFiniteElementStd::CalCoefMassMCF()
 	MassMatrixElements[0] = rho*(poro*beta_p + MediaProp->StorageFunction(Index, unit, pcs->m_num->ls_theta));               
 	MassMatrixElements[1] = poro*rho*beta_T;
 	if(FluidProp->mu_JT == "ON") 
-	MassMatrixElements[nDF] = poro*arg_PV[1]*beta_T;
+	MassMatrixElements[nDF] = -poro*arg_PV[1]*beta_T; // JOD 
 	MassMatrixElements[nDF + 1] = poro*rho*FluidProp->SpecificHeatCapacity(arg_PV) + (1.0 - poro)*SolidProp->Density(0)*SolidProp->Heat_Capacity();
 	if(FluidProp->cmpN > 0)
 	{
@@ -3920,7 +3920,7 @@ void CFiniteElementStd::CalCoefAdvectionMCF()
 	rho = FluidProp->Density(arg_PV);
 	//Advection Matrix Elements value---start
 	if(FluidProp->mu_JT == "ON") 
-	AdvectionMatrixElements[nDF] = 1.0 + arg_PV[1]*FluidProp->drhodT(arg_PV);
+	AdvectionMatrixElements[nDF] = 1.0 - arg_PV[1]*FluidProp->drhodT(arg_PV); // JOD 
     AdvectionMatrixElements[nDF + 1] =  rho*FluidProp->SpecificHeatCapacity(arg_PV);
 	if(FluidProp->cmpN > 0)
 	for(i = 2; i<nDF; i++) 
@@ -4044,6 +4044,8 @@ void CFiniteElementStd::CalcMass()
 		// if(Index < 0) cout << "mat_fac in CalCoeffMass: " << mat_fac << "\n";
 		// GEO factor
 		mat_fac *= fkt;
+		// ElementVolumeMultiplyer
+		mat_fac *= MediaProp->ElementVolumeMultiplyer;
 		// Calculate mass matrix
 		if(PcsType == T)
 		  {
@@ -4907,6 +4909,8 @@ void CFiniteElementStd::CalcLumpedMass()
 	// Center of the reference element
 	SetCenterGP();
 	factor = CalCoefMass();
+	// ElementVolumeMultiplyer
+	factor *= MediaProp->ElementVolumeMultiplyer;
 	pcs->timebuffer = factor;             // Tim Control "Neumann"
 	factor *= vol / (double)nnodes;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -6853,24 +6857,25 @@ void CFiniteElementStd::Cal_Velocity()
 
 		// Gravity term
 		//NW
-		if(k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
-		{
-			if(PcsType==N)
+		if (PcsType != H && PcsType != M) { // JOD 2014-11-10
+			if (k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
 			{
-			eos_arg[0] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
-			eos_arg[1] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
-			eos_arg[2] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
-			coef  =  gravity_constant*FluidProp->Density(eos_arg);
-            }
-			else
-				coef  =  gravity_constant * FluidProp->Density();
-			if(dim == 3 && ele_dim == 2)
-			{
-				vel[dim - 1] += coef; //NW local permeability tensor is already transformed to global one in CalCoefLaplace()
-				if (PcsType == V || PcsType == P)
+				if (PcsType == N)
 				{
-					for(size_t i = 0; i < dim; i++)
-						for(size_t j = 0; j < ele_dim; j++)
+					eos_arg[0] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
+					eos_arg[1] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
+					eos_arg[2] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
+					coef = gravity_constant*FluidProp->Density(eos_arg);
+				}
+				else 				
+					coef = gravity_constant*FluidProp->Density();
+				if (dim == 3 && ele_dim == 2)
+				{
+					vel[dim - 1] += coef; //NW local permeability tensor is already transformed to global one in CalCoefLaplace()
+					if (PcsType == V || PcsType == P)
+					{
+						for (size_t i = 0; i < dim; i++)
+						for (size_t j = 0; j < ele_dim; j++)
 						{
 							if(PcsType == V)
 								vel_g[i] += rho_g *
@@ -6890,27 +6895,29 @@ void CFiniteElementStd::Cal_Velocity()
 								               transform_tensor)(2,
 								                                k);
 						}
-				}
-			}             // To be correctted
-			else
-			{
-				if(PcsType == V)
-				{
-					vel[dim - 1] += coef;
-					vel_g[dim - 1] += gravity_constant * rho_ga;
-				}
-				else if(PcsType == P) // PCH 05.2009
-				{
-                  //vel[dim-1] -= coef;
-				  // CB_merge_0513 ?? gravity term
-            	  vel[dim-1] += coef; // CB I think this should be added 
-				  vel_g[dim - 1] += gravity_constant * GasProp->Density();
-				}
+					}
+				}             // To be correctted
 				else
-					vel[dim - 1] += coef;
+				{
+					if (PcsType == V)
+					{
+						vel[dim - 1] += coef;
+						vel_g[dim - 1] += gravity_constant * rho_ga;
+					}
+					else if (PcsType == P) // PCH 05.2009
+					{
+						//vel[dim-1] -= coef;
+						// CB_merge_0513 ?? gravity term
+						vel[dim - 1] += coef; // CB I think this should be added 
+						vel_g[dim - 1] += gravity_constant * GasProp->Density();
+					}
+					else
+						vel[dim - 1] += coef;
+				}
 			}
 		}
-		//
+		// end gravity term
+
 		if(PcsType == V)
 		{
 			for (size_t i = 0; i < dim; i++) // 02.2010. WW
@@ -6957,9 +6964,16 @@ void CFiniteElementStd::Cal_Velocity()
          {
 			for (size_t i = 0; i < dim; i++)
             {
+				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+					gp_ele->TransportFlux(i, gp) = 0;
+		
+					
 				for(size_t j = 0; j < dim; j++)
 					//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 					//SI Unit
+				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+					gp_ele->TransportFlux(i, gp) -= mat[dim*i + j] * vel[j] / time_unit_factor;
+				else
                   tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
                   //gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
             }
@@ -10310,6 +10324,8 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 	//WW Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
 	Velocity.resize(3, NGPoints);
 	Velocity = 0.0;
+	TransportFlux.resize(3, NGPoints); //  JOD 2014-11-10
+	TransportFlux = 0.0;
 	// 15.3.2007 Multi-phase flow WW
 	if(pcs->type == 1212 || pcs->type == 1313 || m_pcs->type == 42)
 	{
@@ -10377,7 +10393,8 @@ void ElementValue::GetEleVelocity(double* vec)
 //WW
 ElementValue::~ElementValue()
 {
-	Velocity.resize(0,0);
+	Velocity.resize(0, 0); 
+	TransportFlux.resize(0, 0); // JOD 2014-11-10
 	Velocity_g.resize(0,0);
 
 	if (pcs->type == 1414){
@@ -12311,6 +12328,8 @@ double CFiniteElementStd::Get_ctx_(long ele_index, int gaussp, int i_dim){
 	val = gp_ele->_ctx_Gauss(i_dim, gaussp);
 	return val;
 }*/
+
+
 
 }                                                 // end namespace
 
