@@ -789,7 +789,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				pcs_name_vector.push_back("PRESSURE1");
 				break;
 			case 10: 	// S=const for permeability_saturation_model = 10
-				storage_model_values[0] = 1/gravity_constant;
+				storage_model_values[0] = 1;
 				break;
 			default:
 				cout << "Error in MMPRead: no valid storativity model" << "\n";
@@ -7846,7 +7846,9 @@ double CMediumProperties::StorageFunction(long index,double* gp,double theta)
 		break;
 	case 10:
 		if(permeability_saturation_model[0]==10)	//MW
-			storage = porosity_model_values[0] * storage_model_values[0] / mfp_vector[0]->Density();
+			storage = porosity_model_values[0] / ( gravity_constant * gravity_constant * mfp_vector[0]->Density());
+		// MW I have no idea, why I need 1/(g^2*rho) here; it should only be 1/(g*rho)
+		// maybe, the mass term in richards flow has been normalized on g ???
 		else
 			std::cout << "Wrong PERMEABILITY_SATURATION_MODEL for STORAGE model 10." << std::endl;
 		break;
