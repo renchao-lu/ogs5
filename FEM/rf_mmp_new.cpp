@@ -4601,7 +4601,7 @@ double* CMediumProperties::PermeabilityTensor(long index)
 				tensor[0] = k_new;
 			}
 		}
-		else if ( permeability_model == 7 ) // HS: 11.2008, for Clement biofilm clogging
+		else if ( permeability_model == 7 ) {// HS: 11.2008, for Clement biofilm clogging
 			// if first time step, do nothing. otherwise,
 			if ( aktueller_zeitschritt > 1 )
 			{
@@ -4646,10 +4646,11 @@ double* CMediumProperties::PermeabilityTensor(long index)
 	}
 	  else if((permeability_model==8)&&(porosity_model==13))
       {                                           // ABM 11.2010
-          idx_k = m_pcs->GetElementValueIndex("PERMEABILITY");
+          idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
           tensor[0] = m_pcs_tmp->GetElementValue( index, idx_k + 1 );
 	  }
 	// end of K-C relationship-----------------------------------------------------------------------------------
+	}
 
 	switch(geo_dimension)
 	{
