@@ -136,11 +136,18 @@ Problem::Problem (char* filename) :
 	GetHeterogeneousFields();             //OK/MB
 	//----------------------------------------------------------------------
 	// Test MSH-MMP //OK
-	int g_max_mmp_groups = MSHSetMaxMMPGroups();
+	bool validMatID = true;
+	if (fem_msh_vector.size()==1) {
+		size_t max_matId = MSHGetMaxPatchIndex(fem_msh_vector[0]);
+		validMatID = (max_matId+1==mmp_vector.size());
+	} else {
+		int g_max_mmp_groups = MSHSetMaxMMPGroups();
+		validMatID = !(g_max_mmp_groups > (int)mmp_vector.size());
+	}
 
-	if(g_max_mmp_groups > (int)mmp_vector.size())
+	if(!validMatID)
 	{
-		std::cout << "Error: not enough MMP data";
+		std::cout << "Error: not enough MMP data. please check MMP and material IDs in a mesh." << std::endl;
 		print_result = false;     //OK
 		return;
 	}
