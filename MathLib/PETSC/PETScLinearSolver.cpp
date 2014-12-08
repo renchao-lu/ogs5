@@ -143,9 +143,14 @@ void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const
    sol_type = lsol;
    pc_type = prec_type; 
 
-
    KSPCreate(PETSC_COMM_WORLD,&lsolver);
-   KSPSetOperators(lsolver, A, A,DIFFERENT_NONZERO_PATTERN);
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR > 4)
+   KSPSetOperators(lsolver, A, A);
+#else
+   KSPSetOperators(lsolver, A, A, DIFFERENT_NONZERO_PATTERN);
+#endif
+
    KSPSetType(lsolver,lsol);
 
    KSPGetPC(lsolver, &prec);
@@ -229,6 +234,12 @@ void PETScLinearSolver::Solver()
    PetscTime(&v1);
 #else
    PetscGetTime(&v1);
+#endif
+
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR > 4)
+   KSPSetOperators(lsolver, A, A);
+#else
+   KSPSetOperators(lsolver, A, A, DIFFERENT_NONZERO_PATTERN);
 #endif
 
    KSPSolve(lsolver, b, x);
