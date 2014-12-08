@@ -373,7 +373,7 @@ DistributionType convertDisType(const std::string& dis_type_string)
 	if (dis_type_string.compare("CLIMATE") == 0)
 		return CLIMATE;
 	if (dis_type_string.compare("RECHARGE") == 0)	//MW
-			return RECHARGE;
+		return RECHARGE;
 	if (dis_type_string.compare("FUNCTION") == 0)
 		return FUNCTION;                              //24.08.2011. WW
 	if (dis_type_string.compare("TRANSFER_SURROUNDING") == 0)
