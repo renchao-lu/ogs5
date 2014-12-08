@@ -487,6 +487,12 @@ Problem::Problem (char* filename) :
 		if (m_tim->GetPITimeStepCrtlType() > 0)
 			time_ctr = true;
 		m_tim->last_active_time = start_time; //NW
+
+		//check maximum number of coupling iterations against maximum time step increase
+		if (m_tim->time_control_type == TimeControlType::SELF_ADAPTIVE
+				&& m_tim->adapt_itr_type == IterationType::COUPLED
+				&& cpl_overall_max_iterations < m_tim->time_adapt_tim_vector.back())
+			std::cout << "Warning: Maximum number of coupling iterations is smaller than maximum time step increase!!!" << std::endl;
 	}
 	if(max_time_steps == 0)
 		max_time_steps = std::numeric_limits<std::size_t>::max()-1; // ULONG_MAX-1;  //kg44 increased the number to maximum number (size_t)

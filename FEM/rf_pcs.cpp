@@ -4952,6 +4952,12 @@ double CRFProcess::Execute()
 		eqs_new->Clean();
 #endif
 #endif
+
+	if(std::isnan(pcs_error))
+	{
+		accepted = false;
+	}
+
 	return pcs_error;
 }
 
