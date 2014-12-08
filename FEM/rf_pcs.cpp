@@ -389,9 +389,7 @@ Problem* CRFProcess::getProblemObjectPointer () const
 CRFProcess::~CRFProcess(void)
 {
 #ifdef USE_PETSC
-       if(myrank == 0)
-	 PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total Wall clock time in the assembly for %s (with PETSC):%f s\n", 
-		     FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str(), cpu_time_assembly);
+	 PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total Wall clock time in the assembly for %s (with PETSC):%f s\n", 	     FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str(), cpu_time_assembly);
   
 #endif
 	long i;
