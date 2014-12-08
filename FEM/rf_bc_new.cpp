@@ -508,6 +508,14 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			else
 			{
 				temp.constrainedProcessType = FiniteElement::convertProcessType(tempst);
+				if (temp.constrainedProcessType != FiniteElement::MASS_TRANSPORT ||
+					temp.constrainedProcessType != FiniteElement::HEAT_TRANSPORT ||
+					temp.constrainedProcessType != FiniteElement::LIQUID_FLOW ||
+					temp.constrainedProcessType != FiniteElement::RICHARDS_FLOW) {
+					_isConstrainedBC = false;
+					break;
+				}
+
 				temp.constrainedPrimVar = FiniteElement::convertPrimaryVariable(tempst2);
 				in >> temp.constrainedBCValue >> tempst;
 				temp.constrainedDirection = convertConstrainedType(tempst);
@@ -519,7 +527,8 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 					_isConstrainedBC = false;
 				}
 			}
-			this->_constrainedBC.push_back(temp);
+			if (_isConstrainedBC)
+				this->_constrainedBC.push_back(temp);
 			in.clear();
 		}
 		//....................................................................
@@ -1453,6 +1462,8 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 								if (temp.constrainedVariable == ConstrainedVariable::VELOCITY)
 								{
 									double const * const coords(m_msh->nod_vector[m_node_value->geo_node_number]->getData());
+									// works only for planar surfaces since
+									// the normal is constant for all triangles
 									int triangle_id(sfc->getTriangleIDOfPoint(coords));
 									if (triangle_id != -1)
 										m_node_value->SetNormalVector(sfc->getTriangleNormal(triangle_id));
