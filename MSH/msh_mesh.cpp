@@ -1828,112 +1828,102 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
               if(for_s_term)
               {
-	        const size_t nn =  NodesInUsage();
-		for (j = 0; j < nn; j++)
-		{
-			Area2 = 0.0;
-			for (i = 0; i < nPointsPly; i++)
-			{
-				p1[0] = m_ply->point_vector[i]->x;
-				p1[1] = m_ply->point_vector[i]->y;
-				p1[2] = m_ply->point_vector[i]->z;
-				k = i + 1;
-				if (i == nPointsPly - 1)
-					k = 0;
-				p2[0] = m_ply->point_vector[k]->x;
-				p2[1] = m_ply->point_vector[k]->y;
-				p2[2] = m_ply->point_vector[k]->z;
-				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-			}
-			if (fabs(Area1 - Area2) < Tol)
-				msh_nod_vector.push_back(
-				        nod_vector[j]->GetIndex());
-		}
+                 const size_t nn =  NodesInUsage();
+                 for (j = 0; j < nn; j++)
+                 {
+                    Area2 = 0.0;
+                    for (i = 0; i < nPointsPly; i++)
+                    {
+                        p1[0] = m_ply->point_vector[i]->x;
+                        p1[1] = m_ply->point_vector[i]->y;
+                        p1[2] = m_ply->point_vector[i]->z;
+                        k = i + 1;
+                        if (i == nPointsPly - 1)
+                           k = 0;
+                        p2[0] = m_ply->point_vector[k]->x;
+                        p2[1] = m_ply->point_vector[k]->y;
+                        p2[2] = m_ply->point_vector[k]->z;
+                        Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+                    }
+                    if (fabs(Area1 - Area2) < Tol)
+                       msh_nod_vector.push_back( nod_vector[j]->GetIndex() );
+                 }
              }
              else
              {
                 const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
 
-		for (j = 0; j < id_act_l_max; j++)
-		{
-			Area2 = 0.0;
-			for (i = 0; i < nPointsPly; i++)
-			{
-				p1[0] = m_ply->point_vector[i]->x;
-				p1[1] = m_ply->point_vector[i]->y;
-				p1[2] = m_ply->point_vector[i]->z;
-				k = i + 1;
-				if (i == nPointsPly - 1)
-					k = 0;
-				p2[0] = m_ply->point_vector[k]->x;
-				p2[1] = m_ply->point_vector[k]->y;
-				p2[2] = m_ply->point_vector[k]->z;
-				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-			}
-			if (fabs(Area1 - Area2) < Tol)
-				msh_nod_vector.push_back(
-				        nod_vector[j]->GetIndex());
-		}
+                for (j = 0; j < id_act_l_max; j++)
+                {
+                    Area2 = 0.0;
+                    for (i = 0; i < nPointsPly; i++)
+                    {
+                        p1[0] = m_ply->point_vector[i]->x;
+                        p1[1] = m_ply->point_vector[i]->y;
+                        p1[2] = m_ply->point_vector[i]->z;
+                        k = i + 1;
+                        if (i == nPointsPly - 1)
+                           k = 0;
+                        p2[0] = m_ply->point_vector[k]->x;
+                        p2[1] = m_ply->point_vector[k]->y;
+                        p2[2] = m_ply->point_vector[k]->z;
+                        Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+                    }
+                    if (fabs(Area1 - Area2) < Tol)
+                         msh_nod_vector.push_back( nod_vector[j]->GetIndex());
+                }
 
-
-	        if(useQuadratic)
-	        {
-
-                const size_t id_act_h_min =  GetNodesNumber(false);
-                const size_t id_act_h_max =  id_act_h_min 
+                if(useQuadratic)
+                {
+                    const size_t id_act_h_min =  GetNodesNumber(false);
+                    const size_t id_act_h_max =  id_act_h_min 
                                    + static_cast<size_t>(getNumNodesLocal_Q()
                                                         - getNumNodesLocal() );
 
-		for (j = id_act_h_min; j < id_act_h_max; j++)
-		{
-			Area2 = 0.0;
-			for (i = 0; i < nPointsPly; i++)
-			{
-				p1[0] = m_ply->point_vector[i]->x;
-				p1[1] = m_ply->point_vector[i]->y;
-				p1[2] = m_ply->point_vector[i]->z;
-				k = i + 1;
-				if (i == nPointsPly - 1)
-					k = 0;
-				p2[0] = m_ply->point_vector[k]->x;
-				p2[1] = m_ply->point_vector[k]->y;
-				p2[2] = m_ply->point_vector[k]->z;
-				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-			}
-			if (fabs(Area1 - Area2) < Tol)
-				msh_nod_vector.push_back(
-				        nod_vector[j]->GetIndex());
-		}
-
-                }
-
-
-
+                    for (j = id_act_h_min; j < id_act_h_max; j++)
+                    {
+                        Area2 = 0.0;
+                        for (i = 0; i < nPointsPly; i++)
+                        {
+                           p1[0] = m_ply->point_vector[i]->x;
+                           p1[1] = m_ply->point_vector[i]->y;
+                           p1[2] = m_ply->point_vector[i]->z;
+                           k = i + 1;
+                           if (i == nPointsPly - 1)
+                              k = 0;
+                           p2[0] = m_ply->point_vector[k]->x;
+                           p2[1] = m_ply->point_vector[k]->y;
+                           p2[2] = m_ply->point_vector[k]->z;
+                           Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+                        }
+                        if (fabs(Area1 - Area2) < Tol)
+                           msh_nod_vector.push_back( nod_vector[j]->GetIndex());
+                    }
+                 }
               }
 #else
-		const size_t nn =  NodesInUsage();
-		for (j = 0; j < nn; j++)
-		{
-			Area2 = 0.0;
-			for (i = 0; i < nPointsPly; i++)
-			{
-				p1[0] = m_ply->point_vector[i]->x;
-				p1[1] = m_ply->point_vector[i]->y;
-				p1[2] = m_ply->point_vector[i]->z;
-				k = i + 1;
-				if (i == nPointsPly - 1)
-					k = 0;
-				p2[0] = m_ply->point_vector[k]->x;
-				p2[1] = m_ply->point_vector[k]->y;
-				p2[2] = m_ply->point_vector[k]->z;
-				Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
-			}
-			if (fabs(Area1 - Area2) < Tol)
-				msh_nod_vector.push_back(
-				        nod_vector[j]->GetIndex());
-		}
+              const size_t nn =  NodesInUsage();
+              for (j = 0; j < nn; j++)
+              {
+                  Area2 = 0.0;
+                  for (i = 0; i < nPointsPly; i++)
+                  {
+                      p1[0] = m_ply->point_vector[i]->x;
+                      p1[1] = m_ply->point_vector[i]->y;
+                      p1[2] = m_ply->point_vector[i]->z;
+                      k = i + 1;
+                      if (i == nPointsPly - 1)
+                          k = 0;
+                      p2[0] = m_ply->point_vector[k]->x;
+                      p2[1] = m_ply->point_vector[k]->y;
+                      p2[2] = m_ply->point_vector[k]->z;
+                      Area2 += fabs(ComputeDetTri(p1, nod_vector[j]->getData(), p2));
+                  }
+                  if (fabs(Area1 - Area2) < Tol)
+                     msh_nod_vector.push_back( nod_vector[j]->GetIndex());
+             }
 #endif
-		p_ply++;
+              p_ply++;
 	}
 }
 
