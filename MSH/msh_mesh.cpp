@@ -1380,42 +1380,40 @@ void CFEMesh::RenumberNodesForGlobalAssembly()
 long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
-  long node_id = -1;
+    long node_id = -1;
   
-  const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
-  const size_t id_act_h_min =  GetNodesNumber(false);
-  const size_t id_act_h_max =   id_act_h_min 
-                              + static_cast<size_t>(getNumNodesLocal_Q()
-                                    - getNumNodesLocal() );
+    const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
+    const size_t id_act_h_min = GetNodesNumber(false);
+    const size_t id_act_h_max = getLargestActiveNodeID_Quadratic();
 
-  double sqr_dist = 0.0;
-  double distmin = getMinEdgeLength()/10.0;
-  if(distmin < 0.)
-    distmin = DBL_EPSILON;
+    double sqr_dist = 0.0;
+    double distmin = getMinEdgeLength()/10.0;
+    if(distmin < 0.)
+       distmin = DBL_EPSILON;
   
-  for (size_t i = 0; i < id_act_l_max; i++)
+    for (size_t i = 0; i < id_act_l_max; i++)
     {
-      sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
-      if (sqr_dist < distmin)
-	{
-	  node_id = i;
-	  break;
-	}
+        sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
+        if ( sqrt(sqr_dist) < distmin)
+        {
+           node_id = i;
+           break;
+        }
     }
 
-   if(!useQuadratic)
-      return node_id;
+    if(!useQuadratic)
+       return node_id;
 
-  for (size_t i = id_act_h_min; i < id_act_h_max; i++)
+    for (size_t i = id_act_h_min; i < id_act_h_max; i++)
     {
-      sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
-      if (sqr_dist < distmin)
-	{
-	  node_id = i;
-	  break;
-	}
+       sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
+       if (sqrt(sqr_dist) < distmin)
+       {
+          node_id = i;
+          break;
+       }
     }
-  return node_id;
+    return node_id;
 
 #else
 	MeshLib::CNode const*const node (_mesh_grid->getNearestPoint(pnt->getData()));
@@ -1761,32 +1759,32 @@ void CFEMesh::findNodesInPolygon(const double area_orig, const double tol,
 				  const CGLPolyline *ply,
 				  std::vector<long> &node_id_vector) const
 {
-  double x1[3];
-  double x2[3];
-  const size_t np = ply->point_vector.size(); 
-  for (size_t j = start_id; j < end_id; j++)
-    {
-      double area_calculated = 0.0;
-      for (size_t i = 0; i < np; i++)
-	{
-	  CGLPoint *point = ply->point_vector[i]; 
-	  x1[0] = point->x;
-	  x1[1] = point->y;
-	  x1[2] = point->z;
+   double x1[3]; 
+   double x2[3]; 
+   const size_t np = ply->point_vector.size(); 
+   for (size_t j = start_id; j < end_id; j++)
+   {
+       double area_calculated = 0.0;
+       for (size_t i = 0; i < np; i++)
+       {
+          CGLPoint *point = ply->point_vector[i]; 
+          x1[0] = point->x;
+          x1[1] = point->y;
+          x1[2] = point->z;
 	  
-	  size_t k = i + 1;
-	  if (i == np - 1)
-	    k = 0;
-	  point = ply->point_vector[k];
-	  x2[0] = point->x;
-	  x2[1] = point->y;
-	  x2[2] = point->z;
+          size_t k = i + 1;
+          if (i == np - 1)
+             k = 0;
+          point = ply->point_vector[k];
+          x2[0] = point->x;
+          x2[1] = point->y;
+          x2[2] = point->z;
 	  
-	  area_calculated += fabs(ComputeDetTri(x1, nod_vector[j]->getData(), x2));
-	}
+          area_calculated += fabs(ComputeDetTri(x1, nod_vector[j]->getData(), x2));
+       }
 
-      if (fabs(area_orig - area_calculated) < tol)
-	node_id_vector.push_back( nod_vector[j]->GetIndex());
+       if (fabs(area_orig - area_calculated) < tol)
+          node_id_vector.push_back( nod_vector[j]->GetIndex());
     }
 };
 
@@ -1858,23 +1856,23 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 		// Check nodes by comparing area
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
 		if(for_s_term)
-		  {
-		    findNodesInPolygon(Area1, Tol, 0, NodesInUsage(),
-					m_ply, msh_nod_vector);
-		  }
+		{
+			findNodesInPolygon(Area1, Tol, 0, NodesInUsage(),
+								m_ply, msh_nod_vector);
+		}
 		else
-		  {
-		    findNodesInPolygon(Area1, Tol, 0, getNumNodesLocal(),
-					m_ply, msh_nod_vector);
+		{
+			findNodesInPolygon(Area1, Tol, 0, getNumNodesLocal(),
+								m_ply, msh_nod_vector);
 
-		    if(useQuadratic)
-		      {
-			findNodesInPolygon(Area1, Tol, GetNodesNumber(false), 
-					    getLargestActiveNodeID_Quadratic(),
-					    m_ply, msh_nod_vector);
+			if(useQuadratic)
+			{
+				findNodesInPolygon(Area1, Tol, GetNodesNumber(false), 
+									getLargestActiveNodeID_Quadratic(),
+									m_ply, msh_nod_vector);
 			
-		      }
-		  }
+			}
+		}
 #else
 		findNodesInPolygon(Area1, Tol, 0, NodesInUsage(),
 				    m_ply, msh_nod_vector);

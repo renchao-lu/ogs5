@@ -508,11 +508,8 @@ void FEMRead_ASCII(const int msize, const int mrank,
 
   if(mrank == 0)
   {
-     is_cfg.clear();
      is_cfg.close();  
-     is_node.clear();
      is_node.close();  
-     is_elem.clear();
      is_elem.close();  
   }
 

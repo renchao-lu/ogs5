@@ -501,28 +501,28 @@ void CRFProcess::InitializeRHS_with_u0(const bool quad)
 
 void CRFProcess::initializeRHS_with_u0(const int  min_id, const int max_id)
 {
-  vector<int> ix;
-  vector<double> val;
-  int nidx1; 
+    vector<int> ix;
+    vector<double> val;
+    int nidx1; 
 
-  const int size = (max_id - min_id) * pcs_number_of_primary_nvals;
-  ix.resize(size);
-  val.resize(size);
+    const int size = (max_id - min_id) * pcs_number_of_primary_nvals;
+    ix.resize(size);
+    val.resize(size);
 
-  int counter = 0;
-  for (int i = 0; i < pcs_number_of_primary_nvals; i++)
-     {
+    int counter = 0;
+    for (int i = 0; i < pcs_number_of_primary_nvals; i++)
+    {
        //new time
        nidx1 = GetNodeValueIndex(pcs_primary_function_name[i]) + 1;
        for (int j = min_id; j < max_id; j++) 
-	 {
-	   ix[counter] = pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[j] + i;
-	   val[counter] = GetNodeValue(j, nidx1);
-           counter++;
-	 }
-     }
-  // Assign u0 to x
-  eqs_new->setArrayValues(0, size, &ix[0], &val[0], INSERT_VALUES);
+       {
+          ix[counter] = pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[j] + i;
+          val[counter] = GetNodeValue(j, nidx1);
+          counter++;
+       }
+    }
+    // Assign u0 to x
+    eqs_new->setArrayValues(0, size, &ix[0], &val[0], INSERT_VALUES);
 } 
 
 /*
