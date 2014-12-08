@@ -270,6 +270,16 @@ enum SolidReactiveSystem
 SolidReactiveSystem convertSolidReactiveSystem( const std::string& reactive_string);
 std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_system);
 
+enum ConstrainedBCType
+{
+	INVALID_CONSTRAINED_TYPE=0,
+	SMALLER,
+	GREATER
+};
+
+ConstrainedBCType convertConstrainedBCType(const std::string &str);
+std::string convertConstrainedBCTypeToString(ConstrainedBCType constrained_BC_type);
+
 } // end namespace FiniteElement
 
 struct TimeControlType

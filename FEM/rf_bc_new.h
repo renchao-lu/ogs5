@@ -140,9 +140,9 @@ public:
 	// constrain a BC by other process
 	bool isConstrainedBC() const {return constrainedBC;}
 	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
-	std::string getConstrainedPrimVar() const {return constrainedPrimVar;}
+	FiniteElement::PrimaryVariable getConstrainedPrimVar() const {return constrainedPrimVar;}
 	double getConstrainedBCValue() const {return constrainedBCValue;}
-	std::string getConstrainedDirection() const {return constrainedDirection;}
+	FiniteElement::ConstrainedBCType getConstrainedDirection() const {return constrainedDirection;}
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -213,8 +213,8 @@ private:
 	bool constrainedBC;
 	double constrainedBCValue;
 	FiniteElement::ProcessType constrainedProcessType;
-	std::string constrainedPrimVar;
-	std::string constrainedDirection;
+	FiniteElement::PrimaryVariable constrainedPrimVar;
+	FiniteElement::ConstrainedBCType constrainedDirection;
 };
 
 class CBoundaryConditionNode                      //OK raus
