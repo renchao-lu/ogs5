@@ -24,6 +24,7 @@ class BoundaryConditionIO;
 #include "GeoInfo.h"                              // TF
 #include "LinearFunctionData.h" // TF
 #include "ProcessInfo.h"                          // KR
+#include "Constrained.h"
 
 // GEOLib
 //#include "geo_ply.h"
@@ -140,12 +141,9 @@ public:
 	// return given density
 	double getPressureAsHeadDensity() const { return pressure_as_head_density; };
 	// constrain a BC by other process
-	bool isConstrainedBC() const {return constrainedBC;}
-	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
-	FiniteElement::PrimaryVariable getConstrainedPrimVar() const {return constrainedPrimVar;}
-	FiniteElement::ConstrainedVariable getConstrainedVariable() const { return constrainedVariable; }
-	double getConstrainedBCValue() const {return constrainedBCValue;}
-	ConstrainedBCType::type getConstrainedDirection() const {return constrainedDirection;}
+	bool isConstrainedBC() const {return _isConstrainedBC;}
+	Constrained const & getConstrainedBC(std::size_t i) const { return _constrainedBC[i]; }
+	std::size_t getNumberOfConstrainedBCs() const { return _constrainedBC.size(); }
 
 private:
 	std::vector<std::string> _PointsFCTNames;
@@ -215,11 +213,9 @@ private:
 	// given density for pressure_as_head BC
 	double pressure_as_head_density;
 	// constrain a BC by other process
-	bool constrainedBC;
-	double constrainedBCValue;
-	FiniteElement::ProcessType constrainedProcessType;
-	FiniteElement::PrimaryVariable constrainedPrimVar;
-	ConstrainedBCType::type constrainedDirection;
+	bool _isConstrainedBC;
+	std::vector<Constrained> _constrainedBC;
+
 };
 
 class CBoundaryConditionNode                      //OK raus
