@@ -543,6 +543,12 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 								exit(1);
 							}
 						}
+						else
+						{
+							std::cout << "ERROR: Unrecognized keyword in .tim file: " << line.str() << std::endl;
+							std::cout << " You may want to check line endings (carriage return)." << std::endl;
+							exit(1);
+						}
 					} // end of while loop adaptive
 				// end of if "SELF_ADAPTIVE"
 				}
