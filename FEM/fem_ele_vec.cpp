@@ -4115,16 +4115,15 @@ ElementValue_DM::~ElementValue_DM()
  **************************************************************************/
 double CFiniteElementVec:: CalcStrain_v()
 {
-	int i;
-	for (i = 0; i < ns; i++)
-		dstrain[i] = 0.0;
-	//
-	for(i = 0; i < nnodesHQ; i++)
-		dstrain[i] += pcs->GetNodeValue(nodes[i],Idx_Strain[0]) * shapefctHQ[i];
+	for (int j(0); j<ns; j++) {
+		dstrain[j] = 0.0;
+		for(int i = 0; i < nnodesHQ; i++)
+			dstrain[j] += pcs->GetNodeValue(nodes[i],Idx_Strain[j]) * shapefctHQ[i];
+	}
 	double val = 0;
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		val += dstrain[i] * dstrain[i];
-	for (i = 3; i < ns; i++)
+	for (int i = 3; i < ns; i++)
 		val += 0.5 * dstrain[i] * dstrain[i];
 
 	return sqrt(2.0 * val / 3.);
