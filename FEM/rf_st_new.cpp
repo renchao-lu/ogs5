@@ -4015,10 +4015,10 @@ void CSourceTerm::SetNodeValues(const std::vector<long>& nodes, const std::vecto
          m_nod_val->node_area = node_value_vectorArea[i];
       }
 
-	  m_nod_val->setSTVectorIndex(i);
-	  m_nod_val->setSTVectorGroup(this->getSTVectorGroup());
-	  if(st_vector[m_nod_val->getSTVectorGroup()]->isConstrainedST())
-		  st_vector[m_nod_val->getSTVectorGroup()]->setConstrainedSTNodesIndex(m_nod_val->geo_node_number, m_nod_val->getSTVectorIndex());
+      m_nod_val->setSTVectorIndex(i);
+      m_nod_val->setSTVectorGroup(this->getSTVectorGroup());
+      if(st_vector[m_nod_val->getSTVectorGroup()]->isConstrainedST())
+         st_vector[m_nod_val->getSTVectorGroup()]->setConstrainedSTNodesIndex(m_nod_val->geo_node_number, m_nod_val->getSTVectorIndex());
       _pcs->st_node_value.push_back(m_nod_val);   //WW
       _pcs->st_node.push_back(this);              //WW
    }                                              // end nodes

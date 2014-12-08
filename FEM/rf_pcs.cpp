@@ -1069,7 +1069,7 @@ void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector)
 		{
 			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
 			{
-				pcs_vector[i]->sethasConstrainedBC(true);
+				pcs_vector[i]->hasConstrainedBC(true);
 				break;
 			}
 		}
@@ -1078,7 +1078,7 @@ void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector)
 		{
 			if (pcs_vector[i]->st_node[j]->isConstrainedST())
 			{
-				pcs_vector[i]->sethasConstrainedST(true);
+				pcs_vector[i]->hasConstrainedST(true);
 				break;
 			}
 		}
