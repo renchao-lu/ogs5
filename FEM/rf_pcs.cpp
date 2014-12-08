@@ -7318,10 +7318,12 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 
-bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & st_node)
+bool CRFProcess::checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSourceTerm const & st, CNodeValue const & st_node)
 {
+	bool return_value(false);
 	for (std::size_t i = 0; i < st.getNumberOfConstrainedSTs(); i++)
 	{
+		bool constrained_bool(false);
 		const Constrained &local_constrained(st.getConstrainedST(i));
 		
 		if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
@@ -7342,20 +7344,29 @@ bool CRFProcess::checkConstrainedST(CSourceTerm const & st, CNodeValue const & s
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
 						if (local_value >= local_constrained.constrainedValue) 		//check if calculated value (eg of other process) meets criterium
-							return true;
+						{
+							constrained_bool = true;
+							return_value = true;
+						}
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
 						if (local_value < local_constrained.constrainedValue)
-							return true;
+						{
+							constrained_bool = true;
+							return_value = true;
+						}
 					}
 					/*else	is already checked when reading
 					return false;*/
 				}
 			}
 		}
+		st_vector[st_node.getSTVectorGroup()]->setConstrainedSTNode(
+			i, constrained_bool, st_node.getSTVectorIndex());
 	}
-	return false;
+
+	return return_value;
 }
 
 bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value)
@@ -7606,9 +7617,32 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 
 //###############################
 //NB Climate Data
+//MW Use loop for constrained ST evaluation
 
 		for (size_t i=0; i<st_vector.size();i++)
 		{
+			// for constrainedST
+			if (st_vector[i]->isConstrainedST())
+			{
+				for (std::size_t j(0); j < st_vector[i]->getNumberOfConstrainedSTs(); j++)
+				{
+					if (st_vector[i]->isCompleteConstrainST(j))
+					{
+						st_vector[i]->setCompleteConstrainedSTStateOff(false,j);
+						size_t end = st_vector[i]->getNumberOfConstrainedSTNodes(j);
+						for (std::size_t k(0); k < end; k++)
+						{
+							if (st_vector[i]->getConstrainedSTNode(j,k))
+							{
+								st_vector[i]->setCompleteConstrainedSTStateOff(true,j);
+								break;
+							}
+						}
+					}
+				}
+			}
+			
+
 			// NOTE (KR): This only works correctly if there is only ONE source term with DisType CLIMATE! TODO
 			// If more are needed pls let me know
 			if (st_vector[i]->getProcessDistributionType()==FiniteElement::CLIMATE)
@@ -7805,7 +7839,18 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 
 				if (m_st->isConstrainedST())
 				{
-					if (checkConstrainedST(*m_st, *cnodev))
+					bool continue_bool(false);
+					if (checkConstrainedST(st_vector, *m_st, *cnodev))
+						continue_bool=true;
+
+					for (std::size_t temp_i(0); temp_i < m_st->getNumberOfConstrainedSTs(); temp_i++)
+					{
+						if (st_vector[cnodev->getSTVectorGroup()]->isCompleteConstrainST(temp_i)
+							&& st_vector[cnodev->getSTVectorGroup()]->getCompleteConstrainedSTStateOff(temp_i))
+							continue_bool = true;
+					}
+
+					if (continue_bool)
 						continue;
 				}
 

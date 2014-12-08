@@ -913,7 +913,7 @@ private:
 	 */
 	void configMaterialParameters ();
 	// method to check on constrained source terms
-	bool checkConstrainedST(CSourceTerm const & bc, CNodeValue const & bc_node);
+	bool checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSourceTerm const & st, CNodeValue const & st_node);
 	// method to check on constrained boundary conditions
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
 	void getNodeVelocityVector(const long node_id, double * vel_nod);
