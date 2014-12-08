@@ -347,7 +347,7 @@ public:
 	 * @param msh_nod_vector the mesh node indices are saved in this vector
 	 * */
 	void GetNODOnPLY(const GEOLIB::Polyline* const ply,
-	                 std::vector<size_t>& msh_nod_vector, const bool for_s_term = false);
+	                 std::vector<size_t>& msh_nod_vector);
 
 	/**
 	 *
@@ -367,7 +367,7 @@ public:
 	/**
 	 * GetNODOnPLY search the nearest nodes to the Polyline
 	 * */
-	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector, const bool for_s_term = false);
+	void GetNODOnPLY(const GEOLIB::Polyline* const ply, std::vector<long>& msh_nod_vector, const bool for_s_term = false );
 
 	/**
 	 * \brief gives the indices of CElement elements, which have an edge

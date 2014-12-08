@@ -1483,7 +1483,7 @@ inline double dotProduction(const double* x1, const double* x2,
    05/3013 WW Add restriction for the ply for the sources term
 **************************************************************************/
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
-                          std::vector<size_t>& msh_nod_vector, const bool for_s_term)
+                          std::vector<size_t>& msh_nod_vector)
 {
 	msh_nod_vector.clear();  
 
@@ -1517,7 +1517,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
 	}
 
 	// compute nodes (and supporting points) along polyline
-	_mesh_nodes_along_polylines.push_back(MeshNodesAlongPolyline(ply, this, for_s_term));
+	_mesh_nodes_along_polylines.push_back(MeshNodesAlongPolyline(ply, this));
 	const std::vector<size_t>
 	node_ids(
 	        _mesh_nodes_along_polylines[_mesh_nodes_along_polylines.size()
@@ -1587,14 +1587,37 @@ void CFEMesh::getPointsForInterpolationAlongPolyline(
 }
 
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
-                          std::vector<long>& msh_nod_vector,  const bool for_s_term)
+                          std::vector<long>& msh_nod_vector, const bool for_s_term)
 {
 	msh_nod_vector.clear(); // JOD 2014-11-10
 	//----------------------------------------------------------------------
 	std::vector<size_t> tmp_msh_node_vector;
-	GetNODOnPLY(ply, tmp_msh_node_vector, for_s_term);
+	GetNODOnPLY(ply, tmp_msh_node_vector);
+
+#if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 08.2014
+        if(for_s_term)
+        {
+            for(size_t k(0); k < tmp_msh_node_vector.size(); k++)
+               msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+        }
+        else
+        {    
+	    const size_t start_act_node_h =  NodesNumber_Linear;         
+	    const size_t end_act_node_h =  NodesNumber_Linear 
+                                   + static_cast<size_t>(loc_NodesNumber_Quadratic - loc_NodesNumber_Linear);         
+            for(size_t k(0); k < tmp_msh_node_vector.size(); k++)
+            {
+                const size_t n_id = nod_vector[tmp_msh_node_vector[k]]->GetIndex();
+                if(   n_id < loc_NodesNumber_Linear
+		      || ( n_id >= start_act_node_h && n_id < end_act_node_h )
+                   ) 
+                   msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+            }
+        }
+#else
 	for (size_t k(0); k < tmp_msh_node_vector.size(); k++)
 		msh_nod_vector.push_back(tmp_msh_node_vector[k]);
+#endif        
 }
 
 /**************************************************************************
