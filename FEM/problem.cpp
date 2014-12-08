@@ -165,7 +165,7 @@ Problem::Problem (char* filename) :
 			}
 		}
 
-		if (!(pcs_vector[i]->_hasConstrainedBC == true))
+		if (!(pcs_vector[i]->_hasConstrainedBC))
 		{
 			for (size_t j = 0; j < pcs_vector[i]->st_node.size(); j++)
 			{
