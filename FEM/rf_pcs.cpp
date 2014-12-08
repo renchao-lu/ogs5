@@ -6537,7 +6537,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				{
 
 					//MW calculate pressure from given head at bc with density, gravity constant and geodetic height for PRESSURE as primary variable
-					if ( m_bc_node->pressure_as_head )
+					if ( m_bc->PressureAsHead() )
 					{
 
 						CRFProcess *local_richards_flow = PCSGet("PRESSURE1",true);		//might also work with LIQUID_FLOW, but not tested
