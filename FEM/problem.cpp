@@ -1405,6 +1405,7 @@ bool Problem::CouplingLoop()
 #endif
 					a_pcs->IncorporateBoundaryConditions(rank);
 				}
+			}
 			if(!accept) break;
 		}
 		if(!accept){
