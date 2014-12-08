@@ -1695,9 +1695,17 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
 **************************************************************************/
 double CFluidProperties::LiquidViscosity_Marsily_1986(double T)
 {
-	double my;
-	my = 2.285e-5 + 1.01e-3 * log(T);
-	return my;
+	const double A = 2.29E-03, B = -1.01E-03;
+
+	//MW:	coefficients are wrong!
+	//		log(T) gives natural logarithm, here decadal log is needed.
+	//		There is no benchmark for this, so nobody noticed...
+	//my = 2.285e-5 + 1.01e-3 * log(T);
+
+	if (T>0)
+		return A + B * log10(T);	// T in Celsius needed
+	else
+		return 0.001758784;
 }
 
 /**************************************************************************
