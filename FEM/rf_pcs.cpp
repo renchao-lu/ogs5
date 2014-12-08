@@ -164,7 +164,7 @@ EvalInfo* eval_data = NULL;
 string project_title("New project");              //OK41
 
 bool hasAnyProcessDeactivatedSubdomains = false;  //NW
-
+extern double gravity_constant;
 //--------------------------------------------------------
 // Coupling Flag. WW
 bool T_Process = false;					// Heat
@@ -6534,8 +6534,23 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					        idx_1);
 				}
 				else
-					// time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
-					bc_value = time_fac * fac * m_bc_node->node_value;
+				{
+
+					//MW calculate pressure from given head at bc with density, gravity constant and geodetic height for PRESSURE as primary variable
+					if ( m_bc_node->pressure_as_head )
+					{
+						const double local_density = MFPGetNodeValue(m_bc_node->msh_node_number, "DENSITY", 0);
+						const double local_node_elevation = this->m_msh->nod_vector[m_bc_node->msh_node_number]->Z();
+
+						// pressure = gravitational_constant * density * ( head - geodetic_height )
+						bc_value = fac * gravity_constant * local_density * ( time_fac * m_bc_node->node_value - local_node_elevation );
+					}
+					else
+					{
+						// time_fac*fac*PCSGetNODValue(bc_msh_node,"PRESSURE1",0);
+						bc_value = time_fac * fac * m_bc_node->node_value;
+					}
+				}
 				//----------------------------------------------------------------
 				// MSH
 				/// 16.08.2010. WW
