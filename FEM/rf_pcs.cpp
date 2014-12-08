@@ -1060,7 +1060,7 @@ void CRFProcess::Create()
 }
 
 
-void initializeConstrainedProcesses(std::vector<CRFProcess*> pcs_vector)
+void initializeConstrainedProcesses(std::vector<CRFProcess*> &pcs_vector)
 {
 	// set bool for existing constrained BCs
 	for (std::size_t i = 0; i < pcs_vector.size(); i++)
@@ -1087,23 +1087,27 @@ void initializeConstrainedProcesses(std::vector<CRFProcess*> pcs_vector)
 	// get the indices of velocity of flow process if contrained BC
 	for (std::size_t i = 0; i < pcs_vector.size(); i++)
 	{
-		if (pcs_vector[i]->hasConstrainedBC())
+		if ( !(pcs_vector[i]->hasConstrainedBC()) )
+			continue;
+
+		bool found(false);
+		for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size(); j++)
 		{
-			bool not_found(true);
-			for (std::size_t j = 0; j<pcs_vector[i]->bc_node.size() && not_found; j++)
+			if (found)
+				break;
+			for (std::size_t k = 0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs(); k++)
 			{
-				for (std::size_t k = 0; k<pcs_vector[i]->bc_node[j]->getNumberOfConstrainedBCs() && not_found; k++)
+				if (found)
+					break;
+				Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
+				if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
 				{
-					Constrained tmp(pcs_vector[i]->bc_node[j]->getConstrainedBC(k));
-					if (tmp.constrainedVariable == ConstrainedVariable::VELOCITY)
-					{
-						CRFProcess *pcs = PCSGetFlow();
-						pcs_vector[i]->setidxVx(pcs->GetNodeValueIndex("VELOCITY_X1", true));
-						pcs_vector[i]->setidxVy(pcs->GetNodeValueIndex("VELOCITY_Y1", true));
-						pcs_vector[i]->setidxVz(pcs->GetNodeValueIndex("VELOCITY_Z1", true));
-						//jump out of j & k loop
-						not_found=false;
-					}
+					CRFProcess *pcs = PCSGetFlow();
+					pcs_vector[i]->setidxVx(pcs->GetNodeValueIndex("VELOCITY_X1", true));
+					pcs_vector[i]->setidxVy(pcs->GetNodeValueIndex("VELOCITY_Y1", true));
+					pcs_vector[i]->setidxVz(pcs->GetNodeValueIndex("VELOCITY_Z1", true));
+					//jump out of j & k loop
+					found=true;
 				}
 			}
 		}
@@ -7396,18 +7400,13 @@ bool CRFProcess::checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSour
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
 						if (local_value >= local_constrained.constrainedValue) 		//check if calculated value (eg of other process) meets criterium
-						{
 							constrained_bool = true;
-							return_value = true;
-						}
+
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
 						if (local_value < local_constrained.constrainedValue)
-						{
 							constrained_bool = true;
-							return_value = true;
-						}
 					}
 					/*else	is already checked when reading
 					return false;*/
@@ -7416,6 +7415,8 @@ bool CRFProcess::checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSour
 		}
 		st_vector[st_node.getSTVectorGroup()]->setConstrainedSTNode(
 			i, constrained_bool, st_node.getSTVectorIndex());
+		if (constrained_bool)
+			return_value=true;
 	}
 
 	return return_value;
@@ -7674,26 +7675,25 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 		for (size_t i=0; i<st_vector.size();i++)
 		{
 			// for constrainedST
-			if (st_vector[i]->isConstrainedST())
+			if ( !(st_vector[i]->isConstrainedST()) )
+				continue;
+
+			for (std::size_t j(0); j < st_vector[i]->getNumberOfConstrainedSTs(); j++)
 			{
-				for (std::size_t j(0); j < st_vector[i]->getNumberOfConstrainedSTs(); j++)
+				if ( !(st_vector[i]->isCompleteConstrainST(j)) )
+					continue;
+
+				st_vector[i]->setCompleteConstrainedSTStateOff(false,j);
+				size_t end = st_vector[i]->getNumberOfConstrainedSTNodes(j);
+				for (std::size_t k(0); k < end; k++)
 				{
-					if (st_vector[i]->isCompleteConstrainST(j))
+					if (st_vector[i]->getConstrainedSTNode(j,k))
 					{
-						st_vector[i]->setCompleteConstrainedSTStateOff(false,j);
-						size_t end = st_vector[i]->getNumberOfConstrainedSTNodes(j);
-						for (std::size_t k(0); k < end; k++)
-						{
-							if (st_vector[i]->getConstrainedSTNode(j,k))
-							{
-								st_vector[i]->setCompleteConstrainedSTStateOff(true,j);
-								break;
-							}
-						}
+						st_vector[i]->setCompleteConstrainedSTStateOff(true,j);
+						break;
 					}
 				}
 			}
-			
 
 			// NOTE (KR): This only works correctly if there is only ONE source term with DisType CLIMATE! TODO
 			// If more are needed pls let me know
@@ -7892,14 +7892,16 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 				if (m_st->isConstrainedST())
 				{
 					bool continue_bool(false);
-					if (checkConstrainedST(st_vector, *m_st, *cnodev))
-						continue_bool=true;
+					continue_bool = checkConstrainedST(st_vector, *m_st, *cnodev);
 
 					for (std::size_t temp_i(0); temp_i < m_st->getNumberOfConstrainedSTs(); temp_i++)
 					{
 						if (st_vector[cnodev->getSTVectorGroup()]->isCompleteConstrainST(temp_i)
 							&& st_vector[cnodev->getSTVectorGroup()]->getCompleteConstrainedSTStateOff(temp_i))
+						{
 							continue_bool = true;
+							break;
+						}
 					}
 
 					if (continue_bool)
