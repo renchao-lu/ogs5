@@ -197,6 +197,9 @@ void MshEditor::sortNodesLexicographically(MeshLib::CFEMesh *mesh)
 
 	mesh->nodes_are_sorted=true;
 
+	const std::size_t size(nodes.size());
+	for (std::size_t j(0); j<size; ++j)
+	    delete nodes[j]; 
 
 }
 
