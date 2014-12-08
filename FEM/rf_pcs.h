@@ -575,7 +575,7 @@ public:
 	int rwpt_count;                       //YS 05.2013 Count the number of particles.
 	int srand_seed;
 	const char* pcs_num_name[2];          //For monolithic scheme
-	std::string tim_type_name;            //OK
+	TimType::type tim_type;
 	const char* pcs_sol_name;
 	std::string cpl_type_name;
 	CNumerics* m_num;

@@ -529,6 +529,28 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 
 } // end namespace FiniteElement
 
+TimType::type convertTimType(const std::string& str)
+{
+    if (str.compare("STEADY") == 0)
+        return TimType::STEADY;
+    if (str.compare("TRANSIENT") == 0)
+        return TimType::TRANSIENT;
+    if (str.compare("PURERWPT") == 0)
+        return TimType::PURERWPT;
+    return TimType::INVALID_TIM_TYPE;
+}
+
+std::string convertTimTypeToString(TimType::type type)
+{
+    if (type == TimType::STEADY)
+        return "STEADY";
+    if (type == TimType::TRANSIENT)
+        return "TRANSIENT";
+    if (type == TimType::PURERWPT)
+        return "PURERWPT";
+    return "INVALID_TIM_TYPE";
+}
+
 TimeControlType::type convertTimeControlType(const std::string &str)
 {
     if (str == "STEPS")
