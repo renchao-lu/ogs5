@@ -213,6 +213,7 @@ private:
 
 	std::vector<std::string> pcs_type_name_vector;
 	bool _hasConstrainedBC;
+	bool _hasConstrainedST;
 	long _idxVx, _idxVy, _idxVz;
 
 protected:                                        //WW
@@ -911,6 +912,8 @@ private:
 	 * PERMEABILITY_X1 and POROSITY
 	 */
 	void configMaterialParameters ();
+	// method to check on constrained source terms
+	bool checkConstrainedST(CSourceTerm const & bc, CNodeValue const & bc_node);
 	// method to check on constrained boundary conditions
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
 	void getNodeVelocityVector(const long node_id, double * vel_nod);
