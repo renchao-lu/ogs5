@@ -145,7 +145,8 @@ CBoundaryCondition::CBoundaryCondition() :
     gradient_ref_depth = 0;             //CB
     gradient_ref_depth_value = 0;       //CB
     gradient_ref_depth_gradient = 0;    //CB
-    pressure_as_head=false;	//MW
+	pressure_as_head = -1;
+	pressure_as_head_density = 0;
 	constrainedBC = false;
 }
 
@@ -470,7 +471,15 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 		//....................................................................
 		if (line_string.find("$PRESSURE_AS_HEAD") != std::string::npos)
 		{
-			pressure_as_head=true;
+			in.str(readNonBlankLineFromInputStream(*bc_file));
+			in >> pressure_as_head;		// 0 -> calc pressure from density; 1 -> calc pressure from *given* density
+			if (pressure_as_head == 1)
+				in >> pressure_as_head_density;
+			else if (pressure_as_head < 0 || pressure_as_head > 1)
+			{
+				std::cout << "Unsupported PRESSURE_AS_HEAD option " << pressure_as_head << std::endl;
+				pressure_as_head = -1;
+			}
 			in.clear();
 		}
 		//....................................................................
