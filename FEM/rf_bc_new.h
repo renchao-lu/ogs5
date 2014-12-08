@@ -137,9 +137,9 @@ public:
 	int getNoDispIncre() {return NoDispIncre;};	//WX:12.2012
 
 	// give head bc for PRESSURE1 primary variable	//MW
-	int PressureAsHead() const {return pressure_as_head;}
+	int getPressureAsHeadModel() const {return _pressure_as_head_model;}
 	// return given density
-	double getPressureAsHeadDensity() const { return pressure_as_head_density; };
+	double getPressureAsHeadDensity() const { return _pressure_as_head_density; };
 	// constrain a BC by other process
 	bool isConstrainedBC() const {return _isConstrainedBC;}
 	Constrained const & getConstrainedBC(std::size_t i) const { return _constrainedBC[i]; }
@@ -209,9 +209,9 @@ private:
 	// no displacement increment 12.2012
 	int NoDispIncre;
 	// give head bc for PRESSURE1 primary variable	//MW
-	int pressure_as_head;
+	int _pressure_as_head_model;
 	// given density for pressure_as_head BC
-	double pressure_as_head_density;
+	double _pressure_as_head_density;
 	// constrain a BC by other process
 	bool _isConstrainedBC;
 	std::vector<Constrained> _constrainedBC;
