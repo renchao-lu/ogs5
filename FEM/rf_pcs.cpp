@@ -6357,11 +6357,11 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				                 &valid) < MKleinsteZahl)
 					continue;
 
-			if(m_bc->isConstrainedBC())
-			{
-				if (checkConstrainedBC(*m_bc, *m_bc_node))
-					continue;
-			}
+//			if(m_bc->isConstrainedBC())
+//			{
+//				if (checkConstrainedBC(*m_bc, *m_bc_node))
+//					continue;
+//			}
 
 			//WX: 01.2011. for excavation bc, check if excavated and if on boundary
 			if(m_bc->getExcav() > 0)
@@ -6723,6 +6723,15 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				}
 #endif //end defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 
+
+				//save last bc_value for later usage (in constrained BC)
+				m_bc_node->node_value_last_calc = bc_value;
+
+				if(m_bc->isConstrainedBC())
+				{
+					if (checkConstrainedBC(*m_bc, *m_bc_node))
+						continue;
+				}
 				//////////////////////////////////
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -7346,12 +7355,14 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
-						if (local_value >= local_constrained.constrainedBCValue)
+						if (local_value >= local_constrained.constrainedBCValue 		//check if calculated value (eg of other process) meets criterium
+								|| bc_node.node_value_last_calc >= local_constrained.constrainedBCValue)		//check if BC value meets criterium
 							return true;
 					}
 					else if (local_constrained.constrainedDirection == ConstrainedType::SMALLER) // exclude smaller values
 					{
-						if (local_value < local_constrained.constrainedBCValue)
+						if (local_value < local_constrained.constrainedBCValue
+								|| bc_node.node_value_last_calc < local_constrained.constrainedBCValue)
 							return true;
 					}
 					/*else	is already checked when reading

@@ -226,6 +226,7 @@ public:
 	long msh_node_number_subst;           //WW
 
 	double node_value;
+	double node_value_last_calc;
 	int CurveIndex;                       // Time dependent function index
 	std::string pcs_pv_name;              //YD/WW
 	//
