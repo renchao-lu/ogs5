@@ -1396,9 +1396,15 @@ bool Problem::CouplingLoop()
 				max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
 
 				// Reapply BCs if constrained BC
-				 if(a_pcs->hasConstrainedBC())
-					 a_pcs->IncorporateBoundaryConditions();
-			}
+				if(a_pcs->hasConstrainedBC())
+				{
+#ifdef USE_MPI
+					const int rank = myrank;
+#else
+					const int rank = -1;
+#endif
+					a_pcs->IncorporateBoundaryConditions(rank);
+				}
 			if(!accept) break;
 		}
 		if(!accept){
