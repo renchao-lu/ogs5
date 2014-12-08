@@ -282,8 +282,6 @@ public:
   LINEAR_SOLVER* eqs;
 #endif
 
-
-
 	//
 #if defined( USE_MPI) || defined( USE_PETSC)     //WW
 	clock_t cpu_time_assembly;
@@ -896,6 +894,9 @@ public:
 #if defined(USE_PETSC) //03.3012. WW
         /// Initialize the RHS array of the system of equations with the previous solution.
         void InitializeRHS_with_u0(const bool quad = false); //in rf_pcs1.cpp
+       
+        /// Initialize the unknows of equations with existing solutions within a index range.
+        void initializeRHS_with_u0(const int min_id, const int max_id); //in rf_pcs1.cpp
 #endif
 
 private:

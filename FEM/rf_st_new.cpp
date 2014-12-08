@@ -1430,10 +1430,8 @@ std::vector<double>&node_value_vector) const
    }
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
       const size_t id_act_l_max = static_cast<size_t>(msh->getNumNodesLocal());
-      const size_t id_act_h_min =   msh-> GetNodesNumber(false);
-      const size_t id_act_h_max =  id_act_h_min 
-                                   + static_cast<size_t>(msh->getNumNodesLocal_Q()
-                                    - msh->getNumNodesLocal() );
+      const size_t id_act_h_min =  msh->GetNodesNumber(false);
+      const size_t id_act_h_max =  msh->getLargestActiveNodeID_Quadratic();
 #endif
 
    for (i = 0; i < (long) msh->edge_vector.size(); i++)
@@ -1787,10 +1785,8 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
    //search elements & face integration
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2013
       const size_t id_act_l_max = static_cast<size_t>(msh->getNumNodesLocal());
-      const size_t id_act_h_min =   msh-> GetNodesNumber(false);
-      const size_t id_act_h_max =  id_act_h_min 
-                                   + static_cast<size_t>(msh->getNumNodesLocal_Q()
-                                                       - msh->getNumNodesLocal() );
+      const size_t id_act_h_min = msh-> GetNodesNumber(false);
+      const size_t id_act_h_max = msh->getLargestActiveNodeID_Quadratic();
 #endif
 
    int count;
