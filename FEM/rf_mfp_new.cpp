@@ -3409,7 +3409,14 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 		CRFProcess* pcs = PCSGet((*vec_var_names)[i],true);
 		if (pcs) {
 			int var_idx = pcs->GetNodeValueIndex((*vec_var_names)[i],true);
-			arguments[i] = pcs->GetNodeValue(node,var_idx);
+			if( (*vec_var_names)[i] == "PRESSURE1")
+				arguments[0] = pcs->GetNodeValue(node,var_idx);
+			else if( (*vec_var_names)[i] == "TEMPERATURE1")
+				arguments[1] = pcs->GetNodeValue(node,var_idx);
+			else if( (*vec_var_names)[i] == "CONCENTRATION1")
+				arguments[2] = pcs->GetNodeValue(node,var_idx);
+			else
+				std::cout << "This variable is not supported in MFPGetNodeValue." << std::endl;
 		} else {
 			arguments[i] = 0.0;
 		}
@@ -3430,9 +3437,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	case 0: mfp_value = m_mfp->Viscosity(&arguments[0]);
 		break;
 	//NB 4.8.01
-	case 1:
-		arguments[2]=arguments[0];
-		mfp_value = m_mfp->Density(&arguments[0]);
+	case 1:	mfp_value = m_mfp->Density(&arguments[0]);
 		break;
 	case 2: mfp_value = m_mfp->HeatConductivity(&arguments[0]);
 		break;
