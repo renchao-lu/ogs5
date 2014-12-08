@@ -7304,7 +7304,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 {
 	for (std::size_t i=0; i < bc.getNumberOfConstrainedBCs(); i++)
 	{
-		Constrained local_constrained(bc.getConstrainedBC(i));
+		const Constrained &local_constrained(bc.getConstrainedBC(i));
 		if (local_constrained.constrainedVariable == ConstrainedVariable::VELOCITY)
 		{
 			//get velocity vector at node
