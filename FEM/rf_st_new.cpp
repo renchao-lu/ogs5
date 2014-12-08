@@ -432,6 +432,61 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
          }
          continue;
       }
+
+	  if (line_string.find("$CONSTRAINED") != std::string::npos)		//need to check if GEO_TYPE==SURFACE
+	  {
+		  Constrained temp;
+		  _isConstrainedBC = true;
+		  in.str(readNonBlankLineFromInputStream(*bc_file));
+		  std::string tempst, tempst2;
+
+		  in >> tempst >> tempst2;
+		  if (tempst == "VELOCITY")
+		  {
+			  temp.constrainedVariable = convertConstrainedVariable(tempst);
+			  temp.constrainedDirection = convertConstrainedType(tempst2);
+			  temp.constrainedBCValue = std::numeric_limits<size_t>::max();
+			  temp.constrainedPrimVar = FiniteElement::INVALID_PV;
+			  temp.constrainedProcessType = FiniteElement::INVALID_PROCESS;
+			  if (!(temp.constrainedDirection == ConstrainedType::POSITIVE || temp.constrainedDirection == ConstrainedType::NEGATIVE))
+			  {
+				  std::cout << "No valid constrainedDirection for " << convertConstrainedVariableToString(temp.constrainedVariable)
+					  << "(" << tempst2 << ")" << std::endl;
+				  _isConstrainedBC = false;
+			  }
+		  }
+		  else
+		  {
+			  temp.constrainedProcessType = FiniteElement::convertProcessType(tempst);
+			  if (!(temp.constrainedProcessType == FiniteElement::MASS_TRANSPORT ||
+				  temp.constrainedProcessType == FiniteElement::HEAT_TRANSPORT ||
+				  temp.constrainedProcessType == FiniteElement::LIQUID_FLOW ||
+				  temp.constrainedProcessType == FiniteElement::RICHARDS_FLOW)) {
+				  _isConstrainedBC = false;
+				  break;
+			  }
+
+			  temp.constrainedPrimVar = FiniteElement::convertPrimaryVariable(tempst2);
+			  in >> temp.constrainedBCValue >> tempst;
+			  temp.constrainedDirection = convertConstrainedType(tempst);
+			  temp.constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
+			  if (!(temp.constrainedDirection == ConstrainedType::SMALLER || temp.constrainedDirection == ConstrainedType::GREATER))
+			  {
+				  std::cout << "No valid constrainedDirection for " << FiniteElement::convertProcessTypeToString(temp.constrainedProcessType)
+					  << " (" << tempst << ")" << std::endl;
+				  _isConstrainedBC = false;
+			  }
+			  in >> tempst;
+			  if (tempst == "SEEPAGE")
+			  {
+				  _isSeepageBC = true;
+			  }
+		  }
+		  if (_isConstrainedBC)
+			  this->_constrainedBC.push_back(temp);
+		  in.clear();
+	  }
+
    }                                              // end !new_keyword
    return position;
 }
