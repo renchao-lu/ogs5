@@ -459,17 +459,38 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 		//....................................................................
-		if (line_string.find("$CONSTRAINED") != std::string::npos)
+		if (line_string.find("$CONSTRAINED") != std::string::npos)		//need to check if GEO_TYPE==SURFACE
 		{
 			constrainedBC = true;
 			in.str(readNonBlankLineFromInputStream(*bc_file));
-			std::string temp, temp2, temp3;
-			in >> temp >> temp2 >> constrainedBCValue >> temp3;
-			constrainedProcessType = FiniteElement::convertProcessType(temp);
-			constrainedPrimVar = FiniteElement::convertPrimaryVariable(temp2);
-			constrainedDirection = convertConstrainedBCType(temp3);
-			in.clear();
+			std::string temp, temp2;
 
+			in >> temp >> temp2;
+			if (temp == "VELOCITY")
+			{
+				constrainedVariable = FiniteElement::convertConstrainedVariable(temp);
+				constrainedDirection = FiniteElement::convertConstrainedBCType(temp2);
+				if ( !(getConstrainedDirection() == FiniteElement::POSITIVE || getConstrainedDirection() == FiniteElement::NEGATIVE))
+				{
+					std::cout << "No valid constrainedDirection for " << FiniteElement::convertConstrainedVariableToString(constrainedVariable)
+						<< "(" << temp2 << ")" << std::endl;
+					constrainedBC = false;
+				}
+			}
+			else
+			{
+				constrainedProcessType = FiniteElement::convertProcessType(temp);
+				constrainedPrimVar = FiniteElement::convertPrimaryVariable(temp2);
+				in >> constrainedBCValue >> temp;
+				constrainedDirection = FiniteElement::convertConstrainedBCType(temp);
+				if ( !(getConstrainedDirection() == FiniteElement::SMALLER || getConstrainedDirection() == FiniteElement::GREATER))
+				{
+					std::cout << "No valid constrainedDirection for " << FiniteElement::convertProcessTypeToString(constrainedProcessType)
+						<< " (" << temp << ")" << std::endl;
+					constrainedBC = false;
+				}
+			}
+			in.clear();
 		}
 		//....................................................................
 
@@ -1381,6 +1402,28 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 						//WW group_vector.push_back(m_node_value);
 						//WW bc_group_vector.push_back(bc); //OK
 					}
+
+					if (nodes_vector_length > 0 && bc->constrainedVariable == FiniteElement::VELOCITY)
+					{
+						//calculate normals of triangles
+
+						/*surface_vector = GetSurfaceVector();
+						std::vector<Surface*>::iterator ps = surface_vector.begin();
+						Surface* m_surface2 = NULL;
+						// Go through the existing surfaces (GEO_type)
+						while(ps != surface_vector.end())
+						{
+							m_surface2 = *ps;
+							std::cout << m_surface2->TIN->Triangles.size() << std::endl;
+						}*/
+
+						std::cout << sfc->getNTriangles() << std::endl;
+
+						if (!m_surface->triangleNormalsCalculated)
+							m_surface->calculateTriangleNormals(m_surface);
+
+					}
+
 					node_value.clear();
 				}
 			}
