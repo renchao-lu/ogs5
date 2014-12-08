@@ -45,8 +45,12 @@ IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 		ENDIF(OGS_FEM_PETSC_GEMS)
 	ENDIF(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
 	# -g
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra -Woverloaded-virtual -fno-nonansi-builtins")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs") # suppress warnings in Eigen
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra -fno-nonansi-builtins")
+
+	IF (GCC_VERSION VERSION_GREATER 4.6)
+	  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs") # suppress warnings in Eigen
+	ENDIF()
+  
 	# would be cool: -Woverloaded-virtual, would be overkill: -Weffc++
 	ADD_DEFINITIONS(-DGCC)
 
