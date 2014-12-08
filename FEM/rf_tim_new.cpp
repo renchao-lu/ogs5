@@ -925,14 +925,14 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 //	m_mfp = MFPGet("LIQUID");             //WW
 //	double density_fluid = m_mfp->Density(); //WW // TF: set, but never used
 
-	double initial_time_step = std::max(ini_time_step, min_time_step);
+	const double initial_time_step = std::max(ini_time_step, min_time_step);
 
 	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++)
 	{
 		m_pcs = pcs_vector[n_p];
 		CFiniteElementStd* fem = m_pcs->GetAssembler();
 
-		time_step_length = initial_time_step; // take min time step as conservative best guess for testing
+		time_step_length = initial_time_step; // default guess
 		//		switch (m_pcs->pcs_type_name[0]) {
 		switch (m_pcs->getProcessType()) // TF
 		{
@@ -947,7 +947,7 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 			time_step_length = initial_time_step; // take min time step as conservative best guess for testing
 			if(time_control_type == TimeControlType::SELF_ADAPTIVE)	//MW
 			{
-				//TODO NW->MW, this function is called only once at initial. rejected_step_count should be zero...
+				// time step will be reduced in an exponential way until min_time_step.
 				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * ini_time_step;
 
 				if (time_step_length<=min_time_step) {
