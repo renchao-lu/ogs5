@@ -1076,7 +1076,7 @@ void Problem::Euler_TimeDiscretize()
 	// ------------------------------------------
 	// PERFORM TRANSIENT SIMULATION
 	// ------------------------------------------
-	double previous_rejected_dt = .0;;
+	double previous_rejected_dt = .0;
 	while(end_time > current_time)
 	{
 		// Get time step
