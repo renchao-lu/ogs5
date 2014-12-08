@@ -1926,21 +1926,3 @@ void SFCAssignColors()
 		m_sfc->AssignColor();
 	}
 }
-
-
-void Surface::calculateTriangleNormals(Surface* m_sfc)
-{
-	for (size_t i=0; i<m_sfc->TIN->Triangles.size(); i++)
-	{
-		const double v1[3] = {m_sfc->TIN->Triangles[0]->x[1] - m_sfc->TIN->Triangles[0]->x[0],
-				m_sfc->TIN->Triangles[0]->y[1] - m_sfc->TIN->Triangles[0]->y[0],
-				m_sfc->TIN->Triangles[0]->z[1] - m_sfc->TIN->Triangles[0]->z[0]};
-		const double v2[3] = {m_sfc->TIN->Triangles[0]->x[2] - m_sfc->TIN->Triangles[0]->x[0],
-				m_sfc->TIN->Triangles[0]->y[2] - m_sfc->TIN->Triangles[0]->y[0],
-				m_sfc->TIN->Triangles[0]->z[2] - m_sfc->TIN->Triangles[0]->z[0]};
-		MathLib::crossProd(v1,v2,m_sfc->TIN->Triangles[i]->normal_vector);
-	}
-
-	triangleNormalsCalculated = true;
-}
-
