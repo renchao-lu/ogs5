@@ -3371,127 +3371,73 @@ double CFluidProperties::CalcEnthalpy(double temperature)
 **************************************************************************/
 double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 {
-	double mfp_value = 0.0;               //OK411
-	//  char c;
-	double arguments[6];
-	string pcs_name1;
-	string pcs_name2;
-	string pcs_name3;
-	CRFProcess* tp;
-		CRFProcess* m_pcs;
-	    m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
-
-	//NB
 	CFluidProperties* m_mfp = mfp_vector[max(phase_number,0)];
-
-	int mfp_id = -1;
-	int val_idx = 0;                      // for later use, NB case 'V': mfp_id = 0; //VISCOSITY
-	switch (mfp_name[0])
-	{
-	case 'V': mfp_id = 0;                 //VISCOSITY
-		if(m_mfp->viscosity_pcs_name_vector.size() < 1)
-			pcs_name1 = "PRESSURE1";
-		else
-			pcs_name1 = m_mfp->viscosity_pcs_name_vector[0];
-		if(m_mfp->viscosity_pcs_name_vector.size() < 2)
-			pcs_name2 = "TEMPERATURE1";
-		else
-			pcs_name2 = m_mfp->viscosity_pcs_name_vector[1];
-		if(m_mfp->viscosity_pcs_name_vector.size()<3)
-			pcs_name3 = "CONCENTRATION1";
-		else
-			pcs_name3 = m_mfp->viscosity_pcs_name_vector[3];
-		break;
-	case 'D': mfp_id = 1;                 //DENSITY
-		if(m_mfp->density_pcs_name_vector.size() < 1)
-			pcs_name1 = "PRESSURE1";
-		else
-			pcs_name1 = m_mfp->density_pcs_name_vector[0];
-		if(m_mfp->density_pcs_name_vector.size() < 2)
-			pcs_name2 = "TEMPERATURE1";
-		else
-			pcs_name2 = m_mfp->density_pcs_name_vector[1];
-		if(m_mfp->density_pcs_name_vector.size()<3)
-			pcs_name3 = "CONCENTRATION1";
-		else
-			pcs_name3 = m_mfp->density_pcs_name_vector[3];
-		break;
-	case 'H': mfp_id = 2;                 //HEAT_CONDUCTIVITY
-		if(m_mfp->heat_conductivity_pcs_name_vector.size() < 1)
-			pcs_name1 = "PRESSURE1";
-		else
-			pcs_name1 = m_mfp->heat_conductivity_pcs_name_vector[0];
-		if(m_mfp->heat_conductivity_pcs_name_vector.size() < 2)
-			pcs_name2 = "TEMPERATURE1";
-		else
-			pcs_name2 = m_mfp->heat_conductivity_pcs_name_vector[1];
-		if(m_mfp->heat_conductivity_pcs_name_vector.size()<3)
-			pcs_name3 = "CONCENTRATION1";
-		else
-			pcs_name3 = m_mfp->heat_conductivity_pcs_name_vector[3];
-		break;
-	case 'S': mfp_id = 3;                 //SPECIFIC HEAT CAPACITY
-		if(m_mfp->specific_heat_capacity_pcs_name_vector.size() < 1)
-			pcs_name1 = "PRESSURE1";
-		else
-			pcs_name1 = m_mfp->specific_heat_capacity_pcs_name_vector[0];
-		if(m_mfp->specific_heat_capacity_pcs_name_vector.size() < 2)
-			pcs_name2 = "TEMPERATURE1";
-		else
-			pcs_name2 = m_mfp->specific_heat_capacity_pcs_name_vector[1];
-	  	if(m_mfp->specific_heat_capacity_pcs_name_vector.size()<3)
-			pcs_name3 = "CONCENTRATION1";
-		else
-			pcs_name3 = m_mfp->specific_heat_capacity_pcs_name_vector[3];
-		break;
-	default:  mfp_id = -1;
-		pcs_name1 = "PRESSURE1";
-		pcs_name2 = "TEMPERATURE1";
-	    pcs_name3 = "CONCENTRATION1";
-	}
-	//......................................................................
-
-	int restore_mode = m_mfp->mode;
+	const int restore_mode = m_mfp->mode;
 	m_mfp->mode = 0;
 	m_mfp->node = node;
 
-
-	tp = PCSGet(pcs_name1,true);          //NB 4.8.01
-	val_idx = tp->GetNodeValueIndex(pcs_name1,true); // NB // JT latest
-	arguments[0] = tp->GetNodeValue(node,val_idx);
-
-	tp = PCSGet(pcs_name2,true);          //NB 4.8.01
-	val_idx = tp->GetNodeValueIndex(pcs_name2,true); // NB // JT latest
-	arguments[1] = tp->GetNodeValue(node,val_idx);
-//Include concentration as primary variable
-	tp = PCSGet(pcs_name3,true);          //NB 4.8.01
-	if (tp){
-		val_idx = tp->GetNodeValueIndex(pcs_name3,true); // NB // JT latest
-		arguments[2] = tp->GetNodeValue(node,val_idx);
+	int mfp_id = -1;
+	std::vector<std::string>* vec_var_names;
+	switch (mfp_name[0])
+	{
+	case 'V': mfp_id = 0;                 //VISCOSITY
+		vec_var_names = &m_mfp->viscosity_pcs_name_vector;
+		break;
+	case 'D': mfp_id = 1;                 //DENSITY
+		vec_var_names = &m_mfp->density_pcs_name_vector;
+		break;
+	case 'H': mfp_id = 2;                 //HEAT_CONDUCTIVITY
+		vec_var_names = &m_mfp->heat_conductivity_pcs_name_vector;
+		break;
+	case 'S': mfp_id = 3;                 //SPECIFIC HEAT CAPACITY
+		vec_var_names = &m_mfp->specific_heat_capacity_pcs_name_vector;
+		break;
+	default:  mfp_id = -1;
+		static std::vector<std::string> default_var_names;
+		if (default_var_names.empty()) {
+			default_var_names.push_back("PRESSURE1");
+			default_var_names.push_back("TEMPERATURE1");
+			default_var_names.push_back("CONCENTRATION1");
+		}
+		vec_var_names = &default_var_names;
+		break;
 	}
-	else
-		arguments[2] = 0.0;
+
+	std::vector<double> arguments(vec_var_names->size());
+	for (unsigned i=0; i<vec_var_names->size(); i++) {
+		CRFProcess* pcs = PCSGet((*vec_var_names)[i],true);
+		if (pcs) {
+			int var_idx = pcs->GetNodeValueIndex((*vec_var_names)[i],true);
+			arguments[i] = pcs->GetNodeValue(node,var_idx);
+		} else {
+			arguments[i] = 0.0;
+		}
+	}
 
 	if (m_mfp->cmpN > 0)
 	{
-	for(int PVIndex=0; PVIndex < m_mfp->cmpN + 2; PVIndex++) 
-	arguments[PVIndex] = m_pcs->GetNodeValue(node, m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[PVIndex]));
+		CRFProcess* m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
+		arguments.resize(m_mfp->cmpN + 2);
+		for(int PVIndex=0; PVIndex < m_mfp->cmpN + 2; PVIndex++)
+			arguments[PVIndex] = m_pcs->GetNodeValue(node, m_pcs->GetNodeValueIndex(m_pcs->pcs_primary_function_name[PVIndex]));
 	}
 
 	//......................................................................
+	double mfp_value = .0;
 	switch(mfp_id)
 	{
-	case 0: mfp_value = m_mfp->Viscosity(arguments);
+	case 0: mfp_value = m_mfp->Viscosity(&arguments[0]);
 		break;
 	//NB 4.8.01
-	case 1: mfp_value = m_mfp->Density(arguments);
+	case 1: mfp_value = m_mfp->Density(&arguments[0]);
 		break;
-	case 2: mfp_value = m_mfp->HeatConductivity(arguments);
+	case 2: mfp_value = m_mfp->HeatConductivity(&arguments[0]);
 		break;
 	//NB AUG 2009
-	case 3: mfp_value = m_mfp->SpecificHeatCapacity(arguments);
+	case 3: mfp_value = m_mfp->SpecificHeatCapacity(&arguments[0]);
 		break;
 	default: cout << "MFPGetNodeValue: no MFP data" << "\n";
+		break;
 	}
 	//......................................................................
 	m_mfp->mode = restore_mode;           //NB changeback
