@@ -39,6 +39,8 @@
 #include <iostream>
 //#include <algorithm> // header of transform. WW
 #include <set>
+
+#include "isnan.h"
 // GEOLib
 #include "PointWithID.h"
 
@@ -4954,7 +4956,7 @@ double CRFProcess::Execute()
 #endif
 #endif
 
-	if(std::isnan(pcs_error))
+	if(BASELIB::isNAN(pcs_error))
 	{
 		accepted = false;
 	}
