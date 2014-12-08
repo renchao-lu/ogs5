@@ -4615,14 +4615,6 @@ last modification:
 **************************************************************************/
 void CFEMesh::GetConnectedElements(std::vector<long>&nodes_on_sfc, std::vector<long>&vec_elements)
 {
-	//msh_nod_vector.clear();
-
-	int Axisymm = 1; // ani-axisymmetry
-	if (isAxisymmetry()) Axisymm = -1; // Axisymmetry is true
-
-	CElem* elem = NULL;
-	CElem* face = new CElem(1);
-	FiniteElement::CElement* fem = new FiniteElement::CElement(Axisymm * GetCoordinateFlag());
 	std::set<long>  set_nodes_on_sfc;
 	long i, j, k, l;
 

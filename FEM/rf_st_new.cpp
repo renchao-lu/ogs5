@@ -3098,7 +3098,7 @@ const int ShiftInNodeVector)
       //	if (st->dis_type_name.compare("CRITICALDEPTH") == 0) {
       nod_val->setProcessDistributionType (st->getProcessDistributionType());
       nod_val->node_area = 1.0;
-	  std::cout << "      - Critical depth" << std::endl;
+      std::cout << "      - Critical depth" << std::endl;
    }
 
    if (st->getProcessDistributionType() == FiniteElement::NORMALDEPTH)
