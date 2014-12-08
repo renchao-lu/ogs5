@@ -551,6 +551,30 @@ std::string convertTimTypeToString(TimType::type type)
     return "INVALID_TIM_TYPE";
 }
 
+IterationType::type convertIterationType(const std::string& str)
+{
+	if (str.find("LINEAR")!=std::string::npos)
+		return IterationType::LINEAR;
+	else if (str.find("NONLINEAR")!=std::string::npos)
+		return IterationType::NONLINEAR;
+	else if (str.find("COUPLED")!=std::string::npos)
+		return IterationType::COUPLED;
+	else
+		return IterationType::INVALID;
+
+}
+
+std::string convertIterationTypeToString(IterationType::type itr_type)
+{
+    if (itr_type == IterationType::LINEAR)
+        return "LINEAR";
+    else if (itr_type == IterationType::NONLINEAR)
+        return "NONLINEAR";
+    else if (itr_type == IterationType::COUPLED)
+        return "COUPLED";
+    return "INVALID";
+}
+
 TimeControlType::type convertTimeControlType(const std::string &str)
 {
     if (str == "STEPS")
