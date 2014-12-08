@@ -152,6 +152,20 @@ Problem::Problem (char* filename) :
 		print_result = false;     //OK
 		return;
 	}
+
+	// set bool for existing constrained BCs
+	for (size_t i = 0; i < pcs_vector.size(); i++)
+	{
+		for (size_t j=0;j<pcs_vector[i]->bc_node.size();j++)
+		{
+			if (pcs_vector[i]->bc_node[j]->isConstrainedBC())
+			{
+				pcs_vector[i]->_hasConstrainedBC = true;
+				break;
+			}
+		}
+	}
+
 	//
 	//JT: Set to true to force node copy at end of loop
 	force_post_node_copy = true;
@@ -1337,6 +1351,10 @@ bool Problem::CouplingLoop()
 				a_pcs->first_coupling_iteration = false; // No longer true.
 				// Check for break criteria
 				max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
+
+				// Reapply BCs if constrained BC
+				 if(a_pcs->hasConstrainedBC())
+					 a_pcs->IncorporateBoundaryConditions();
 			}
 			if(!accept) break;
 		}

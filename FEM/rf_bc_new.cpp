@@ -148,6 +148,7 @@ CBoundaryCondition::CBoundaryCondition() :
 	_pressure_as_head_model = -1;
 	_pressure_as_head_density = 0;
 	_isConstrainedBC = false;
+	_isSeepageBC = false;
 }
 
 // KR: Conversion from GUI-BC-object to CBoundaryCondition
@@ -525,6 +526,11 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 					std::cout << "No valid constrainedDirection for " << FiniteElement::convertProcessTypeToString(temp.constrainedProcessType)
 						<< " (" << tempst << ")" << std::endl;
 					_isConstrainedBC = false;
+				}
+				in >> tempst;
+				if (tempst == "SEEPAGE")
+				{
+					_isSeepageBC = true;
 				}
 			}
 			if (_isConstrainedBC)

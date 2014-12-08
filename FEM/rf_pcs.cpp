@@ -363,6 +363,7 @@ CRFProcess::CRFProcess(void) :
    m_solver  = NULL;                              //WW
 	isRSM = false; //WW
 	eqs_x = NULL;
+	_hasConstrainedBC=false;
 }
 
 
@@ -4920,7 +4921,7 @@ double CRFProcess::Execute()
 
 		// maybe works also for other processes involving velocities
 		// update nod velocity if constrained BC
-		if (this->accepted // do I really need to check every single bc node, or how can I access a bc group?
+		if (this->accepted		// do I really need to check every single bc node, or how can I access a bc group?
 			&& (this->getProcessType() == FiniteElement::RICHARDS_FLOW
 				|| this->getProcessType() == FiniteElement::LIQUID_FLOW) )
 		{
@@ -6724,7 +6725,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 				if(m_bc->isConstrainedBC())
 				{
-					if (checkConstrainedBC(*m_bc, *m_bc_node))
+					if (checkConstrainedBC(*m_bc, *m_bc_node, bc_value))
 						continue;
 				}
 				//////////////////////////////////
@@ -7294,7 +7295,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 	}
 
 
-bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node)
+bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value)
 {
 	for (std::size_t i=0; i < bc.getNumberOfConstrainedBCs(); i++)
 	{
@@ -7329,7 +7330,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			}
 
 		}
-		else if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
+		if (local_constrained.constrainedPrimVar == FiniteElement::PRESSURE
 			|| local_constrained.constrainedPrimVar == FiniteElement::CONCENTRATION
 			|| local_constrained.constrainedPrimVar == FiniteElement::TEMPERATURE)
 		{
@@ -7355,17 +7356,19 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 					{
 						if (local_value < local_constrained.constrainedBCValue
 								|| bc_node.node_value_last_calc < local_constrained.constrainedBCValue)
-							return true;
+						{
+							if (bc.isSeepageBC()		//this probably only makes sense if constrained primary variable is pressure
+									&& local_value > bc_node.node_value_last_calc	//could add a check, but don't want to limit it
+									&& local_value > local_constrained.constrainedBCValue)
+								bc_value = local_constrained.constrainedBCValue;
+							else
+								return true;
+						}
 					}
 					/*else	is already checked when reading
 						return false;*/
 				}
 			}
-		}
-		else
-		{
-			std::cout << "Non existing combination for constrained BC direction given. Using normal BC." << std::endl;
-			return false;
 		}
 	}
 	return false;
