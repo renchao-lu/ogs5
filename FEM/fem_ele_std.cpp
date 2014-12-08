@@ -5572,6 +5572,31 @@ void CFiniteElementStd::CalcAdvection()
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
+	double vel_fluid_momentum[3];
+	if(pcs_fluid_momentum)
+	{
+		/*
+		 * get connected nodes
+		 * get vel at nodes
+		 * interpolate vel
+		 */
+		std::vector<size_t> connected_nodes;
+		this->MeshElement->getNodeIndices(connected_nodes);
+		double nodal_vel_x[10], nodal_vel_y[10], nodal_vel_z[10];
+
+		for (std::size_t i(0); i < connected_nodes.size(); i++)
+		{
+			nodal_vel_x[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+			nodal_vel_y[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+			nodal_vel_z[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+		}
+		vel_fluid_momentum[0] = interpolate(nodal_vel_x);
+		vel_fluid_momentum[1] = interpolate(nodal_vel_y);
+		vel_fluid_momentum[2] = interpolate(nodal_vel_z);
+
+	}
+
+
 	//Initial values
 	gp_t = 0;
 	(*Advection) = 0.0;
@@ -5630,17 +5655,39 @@ void CFiniteElementStd::CalcAdvection()
 		// Velocity by Fluid_Momentum - 13.11.2009  PCH
 		if(pcs_fluid_momentum)
 		{
-			CRFProcess* m_pcs = pcs_fluid_momentum;
-
-			vel[0] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_X") + 1);
-			vel[1] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_Y") + 1);
-			vel[2] = mat_factor * m_pcs->GetElementValue(index,
-			                                             m_pcs->GetElementValueIndex(
-			                                                     "VELOCITY1_Z") + 1);
+			switch (coordinate_system)
+			{
+			case 10:	// only x-direction
+				vel[0] = mat_factor * vel_fluid_momentum[0];
+				break;
+			case 11:	// only y-direction
+				vel[0] = mat_factor * vel_fluid_momentum[1];
+				break;
+			case 12:	// only z-direction
+				vel[0] = mat_factor * vel_fluid_momentum[2];
+				break;
+			case 21:	// x & y direction
+				vel[0] = mat_factor * vel_fluid_momentum[0];
+				vel[1] = mat_factor * vel_fluid_momentum[1];
+				break;
+			case 22:	// x & z direction
+				vel[0] = mat_factor * vel_fluid_momentum[0];
+				vel[1] = mat_factor * vel_fluid_momentum[2];
+				break;
+			case 23:	// y & z direction
+				vel[0] = mat_factor * vel_fluid_momentum[1];
+				vel[1] = mat_factor * vel_fluid_momentum[2];
+				break;
+			case 32:	// x, y & z direction
+				vel[0] = mat_factor * vel_fluid_momentum[0];
+				vel[1] = mat_factor * vel_fluid_momentum[1];
+				vel[2] = mat_factor * vel_fluid_momentum[2];
+				break;
+			default:
+				std::cout << "  Invalid coordinate_system: " << coordinate_system << ". Exiting now." << std::endl;
+				exit(0);
+				break;
+			}
 		}
 
 #if defined(USE_PETSC) //|| defined (other parallel solver)
