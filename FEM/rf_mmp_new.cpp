@@ -4408,9 +4408,9 @@ double* CMediumProperties::PermeabilityTensor(long index)
 	int idx_k, idx_n;
 	double /*k_old, n_old,*/ k_new, n_new, k_rel, n_rel;
 	CRFProcess* m_pcs_tmp(NULL);
-    if ((permeability_model==8) && (porosity_model==13)) 
-      m_pcs_tmp = PCSGetFlow();
-    
+	if ((permeability_model==8) && (porosity_model==13))
+	  m_pcs_tmp = PCSGetFlow();
+
 	// HS: move the following loop into the "if ( permeability_tensor_type == 0 )" scope.----
 	// this is not necessary for in-isotropic case;
 	// if(permeability_model==2)
@@ -4445,17 +4445,17 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		else if ( permeability_model == 3 )
 		{                         // HS: 11.2008, for K-C relationship
-		  k_new=tensor[0];
-		  CRFProcess* pcs_tmp(NULL);
-		  for (size_t i = 0; i < pcs_vector.size(); i++)
-		  {
-			pcs_tmp = pcs_vector[i];
-			if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
-			     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
-			     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
-			break;
-		  }
-		        // get indexes
+			k_new = tensor[0];
+			CRFProcess* pcs_tmp(NULL);
+			for (size_t i = 0; i < pcs_vector.size(); i++)
+			{
+				pcs_tmp = pcs_vector[i];
+				if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
+				     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
+				     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
+					break;
+			}
+			// get indexes
 			idx_k = pcs_tmp->GetElementValueIndex("PERMEABILITY");
 			idx_n = pcs_tmp->GetElementValueIndex("POROSITY");
 
@@ -4465,11 +4465,11 @@ double* CMediumProperties::PermeabilityTensor(long index)
 
 			// if first time step, get the k_new from material class
 			if ( aktueller_zeitschritt == 1) // for the first time step.....
-			    {
+			{
 				// get the permeability.
 //				KC_permeability_initial = k_new = tensor[0];
 //				KC_porosity_initial = n_new;
-			    }
+			}
 			// save old permeability
 			pcs_tmp->SetElementValue( index, idx_k, k_new  );
 
@@ -4486,17 +4486,17 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		else if ( permeability_model == 4 )
 		{                         // HS: 11.2008, for K-C_normalized relationship
-		  k_new=tensor[0];
-		  CRFProcess* pcs_tmp(NULL);
-		  for (size_t i = 0; i < pcs_vector.size(); i++)
-		  {
-			pcs_tmp = pcs_vector[i];
-			if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
-			     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
-			     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
-			break;
-		  }
-		        // get indexes
+			k_new=tensor[0];
+			CRFProcess* pcs_tmp(NULL);
+			for (size_t i = 0; i < pcs_vector.size(); i++)
+			{
+				pcs_tmp = pcs_vector[i];
+				if ( pcs_tmp->getProcessType () == FiniteElement::GROUNDWATER_FLOW ||
+				     pcs_tmp->getProcessType () == FiniteElement::LIQUID_FLOW ||
+				     pcs_tmp->getProcessType () == FiniteElement::RICHARDS_FLOW)
+					break;
+			}
+			// get indexes
 			idx_k = pcs_tmp->GetElementValueIndex("PERMEABILITY");
 			idx_n = pcs_tmp->GetElementValueIndex("POROSITY");
 
@@ -4506,11 +4506,11 @@ double* CMediumProperties::PermeabilityTensor(long index)
 
 			// if first time step, get the k_new from material class
 			if ( aktueller_zeitschritt == 1) // for the first time step.....
-			    {
+			{
 				// get the permeability.
 //				KC_permeability_initial = k_new = tensor[0];
 //				KC_porosity_initial = n_new;
-			    }
+			}
 			// save old permeability
 			pcs_tmp->SetElementValue( index, idx_k, k_new  );
 
@@ -4643,12 +4643,12 @@ double* CMediumProperties::PermeabilityTensor(long index)
 				// now gives the newly calculated value to tensor[]
 				tensor[0] = k_new;
 			}
-	}
-	  else if((permeability_model==8)&&(porosity_model==13))
-      {                                           // ABM 11.2010
-          idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
-          tensor[0] = m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-	  }
+		}
+		else if((permeability_model==8)&&(porosity_model==13))
+		{                                           // ABM 11.2010
+			idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+			tensor[0] = m_pcs_tmp->GetElementValue( index, idx_k + 1 );
+		}
 	// end of K-C relationship-----------------------------------------------------------------------------------
 	}
 
@@ -4676,22 +4676,22 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		else if(permeability_tensor_type == 1)
 		{
-            if((permeability_model==8)&&(porosity_model==13))
-            {                                           // AB 11.2010
-                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
-                tensor[0]= m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-                tensor[1] = 0.0;
-                tensor[2] = 0.0;
-                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_YY");
-                tensor[3]= m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-            }
-            else
-            {
-                tensor[0] = permeability_tensor[0];
-                tensor[1] = 0.0;
-                tensor[2] = 0.0;
-                tensor[3] = permeability_tensor[1];
-            }
+			if ((permeability_model == 8) && (porosity_model == 13))
+			{                                           // AB 11.2010
+				idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+				tensor[0] = m_pcs_tmp->GetElementValue(index, idx_k + 1);
+				tensor[1] = 0.0;
+				tensor[2] = 0.0;
+				idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_YY");
+				tensor[3] = m_pcs_tmp->GetElementValue(index, idx_k + 1);
+			}
+			else
+			{
+				tensor[0] = permeability_tensor[0];
+				tensor[1] = 0.0;
+				tensor[2] = 0.0;
+				tensor[3] = permeability_tensor[1];
+			}
 		}
 		else if(permeability_tensor_type == 2)
 		{
@@ -4726,32 +4726,33 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		else if(permeability_tensor_type == 1)
 		{
-            if((permeability_model==8)&&(porosity_model==13))
-            {                                           // AB 11.2010
-                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
-                tensor[0]= m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-                tensor[1] = 0.0;
-                tensor[2] = 0.0;
-                tensor[3] = 0.0;
-                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_YY");
-                tensor[4]= m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-                tensor[5] = 0.0;
-                tensor[6] = 0.0;
-                tensor[7] = 0.0;
-                idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_ZZ");
-                tensor[8]= m_pcs_tmp->GetElementValue( index, idx_k + 1 );
-            }
-            else{
-               tensor[0] = permeability_tensor[0];
-               tensor[1] = 0.0;
-               tensor[2] = 0.0;
-               tensor[3] = 0.0;
-               tensor[4] = permeability_tensor[1];
-               tensor[5] = 0.0;
-               tensor[6] = 0.0;
-               tensor[7] = 0.0;
-               tensor[8] = permeability_tensor[2];
-            }
+			if((permeability_model==8)&&(porosity_model==13))
+			{                                           // AB 11.2010
+				idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY");
+				tensor[0] = m_pcs_tmp->GetElementValue(index, idx_k + 1);
+				tensor[1] = 0.0;
+				tensor[2] = 0.0;
+				tensor[3] = 0.0;
+				idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_YY");
+				tensor[4] = m_pcs_tmp->GetElementValue(index, idx_k + 1);
+				tensor[5] = 0.0;
+				tensor[6] = 0.0;
+				tensor[7] = 0.0;
+				idx_k = m_pcs_tmp->GetElementValueIndex("PERMEABILITY_ZZ");
+				tensor[8] = m_pcs_tmp->GetElementValue(index, idx_k + 1);
+			}
+			else
+			{
+				tensor[0] = permeability_tensor[0];
+				tensor[1] = 0.0;
+				tensor[2] = 0.0;
+				tensor[3] = 0.0;
+				tensor[4] = permeability_tensor[1];
+				tensor[5] = 0.0;
+				tensor[6] = 0.0;
+				tensor[7] = 0.0;
+				tensor[8] = permeability_tensor[2];
+			}
 		}
 		else if(permeability_tensor_type == 2)
 		{
