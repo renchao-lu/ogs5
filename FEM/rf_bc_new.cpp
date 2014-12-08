@@ -487,6 +487,15 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 		if (line_string.find("$CONSTRAINED") != std::string::npos)
 		{
 			Constrained temp;
+
+			temp.constrainedValue=0.0;
+			temp.constrainedProcessType = FiniteElement::INVALID_PROCESS;
+			temp.constrainedPrimVar = FiniteElement::INVALID_PV;
+			temp.constrainedDirection = ConstrainedType::INVALID_CONSTRAINED_TYPE;
+			temp.constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
+			temp._isCompleteConstrained = false;
+			temp._completeConstrainedStateOff = false;
+
 			_isConstrainedBC = true;
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			std::string tempst, tempst2;
