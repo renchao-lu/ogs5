@@ -6354,6 +6354,12 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 				                 &valid) < MKleinsteZahl)
 					continue;
 
+			if(m_bc->isConstrainedBC())
+			{
+				if (checkConstrainedBC(pcs_vector, *m_bc, *m_bc_node))
+					continue;
+			}
+
 			//WX: 01.2011. for excavation bc, check if excavated and if on boundary
 			if(m_bc->getExcav() > 0)
 			{
@@ -7303,6 +7309,48 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		 */
 	}
 
+
+bool CRFProcess::checkConstrainedBC(std::vector<CRFProcess*> const & pcs_vector, CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node)
+{
+	//other process
+	for (std::size_t j=0; j<pcs_vector.size(); j++)
+	{
+		if ( pcs_vector[j]->getProcessType()== bc.getConstrainedProcessType())
+		{
+			//other variable
+			for (std::size_t k=0; k<pcs_vector[j]->GetPrimaryVNumber(); k++)
+			{
+				if (pcs_vector[j]->GetPrimaryVName(k) == bc.getConstrainedPrimVar())
+				{
+					//value of PrimVar of other process at current node
+					int nidx0 = pcs_vector[j]->GetNodeValueIndex(bc.getConstrainedPrimVar(),0);
+					double local_value = pcs_vector[j]->GetNodeValue(bc_node.geo_node_number,nidx0);
+
+					if (bc.getConstrainedDirection() == "GREATER")	//exclude greater and equal values
+					{
+						if (local_value >= bc.getConstrainedBCValue())
+						{
+							return true;
+						}
+					}
+					else if (bc.getConstrainedDirection() == "SMALLER") // exclude smaller values
+					{
+						if (local_value < bc.getConstrainedBCValue())
+						{
+							return true;
+						}
+					}
+					else
+					{
+						std::cout << "Non existing constrained BC direction given. Using normal BC." << std::endl;
+						return false;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
 
 
 	int CRFProcess::getFirstNodeBelowGWL(size_t current_node)
