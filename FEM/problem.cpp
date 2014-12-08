@@ -1246,6 +1246,9 @@ bool Problem::CouplingLoop()
 			total_processes[i]->SetDefaultTimeStepAccepted();
 			acounter++;
 			m_tim->step_current++;
+			// reset
+			total_processes[i]->iter_nlin_max = 0;
+			total_processes[i]->iter_lin_max = 0;
 		}
 		else
 		{   //21.05.2010.  WW
