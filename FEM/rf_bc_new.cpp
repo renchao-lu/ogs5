@@ -83,7 +83,7 @@ void CBoundaryConditionNode::SetNormalVector(double const*const normal_vector)
 	_normal_vector[2] = normal_vector[2];
 }
 
-double const*const CBoundaryConditionNode::GetNormalVector() const
+double const* CBoundaryConditionNode::GetNormalVector() const
 {
 	return this->_normal_vector;
 }

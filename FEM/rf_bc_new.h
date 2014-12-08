@@ -237,7 +237,7 @@ public:
 	CBoundaryConditionNode();
 
 	void SetNormalVector(double const*const normal_vector);
-	double const*const GetNormalVector() const;
+	double const* GetNormalVector() const;
 
 	// 25.08.2011. WW
 	void Read(std::istream& is);
