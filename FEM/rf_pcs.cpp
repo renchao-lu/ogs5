@@ -7313,8 +7313,15 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 
 			//check if velocity is zero
 			double magn_vel_v(MVekNorm2(&vel_v[0], 3));
-			if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
+			if (magn_vel_v < std::numeric_limits<size_t>::epsilon()*1e-10 || magn_vel_v == 0)
+			{
+				std::cout << "No constrained applied at node " << bc_node.msh_node_number
+						<< " as magnitude of velocity " << magn_vel_v
+						<< " is < than epsilon() " << std::numeric_limits<size_t>::epsilon()*1e-10
+						<< std::endl;
 				continue;
+			}
+
 
 			//nomalize velocity vector
 			NormalizeVector(&vel_v[0], 3);
