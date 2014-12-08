@@ -925,40 +925,29 @@ double CTimeDiscretization::FirstTimeStepEstimate(void)
 //	m_mfp = MFPGet("LIQUID");             //WW
 //	double density_fluid = m_mfp->Density(); //WW // TF: set, but never used
 
+	double initial_time_step = std::max(ini_time_step, min_time_step);
+
 	for (size_t n_p = 0; n_p < pcs_vector.size(); n_p++)
 	{
 		m_pcs = pcs_vector[n_p];
 		CFiniteElementStd* fem = m_pcs->GetAssembler();
 
-		time_step_length = min_time_step; // take min time step as conservative best guess for testing
+		time_step_length = initial_time_step; // take min time step as conservative best guess for testing
 		//		switch (m_pcs->pcs_type_name[0]) {
 		switch (m_pcs->getProcessType()) // TF
 		{
 		//		case 'G': // kg44 groudnwater flow ---if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
 		case FiniteElement::GROUNDWATER_FLOW:    // TF, if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
-			time_step_length = min_time_step; // take min time step as conservative best guess for testing
-			break;
-		//		case 'L': // kg44 liquid flow ---if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
 		case FiniteElement::LIQUID_FLOW:    // TF, if steady state, time step should be greater zero...transient flow does not work with adaptive stepping
-			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			time_step_length = initial_time_step; // take min time step as conservative best guess for testing
 			break;
 		//		case 'M': // kg44 Mass transport ---if steady state, time step should be greater zero..
 		case FiniteElement::HEAT_TRANSPORT:      //MW copied from MASS_TRANSPORT // TF, if steady state, time step should be greater zero..
-			time_step_length = min_time_step; // take min time step as conservative best guess for testing
-			if(time_control_type == TimeControlType::SELF_ADAPTIVE)	//MW
-			{
-				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * ini_time_step;
-
-				if (time_step_length<=min_time_step) {
-					std::cout << "-> ***ERROR*** Next time step size is less than or equal to the given minimum size. The simulation is aborted." << std::endl;
-					exit(1);
-				}
-			}
-			break;
 		case FiniteElement::MASS_TRANSPORT:      // TF, if steady state, time step should be greater zero..
-			time_step_length = min_time_step; // take min time step as conservative best guess for testing
+			time_step_length = initial_time_step; // take min time step as conservative best guess for testing
 			if(time_control_type == TimeControlType::SELF_ADAPTIVE)	//MW
 			{
+				//TODO NW->MW, this function is called only once at initial. rejected_step_count should be zero...
 				time_step_length = pow( time_adapt_coe_vector[time_adapt_coe_vector.size() - 1] , rejected_step_count ) * ini_time_step;
 
 				if (time_step_length<=min_time_step) {
