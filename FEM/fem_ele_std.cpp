@@ -5572,7 +5572,7 @@ void CFiniteElementStd::CalcAdvection()
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CRFProcess* pcs_fluid_momentum = PCSGet("FLUID_MOMENTUM");
 
-	double nodal_vel_x[10], nodal_vel_y[10], nodal_vel_z[10];
+	double *nodal_vel[3];
 	if(pcs_fluid_momentum)
 	{
 		/*
@@ -5583,11 +5583,44 @@ void CFiniteElementStd::CalcAdvection()
 		std::vector<size_t> connected_nodes;
 		this->MeshElement->getNodeIndices(connected_nodes);
 
+		for (std::size_t i(0); i < dim; i++)
+			nodal_vel[i] = new double[connected_nodes.size()];
+
 		for (std::size_t i(0); i < connected_nodes.size(); i++)
 		{
-			nodal_vel_x[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
-			nodal_vel_y[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
-			nodal_vel_z[i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+			switch (coordinate_system)
+			{
+			case 10:	// only x-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				break;
+			case 11:	// only y-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				break;
+			case 12:	// only z-direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 21:	// x & y direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				break;
+			case 22:	// x & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 23:	// y & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			case 32:	// x, y & z direction
+				nodal_vel[0][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVx);
+				nodal_vel[1][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVy);
+				nodal_vel[2][i] = pcs_fluid_momentum->GetNodeValue(connected_nodes[i], pcs_fluid_momentum->_idxVz);
+				break;
+			default:
+				std::cout << "  Invalid coordinate_system: " << coordinate_system << ". Exiting now." << std::endl;
+				exit(0);
+				break;
+			}
 		}
 	}
 
@@ -5650,40 +5683,10 @@ void CFiniteElementStd::CalcAdvection()
 		// Velocity by Fluid_Momentum - 13.11.2009  PCH
 		if(pcs_fluid_momentum)
 		{
-			switch (coordinate_system)
-			{
-			case 10:	// only x-direction
-				vel[0] = mat_factor * interpolate(nodal_vel_x);
-				break;
-			case 11:	// only y-direction
-				vel[0] = mat_factor * interpolate(nodal_vel_y);
-				break;
-			case 12:	// only z-direction
-				vel[0] = mat_factor * interpolate(nodal_vel_z);
-				break;
-			case 21:	// x & y direction
-				vel[0] = mat_factor * interpolate(nodal_vel_x);
-				vel[1] = mat_factor * interpolate(nodal_vel_y);
-				break;
-			case 22:	// x & z direction
-				vel[0] = mat_factor * interpolate(nodal_vel_x);
-				vel[1] = mat_factor * interpolate(nodal_vel_z);
-				break;
-			case 23:	// y & z direction
-				vel[0] = mat_factor * interpolate(nodal_vel_y);
-				vel[1] = mat_factor * interpolate(nodal_vel_z);
-				break;
-			case 32:	// x, y & z direction
-				vel[0] = mat_factor * interpolate(nodal_vel_x);
-				vel[1] = mat_factor * interpolate(nodal_vel_y);
-				vel[2] = mat_factor * interpolate(nodal_vel_z);
-				break;
-			default:
-				std::cout << "  Invalid coordinate_system: " << coordinate_system << ". Exiting now." << std::endl;
-				exit(0);
-				break;
-			}
+			for (std::size_t i(0); i < dim; i++)
+				vel[i] = mat_factor * interpolate(nodal_vel[i]);
 		}
+
 
 #if defined(USE_PETSC) //|| defined (other parallel solver)
 		for (i = 0; i < act_nodes; i++)
