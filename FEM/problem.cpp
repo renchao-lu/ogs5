@@ -139,7 +139,7 @@ Problem::Problem (char* filename) :
 	bool validMatID = true;
 	if (fem_msh_vector.size()==1) {
 		size_t max_matId = MSHGetMaxPatchIndex(fem_msh_vector[0]);
-		validMatID = (max_matId+1==mmp_vector.size());
+		validMatID = (max_matId+1<=mmp_vector.size());
 	} else {
 		int g_max_mmp_groups = MSHSetMaxMMPGroups();
 		validMatID = !(g_max_mmp_groups > (int)mmp_vector.size());
