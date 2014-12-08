@@ -7228,6 +7228,65 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		 */
 	}
 
+
+
+	int CRFProcess::getFirstNodeBelowGWL(size_t current_node)
+	{
+		//searches for PRESSURE1<0 and returns the node below or above node i
+
+		int sorted_node(-1);
+		for (size_t i(0);i<this->m_msh->sorted_nodes.size();i++)
+		{
+			if (current_node == this->m_msh->sorted_nodes[i])
+			{
+				sorted_node=i;
+				break;
+			}
+		}
+
+		const int val_idx=this->GetNodeValueIndex("PRESSURE1",true);
+		int new_GWL_st_node(-1);
+
+		for(size_t k(1);k<this->m_msh->xy_change.size();k++)	//look for range of xy-coordinates
+		{
+			const long node_id = this->m_msh->xy_change[k];
+			if(node_id >= sorted_node)	//found range
+			{
+				
+				new_GWL_st_node=this->m_msh->sorted_nodes[this->m_msh->xy_change[k-1]+1];		//set to bottom node first
+
+				if(this->GetNodeValue(this->m_msh->sorted_nodes[node_id],val_idx) > 0)	//top node has p>0
+				{
+					new_GWL_st_node=this->m_msh->sorted_nodes[node_id];	//return top node id
+					break;
+				}
+				else
+				{
+					for(size_t j(node_id-1);j>this->m_msh->xy_change[k-1]+1;j--)	//look in range from top to bottom (but skip top node)
+					{
+						
+						if(this->GetNodeValue(this->m_msh->sorted_nodes[j],val_idx) > 0)	//look for first node with p>0
+						{
+							new_GWL_st_node=this->m_msh->sorted_nodes[j-1];	//for p<0, return node id two nodes below gwl
+							break;
+						}
+					}
+				}
+				break;
+			}
+
+		}
+
+		return new_GWL_st_node;
+	}
+
+
+
+
+
+
+
+
 /**************************************************************************
    FEMLib-Method:
    Task: PCS source terms into EQS
@@ -7407,6 +7466,15 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 
 		for (i = begin; i < end; i++)
 		{
+
+			// MW Recharge applied at GW Surface (p>0), tested only with LIQUID_FLOW or RICHARDS_FLOW and mmp  $PERMEABILITY_SATURATION = 10
+			if(st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE)
+			{
+				st_node_value[i]->msh_node_number=getFirstNodeBelowGWL(st_node_value[i]->msh_node_number);
+				st_node_value[i]->geo_node_number=st_node_value[i]->msh_node_number;
+			}
+
+
 			gindex = i;
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 			if (rank > -1)

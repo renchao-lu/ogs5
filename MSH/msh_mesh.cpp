@@ -136,6 +136,8 @@ CFEMesh::CFEMesh(GEOLIB::GEOObjects* geo_obj, std::string* geo_name) :
 	mapping_check = false; //23.01.2009 WW
 	has_multi_dim_ele = false; //NW
 	top_surface_checked = false; // 07.06.2010.  WW
+
+	nodes_are_sorted=false;
 }
 
 // Copy-Constructor for CFEMeshes.

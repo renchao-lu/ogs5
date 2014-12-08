@@ -464,6 +464,10 @@ public:
 
 	CFluidMomentum* fm_pcs;                   // by PCH
 
+	std::vector<size_t>sorted_nodes;
+	std::vector<size_t>xy_change;
+	bool nodes_are_sorted;
+
 	/// Import MODFlow grid. 10.2009 WW
 	void ImportMODFlowGrid(std::string const & fname);
 	/// Convert raster cells into grid. 12.2009 WW

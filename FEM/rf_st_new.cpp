@@ -616,6 +616,15 @@ if (this->getProcessDistributionType() == FiniteElement::CLIMATE)
 	  delete stations;
    }
 
+
+   if (this->getProcessDistributionType() == FiniteElement::RECHARGE)
+   {
+	   dis_type_name = "RECHARGE";
+	   in >> geo_node_value;
+	   in.clear();
+   }
+
+
 }
 
 
@@ -1086,6 +1095,11 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
 			// MSH types //OK4310
 			if(source_term->msh_type_name.compare("NODE")==0)
 				source_term->SetNOD();
+
+
+			if (source_term->getProcessDistributionType()==FiniteElement::RECHARGE)	//MW
+				MshEditor::sortNodesLexicographically(m_pcs->m_msh);
+
          }                                        // end pcs name & pv
       }                                           // end st loop
    }                                              // end msh
@@ -1580,7 +1594,9 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
    double nodesFVal[8];
 
    bool Const = false;
-   if (this->getProcessDistributionType() == FiniteElement::CONSTANT || this->getProcessDistributionType() == FiniteElement::CONSTANT_NEUMANN)
+   if (this->getProcessDistributionType() == FiniteElement::CONSTANT 
+		   || this->getProcessDistributionType() == FiniteElement::CONSTANT_NEUMANN
+		   || this->getProcessDistributionType() == FiniteElement::RECHARGE)	//MW
       //	if (dis_type_name.find("CONSTANT") != std::string::npos)
       Const = true;
    //----------------------------------------------------------------------
@@ -3068,6 +3084,12 @@ const int ShiftInNodeVector)
 
 		
    }
+
+   if (st->getProcessDistributionType()==FiniteElement::RECHARGE)	//MW
+   {
+	   nod_val->setProcessDistributionType (st->getProcessDistributionType());
+   }
+
    //WW        group_vector.push_back(m_node_value);
    //WW        st_group_vector.push_back(st); //OK
    pcs->st_node_value.push_back(nod_val);         //WW
@@ -3611,7 +3633,8 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 	}
 	if (distype == FiniteElement::CONSTANT_NEUMANN
 			|| distype == FiniteElement::LINEAR_NEUMANN
-			|| distype == FiniteElement::GREEN_AMPT)
+			|| distype == FiniteElement::GREEN_AMPT
+			|| distype==FiniteElement::RECHARGE)	//MW
 	{
 		if (m_msh->GetMaxElementDim() == 1) // 1D  //WW MB
 			st->DomainIntegration(m_msh, ply_nod_vector,
@@ -3653,6 +3676,14 @@ void CSourceTermGroup::SetPolylineNodeValueVector(CSourceTerm* st,
 
 	if (st->isCoupled() && st->node_averaging)
 		AreaAssembly(st, ply_nod_vector_cond, ply_nod_val_vector);
+
+	if (distype==FiniteElement::RECHARGE)	//MW
+	{
+		CRFProcess* m_pcs = PCSGet(pcs_type_name);
+		MshEditor::sortNodesLexicographically(m_pcs->m_msh);
+
+		st->setProcessDistributionType (st->getProcessDistributionType());
+	}
 }
 
 
@@ -3741,9 +3772,11 @@ void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* st,
    // neumann, Green-Ampt, Philip
    //	if (st->dis_type == 3 || st->dis_type == 4 || st->dis_type == 10
    //				|| st->dis_type == 11) {
-                                                  /*|| st->getProcessDistributionType() == PHILIP */
-   if (st->getProcessDistributionType() == FiniteElement::CONSTANT_NEUMANN || st->getProcessDistributionType() == FiniteElement::LINEAR_NEUMANN
-      || st->getProcessDistributionType() == FiniteElement::GREEN_AMPT)
+   /*|| st->getProcessDistributionType() == PHILIP */
+   if (st->getProcessDistributionType() == FiniteElement::CONSTANT_NEUMANN
+		   || st->getProcessDistributionType() == FiniteElement::LINEAR_NEUMANN
+		   || st->getProcessDistributionType() == FiniteElement::GREEN_AMPT
+		   || st->getProcessDistributionType() == FiniteElement::RECHARGE)
    {
       if (m_msh->GetMaxElementDim() == 2)         // For all meshes with 1-D or 2-D elements
          st->DomainIntegration(m_msh, sfc_nod_vector, sfc_nod_val_vector);

@@ -372,6 +372,8 @@ DistributionType convertDisType(const std::string& dis_type_string)
 		return NODESCONSTANT;
 	if (dis_type_string.compare("CLIMATE") == 0)
 		return CLIMATE;
+	if (dis_type_string.compare("RECHARGE") == 0)	//MW
+			return RECHARGE;
 	if (dis_type_string.compare("FUNCTION") == 0)
 		return FUNCTION;                              //24.08.2011. WW
 	if (dis_type_string.compare("TRANSFER_SURROUNDING") == 0)
@@ -423,6 +425,8 @@ std::string convertDisTypeToString(DistributionType dis_type)
 		return "DOMAIN";
 	if (dis_type == CLIMATE)
 		return "CLIMATE";
+	if (dis_type == RECHARGE)	//MW
+			return "RECHARGE";
 	if (dis_type == FUNCTION)
 		return "FUNCTION";         //24.08.2011. WW
 	if (dis_type == TRANSFER_SURROUNDING)

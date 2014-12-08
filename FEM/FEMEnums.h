@@ -193,6 +193,7 @@ const std::list<std::string> getAllPrimaryVariableNames();
 	TRANSFER_SURROUNDING,
 	NODESCONSTANT,                        // IC (for DOMAIN keyword)
 	CLIMATE,	// climate data (by NB)
+	RECHARGE,	// MW
 	// Sort of Neumann BC //WW
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
 	// make sure that this is always the last entry (important for iterating over the enum entries)!
