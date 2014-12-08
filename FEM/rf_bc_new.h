@@ -141,6 +141,7 @@ public:
 	bool isConstrainedBC() const {return constrainedBC;}
 	FiniteElement::ProcessType getConstrainedProcessType() const {return constrainedProcessType;}
 	FiniteElement::PrimaryVariable getConstrainedPrimVar() const {return constrainedPrimVar;}
+	FiniteElement::ConstrainedVariable getConstrainedVariable() const { return constrainedVariable; }
 	double getConstrainedBCValue() const {return constrainedBCValue;}
 	ConstrainedBCType::type getConstrainedDirection() const {return constrainedDirection;}
 
@@ -236,7 +237,7 @@ public:
 	CBoundaryConditionNode();
 
 	void SetNormalVector(double const*const normal_vector);
-	double const*const GetNormalVector();
+	double const*const GetNormalVector() const;
 
 	// 25.08.2011. WW
 	void Read(std::istream& is);

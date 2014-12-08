@@ -13,6 +13,7 @@
 #include "Matrix.h"
 #include "Vector3.h"
 #include "GaussAlgorithm.h"
+#include "mathlib.h"
 
 namespace GEOLIB
 {
@@ -129,6 +130,9 @@ void Triangle::calculateNormal()
 	const double v1[3] = { b[0] - a[0], b[1] - a[1], b[2] - a[2] };
 	const double v2[3] = { c[0] - a[0], c[1] - a[1], c[2] - a[2] };
 	MathLib::crossProd(v1, v2, _normal_vector);
+
+	//normalize normal vector
+	NormalizeVector(_normal_vector, 3);
 }
 
 

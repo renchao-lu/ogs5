@@ -130,7 +130,7 @@ double const* Surface::getTriangleNormal(const std::size_t triangle_id) const
 	return _sfc_triangles[triangle_id]->getNormal();
 }
 
-std::size_t Surface::getTriangleIDOfPoint(const double* pnt) const
+int Surface::getTriangleIDOfPoint(const double* pnt) const
 {
 	for (std::size_t i = 0; i < this->_sfc_triangles.size(); i++)
 	{
