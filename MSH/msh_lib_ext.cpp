@@ -21,6 +21,8 @@
 //#endif
 #include <sstream>
 
+#include "StringTools.h"
+
 #ifdef USEPETSC34
 #include "petsctime.h"
 #endif
@@ -50,13 +52,8 @@ void FEMRead(const string& file_base_name,
    PetscGetTime(&v1);
 #endif
 
- 
     // 
-    string s_msize;
-    stringstream ss;
-    ss << msize;
-    ss >> s_msize;
-    ss.clear();
+    string s_msize = number2str(msize);
 
     string fname_new_base;
     MPI_File fh;
