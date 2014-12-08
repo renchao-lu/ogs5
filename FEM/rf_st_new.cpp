@@ -911,13 +911,8 @@ void CSourceTerm::Write(std::fstream* st_file)
    *st_file << convertPrimaryVariableToString (getProcessPrimaryVariable()) << "\n";
    //--------------------------------------------------------------------
    //GEO_TYPE
-   if (this->getProcessDistributionType() != FiniteElement::DIRECT)
-   {
-	   *st_file << " $GEO_TYPE" << "\n";
-	   *st_file << "  ";
-	   *st_file << getGeoTypeAsString() << " " << geo_name << "\n";
-   }
-   if (this->getProcessDistributionType() != FiniteElement::RECHARGE_DIRECT)
+   if (this->getProcessDistributionType() != FiniteElement::DIRECT
+		   || this->getProcessDistributionType() != FiniteElement::RECHARGE_DIRECT)
    {
 	   *st_file << " $GEO_TYPE" << "\n";
 	   *st_file << "  ";
@@ -963,8 +958,6 @@ void CSourceTerm::Write(std::fstream* st_file)
          }
          break;
       case  FiniteElement::DIRECT:
-         *st_file << " " << this->fname << "\n";
-         break;
       case  FiniteElement::RECHARGE_DIRECT:
     	  *st_file << " " << this->fname << "\n";
     	  break;
