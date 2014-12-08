@@ -28,7 +28,6 @@
 using namespace std;
 using namespace MeshLib;
 
-
 void BuildNodeStruc(MeshNodes *anode, MPI_Datatype *MPI_Node_ptr);
 
 
@@ -117,11 +116,11 @@ void FEMRead_BIN(const int msize, const int mrank,
   //2 ong size_sbd_nodes_h = 0;
   //3 long size_sbd_elems = 0;
   //4 long size_g_elems = 0;
-  const int nheaders = 13;
-  long mesh_header[ nheaders];
+  const MyInt nheaders = 13;
+  MyInt mesh_header[ nheaders];
  
   MeshNodes *s_nodes = 0;  
-  long *elem_info = 0;
+  MyInt *elem_info = 0;
 
   // 
   string s_msize;
@@ -155,7 +154,7 @@ void FEMRead_BIN(const int msize, const int mrank,
 
   //
   offset_new = 0;
-  offset_new = mrank * nheaders * sizeof(long);
+  offset_new = mrank * nheaders * sizeof(MyInt);
   MPI_File_set_view(fh, offset_new, MPI_LONG, MPI_LONG,  &ftype[0], MPI_INFO_NULL);
   MPI_File_read(fh, mesh_header, nheaders, MPI_LONG, MPI_STATUS_IGNORE); //_all
   MPI_File_close(&fh);
@@ -204,10 +203,10 @@ void FEMRead_BIN(const int msize, const int mrank,
   }   
 
 
-  long size_elem_info =   mesh_header[2] + mesh_header[8];
-  elem_info = (long *)realloc(elem_info, sizeof(long) * size_elem_info );
+  MyInt size_elem_info =   mesh_header[2] + mesh_header[8];
+  elem_info = (MyInt *)realloc(elem_info, sizeof(MyInt) * size_elem_info );
   offset_new =  mesh_header[11];
-  MPI_File_set_view(fh, offset_new, MPI_LONG, MPI_LONG,  &ftype[0], MPI_INFO_NULL);
+  MPI_File_set_view(fh, offset_new, MPI_LONG, MPI_LONG, &ftype[0], MPI_INFO_NULL);
   MPI_File_read(fh, elem_info, size_elem_info, MPI_LONG, MPI_STATUS_IGNORE); 
   MPI_File_close(&fh);
 
@@ -233,7 +232,7 @@ void FEMRead_BIN(const int msize, const int mrank,
 
 
   size_elem_info =   mesh_header[3] + mesh_header[9];
-  elem_info = (long *)realloc(elem_info, sizeof(long) * size_elem_info );
+  elem_info = (MyInt *)realloc(elem_info, sizeof(MyInt) * size_elem_info );
   offset_new =  mesh_header[12];
   MPI_File_set_view(fh, offset_new, MPI_LONG, MPI_LONG,  &ftype[0], MPI_INFO_NULL);
   MPI_File_read(fh, elem_info, size_elem_info, MPI_LONG, MPI_STATUS_IGNORE); 
@@ -551,7 +550,7 @@ namespace MeshLib
     
    WW. 02~03.2012
 */
-void CFEMesh::setSubdomainNodes(long *header, const MeshNodes *s_nodes)
+void CFEMesh::setSubdomainNodes(MyInt *header, const MeshNodes *s_nodes)
 {
   int k;
 
@@ -583,16 +582,16 @@ void CFEMesh::setSubdomainNodes(long *header, const MeshNodes *s_nodes)
    @param inside :    indicator for inside domain   
    WW. 02~03.2012
 */
-void CFEMesh::setSubdomainElements(long *header, const long *elem_info, const bool inside )
+void CFEMesh::setSubdomainElements(MyInt *header, const MyInt *elem_info, const bool inside )
 {
-  long i; 
-  long k;
-  long counter;
+  MyInt i; 
+  MyInt k;
+  MyInt counter;
   int mat_idx;
   int e_type;
   int nnodes;
 
-  long ne = 0;
+  MyInt ne = 0;
   if(inside)
     ne = header[2];
   else
