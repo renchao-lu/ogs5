@@ -8,3 +8,4 @@ struct Constrained {
 	ConstrainedType::type constrainedDirection;
 	ConstrainedVariable::type constrainedVariable;
 };
+

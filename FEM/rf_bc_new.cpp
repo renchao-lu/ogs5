@@ -73,7 +73,7 @@ CBoundaryConditionNode::CBoundaryConditionNode()
 {
 	conditional = false;
 	for (std::size_t i = 0; i < 3; i++)
-	_normal_vector[i] = 0;
+		_normal_vector[i] = 0;
 }
 
 void CBoundaryConditionNode::SetNormalVector(double const*const normal_vector)
@@ -142,9 +142,9 @@ CBoundaryCondition::CBoundaryCondition() :
 	bcExcav = -1;                         //WX
 	MatGr = -1;                           //WX
 	NoDispIncre = -1;								//WX:12.2012
-    gradient_ref_depth = 0;             //CB
-    gradient_ref_depth_value = 0;       //CB
-    gradient_ref_depth_gradient = 0;    //CB
+	gradient_ref_depth = 0;             //CB
+	gradient_ref_depth_value = 0;       //CB
+	gradient_ref_depth_gradient = 0;    //CB
 	pressure_as_head = -1;
 	pressure_as_head_density = 0;
 	_isConstrainedBC = false;
