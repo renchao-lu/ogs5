@@ -7348,8 +7348,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 				if (pcs->GetPrimaryVName(k) == FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar))
 				{
 					//value of PrimVar of other process at current node
-					int nidx0 = pcs->GetNodeValueIndex(FiniteElement::convertPrimaryVariableToString(local_constrained.constrainedPrimVar), 0);
-					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, nidx0);
+					double local_value = pcs->GetNodeValue(bc_node.geo_node_number, k);
 
 					if (local_constrained.constrainedDirection == ConstrainedType::GREATER)	//exclude greater and equal values
 					{
