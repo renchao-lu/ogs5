@@ -591,7 +591,9 @@ private:
 
 	void CreateLineElementsFromMarkedEdges(CFEMesh* m_msh_ply,
 	                                       std::vector<long> &ele_vector_at_ply); //NW
-	void findNodesInTriangle(const double area_orig, const double tol,
+  
+        /// Find nodes in convex polygon
+	void findNodesInPolygon(const double area_orig, const double tol,
 				 const size_t start_id, const size_t end_id, 
 				 const CGLPolyline *ply, 
 				 std::vector<long> &node_id_vector) const;
