@@ -909,7 +909,6 @@ private:
 	// method to check on constrained boundary conditions
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node);
 	void getNodeVelocityVector(const long node_id, double * vel_nod);
-	double calcVelMagn(double const * const vel_v);
 
 };
 
