@@ -1398,8 +1398,16 @@ bool Problem::CouplingLoop()
 			std::cout << "\n";
 	    }
 		// Coupling convergence criteria
-		if(max_outer_error <= 1.0 && outer_index+2 > cpl_overall_min_iterations) // JT: error is relative to the tolerance.
+		//if(max_outer_error <= 1.0 && outer_index+2 > cpl_overall_min_iterations) // JT: error is relative to the tolerance.	//MW outer_index + 2 is hard to follow - is it faster to write it like this?
+	    if(max_outer_error <= 1.0 && outer_index+1 >= cpl_overall_min_iterations) // JT: error is relative to the tolerance.
 			break;
+
+	    //MW
+	    if(max_outer_error > 1 && outer_index+1 == cpl_overall_max_iterations)	//m_tim->step_current>1 &&
+	    {
+	    	accept = false;
+	    	break;
+	    }
 	}
 	//
 	return accept;

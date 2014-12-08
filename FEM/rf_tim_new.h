@@ -89,6 +89,10 @@ public:
 	double multiply_coef;                 //YD
 	double max_time_step;                 //YD
 	double min_time_step;
+	double ini_time_step;
+	bool coupled_adapt_tim_step;	//MW
+
+
 	//
 	//WW double minish; // JOD
 	//WW int sub_steps; // JOD 4.7.10
@@ -130,6 +134,7 @@ public:
 	double ErrorControlAdaptiveTimeControl();
 	double NeumannTimeControl();
 	double SelfAdaptiveTimeControl();
+	double SelfAdaptiveTimeControl_Coupled();
 	double DynamicVariableTimeControl(); //JT2012
 	double DynamicTimeSmoothing(double suggested_time_step_change);		//JT2012
 	//
