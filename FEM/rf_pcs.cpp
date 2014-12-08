@@ -7519,7 +7519,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		{
 
 			// MW Recharge applied at GW Surface (p>0), tested only with LIQUID_FLOW or RICHARDS_FLOW and mmp  $PERMEABILITY_SATURATION = 10
-			if(st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE)
+			if(st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE
+					|| st_node_value[i]->getProcessDistributionType()==FiniteElement::RECHARGE_DIRECT)
 			{
 				st_node_value[i]->msh_node_number=getFirstNodeBelowGWL(st_node_value[i]->msh_node_number);
 				st_node_value[i]->geo_node_number=st_node_value[i]->msh_node_number;

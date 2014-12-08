@@ -180,6 +180,7 @@ const std::list<std::string> getAllPrimaryVariableNames();
 	CONSTANT_NEUMANN,                     // ST
 	CRITICALDEPTH,                        // ST
 	DIRECT,
+	RECHARGE_DIRECT,
 	FUNCTION,
 	GRADIENT,                             // IC
 	GREEN_AMPT,                           // ST

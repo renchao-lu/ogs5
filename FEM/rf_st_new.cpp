@@ -129,7 +129,8 @@ CSourceTerm::CSourceTerm(const SourceTerm* st)
 			this->DistribedBC.push_back(dis_values[i]);
 		}
 	}
-	else if (this->getProcessDistributionType() == FiniteElement::DIRECT)
+	else if (this->getProcessDistributionType() == FiniteElement::DIRECT
+			|| this->getProcessDistributionType() == FiniteElement::RECHARGE_DIRECT)
 	{
 		// variable "fname" needs to be set, this must be done from outside!
 	}
@@ -557,9 +558,16 @@ void CSourceTerm::ReadDistributionType(std::ifstream *st_file)
       in.clear();
    }
    // Soure terms are assign to element nodes directly. 23.02.2009. WW
-   if(dis_type_name.find("DIRECT")!=std::string::npos)
+   if (this->getProcessDistributionType() == FiniteElement::DIRECT)
    {
       dis_type_name = "DIRECT";
+      in >> fname;
+      fname = FilePath+fname;
+      in.clear();
+   }
+   if (this->getProcessDistributionType() == FiniteElement::RECHARGE_DIRECT)
+   {
+      dis_type_name = "RECHARGE_DIRECT";
       in >> fname;
       fname = FilePath+fname;
       in.clear();
@@ -909,6 +917,12 @@ void CSourceTerm::Write(std::fstream* st_file)
 	   *st_file << "  ";
 	   *st_file << getGeoTypeAsString() << " " << geo_name << "\n";
    }
+   if (this->getProcessDistributionType() != FiniteElement::RECHARGE_DIRECT)
+   {
+	   *st_file << " $GEO_TYPE" << "\n";
+	   *st_file << "  ";
+	   *st_file << getGeoTypeAsString() << " " << geo_name << "\n";
+   }
    //--------------------------------------------------------------------
    // TIM_TYPE
    if (tim_type_name.size() > 0)                  //OK
@@ -951,6 +965,9 @@ void CSourceTerm::Write(std::fstream* st_file)
       case  FiniteElement::DIRECT:
          *st_file << " " << this->fname << "\n";
          break;
+      case  FiniteElement::RECHARGE_DIRECT:
+    	  *st_file << " " << this->fname << "\n";
+    	  break;
       default:
          std::cerr << "this distributition type is not handled in CSourceTerm::Write" << "\n";
    }
@@ -1052,10 +1069,17 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
              if ( cp_vec[source_term->getProcessCompVecIndex()]->getProcess() != m_pcs ) //CB cannot match CONCENTRATION with comp name!!
                  continue;
           //-- 23.02.3009. WW
-         if (source_term->getProcessDistributionType()==FiniteElement::DIRECT || source_term->getProcessDistributionType()==FiniteElement::CLIMATE)
+         if (source_term->getProcessDistributionType()==FiniteElement::DIRECT
+        		 || source_term->getProcessDistributionType()==FiniteElement::CLIMATE)
 		 { //NB For climate ST, the source terms (recharge in this case) will also be assigned directly to surface nodes
            source_term->DirectAssign(ShiftInNodeVector);
            continue;
+         }
+
+         if (source_term->getProcessDistributionType()==FiniteElement::RECHARGE_DIRECT)
+         {
+        	 source_term->DirectAssign(ShiftInNodeVector);
+        	 set = true;
          }
 		 
          //CB cannot match CONCENRATION with comp name!!
@@ -1097,7 +1121,8 @@ void CSourceTermGroup::Set(CRFProcess* m_pcs, const int ShiftInNodeVector,
 				source_term->SetNOD();
 
 
-			if (source_term->getProcessDistributionType()==FiniteElement::RECHARGE)	//MW
+			if (source_term->getProcessDistributionType()==FiniteElement::RECHARGE
+					|| source_term->getProcessDistributionType()==FiniteElement::RECHARGE_DIRECT)	//MW
 				MshEditor::sortNodesLexicographically(m_pcs->m_msh);
 
          }                                        // end pcs name & pv
