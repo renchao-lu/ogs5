@@ -394,7 +394,8 @@ CRFProcess::~CRFProcess(void)
 {
 #ifdef USE_PETSC
        if(myrank == 0)
-           PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total Wall clock time in assembling (with PETSC):%f s\n",cpu_time_assembly);
+	 PetscPrintf(PETSC_COMM_WORLD,"\t\n>>Total Wall clock time in the assembly for %s (with PETSC):%f s\n", 
+		     FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str(), cpu_time_assembly);
   
 #endif
 	long i;
@@ -518,6 +519,8 @@ CRFProcess::~CRFProcess(void)
 		delete m_solver;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//10.3012. WW
+        PetscPrintf(PETSC_COMM_WORLD,"\n>>PETSc solver info for %s :\n",\
+                    FiniteElement::convertProcessTypeToString(this->getProcessType()).c_str());
 	delete eqs_new;
         eqs_new = NULL;
 #endif

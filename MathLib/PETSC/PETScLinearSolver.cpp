@@ -35,8 +35,8 @@ PETScLinearSolver:: ~PETScLinearSolver()
   if(global_x)
     delete []  global_x;
 
-  PetscPrintf(PETSC_COMM_WORLD,"\n>>Number of Unknows: %d", m_size);
-  PetscPrintf(PETSC_COMM_WORLD,"\n>>Elapsed time in linear solver: %fs", time_elapsed);
+  PetscPrintf(PETSC_COMM_WORLD,"\tNumber of Unknows: %d", m_size);
+  PetscPrintf(PETSC_COMM_WORLD,"\n\tElapsed time in linear solver: %f s\n", time_elapsed);
 }
 
 void PETScLinearSolver::Init(const int *sparse_index)

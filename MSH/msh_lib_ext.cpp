@@ -293,7 +293,7 @@ void FEMRead_ASCII(const int msize, const int mrank,
   
   if(mrank == 0)
   {      
-     str_var = file_base_name+"_partitioned_msh_cfg"+ s_msize + ".msh"; // "_partitioned.msh"; 
+     str_var = file_base_name+"_partitioned_cfg"+ s_msize + ".msh"; // "_partitioned.msh"; 
      is_cfg.open(str_var.c_str());
      if( !is_cfg.good() )
      {
@@ -335,22 +335,10 @@ void FEMRead_ASCII(const int msize, const int mrank,
   CFEMesh *mesh = new CFEMesh(geo_obj, unique_name);
   mesh_vec.push_back(mesh);
 
-
   for(int i=0; i<msize; i++)
   {
     if(mrank == 0)
     {
-       
-#ifdef MULTI_MESH_FILE 
-       ss.clear(); 
-       ss.str("");
-       ss<<i;
-       str_var = file_base_name+"_"+ss.str()+".msh";
-   
-       is.open(str_var.c_str()); 
-       getline(is, str_var);  
-#endif     
-
       cout<<"-->Parallel reading the partitioned mesh: "<<i<<endl;
      
       for(int j=0; j< nheaders; j++)                   
@@ -358,6 +346,7 @@ void FEMRead_ASCII(const int msize, const int mrank,
        is_cfg >> ws;
     }
     MPI_Bcast(mesh_header,  nheaders, MPI_LONG, 0, MPI_COMM_WORLD);
+
     //cout<<"\ncccccccccc "<<mesh_header[0]<<"    "<<mesh_header[1]
     //	<<"   " <<mesh_header[2]<<"  "<<mesh_header[3]<<endl;
  
@@ -379,18 +368,6 @@ void FEMRead_ASCII(const int msize, const int mrank,
 	  is_node >> anode->x >> anode->y >> anode->z >> ws;	  	                     
        }
      
-       /* 
-	 //TEST
-       for(k=0; k<mesh_header[0]; k++)
-       {
-          MeshNodes *anode = &s_nodes[k];
-          cout<<anode->index<<" ";
-	  
- 	  cout<<anode->x<<" "<<anode->y<<" "<<anode->z<<endl;
-
-        }
-       */
-         
       if(i==0)
       { 
 	 mesh->setSubdomainNodes(&mesh_header[0], s_nodes); 
@@ -407,19 +384,6 @@ void FEMRead_ASCII(const int msize, const int mrank,
       {
          MPI_Recv(s_nodes, mesh_header[0], MPI_node, 0, tag[0], MPI_COMM_WORLD, &status); 
          mesh->setSubdomainNodes(mesh_header, s_nodes); 
-
-         /*
-	 //TEST
-       for(k=0; k<mesh_header[0]; k++)
-       {
-          MeshNodes *anode = &s_nodes[k];
-          cout<<anode->index<<" ";
-	  
- 	  cout<<anode->x<<" "<<anode->y<<" "<<anode->z<<endl;
-
-        }
-	 */
-
       }
 	  
     } 
