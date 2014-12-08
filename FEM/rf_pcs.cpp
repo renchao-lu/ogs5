@@ -7337,11 +7337,11 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 		
 
 		//select case to handle BC
-		if (scalar_prod <= 1 && scalar_prod >= 0)	// velocity vector points in same direction as bc surface normal
+		if (scalar_prod <= 1.01 && scalar_prod >= 0)	// velocity vector points in same direction as bc surface normal
 		{
 			return false;	//continue with normal BC
 		}
-		else if (scalar_prod < 0 && scalar_prod >= -1)	// velocity vector and bc surface normal point in opposite directions
+		else if (scalar_prod < 0 && scalar_prod >= -1.01)	// velocity vector and bc surface normal point in opposite directions
 		{
 			return true;	//do not apply BC (maybe later implementation: change BC to ST at this node)
 		}
@@ -7375,10 +7375,16 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 					if (local_value < bc.getConstrainedBCValue())
 						return true;
 				}
+				else
+					return false;
 			}
 		}
 	}
-	std::cout << "Non existing combination for constrained BC direction given. Using normal BC." << std::endl;
+	else
+	{
+		std::cout << "Non existing combination for constrained BC direction given. Using normal BC." << std::endl;
+		return false;
+	}
 	return false;
 }
 
