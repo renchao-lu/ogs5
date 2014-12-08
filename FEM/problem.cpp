@@ -3018,13 +3018,16 @@ inline double Problem::MassTrasport()
 		{
 			int nidx0 = m_pcs->GetNodeValueIndex("CONCENTRATION1",0);
 			CRFProcess *local_richards_flow = PCSGet("PRESSURE1",true);
-			int nidx1 = local_richards_flow->GetNodeValueIndex("PRESSURE1",0);
-			for (int j=0; j<m_pcs->m_msh->GetNodesNumber(false);j++)
+			if (local_richards_flow != NULL)
 			{
-				double local_conc = m_pcs->GetNodeValue(j,nidx0+1);
-				double local_pressure = local_richards_flow->GetNodeValue(j,nidx1+1);
-				if (local_pressure < 0 && local_conc < 0)
-					m_pcs->SetNodeValue(j,nidx0+1,0);
+				int nidx1 = local_richards_flow->GetNodeValueIndex("PRESSURE1",0);
+				for (int j=0; j<m_pcs->m_msh->GetNodesNumber(false);j++)
+				{
+					double local_conc = m_pcs->GetNodeValue(j,nidx0+1);
+					double local_pressure = local_richards_flow->GetNodeValue(j,nidx1+1);
+					if (local_pressure < 0 && local_conc < 0)
+						m_pcs->SetNodeValue(j,nidx0+1,0);
+				}
 			}
 		}
 
