@@ -5,7 +5,7 @@
 #include "FEMEnums.h"
 
 struct Constrained {
-	double constrainedBCValue;
+	double constrainedValue;
 	FiniteElement::ProcessType constrainedProcessType;
 	FiniteElement::PrimaryVariable constrainedPrimVar;
 	ConstrainedType::type constrainedDirection;

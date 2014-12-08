@@ -441,8 +441,7 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
 		  in.str(readNonBlankLineFromInputStream(*st_file));
 		  std::string tempst;
 
-		  in >> tempst;
-
+		  in >> tempst;	//PROCESS_TYPE associated with PRIMARY_VARIABLE
 		  temp.constrainedProcessType = FiniteElement::convertProcessType(tempst);
 		  if (!(temp.constrainedProcessType == FiniteElement::MASS_TRANSPORT ||
 			  temp.constrainedProcessType == FiniteElement::HEAT_TRANSPORT ||
@@ -452,12 +451,12 @@ std::ios::pos_type CSourceTerm::Read(std::ifstream *st_file,
 			  break;
 		  }
 
-		  in >> tempst;
+		  in >> tempst;	//PRIMARY_VARIABLE to be constrained
 		  temp.constrainedPrimVar = FiniteElement::convertPrimaryVariable(tempst);
 
-		  in >> temp.constrainedBCValue;
+		  in >> temp.constrainedValue;	//Constrained Value
 
-		  in >> tempst;
+		  in >> tempst;	//Constrain direction (greater/smaller than value)
 		  temp.constrainedDirection = convertConstrainedType(tempst);
 		  temp.constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
 		  if (!(temp.constrainedDirection == ConstrainedType::SMALLER || temp.constrainedDirection == ConstrainedType::GREATER))
