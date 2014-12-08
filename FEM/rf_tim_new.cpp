@@ -1278,14 +1278,6 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 #ifdef GEM_REACT
 	my_max_time_step = MMin(max_time_step,MaxTimeStep());
 	std::cout << "Self_Adaptive Time Step: max time step " << my_max_time_step << "\n";
-#else
-// kg44 This does not work in this way with multiple mass tranport processes!
-//	if ( repeat )
-//	{
-//		std::cout << "   TIM step is repeated" << "\n";
-//		m_pcs = PCSGet ( pcs_type_name );
-//		m_pcs->PrimaryVariableReload();
-//	}
 #endif
 
 	// get iteration number
