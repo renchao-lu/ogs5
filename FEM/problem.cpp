@@ -1410,7 +1410,6 @@ void Problem::PostCouplingLoop()
 	if (total_processes[12])
 	{
 		CRFProcessDeformation* dm_pcs = (CRFProcessDeformation*)(total_processes[12]);
-		
 		bool doPostExcav = false;//WX
 		for(size_t l=0; l<msp_vector.size(); l++)
 		{

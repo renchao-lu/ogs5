@@ -4917,6 +4917,15 @@ double CRFProcess::Execute()
 			   }
 			}
 		}
+
+		// update nod velocity if constrained BC
+		if (this->accepted		// do I really need to check every single bc node, or how can I access a bc group?
+			&& (this->getProcessType() == FiniteElement::RICHARDS_FLOW
+				|| this->getProcessType() == FiniteElement::LIQUID_FLOW) )
+		{
+			this->CalIntegrationPointValue();
+			this->Extropolation_GaussValue();
+		}
 	}
 	//----------------------------------------------------------------------
 	// END OF PICARD
@@ -7311,8 +7320,9 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 		//get velocity vector at node
 		std::vector<double>vel_v(3);
 		this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
-		//const double const*const vel_v(getNodeVelocityVector(bc_node.geo_node_number));	//container not working
 		
+		//m_msh->nod_vector[1]->getConnectedNodes()	//averaging needed?
+
 		//check if velocity is zero
 		double magn_vel_v(calcVelMagn(&vel_v[0]));
 		if (magn_vel_v < std::numeric_limits<size_t>::min() || magn_vel_v == 0)
@@ -7382,7 +7392,6 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 	CRFProcess *m_pcs = NULL;
 	long i;
 	long idxVx, idxVy, idxVz; 
-	//double vel_nod[3]; 
 	
 	m_pcs = PCSGetFlow();
 	
@@ -7391,9 +7400,9 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 		vel_nod[i] = 0;
 	
 	// get the indices of velocity of flow process
-	idxVx = m_pcs->GetNodeValueIndex("VELOCITY_X1",false);	// evaluation based on velocity of last time step for stability
-	idxVy = m_pcs->GetNodeValueIndex("VELOCITY_Y1",false);
-	idxVz = m_pcs->GetNodeValueIndex("VELOCITY_Z1",false);
+	idxVx = m_pcs->GetNodeValueIndex("VELOCITY_X1", true);
+	idxVy = m_pcs->GetNodeValueIndex("VELOCITY_Y1", true);
+	idxVz = m_pcs->GetNodeValueIndex("VELOCITY_Z1", true);
 	// Get the velocity components
 	vel_nod[0] = m_pcs->GetNodeValue(node_id, idxVx);
 	vel_nod[1] = m_pcs->GetNodeValue(node_id, idxVy);
