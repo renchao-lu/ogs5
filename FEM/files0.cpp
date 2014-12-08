@@ -782,10 +782,10 @@ int LineFeed ( FILE* f )
 //   return 1;
 //}
 
-int TFString ( char* x, FILE* f )
-{
-	return 1;
-}
+//int TFString ( char* x, FILE* f )
+//{
+//	return 1;
+//}
 
 /**************************************************************************
    STRLib-Method:
