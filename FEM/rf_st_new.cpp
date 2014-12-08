@@ -3843,7 +3843,7 @@ void CSourceTermGroup::DistributeVolumeFlux(CSourceTerm* st, std::vector<long> c
 	if(area>0)
 	{
 		for(int i=0; i<(int)nod_val_vector.size();i++)
-	       nod_val_vector[i] /= area;
+			nod_val_vector[i] /= area;
 	}
 	else
 	{
