@@ -42,25 +42,25 @@ bool IsFileExisting(std::string const& strFilename)
 
 bool HasCRInLineEnding(std::string const& strFilename)
 {
-	std::ifstream is(strFilename.c_str());
+	std::ifstream is(strFilename.c_str(), std::ios::in | std::ios::binary);
 	if (!is) {
 		std::cout << "*** error: could not open " << strFilename.data() << std::endl;
 		return false;
 	}
 
-	std::istream::sentry se(is, true);
-	std::streambuf* sb = is.rdbuf();
-
 	bool foundCR = false;
-	for (;;) {
-		int c = sb->sbumpc();
-		if (c=='\r') {
+	while (is.good()) {
+		char c;
+		is.read(&c, sizeof(c));
+		if (c == '\r') {
 			foundCR = true;
 			break;
-		} else if (c==EOF || c=='\n') {
+		}
+		else if (c == EOF || c == '\n') {
 			break;
 		}
 	}
+
 	is.close();
 
 	return foundCR;
