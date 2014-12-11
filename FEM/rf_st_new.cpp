@@ -1857,6 +1857,10 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
          //1st check
          if (elem->selected < nfn)
             continue;
+
+         if(elem->GetDimension() != 3)
+            continue;
+
          //2nd check: if all nodes of the face are on the surface
          count = 0;
          for (k = 0; k < nfn; k++)
