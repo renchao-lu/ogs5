@@ -1459,8 +1459,8 @@ void CElement::FaceNormalFluxIntegration(long element_index, double *NodeVal, do
 
 			for (int i = 0; i < nNodes; i++) { // Integration
 				// Fick or Fourier diffusion
-				for (int l = 0; l < 3; l++)
-					flux[l] = gp_ele->TransportFlux(l, gp);
+//				for (int l = 0; l < 3; l++)
+//					flux[l] = gp_ele->TransportFlux(l, gp);
 				normal_diff_flux_interpol = PointProduction(flux, normal_vector);   //    fabs(PointProduction(flux, normal_vector));
 				dbuff[i] += normal_diff_flux_interpol * sf[i] * fkt;
 				// advection

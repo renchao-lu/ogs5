@@ -441,8 +441,7 @@ public:
 	double *rho_s_prev, *rho_s_curr;
 	double *q_R;
 	// End of Thermal Storage parameters---------------
-	Matrix TransportFlux;  // Fick or Fourier law  with dispersion      JOD 2014-11-10
-	
+//	Matrix TransportFlux;  // Fick or Fourier law  with dispersion      JOD 2014-11-10
 
 private:
 	// Friend class

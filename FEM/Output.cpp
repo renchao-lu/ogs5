@@ -1446,9 +1446,11 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 		else if (out_element_transport_flux) // JOD 2014-11-10
 		{
 			gp_ele = ele_gp_value[i];
+/*
 			tec_file << gp_ele->TransportFlux(0, 0) << " ";
 			tec_file << gp_ele->TransportFlux(1, 0) << " ";
 			tec_file << gp_ele->TransportFlux(2, 0) << " ";
+*/
 		}
       for (size_t j = 0; j < ele_value_index_vector.size(); j++)
       {
