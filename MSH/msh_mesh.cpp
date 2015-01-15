@@ -7,6 +7,7 @@
 **************************************************************************/
 #include <cfloat>
 #include <cmath>
+#include <climits>
 #include <fstream>
 #include <iomanip>                                //WW
 #include <iostream>
@@ -342,16 +343,27 @@ void CFEMesh::computeSearchLength(double c)
 
 	// criterion: mu - c times s, where mu is the average and s is standard deviation
 	const double mu (sum/n);
-	const double s (sqrt(1.0/(n-1) * (sum_of_sqr - (sum*sum)/n) ));
-	while (mu < c * s) {
-		c *= 0.9;
+
+	const double diff = fabs(sum_of_sqr - (sum*sum)/n);
+	if(diff < std::numeric_limits<double>::epsilon())
+	{
+		// In case all edges have the same length
+		_search_length = 0.5 * mu;
+		return; 
 	}
-	_search_length = mu - c * s;
+	else
+	{
+		const double s (sqrt(1.0/(n-1) * diff));
+		while (mu < c * s) {
+			c *= 0.9;
+		}
+		_search_length = mu - c * s;
 #ifndef NDEBUG
-	if (c < 2) {
-		std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", the average value is: " << mu << ", standard deviation is: " << s << "\n";
-	}
+		if (c < 2) {
+			std::cerr << "[CFEMesh::computeSearchLength] computed _search_length = " << _search_length << ", the average value is: " << mu << ", standard deviation is: " << s << "\n";
+		}
 #endif
+	}
 }
 
 /**************************************************************************
