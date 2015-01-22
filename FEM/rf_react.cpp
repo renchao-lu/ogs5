@@ -54,6 +54,11 @@ extern "C"
 string libphreeqc_print;
 #endif
 
+// WH: coupling OGS#IPQC
+#ifdef OGS_FEM_IPQC
+#include <IPhreeqc.h>
+#endif
+
 vector <REACT*> REACT_vec;
 
 /**************************************************************************
@@ -2591,15 +2596,54 @@ int REACT::Call_Phreeqc(void)
   //const char *m_phreeqc;
    //  m_phreeqc="phrqc phinp.dat  phinp.out  phreeqc.dat";
 
+  std::string ipqc_database; //WH: database name for IPQC
+
 
   if(this->file_name_database.size()==0)
+  {
     mm_phreeqc+="phreeqc.dat";
-  else 
+	ipqc_database = "phreeqc.dat";
+  }
+  else
+  {
     mm_phreeqc+=this->file_name_database;
-
+	ipqc_database = this->file_name_database;
+  }
   char * m_phreeqc;
   m_phreeqc = new char [mm_phreeqc.size()+1];
   strcpy (m_phreeqc, mm_phreeqc.c_str());
+
+//WH: run IPQC
+#ifdef OGS_FEM_IPQC
+	int returnCode = 0;
+	int pqcId = CreateIPhreeqc(); // create IPQC instance
+		
+	// Load phreeqc database
+	if (LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) != 0)
+	{
+		OutputErrorString(pqcId);
+		returnCode = EXIT_FAILURE;
+	}
+
+  	// Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
+    SetSelectedOutputFileOn(pqcId, 1);
+
+	// run the specified phreeqc input file "phinp.dat".
+	if (RunFile(pqcId, "phinp.dat") != 0)
+	{
+		OutputErrorString(pqcId);
+		returnCode = EXIT_FAILURE;
+	}
+
+    if(DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
+	{
+		OutputErrorString(pqcId);
+		returnCode = EXIT_FAILURE;
+	}	
+
+	return 1;
+#endif
+
 #ifdef PHREEQC
 	if (!system(m_phreeqc))
 		//    DisplayMsgLn("Phreeqc runs succesfully! ");
