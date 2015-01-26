@@ -2596,52 +2596,52 @@ int REACT::Call_Phreeqc(void)
   //const char *m_phreeqc;
    //  m_phreeqc="phrqc phinp.dat  phinp.out  phreeqc.dat";
 
-  std::string ipqc_database; //WH: database name for IPQC
-
 
   if(this->file_name_database.size()==0)
-  {
     mm_phreeqc+="phreeqc.dat";
-	ipqc_database = "phreeqc.dat";
-  }
-  else
-  {
+  else 
     mm_phreeqc+=this->file_name_database;
-	ipqc_database = this->file_name_database;
-  }
+
   char * m_phreeqc;
   m_phreeqc = new char [mm_phreeqc.size()+1];
   strcpy (m_phreeqc, mm_phreeqc.c_str());
 
 //WH: run IPQC
 #ifdef OGS_FEM_IPQC
-	int returnCode = 0;
-	int pqcId = CreateIPhreeqc(); // create IPQC instance
-		
-	// Load phreeqc database
-	if (LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) != 0)
+  std::string ipqc_database; //WH: database name for IPQC
+  int returnCode = 0;
+  int pqcId = CreateIPhreeqc(); // create IPQC instance
+
+  if(this->file_name_database.size()==0)
+  	ipqc_database = "phreeqc.dat";
+  else
+  ipqc_database = this->file_name_database;
+  
+
+  // Load phreeqc database
+  if (LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) != 0)
 	{
-		OutputErrorString(pqcId);
-		returnCode = EXIT_FAILURE;
+	 OutputErrorString(pqcId);
+	 return returnCode;
 	}
 
-  	// Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
-    SetSelectedOutputFileOn(pqcId, 1);
+  // Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
+  SetSelectedOutputFileOn(pqcId, 1);
 
-	// run the specified phreeqc input file "phinp.dat".
-	if (RunFile(pqcId, "phinp.dat") != 0)
+  // run the specified phreeqc input file "phinp.dat".
+  if (RunFile(pqcId, "phinp.dat") != 0)
 	{
-		OutputErrorString(pqcId);
-		returnCode = EXIT_FAILURE;
+	 OutputErrorString(pqcId);
+	 return returnCode;
 	}
 
-    if(DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
+  if (DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
 	{
-		OutputErrorString(pqcId);
-		returnCode = EXIT_FAILURE;
+	 OutputErrorString(pqcId);
+	 return returnCode;
 	}	
 
-	return 1;
+  return 1;
 #endif
 
 #ifdef PHREEQC
