@@ -2599,36 +2599,38 @@ int REACT::Call_Phreeqc(void)
   int pqcId = CreateIPhreeqc(); // create IPQC instance
 
   if(this->file_name_database.size()==0)
-  	ipqc_database = "phreeqc.dat";
+    ipqc_database = "phreeqc.dat";
   else
   ipqc_database = this->file_name_database;
   
   // Load phreeqc database
-  if (LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) != 0)
-	{
-	 OutputErrorString(pqcId);
-	 returnCode = 0;
-	}
+  if(LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) > 0)
+  {
+    OutputErrorString(pqcId);
+    returnCode = 0;
+  }
 
-  // Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
-  SetSelectedOutputFileOn(pqcId, 1);
+  //run the specified phreeqc input file "phinp.dat".
+  if(returnCode == 1)
+  {
+    //Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
+    SetSelectedOutputFileOn(pqcId, 1);
 
-  // run the specified phreeqc input file "phinp.dat".
-  if (returnCode == 1)
-	  if (RunFile(pqcId, "phinp.dat") != 0)
-	  {
-	   OutputErrorString(pqcId);
-	   returnCode = 0;
-	  }
+    if(RunFile(pqcId, "phinp.dat") > 0)
+    {
+      OutputErrorString(pqcId);
+      returnCode = 0;
+    }
+  }
 
-  if (DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
-	{
-	 OutputErrorString(pqcId);
-	 returnCode = 0;
-	}	
+  if(DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
+    {
+      OutputErrorString(pqcId);
+      returnCode = 0;
+    }
 
   return returnCode;
-#endif
+#else
 
   std::string mm_phreeqc = "phreeqc phinp.dat  phinp.out  ";
   //const char *m_phreeqc;
@@ -2656,6 +2658,7 @@ int REACT::Call_Phreeqc(void)
 
 #ifndef PHREEQC
 	return 1;
+#endif
 #endif
 }
 
