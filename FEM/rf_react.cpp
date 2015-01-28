@@ -2601,7 +2601,7 @@ int REACT::Call_Phreeqc(void)
   if(this->file_name_database.size()==0)
     ipqc_database = "phreeqc.dat";
   else
-  ipqc_database = this->file_name_database;
+    ipqc_database = this->file_name_database;
   
   // Load phreeqc database
   if(LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) > 0)
