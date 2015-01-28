@@ -1443,6 +1443,7 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 				tec_file << gp_ele->Velocity(2, 0) << " ";
 			}
 		}
+#ifdef USE_TRANSPORT_FLUX
 		else if (out_element_transport_flux) // JOD 2014-11-10
 		{
 			gp_ele = ele_gp_value[i];
@@ -1450,6 +1451,7 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 			tec_file << gp_ele->TransportFlux(1, 0) << " ";
 			tec_file << gp_ele->TransportFlux(2, 0) << " ";
 		}
+#endif
       for (size_t j = 0; j < ele_value_index_vector.size(); j++)
       {
         if(skip[j]) // CB: allow output of velocity AND other ele values
