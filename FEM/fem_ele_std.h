@@ -224,7 +224,8 @@ private:
 	double* eqs_rhs;                      //For DDC WW
 	bool heat_phase_change;
 
-	char pcsT;
+    // char pcsT;
+
 	//     /**
 	//      * process type, \sa enum ProcessType
 	//      */

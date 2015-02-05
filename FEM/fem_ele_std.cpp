@@ -161,27 +161,12 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 
 	idx0 = idx1 = 0;                      // column index in the node value data
 	LocalShift = 0;
-	//	pcsT = pcs->pcs_type_name[0]; // TF
-	pcsT = (convertProcessTypeToString (pcs->getProcessType()))[0];
-	//	if (pcs->pcs_type_name.find("AIR") != string::npos) //OK // TF commented out
-	if (pcs->getProcessType () == AIR_FLOW) //OK
-		pcsT = 'A';
-	else if (pcs->getProcessType () == MULTI_COMPONENTIAL_FLOW) //OK
-		pcsT = 'S';
-	else if (pcs->getProcessType () == TNEQ) //OK
-		pcsT = 'N';
-	//	if (pcs->pcs_type_name.find("MULTI") != string::npos) // 24.02.2007 WW
-	// 24.02.2007 WW
-	else if (pcs->getProcessType () == MULTI_PHASE_FLOW)
-		pcsT = 'V';               // Non-isothermal multiphase flow
-	else if(pcs->getProcessType () == DEFORMATION_H2) // 09.08.2010 WW
-		pcsT = 'V';               // Non-isothermal multiphase flow
-	else if(pcs->getProcessType () == DEFORMATION_FLOW) // NW
-		pcsT = 'L';
 
-	switch (pcsT)
+	switch (pcs->getProcessType())
 	{
 	default:
+		// case DEFORMATION:
+		// case DEFORMATION_DYNAMIC:
 		PcsType = EPT_LIQUID_FLOW;
 		//WW GravityMatrix = new  SymMatrix(size_m);
 		if (dynamic)
@@ -200,7 +185,10 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 			idx1 = idx0 + 1;
 		}
 		break;
-	case 'L':                             // Liquid flow
+
+	// case 'L':
+	case LIQUID_FLOW:
+	case DEFORMATION_FLOW:                             // Liquid flow
 		PcsType = EPT_LIQUID_FLOW;
 		// 02.2.2007 GravityMatrix = new  SymMatrix(size_m);
 		if (dynamic)
@@ -222,10 +210,15 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
 		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
 		break;
+
+	/* TODO no enum item for this case
 	case 'U':                             // Unconfined flow
 		PcsType = EPT_UNCONFINED_FLOW;
 		break;
-	case 'G':                             // Groundwater flow
+		*/
+
+		// case 'G':                             // Groundwater flow
+	case GROUNDWATER_FLOW:
 		PcsType = EPT_GROUNDWATER_FLOW;
 		idx0 = pcs->GetNodeValueIndex("HEAD");
 		idx1 = idx0 + 1;
@@ -236,33 +229,47 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		//WW
 		idx_vel[2] =  pcs->GetNodeValueIndex("VELOCITY_Z1");
 		break;
-	case 'T':
+
+	// case 'T':
+	case TWO_PHASE_FLOW:
 		if (pcs->getProcessType() == FiniteElement::TNEQ)
 			PcsType = EPT_THERMAL_NONEQUILIBRIUM;
 		else // Two-phase flow
-		PcsType = EPT_TWOPHASE_FLOW;
+			PcsType = EPT_TWOPHASE_FLOW;
 		break;
+
+	/* TODO no enum item for this case
 	case 'C':                             // Componental flow
 		PcsType = EPT_COMPONENTAL_FLOW;
 		break;
-	case 'H':                             // heat transport
+		*/
+
+	// case 'H':                             // heat transport
+	case HEAT_TRANSPORT:
 		PcsType = EPT_HEAT_TRANSPORT;
 		idx0 = pcs->GetNodeValueIndex("TEMPERATURE1");
 		idx1 = idx0 + 1;
 		break;
-	case 'M':                             // Mass transport
+
+	// case 'M':                             // Mass transport
+	case MASS_TRANSPORT:
 		PcsType = EPT_MASS_TRANSPORT;
 		sprintf(name1, "%s", pcs->pcs_primary_function_name[0]);
 		name2 = name1;
 		idx0 = pcs->GetNodeValueIndex(name2);
 		idx1 = idx0 + 1;
 		break;
-	case 'O':                             // Liquid flow
+
+		// case 'O':                             // Liquid flow
+	case OVERLAND_FLOW:
 		PcsType = EPT_OVERLAND_FLOW;
 		edlluse = new double [16]; //WW
 		edttuse = new double [16];
 		break;
-	case 'R':                             //OK4104 Richards flow
+
+		// case 'R':                             //OK4104 Richards flow
+	case RANDOM_WALK:
+	case RICHARDS_FLOW:
 		// 02.2.2007 GravityMatrix = new  SymMatrix(size_m);
 		idx0 = pcs->GetNodeValueIndex("PRESSURE1");
 		idx1 = idx0 + 1;
@@ -282,16 +289,25 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		}
 		PcsType = EPT_RICHARDS_FLOW;
 		break;
-	case 'A':                             // Air (gas) flow
+
+	// case 'A':                             // Air (gas) flow
+	case AIR_FLOW:
 		PcsType = EPT_GAS_FLOW;
 		//OK
 		idx0 = pcs->GetNodeValueIndex("PRESSURE1");
 		idx1 = idx0 + 1;          //OK
 		break;
-	case 'F':                             // Fluid Momentum Process
+
+	// case 'F':                             // Fluid Momentum Process
+	case FLUID_FLOW:
+	case FLUID_MOMENTUM:
+	case FLUX:
 		PcsType = EPT_RICHARDS_FLOW;              // R should include L if the eqn of R is written right.
 		break;
-	case 'V':                             // 24.02.2007 WW
+
+	// case 'V':                             // 24.02.2007 WW
+	case DEFORMATION_H2:
+	case MULTI_PHASE_FLOW:
 		// // 02.2.2007 GravityMatrix = new  SymMatrix(size_m);
 		//12.12.2007 WW
 		for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
@@ -308,7 +324,9 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		PcsType = EPT_V;
 		size_m = 40;
 		break;
-	case 'P':                             // 04.03.2009 PCH
+
+	// case 'P':                             // 04.03.2009 PCH
+	case PS_GLOBAL:
 		for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
 			NodeShift[i] = i * pcs->m_msh->GetNodesNumber(false);
 		//
@@ -323,7 +341,9 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		PcsType = EPT_P;
 		size_m = 40;
 		break;
-	case 'S':// MULTI_COMPONENTIAL_FLOW
+
+	// case 'S':// MULTI_COMPONENTIAL_FLOW
+	case MULTI_COMPONENTIAL_FLOW:
 		for (int in = 0; in < pcs->pcs_number_of_primary_nvals; in++)
 		{
 		NodeShift[in] = in * pcs->m_msh->GetNodesNumber(false);
@@ -336,25 +356,28 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		PcsType = EPT_S;
 		size_m = 40;    
 		break;
-	case 'N':                                // TNEQ
-            for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
-               NodeShift[i] = i * pcs->m_msh->GetNodesNumber(false);
-            idx0 = pcs->GetNodeValueIndex("PRESSURE1");
-            idx1 = idx0 + 1;
-            idxt0 = pcs->GetNodeValueIndex("TEMPERATURE1");
-            idxt1 = idxt0 + 1;
-			idx_t2_0 = pcs->GetNodeValueIndex("TEMPERATURE2");
-            idx_t2_1 = idx_t2_0 + 1;
-			idx_x0 = pcs->GetNodeValueIndex("CONCENTRATION1");
-            idx_x1 = idx_x0 + 1;
-            idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
-            idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
-            idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
-            PcsType = EPT_THERMAL_NONEQUILIBRIUM;
-            size_m = 64; 
 
-            break;
+		// case 'N':                                // TNEQ
+	case NO_PCS:
+	case TNEQ:
+		for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
+			NodeShift[i] = i * pcs->m_msh->GetNodesNumber(false);
+		idx0 = pcs->GetNodeValueIndex("PRESSURE1");
+		idx1 = idx0 + 1;
+		idxt0 = pcs->GetNodeValueIndex("TEMPERATURE1");
+		idxt1 = idxt0 + 1;
+		idx_t2_0 = pcs->GetNodeValueIndex("TEMPERATURE2");
+		idx_t2_1 = idx_t2_0 + 1;
+		idx_x0 = pcs->GetNodeValueIndex("CONCENTRATION1");
+		idx_x1 = idx_x0 + 1;
+		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
+		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
+		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
+		PcsType = EPT_THERMAL_NONEQUILIBRIUM;
+		size_m = 64;
+		break;
 	}
+
 	if (pcs->Memory_Type == 0)            // Do not store local matrices
 	{
 		// 04.03.2009 PCH
@@ -363,12 +386,28 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		else
 			Mass = new Matrix(size_m, size_m);
 		Laplace = new Matrix(size_m, size_m);
+
+        switch (pcs->getProcessType())
+        {
+        case HEAT_TRANSPORT:
+        case MASS_TRANSPORT:
+        case AIR_FLOW:
+        case MULTI_COMPONENTIAL_FLOW:
+        case TNEQ:
+            Advection = new Matrix(size_m, size_m);
+            Storage = new Matrix(size_m, size_m);
+            Content = new Matrix(size_m, size_m);
+            break;
+        default:
+            break;
+        }
+
+        /*
 		if (pcsT == 'H' || pcsT == 'M' || pcsT == 'A' || pcsT == 'S' || pcsT == 'N')
-		{
-			Advection = new Matrix(size_m, size_m);
-			Storage = new Matrix(size_m, size_m);
-			Content = new Matrix(size_m, size_m);
+        {
 		}
+        */
+
 		if (D_Flag)
 			StrainCoupling = new Matrix(size_m, 60);
 		RHS = new Vec(size_m);
@@ -3589,7 +3628,7 @@ double CFiniteElementStd::CalCoefAdvection()
     **************************************************************************/
    double CFiniteElementStd::CalCoefAdvectionTNEQ(int dof_index)
    {
-		int Index = MeshElement->GetIndex();
+        // int Index = MeshElement->GetIndex();
 		double val = 0.0;
 
 		switch(dof_index)
@@ -3652,15 +3691,15 @@ double CFiniteElementStd::CalCoefAdvection()
 
 		case 6:
 		val = 0.0;
-		break;
+			break;
 
-		case 7:
+	   case 7:
 		val = 0.0;
-		break;
+           break;
 
-		case 8:
+	   case 8:
 		val = 0.0;
-		break;
+           break;
 
 		case 9:
 		val = 0.0;
@@ -3668,19 +3707,19 @@ double CFiniteElementStd::CalCoefAdvection()
 
 		case 10:
 		val= 0.0;
-		break;
+			break;
 
 		case 11:
 		val = 0.0;
-		break;
+			break;
 
 		case 12:
 		val = 0.0;
-		break;
+			break;
 
 		case 13:
 		val = 0.0;
-		break;
+			break;
 
 		case 14:
 		val = 0.0;
@@ -4724,7 +4763,7 @@ void CFiniteElementStd::CalcMass2()
 		      for (j = 0; j < nnodes; j++)
 			(*Mass2)(ish, j + jsh) += mat_fac * shapefct[i] * shapefct[j];
 		    }
-#endif		  
+#endif
 		}
 	  }
 }
@@ -6654,7 +6693,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 		 // get interpolated primary variable values
 		 p_g = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
-		 T_g = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
+         T_g = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
 		 T_s = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t2_0) + pcs->m_num->ls_theta*interpolate(NodalVal_t2_1);
 		 w_mf = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
 
@@ -6687,9 +6726,9 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				 this->pcs->m_solver->set_dydx(dydxx_rho_s);
 				 // solve ODE
 				 // run the ODE solver
-				 this->pcs->m_solver->step(delta_t, this->pcs->m_conversion_rate); 
-				 yy_rho_s = this->pcs->m_solver->get_y();
-				 dydxx_rho_s = this->pcs->m_solver->get_dydx();
+                 pcs->m_solver->step(delta_t, this->pcs->m_conversion_rate);
+                 yy_rho_s = pcs->m_solver->get_y();
+                 dydxx_rho_s = pcs->m_solver->get_dydx();
 
 				 if ( yy_rho_s(0) < this->SolidProp->lower_solid_density_limit ) 
 					 rho_react = this->SolidProp->lower_solid_density_limit;
@@ -6922,9 +6961,9 @@ void CFiniteElementStd::Cal_Velocity()
 		{
 			for (size_t i = 0; i < dim; i++) // 02.2010. WW
             {
-				for(size_t j = 0; j < dim; j++)
-                 tmp_gp_velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
-                 //gp_ele->Velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
+                for(size_t j = 0; j < dim; j++)
+                    tmp_gp_velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
+                //gp_ele->Velocity(i, gp) += mat[dim*i+j]*vel[j]/time_unit_factor;
             }
 			CalCoefLaplace2(true,3);
 			double coef_tmp; //WX:08.2010.
@@ -6946,23 +6985,23 @@ void CFiniteElementStd::Cal_Velocity()
 			coef  =  gravity_constant*FluidProp->Density(eos_arg);
             for (size_t i = 0; i < dim; i++)
             {
-               for(size_t j=0; j<dim; j++)
-                  //              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
-                                                  //SI Unit
-			      
+                for(size_t j=0; j<dim; j++)
+                    //              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
+                    //SI Unit
+
 #ifdef GAS_MASS_FORM //TN otherwise wrong velocity
-				  tmp_gp_velocity(i,gp) -= mat[dim*i+j]/FluidProp->Density(eos_arg)*vel[j]/time_unit_factor;
-				  //tmp_gp_velocity(i,gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+                    tmp_gp_velocity(i,gp) -= mat[dim*i+j]/FluidProp->Density(eos_arg)*vel[j]/time_unit_factor;
+                //tmp_gp_velocity(i,gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
 #else				 
-                  tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+                    tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
 #endif
-                  //gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+                //gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
             }
 
-         }
-		else                      // 02.2010. WW
-         {
-			for (size_t i = 0; i < dim; i++)
+        }
+        else                      // 02.2010. WW
+        {
+            for (size_t i = 0; i < dim; i++)
             {
 #ifdef USE_TRANSPORT_FLUX
 				if (PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT) //  // JOD 2014-11-10
