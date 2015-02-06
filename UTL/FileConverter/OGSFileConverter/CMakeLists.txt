@@ -85,7 +85,7 @@ INCLUDE( ${VTK_USE_FILE} )
 
 # Set build configuration types
 # "RelWithDebInfo" and "MinSizeRelease" can be added here
-set ( CMAKE_CONFIGURATION_TYPES "Release;Debug" CACHE TYPE INTERNAL FORCE )
+set ( CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo" CACHE TYPE INTERNAL FORCE )
 
 # Set build directories
 # Binaries are created in /bin and libraries in /lib

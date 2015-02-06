@@ -4157,3 +4157,26 @@ void COutput::SetTotalFluxNodesDOM(std::vector<long>& nodes_vector)
 	
 
 }
+
+
+std::string pathBasename(const std::string& path)
+{
+    char pathSep;
+#ifdef WINDOWS
+    pathSep = '\\';
+#else
+    pathSep = '/';
+#endif
+
+    size_t idx = path.find(pathSep);
+    std::string s;
+
+    if (idx != std::string::npos) {
+        s = path.substr(idx+1);
+    } else {
+        s = path;
+    }
+
+    return s;
+}
+

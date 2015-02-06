@@ -29,6 +29,8 @@
 #include "vtkMath.h"
 #endif
 
+#include "Output.h"
+
 using namespace std;
 
 LegacyVtkInterface::LegacyVtkInterface(MeshLib::CFEMesh* mesh,
@@ -667,6 +669,8 @@ void LegacyVtkInterface::WriteVTKDataArraysPETSC(PetscViewer viewer) const
 void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
 									  std::string baseFilename) const
 {
+    baseFilename = defaultOutputPath + pathBasename(baseFilename);
+
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 	char tf_name[10];
 	cout << "Process " << myrank << " in WriteDataVTK" << "\n";
