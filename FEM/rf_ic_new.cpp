@@ -707,7 +707,7 @@ void CInitialCondition::SetSurface(int nidx)
 #ifndef NDEBUG
 #ifdef DEBUGMESHNODESEARCH
 		{
-			std::string const debug_fname(geo_name+"-FoundNodes.gli");
+			std::string const debug_fname("IC-Surface-"+geo_name+"-FoundNodes.gli");
 			std::ofstream debug_out(debug_fname.c_str());
 			debug_out << "#POINTS\n";
 			for (size_t k(0); k<msh_nod_vec.size(); k++) {
