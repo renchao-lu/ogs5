@@ -385,9 +385,11 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 			{
 				setGeoType (GEOLIB::SURFACE);
 				in >> geo_name;
-				// TF 07/2010 - get the surface vector and get the surface ID
-				if (!((geo_obj.getSurfaceVecObj(unique_geo_name))->getElementByName(
-						geo_name))) {
+				GEOLIB::Surface const* sfc(
+					geo_obj.getSurfaceVecObj(unique_geo_name)->getElementByName(geo_name)
+				);
+				setGeoObj(sfc);
+				if (sfc == NULL) {
 					std::cerr
 							<< "ERROR: CInitialCondition::Read: surface \"" <<
 							geo_name << "\" not found!"
@@ -705,7 +707,7 @@ void CInitialCondition::SetSurface(int nidx)
 #ifndef NDEBUG
 #ifdef DEBUGMESHNODESEARCH
 		{
-			std::string const debug_fname(geo_name+"-FoundNodes.gli");
+			std::string const debug_fname("IC-Surface-"+geo_name+"-FoundNodes.gli");
 			std::ofstream debug_out(debug_fname.c_str());
 			debug_out << "#POINTS\n";
 			for (size_t k(0); k<msh_nod_vec.size(); k++) {
