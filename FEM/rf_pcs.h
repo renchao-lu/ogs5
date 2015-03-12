@@ -8,6 +8,8 @@
 #ifndef rf_pcs_INC
 #define rf_pcs_INC
 
+#include <valarray>
+
 #include "makros.h"
 
 // MSHLib
@@ -923,7 +925,7 @@ private:
 	bool checkConstrainedST(std::vector<CSourceTerm*> & st_vector, CSourceTerm const & st, CNodeValue const & st_node);
 	// method to check on constrained boundary conditions
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
-	void getNodeVelocityVector(const long node_id, double * vel_nod);
+	std::valarray<double> getNodeVelocityVector(const long node_id);
 
 };
 
