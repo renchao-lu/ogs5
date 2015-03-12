@@ -13,6 +13,7 @@ struct Constrained {
 	bool _isCompleteConstrained;
 	bool _completeConstrainedStateOff;
 	std::vector<bool>_constrainedNodes;
+	bool _isConstrainedVelStable;
 
 	Constrained ()
 	{
@@ -23,6 +24,7 @@ struct Constrained {
 		constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
 		_isCompleteConstrained = false;
 		_completeConstrainedStateOff = false;
+		_isConstrainedVelStable = false;
 	}
 
 };
