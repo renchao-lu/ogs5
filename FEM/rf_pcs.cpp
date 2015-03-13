@@ -7438,7 +7438,7 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 				for (std::size_t j=0; j < no_connected_nodes; j++)
 				{
 					std::size_t const connected_node_id = m_msh->nod_vector[bc_node.geo_node_number]->getConnectedNodes()[j];
-					if (connected_node_id == (unsigned)bc_node.geo_node_number)
+					if (connected_node_id == static_cast<std::size_t>(bc_node.geo_node_number))
 					{
 						std::valarray<double>temp_vel(this->getNodeVelocityVector(connected_node_id));
 						temp_vel *= (no_connected_nodes - 1);
@@ -7451,25 +7451,19 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 			else
 				vel += this->getNodeVelocityVector(bc_node.geo_node_number);
 
-//			//convert valarray to double*
-//			std::vector<double>vel_v(3,0);
-//			for (std::size_t j=0; j<vel_v.size(); j++)
-//				vel_v[j]=vel[j];
-
-			//check if velocity is zero
+			//nomalize velocity vector
 			double magn_vel_v(MBtrgVec(&vel[0], 3));
-			if (magn_vel_v < std::numeric_limits<size_t>::epsilon()*1e-10 || magn_vel_v == 0)
+			if ( !(magn_vel_v > 0) )	//check if velocity is not zero
 			{
 				std::cout << "No constrained applied at node " << bc_node.msh_node_number
 						<< " as magnitude of velocity " << magn_vel_v
-						<< " is < than epsilon() " << std::numeric_limits<size_t>::epsilon()*1e-10
+						<< " is not > than 0 "
 						<< std::endl;
 				continue;
 			}
 
-
-			//nomalize velocity vector
-			NormalizeVector(&vel[0], 3);
+			//NormalizeVector(&vel[0], 3); can use other way to calc normalized vector, as vector now valarray:
+			vel /= magn_vel_v;
 
 			//calculate scalar product of velocity vector and BC surface normal
 			double const scalar_prod(MathLib::scpr(&(vel)[0], bc_node.GetNormalVector(), 3));
