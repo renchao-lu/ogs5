@@ -1849,6 +1849,8 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 	{
 		m_ply = *p_ply;
 		nPointsPly = (int) m_ply->point_vector.size();
+		if (m_ply->point_vector.front() == m_ply->point_vector.back())
+			nPointsPly -= 1;
 		//....................................................................
 		// Gravity center of this polygon
 		for (i = 0; i < 3; i++)
@@ -1957,6 +1959,8 @@ void CFEMesh::GetNODOnSFC_PLY_XY(Surface* m_sfc,
 	{
 		m_ply = *p_ply;
 		nPointsPly = (int) m_ply->point_vector.size();
+		if (m_ply->point_vector.front() == m_ply->point_vector.back())
+			nPointsPly -= 1;
 		//....................................................................
 		// Grativity center of this polygon
 		for (i = 0; i < 3; i++)
