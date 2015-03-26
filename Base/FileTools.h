@@ -17,4 +17,12 @@ bool IsFileExisting(std::string const& strFilename);
 /// Returns true if given file includes CR
 bool HasCRInLineEnding(std::string const& strFilename);
 
+/**
+ * @brief computes the basename of the given path, i.e. the component after the last diretory separator (/ or \).
+ */
+std::string pathBasename(const std::string& path);
+
+/// returns the current process working directory
+std::string getCwd();
+
 #endif // FILETOOLS_H
