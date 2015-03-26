@@ -12,6 +12,14 @@
 
 #include <sys/stat.h>
 
+// for getCwd
+#ifdef WINDOWS
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
+
 /**
  * Returns true if given file exists. From http://www.techbytes.ca/techbyte103.html
  */
@@ -64,5 +72,41 @@ bool HasCRInLineEnding(std::string const& strFilename)
 	is.close();
 
 	return foundCR;
+}
+
+
+std::string pathBasename(const std::string& path)
+{
+    char pathSep;
+#ifdef WINDOWS
+    pathSep = '\\';
+#else
+    pathSep = '/';
+#endif
+
+    size_t idx = path.find_last_of(pathSep);
+    std::string s;
+
+    if (idx != std::string::npos) {
+        s = path.substr(idx+1);
+    } else {
+        s = path;
+    }
+
+    return s;
+}
+
+
+std::string getCwd()
+{
+    char cwd[FILENAME_MAX];
+
+#ifdef WINDOWS
+    _getcwd(cwd, FILENAME_MAX);
+#else
+    getcwd(cwd, FILENAME_MAX);
+#endif
+
+    return cwd;
 }
 
