@@ -499,7 +499,7 @@ Problem::Problem (char* filename) :
 	CRFProcessDeformation* dm_pcs = NULL;
 
 	//  //WW
-	bool fluid_mom_pcs = false;
+    bool fluid_mom_pcs = false;
 	for (size_t i = 0; i < no_processes; i++)
 	{
 		m_pcs = pcs_vector[i];
@@ -3083,7 +3083,7 @@ inline double Problem::MassTrasport()
 {
 	double error = 1.0e+8;
     bool capvec = false;
-    bool prqvec = false;
+    // bool prqvec = false;
 	CRFProcess* m_pcs = total_processes[11];
 	//
 	if(!m_pcs->selected)
@@ -3103,7 +3103,7 @@ inline double Problem::MassTrasport()
 			if (local_richards_flow != NULL)
 			{
 				int nidx1 = local_richards_flow->GetNodeValueIndex("PRESSURE1",0);
-				for (int j=0; j<m_pcs->m_msh->GetNodesNumber(false);j++)
+                for (size_t j=0; j<m_pcs->m_msh->GetNodesNumber(false);j++)
 				{
 					double local_conc = m_pcs->GetNodeValue(j,nidx0+1);
 					double local_pressure = local_richards_flow->GetNodeValue(j,nidx1+1);
@@ -3120,6 +3120,7 @@ inline double Problem::MassTrasport()
 		CompProperties* m_cp = cp_vec[component];
 
 		if (m_cp->OutputMassOfComponentInModel == 1) {			// 05/2012 BG
+            // TODO: Check
 			if (singlephaseflow_process.size() >= 0)
 				OutputMassOfComponentInModel(singlephaseflow_process, m_pcs);
 			else

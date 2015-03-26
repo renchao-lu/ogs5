@@ -752,11 +752,11 @@ double co2_viscosity (double rho, double T)
 double co2_heat_conductivity (double rho, double T)
 {
 	double    Tc = 304.1282;
-    double    pc = 7377300;
+    // double    pc = 7377300;
     double rho_c = 467.6;
-    double     M = 0.044098;
-    double     R = 8.314472;
-    double    NA = 6.0221353e23;
+    // double     M = 0.044098;
+    // double     R = 8.314472;
+    // double    NA = 6.0221353e23;
     double rho_r = rho/rho_c;
     double    Tr = T/Tc;
     double lamda_r;
@@ -3761,7 +3761,7 @@ double bip (int number, int fluid_a, int fluid_b, int i, int j, int k, double T)
 VirialCoefficients DuansVirialCoefficients(int Fluid, double T)
 {
 	double a[15];
-	double Tc, Pc, M;
+    double Tc, Pc, M;
 	double R = 83.14467; // cm��?bar/(K* mol)
 	//CVirialCoefficients x;	//BG
 	VirialCoefficients x; //BG

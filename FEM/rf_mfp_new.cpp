@@ -3491,7 +3491,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 **************************************************************************/
 double CFluidProperties::drhodP(double* variables)
 {
-double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1, z2, z3, v, v_m, Trr, fct;
+    double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1, z2, z3, v, v_m, Trr, fct;
 	std::vector<double> roots;
 	CRFProcess* m_pcs;
     m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
@@ -3727,7 +3727,7 @@ double CFluidProperties::drhodX(int CIndex, double* variables)
 **************************************************************************/
 double CFluidProperties::ComponentDensity(int CIndex, double* variables)
 	{
-	double a0, A, B, z, z1, z2, z3, Tr, c, C, Trr, T, p, density, R, fct;
+    double a0, A, B, z, z1, z2, z3, Tr, c, C, Trr, T, p, density, R, fct;
 	CRFProcess* m_pcs;
 	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	std::vector<double> roots;

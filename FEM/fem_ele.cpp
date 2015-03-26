@@ -1385,7 +1385,8 @@ Programming:
 
 **************************************************************************/
 
-void CElement::FaceNormalFluxIntegration(long element_index, double *NodeVal, double *NodeVal_adv, int* nodesFace, CElem* face, CRFProcess* m_pcs, double* normal_vector)
+void CElement::FaceNormalFluxIntegration(long element_index, double *NodeVal, double *NodeVal_adv,
+                                         int* /*nodesFace*/, CElem* /*face*/, CRFProcess* m_pcs, double* normal_vector)
 {
 
 	int gp, gp_r, gp_s;
