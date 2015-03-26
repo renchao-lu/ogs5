@@ -597,12 +597,12 @@ public:
 				y[n*(im+4)+i]=a[im];
 		}
 
-    }
+	}
 
-    Eigen::VectorXd& get_y(void){return y;}
-    Eigen::VectorXd& get_dydx(void){return dydx;}
-    void set_y(Eigen::VectorXd& new_y){y = new_y;}
-    void set_dydx(Eigen::VectorXd& new_dydx){dydx = new_dydx;}
+	Eigen::VectorXd& get_y(void){return y;}
+	Eigen::VectorXd& get_dydx(void){return dydx;}
+	void set_y(Eigen::VectorXd& new_y){y = new_y;}
+	void set_dydx(Eigen::VectorXd& new_dydx){dydx = new_dydx;}
 
 	const size_t     KMAXX, IMAXX;   // KMAXX is the maximum number of rows used in the extrapolation
 	size_t           k_targ;         // optimal row number for convergence
