@@ -404,7 +404,7 @@ bool CVTK::IsLittleEndian()
 
 template <typename T> void CVTK::write_value_binary(std::fstream &fin, T val)
 {
-    fin.write((const char*)&val, sizeof(T));
+	fin.write((const char*)&val, sizeof(T));
 }
 
 bool CVTK::WriteMeshNodes(std::fstream &fin, bool output_data, CFEMesh* msh, long &offset)
