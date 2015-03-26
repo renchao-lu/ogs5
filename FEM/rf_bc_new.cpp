@@ -1804,6 +1804,8 @@ void CBoundaryCondition::SurfaceInterpolation(CRFProcess* m_pcs,
 				gC[i] = 0.0;
 			vn[2] = 0.0;
 			nPointsPly = (int) m_polyline->point_vector.size();
+			if (m_polyline->point_vector.front() == m_polyline->point_vector.back())
+				nPointsPly -= 1;
 			for (i = 0; i < nPointsPly; i++)
 			{
 				gC[0] += m_polyline->point_vector[i]->x;

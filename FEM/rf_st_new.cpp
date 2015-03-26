@@ -1714,6 +1714,8 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
                gC[i] = 0.0;
             vn[2] = 0.0;
             nPointsPly = (int) m_polyline->point_vector.size();
+            if (m_polyline->point_vector.front() == m_polyline->point_vector.back())
+               nPointsPly -= 1;
             for (i = 0; i < nPointsPly; i++)
             {
                gC[0] += m_polyline->point_vector[i]->x;
@@ -3877,9 +3879,13 @@ void CSourceTermGroup::SetSurfaceNodeValueVector(CSourceTerm* st,
       while (p != m_sfc->polyline_of_surface_vector.end())
       {
          m_ply = *p;
+         long nPointsPly = (long) m_ply->point_vector.size();
+         if (m_ply->point_vector.front() == m_ply->point_vector.back())
+            nPointsPly -= 1;
+
          for (long k = 0; k < (long) st->DistribedBC.size(); k++)
          {
-            for (long l = 0; l < (long) m_ply->point_vector.size(); l++)
+            for (long l = 0; l < nPointsPly; l++)
             {
                if (st->PointsHaveDistribedBC[k]
                   == m_ply->point_vector[l]->id)
