@@ -138,30 +138,38 @@ int main ( int argc, char* argv[] )
 		}
 		if( anArg == "--model-root" || anArg == "-m" )
 		{
+			if (i+1 >= argc) {
+				std::cerr << "Error: Parameter " << anArg << " needs an additional argument" << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
 			modelRoot = std::string( argv[++i] );
 			continue;
 		}
-        if (anArg == "--output-directory")
-        {
-            std::string path = argv[++i];
+		if (anArg == "--output-directory")
+		{
+			if (i+1 >= argc) {
+				std::cerr << "Error: Parameter " << anArg << " needs an additional argument" << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
+			std::string path = argv[++i];
 
-            if (!path.empty())
-            {
-                bool isRelative;
+			if (!path.empty())
+			{
+				bool isRelative;
 #ifdef WINDOWS
-                isRelative = path.find(":\\") == std::npos;
+				isRelative = path.find(":\\") == std::npos;
 #else
-                isRelative = path[0] != '/';
+				isRelative = path[0] != '/';
 #endif
-                if (isRelative) {
-                    path = getCwd() + "/" + path + "/";
-                } else {
-                    path += "/";
-                }
-            }
-            defaultOutputPath = path;
-            continue;
-        }
+				if (isRelative) {
+					path = getCwd() + "/" + path + "/";
+				} else {
+					path += "/";
+				}
+			}
+			defaultOutputPath = path;
+			continue;
+		}
 		// anything left over must be the model root, unless already found
 		if ( modelRoot == "" )
 			modelRoot = std::string( argv[i] );
