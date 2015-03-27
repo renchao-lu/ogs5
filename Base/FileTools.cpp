@@ -75,25 +75,77 @@ bool HasCRInLineEnding(std::string const& strFilename)
 }
 
 
+inline char getDirSep()
+{
+#ifdef WINDOWS
+    return '\\';
+#else
+    return '/';
+#endif
+}
+
+
+/**
+ * @brief removes all occurences of c from the beginning of str
+ */
+std::string ltrim(const std::string& str, const char c)
+{
+	const size_t idx = str.find_first_not_of(c);
+	if (idx == std::string::npos) {
+		// string consists only of c
+		return "";
+	} else {
+		return str.substr(idx);
+	}
+}
+
+
+/**
+ * @brief removes all occurences of c from the end of str
+ */
+std::string rtrim(const std::string& str, const char c)
+{
+	const size_t idx = str.find_last_not_of(c);
+	if (idx == std::string::npos) {
+		// string consists only of c
+		return "";
+	} else {
+		return str.substr(0, idx+1);
+	}
+}
+
+
+std::string pathJoin(const std::string& path1, const std::string& path2)
+{
+	const char dirSep = getDirSep();
+
+	return rtrim(path1, dirSep) + dirSep + ltrim(path2, dirSep);
+}
+
+
 std::string pathBasename(const std::string& path)
 {
-    char pathSep;
-#ifdef WINDOWS
-    pathSep = '\\';
-#else
-    pathSep = '/';
-#endif
+	if (path.length() == 0) return path;
 
-    size_t idx = path.find_last_of(pathSep);
-    std::string s;
+	const char dirSep = getDirSep();
 
-    if (idx != std::string::npos) {
-        s = path.substr(idx+1);
-    } else {
-        s = path;
-    }
+	// ignore trailing / or \ respectively
+	const size_t idxNsep = path.find_last_not_of(dirSep);
+	if (idxNsep == std::string::npos) {
+		// path contains only dirSep characters
+		return std::string(1, dirSep);
+	}
 
-    return s;
+	const size_t idx = path.find_last_of(dirSep, idxNsep);
+	std::string s;
+
+	if (idx != std::string::npos) {
+		s = path.substr(idx+1, idxNsep-idx);
+	} else {
+		s = path.substr(0, idxNsep+1);
+	}
+
+	return s;
 }
 
 
@@ -109,4 +161,3 @@ std::string getCwd()
 
     return cwd;
 }
-

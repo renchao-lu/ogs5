@@ -41,7 +41,8 @@
 
 #include "mathlib.h"
 #include "fem_ele.h"
-#include "tools.h"  
+#include "tools.h"
+#include "FileTools.h"
 
 extern size_t max_dim;                            //OK411 todo
 
@@ -4161,7 +4162,10 @@ void COutput::SetTotalFluxNodesDOM(std::vector<long>& nodes_vector)
 
 void COutput::setFileBaseName(const std::string& fn)
 {
-    file_base_name = defaultOutputPath + pathBasename(fn);
+	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234") << std::endl;
+	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234/") << std::endl;
+	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234///") << std::endl;
+	file_base_name = pathJoin(defaultOutputPath, pathBasename(fn));
 }
 
 
