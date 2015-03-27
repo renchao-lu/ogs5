@@ -25,9 +25,9 @@ std::string pathBasename(const std::string& path);
 /**
  * @brief joins two paths using the correct directory separator.
  *
- * trailing and preceding (back)slashes at the join point are ignored
+ * trailing and preceding (back)slashes at the join point are ignored.
  *
- * @returns a string: path1/path2
+ * @returns a string: path1/path2. if any of the paths is empty, only the other one is returned
  */
 std::string pathJoin(const std::string& path1, const std::string& path2);
 
