@@ -6965,7 +6965,7 @@ void CFiniteElementStd::Cal_Velocity()
 			for (size_t i = 0; i < dim; i++)
             {
 #ifdef USE_TRANSPORT_FLUX
-				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+				if (PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT) //  // JOD 2014-11-10
 					gp_ele->TransportFlux(i, gp) = 0;
 #endif
 
@@ -6973,7 +6973,7 @@ void CFiniteElementStd::Cal_Velocity()
 					//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 					//SI Unit
 #ifdef USE_TRANSPORT_FLUX
-				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+					if (PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT) //  // JOD 2014-11-10
 					gp_ele->TransportFlux(i, gp) -= mat[dim*i + j] * vel[j] / time_unit_factor;
 				else
 #endif
