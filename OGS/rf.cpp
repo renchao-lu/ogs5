@@ -100,6 +100,7 @@ int main ( int argc, char* argv[] )
 	/* parse command line arguments */
 	std::string anArg;
 	std::string modelRoot;
+
 	for( int i = 1; i < argc; i++ )
 	{
 		anArg = std::string( argv[i] );
@@ -154,8 +155,6 @@ int main ( int argc, char* argv[] )
 			std::string path = argv[++i];
 
 			if (! path.empty()) defaultOutputPath = path;
-
-			defaultOutputPath = path;
 			continue;
 		}
 		// anything left over must be the model root, unless already found
@@ -282,6 +281,9 @@ int main ( int argc, char* argv[] )
 		std::cout << " Error: Cannot find file " << dateiname << "\n";
 		return 1;
 	}
+
+	// If no option is given, output files are placed in the same directory as the input files
+	if (defaultOutputPath == "") defaultOutputPath = pathDirname(std::string(dateiname));
 
 	FileName = dateiname;
 	size_t indexChWin, indexChLinux;

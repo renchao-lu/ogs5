@@ -4162,9 +4162,6 @@ void COutput::SetTotalFluxNodesDOM(std::vector<long>& nodes_vector)
 
 void COutput::setFileBaseName(const std::string& fn)
 {
-	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234") << std::endl;
-	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234/") << std::endl;
-	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << pathBasename("/abcd/1234///") << std::endl;
 	file_base_name = pathJoin(defaultOutputPath, pathBasename(fn));
 }
 
