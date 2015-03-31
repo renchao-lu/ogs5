@@ -13634,8 +13634,13 @@ CRFProcess* PCSGetMass(size_t component_number)
 		if (size_bc == 0 && size_st == 0)
 			return;
 
+#ifdef USE_PETSC
+		std::string m_file_name = FileName + "_" + convertProcessTypeToString(
+		        this->getProcessType()) + "_BC_ST_" +  number2str(myrank) + ".asc";
+#else
 		std::string m_file_name = FileName + "_" + convertProcessTypeToString(
 		        this->getProcessType()) + "_BC_ST.asc";
+#endif
 		std::ofstream os(m_file_name.c_str(), ios::trunc | ios::out);
 		if (!os.good())
 		{
