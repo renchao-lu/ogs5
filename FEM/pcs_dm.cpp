@@ -159,7 +159,6 @@ void CRFProcessDeformation::Initialization()
 	if(m_msh->isAxisymmetry())
 		Axisymm = -1;             // Axisymmetry is true
 	fem_dm = new CFiniteElementVec(this, Axisymm * m_msh->GetCoordinateFlag());
-	fem_dm->SetGaussPointNumber(m_num->ele_gauss_points);
 	//
 	// Monolithic scheme
 	if(type / 10 == 4)
