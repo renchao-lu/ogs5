@@ -1110,7 +1110,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 
 					m_pcs->IncorporateBoundaryConditions(-1,d);
 
-					// Solve for velocitym_num->ele_gauss_points
+					// Solve for velocity
 #if defined (USE_PETSC) // || defined (other parallel solver lib). 04.2012 WW
 				  //Todo
 #elif defined(NEW_EQS)
