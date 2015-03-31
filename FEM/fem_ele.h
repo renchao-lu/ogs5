@@ -64,7 +64,7 @@ public:
 	CElement (int CoordFlag, const int order = 1);
 	virtual ~CElement ();
 	//
-	void ConfigElement(CElem* MElement, bool FaceIntegration = false);
+	void ConfigElement(CElem* MElement, const int nquadrature_points, bool FaceIntegration = false);
 	void ConfigFaceElement(CElem* MElement, bool FaceIntegration = false); // JOD 2014-11-10
 	void setOrder(const int order);
 	// Set Gauss point
@@ -92,12 +92,7 @@ public:
 	// Finite element matrices and vectors
 	// Compute the local finite element matrices
 	void LocalAssembly(const long, const int) {}
-	// Set the number of Gauss points
-	//26.03.2007 WW
-	void SetGaussPointNumber(const int nGuassP)
-	{
-		nGauss = nGuassP;
-	}
+
 	// Get values;
 	int GetNumGaussPoints() const {return nGaussPoints; }
 	int GetNumGaussSamples() const {return nGauss; }
@@ -236,7 +231,7 @@ protected:
 	ExtrapolationMethod::type extrapo_method;
 	ExtrapolationMethod::type GetExtrapoMethod() {return extrapo_method; }
 private:
-	void ConfigNumerics(MshElemType::type elem_type);
+	void ConfigNumerics(MshElemType::type elem_type, const int nquadrature_points);
 };
 
 /*------------------------------------------------------------------

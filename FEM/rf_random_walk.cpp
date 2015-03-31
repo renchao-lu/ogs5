@@ -1103,7 +1103,7 @@ void RandomWalk::InterpolateVelocityOfTheParticleByBilinear(int option, Particle
 					for (int i = 0; i < (long)m_msh->ele_vector.size(); i++)
 					{
 						elem = m_mini->ele_vector[i];
-						fem->ConfigElement(elem);
+						fem->ConfigElement(elem, m_pcs->m_num->ele_gauss_points);
 						// Assembly gotta be written different way
 						fem->Assembly(0, d);
 					}
