@@ -1081,7 +1081,7 @@ void CRFProcessDeformation::InitGauss(void)
 			MatGroup = elem->GetPatchIndex();
 			SMat = msp_vector[MatGroup];
 			elem->SetOrder(true);
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			eleV_DM = ele_value_dm[i];
 			*(eleV_DM->Stress0) = 0.0;
 			*(eleV_DM->Stress) = 0.0;
@@ -1898,7 +1898,7 @@ double CRFProcessDeformation::CaclMaxiumLoadRatio(void)
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark())      // Marked for use
 		{
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			fem_dm->SetMaterial();
 			eleV_DM = ele_value_dm[i];
 			SMat = fem_dm->smat;
@@ -2142,7 +2142,7 @@ void CRFProcessDeformation::Extropolation_GaussValue()
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark())      // Marked for use
 		{
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			fem_dm->SetMaterial();
 			//         eval_DM = ele_value_dm[i];
 			//TEST        (*eval_DM->Stress) += (*eval_DM->Stress0);
@@ -2325,7 +2325,7 @@ void CRFProcessDeformation::Trace_Discontinuity()
 				}
 			}
 
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			//2D
 			elem->GetElementFaceNodes(bFaces, FNodes0);
 			if (elem->GetElementType() == MshElemType::QUAD ||
@@ -2494,7 +2494,7 @@ long CRFProcessDeformation::MarkBifurcatedNeighbor(const int PathIndex)
 			adjacent = false;
 			numf1 = elem1->GetFacesNumber();
 			eleV_DM1 = ele_value_dm[nb];
-			fem_dm->ConfigElement(elem1);
+			fem_dm->ConfigElement(elem1, m_num->ele_gauss_points);
 			// Search faces of neighbor's neighbors
 			for(j = 0; j < numf1; j++)
 			{
@@ -2578,7 +2578,7 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
 			elem->SetOrder(true);
 			//WW
 			fem_dm->SetElementNodesDomain(m_dom->element_nodes_dom[i]);
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			fem_dm->m_dom = m_dom;
 			fem_dm->LocalAssembly(0);
 		}
@@ -2597,7 +2597,7 @@ void CRFProcessDeformation:: DomainAssembly(CPARDomain* m_dom)
 				elem->SetOrder(false);
 				//WW
 				fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]);
-				fem->ConfigElement(elem);
+				fem->ConfigElement(elem, m_num->ele_gauss_points);
 				fem->m_dom = m_dom;
 				fem->Assembly();
 			}
@@ -2784,7 +2784,7 @@ void CRFProcessDeformation::GlobalAssembly_DM()
 			continue;
 
 		elem->SetOrder(true);
-		fem_dm->ConfigElement(elem);
+		fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 		fem_dm->LocalAssembly(0);
 	}
 }
@@ -3067,7 +3067,7 @@ void CRFProcessDeformation::UpdateStress()
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
 			fem_dm->m_dom = NULL;
 #endif
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			fem_dm->LocalAssembly(1);
 		}
 	}
@@ -3292,7 +3292,7 @@ void CRFProcessDeformation::ReleaseLoadingByExcavation()
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark())      // Marked for use
 		{
-			fem_dm->ConfigElement(elem);
+			fem_dm->ConfigElement(elem, m_num->ele_gauss_points);
 			fem_dm->LocalAssembly(0);
 			ele_val = ele_value_dm[i];
 			// Clear stresses in excavated domain

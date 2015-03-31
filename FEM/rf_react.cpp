@@ -607,7 +607,7 @@ void CRFProcess::InterpolateTempGP(CRFProcess* m_pcs, std::string name)
 		else
 			GP[0] = GP[1] = GP[2] = 0.0;
 
-		m_pcs->fem->ConfigElement(elem);
+		m_pcs->fem->ConfigElement(elem, m_num->ele_gauss_points);
 		m_pcs->fem->setUnitCoordinates(GP);
 		m_pcs->fem->ComputeShapefct(1); // Linear
 		for(j = 0; j < elem->GetVertexNumber(); j++)
@@ -663,7 +663,7 @@ void CRFProcess::ExtropolateTempGP(CRFProcess* m_pcs, std::string name)
 		else
 			GP[0] = GP[1] = GP[2] = 0.0;
 
-		m_pcs->fem->ConfigElement(elem);
+		m_pcs->fem->ConfigElement(elem, m_pcs->m_num->ele_gauss_points);
 		m_pcs->fem->setUnitCoordinates(GP);
 		m_pcs->fem->ComputeShapefct(1); // Linear
 		for(j = 0; j < elem->GetVertexNumber(); j++)

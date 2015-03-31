@@ -64,7 +64,7 @@ public:
 	CElement (int CoordFlag, const int order = 1);
 	virtual ~CElement ();
 	//
-	void ConfigElement(CElem* MElement, bool FaceIntegration = false);
+	void ConfigElement(CElem* MElement, const int nquadrature_points, bool FaceIntegration = false);
 	void ConfigFaceElement(CElem* MElement, bool FaceIntegration = false); // JOD 2014-11-10
 	void setOrder(const int order);
 	// Set Gauss point
@@ -236,7 +236,7 @@ protected:
 	ExtrapolationMethod::type extrapo_method;
 	ExtrapolationMethod::type GetExtrapoMethod() {return extrapo_method; }
 private:
-	void ConfigNumerics(MshElemType::type elem_type);
+	void ConfigNumerics(MshElemType::type elem_type, const int nquadrature_points);
 };
 
 /*------------------------------------------------------------------

@@ -5796,7 +5796,7 @@ void CRFProcess::CalIntegrationPointValue()
 		{
 			if ((getProcessType() == FiniteElement::HEAT_TRANSPORT || getProcessType() == FiniteElement::MASS_TRANSPORT) && !elem->selected)
 				continue;   // not selected for TOTAL_FLUX calculation JOD 2014-11-10
-			fem->ConfigElement(elem);
+			fem->ConfigElement(elem, m_num->ele_gauss_points);
 			fem->Config(); //OK4709
 			// fem->m_dom = NULL; // To be used for parallization
 			if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW)
@@ -5828,7 +5828,7 @@ void CRFProcess::CalIntegrationPointValue()
                    ElementValue* gp_ele = ele_gp_value[i];
                    gp_ele->GetEleVelocity(pre_v);
 
-                   fem->ConfigElement(elem);
+                   fem->ConfigElement(elem, m_num->ele_gauss_points);
                    fem->Config();                           //OK4709
                    // fem->m_dom = NULL; // To be used for parallization
 
@@ -5914,7 +5914,7 @@ void CRFProcess::CalGPVelocitiesfromFluidMomentum()
 		elem = m_msh->ele_vector[i]; // get element
 		if (elem->GetMark())      // Marked for use
 		{
-			fem->ConfigElement(elem);
+			fem->ConfigElement(elem, m_num->ele_gauss_points);
 			fem->Cal_GP_Velocity_FM(i_ind);
 		}
 	}                                     // end element loop
@@ -7923,7 +7923,7 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 						elem = m_msh->ele_vector[ele_index];
 						if (elem->GetMark())
 						{
-							fem->ConfigElement(elem);
+							fem->ConfigElement(elem, m_num->ele_gauss_points);
 							if(getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW)	fem->Cal_VelocityMCF();
 							else
 							fem->Cal_Velocity();
@@ -9944,7 +9944,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			elem = m_msh->ele_vector[i];
 			if (elem->GetMark()) // Marked for use
 			{
-				fem->ConfigElement(elem);
+				fem->ConfigElement(elem, m_num->ele_gauss_points);
 				for(k = 0; k < NS; k++)
 					fem->ExtropolateGauss(this, k);
 			}
@@ -9997,7 +9997,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			elem = m_msh->ele_vector[i];
 			if (elem->GetMark()) // Marked for use
 			{
-				fem->ConfigElement(elem);
+				fem->ConfigElement(elem, m_num->ele_gauss_points);
 				fem->CalcNodeMatParatemer();
 			}
 		}
@@ -10552,7 +10552,7 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
         elem = m_msh->ele_vector[i];
         if (elem->GetMark())                        // Marked for use
         {
-            fem->ConfigElement(elem);
+            fem->ConfigElement(elem, m_num->ele_gauss_points);
 			fem->UpdateSolidDensity(i);          // HS, thermal storage reactions
             fem->ExtrapolateGauss_ReactRate_TNEQ( this ); // HS added 19.02.2013
         }
@@ -11569,7 +11569,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 			Use_Element = true;
 
 			// Configure Element for interpolation of node velocities to GP velocities
-			fem->ConfigElement(m_ele);
+			fem->ConfigElement(m_ele, m_num->ele_gauss_points);
 			// velocity vector
 			for (size_t j = 0; j < 3; j++) {
 				//v[j] = m_pcs_flow->GetElementValue(m_ele->GetIndex(), v_eidx[j]);
@@ -14591,7 +14591,7 @@ void CRFProcess::CalGPVelocitiesfromECLIPSE(string path,
 			tempstring += "; " + temp.str();
 
 			// Configure Element for interpolation of node velocities to GP velocities
-			fem->ConfigElement(elem);
+			fem->ConfigElement(elem, m_num->ele_gauss_points);
 			// Interpolate from nodes to GP of actual element
 			//cout << "Element: " << i << "\n";
 			tempstring = fem->Cal_GP_Velocity_ECLIPSE(tempstring,
