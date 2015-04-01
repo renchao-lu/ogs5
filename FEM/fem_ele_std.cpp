@@ -6964,16 +6964,16 @@ void CFiniteElementStd::Cal_Velocity()
          {
 			for (size_t i = 0; i < dim; i++)
             {
-				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
-					gp_ele->TransportFlux(i, gp) = 0;
+//				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+//					gp_ele->TransportFlux(i, gp) = 0;
 		
 					
 				for(size_t j = 0; j < dim; j++)
 					//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 					//SI Unit
-				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
-					gp_ele->TransportFlux(i, gp) -= mat[dim*i + j] * vel[j] / time_unit_factor;
-				else
+//				if (PcsType == H || PcsType == M) //  // JOD 2014-11-10
+//					gp_ele->TransportFlux(i, gp) -= mat[dim*i + j] * vel[j] / time_unit_factor;
+//				else
                   tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
                   //gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
             }
@@ -10324,8 +10324,9 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 	//WW Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
 	Velocity.resize(3, NGPoints);
 	Velocity = 0.0;
-	TransportFlux.resize(3, NGPoints); //  JOD 2014-11-10
-	TransportFlux = 0.0;
+	// MW/TF/WW/ND: unnecessary mem increase!
+//	TransportFlux.resize(3, NGPoints); //  JOD 2014-11-10 
+//	TransportFlux = 0.0;
 	// 15.3.2007 Multi-phase flow WW
 	if(pcs->type == 1212 || pcs->type == 1313 || m_pcs->type == 42)
 	{
@@ -10394,7 +10395,7 @@ void ElementValue::GetEleVelocity(double* vec)
 ElementValue::~ElementValue()
 {
 	Velocity.resize(0, 0); 
-	TransportFlux.resize(0, 0); // JOD 2014-11-10
+//	TransportFlux.resize(0, 0); // JOD 2014-11-10
 	Velocity_g.resize(0,0);
 
 	if (pcs->type == 1414){
