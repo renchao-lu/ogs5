@@ -348,7 +348,7 @@ void CFEMesh::computeSearchLength(double c)
 	if(diff < std::numeric_limits<double>::epsilon())
 	{
 		// In case all edges have the same length
-		_search_length = mu;
+		_search_length = 0.5 * mu;
 		return; 
 	}
 	else
