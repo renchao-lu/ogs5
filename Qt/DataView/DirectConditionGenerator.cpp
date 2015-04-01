@@ -124,7 +124,7 @@ const std::vector< std::pair<size_t,double> >& DirectConditionGenerator::directW
 
 			// do the actual surface integration
 			fem->setOrder(mesh.getOrder() + 1);
-			fem->ConfigElement(elem);
+			fem->ConfigElement(elem, 3);
 			fem->FaceIntegration(node_val);
 
 			// add up the integrated values (nodes get values added for all faces they are part of)
