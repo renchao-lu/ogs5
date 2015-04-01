@@ -507,6 +507,10 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 					_isConstrainedBC = false;
 				}
 
+				in >> tempst;
+				if (tempst == "STABLE")
+					temp._isConstrainedVelStable = true;
+
 				if (getGeoType() != GEOLIB::SURFACE)
 					std::cout << "\n Warning! Make sure, that a velocity constrained BC is a SURFACE!" << std::endl;
 			}

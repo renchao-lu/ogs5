@@ -7429,26 +7429,43 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 		if (local_constrained.constrainedVariable == ConstrainedVariable::VELOCITY)
 		{
 			//get velocity vector at node
-			std::vector<double>vel_v(3);
-			this->getNodeVelocityVector(bc_node.geo_node_number, &(vel_v)[0]);
+			std::valarray<double>vel(0.0, 3);	// ini valarray with size=3 and element values=0
 
-			//check if velocity is zero
-			double magn_vel_v(MBtrgVec(&vel_v[0], 3));
-			if (magn_vel_v < std::numeric_limits<size_t>::epsilon()*1e-10 || magn_vel_v == 0)
+			if (local_constrained._isConstrainedVelStable)
+			{
+				const std::size_t no_connected_nodes = m_msh->nod_vector[bc_node.geo_node_number]->getNumConnectedNodes();
+				for (std::size_t j=0; j < no_connected_nodes; j++)
+				{
+					std::size_t const connected_node_id = m_msh->nod_vector[bc_node.geo_node_number]->getConnectedNodes()[j];
+					if (connected_node_id == static_cast<std::size_t>(bc_node.geo_node_number))
+					{
+						std::valarray<double>temp_vel(this->getNodeVelocityVector(connected_node_id));
+						temp_vel *= (no_connected_nodes - 1);
+						vel += temp_vel;
+					}
+					else
+						vel += this->getNodeVelocityVector(connected_node_id);
+				}
+			}
+			else
+				vel += this->getNodeVelocityVector(bc_node.geo_node_number);
+
+			//nomalize velocity vector
+			double magn_vel_v(MBtrgVec(&vel[0], 3));
+			if ( !(magn_vel_v > 0) )	//check if velocity is not zero
 			{
 				std::cout << "No constrained applied at node " << bc_node.msh_node_number
 						<< " as magnitude of velocity " << magn_vel_v
-						<< " is < than epsilon() " << std::numeric_limits<size_t>::epsilon()*1e-10
+						<< " is not > than 0 "
 						<< std::endl;
 				continue;
 			}
 
-
-			//nomalize velocity vector
-			NormalizeVector(&vel_v[0], 3);
+			//NormalizeVector(&vel[0], 3); can use other way to calc normalized vector, as vector now valarray:
+			vel /= magn_vel_v;
 
 			//calculate scalar product of velocity vector and BC surface normal
-			double const scalar_prod(MathLib::scpr(&(vel_v)[0], bc_node.GetNormalVector(), 3));
+			double const scalar_prod(MathLib::scpr(&(vel)[0], bc_node.GetNormalVector(), 3));
 
 			//select case to handle BC
 			if (scalar_prod < 0 && scalar_prod >= -1.01
@@ -7511,29 +7528,19 @@ bool CRFProcess::checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryCond
 Copied & modified from 
 rf_kinreact.cpp (Reaction-Method:)
 **************************************************************************/
-void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
+std::valarray<double> CRFProcess::getNodeVelocityVector(const long node_id)
 {
 	CRFProcess *m_pcs = NULL;
-	long i;
+	std::valarray<double> vel_nod (0.0, 3);
 	
 	m_pcs = PCSGetFlow();
 	
-	// initialize data structures
-	for (i = 0; i<3; i++)
-		vel_nod[i] = 0;
-	
-	/*
-	// get the indices of velocity of flow process
-	idxVx = m_pcs->GetNodeValueIndex("VELOCITY_X1", true);
-	idxVy = m_pcs->GetNodeValueIndex("VELOCITY_Y1", true);
-	idxVz = m_pcs->GetNodeValueIndex("VELOCITY_Z1", true);
-	*/
-
 	// Get the velocity components
 	vel_nod[0] = m_pcs->GetNodeValue(node_id, this->_idxVx);
 	vel_nod[1] = m_pcs->GetNodeValue(node_id, this->_idxVy);
 	vel_nod[2] = m_pcs->GetNodeValue(node_id, this->_idxVz);
 	
+	// Shift entries for 2D
 	const int dimensions(m_msh->GetCoordinateFlag());
 	if (dimensions == 22)
 	{
@@ -7547,8 +7554,9 @@ void CRFProcess::getNodeVelocityVector(const long node_id, double * vel_nod)
 		vel_nod[0] = 0;
 	}
 
-	//return vel_nod;
+	return vel_nod;
 }
+
 
 	int CRFProcess::getFirstNodeBelowGWL(size_t current_node)
 	{
