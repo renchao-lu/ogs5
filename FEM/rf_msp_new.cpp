@@ -3014,7 +3014,7 @@ void CSolidProperties::TangentialDPwithTension(Matrix* Dep, double mm)
 }
 
 //WX: return to corner
-void CSolidProperties::TangentialDPwithTensionCorner(Matrix* Dep, double mm)
+void CSolidProperties::TangentialDPwithTensionCorner(Matrix* Dep, double /*mm*/)
 {
 	//return to corner
 	*Dep = *ConstitutiveMatrix;

@@ -2150,11 +2150,11 @@ void CRFProcessDeformation::Extropolation_GaussValue()
 			//           (*eval_DM->Stress) -= (*eval_DM->Stress0);
 // calculation of principal stresses for postprocessing on nodes
 
-			for (size_t i=0; i<fem_dm->nnodes; i++)
+			for (int i=0; i<fem_dm->nnodes; i++)
 			{
-				MeshLib::CNode *node;
+				// MeshLib::CNode *node;
 				int node_index = fem_dm->nodes[i];
-				node = m_msh->nod_vector[node_index];
+				// node = m_msh->nod_vector[node_index];
 				double stress[6];
 				stress[0] = fem_dm->pcs->GetNodeValue(node_index,Idx_Stress[0]); // sigma_xx
 				stress[1] = fem_dm->pcs->GetNodeValue(node_index,Idx_Stress[1]); // sigma_yy
@@ -2812,7 +2812,7 @@ void CRFProcessDeformation::PostExcavation()
 		for(size_t l=0; l<m_msh->ele_vector.size();l++)
 		{
 			//if((m_msh->ele_vector[l]->GetExcavState()>0)&&!(m_msh->ele_vector[l]->GetMark()))//WX:07.2011 HM excav
-			if(ExcavMaterialGroup==m_msh->ele_vector[l]->GetPatchIndex())
+			if(ExcavMaterialGroup == m_msh->ele_vector[l]->GetPatchIndex())
 			{
 				if((m_msh->ele_vector[l]->GetExcavState()>-1)&&m_msh->ele_vector[l]->GetMark())
 				{
@@ -2826,7 +2826,7 @@ void CRFProcessDeformation::PostExcavation()
 		}
 	}
 
-	if((int)deact_dom.size()>0||now_Excav)   //WX:01.2011 modified for coupled excavation
+	if(deact_dom.size() > 0 || now_Excav)   //WX:01.2011 modified for coupled excavation
 	{
 		//	 		  MXDumpGLS("rf_pcs.txt",1,eqs->b,eqs->x);  //abort();}
 		// 07.04.2010 WW
@@ -2896,9 +2896,9 @@ void CRFProcessDeformation::PostExcavation()
 			}
 			if(hasAnyProcessDeactivatedSubdomains)//WX:11.2012 if there is deactivated subdomain when excavated
 			{
-				for(size_t i=0; i<NumDeactivated_SubDomains; i++)
+				for(int i=0; i<NumDeactivated_SubDomains; i++)
 				{
-					if(elem->GetPatchIndex()== Deactivated_SubDomain[i])
+					if(elem->GetPatchIndex() == Deactivated_SubDomain[i])
 					{
 						elem->MarkingAll(false);
 						done = true;

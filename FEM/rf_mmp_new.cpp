@@ -3045,11 +3045,11 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	double l_char = 0.0;                  //OK411 volume=0.0;
 	double saturation = 1.0;
 	int set = 0;
-    double arg, Daq, Pec;
+	double arg, Daq, Pec;
 	ElementValue* gp_ele = ele_gp_value[index];
 	CompProperties* m_cp = cp_vec[component];
-	CFluidProperties* m_mfp;
-	m_mfp = Fem_Ele_Std->FluidProp;
+	//CFluidProperties* m_mfp;
+	//m_mfp = Fem_Ele_Std->FluidProp;
 	MshElemType::type eleType = m_pcs->m_msh->ele_vector[number]->GetElementType();
 	int Dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
 	//----------------------------------------------------------------------
@@ -4779,7 +4779,7 @@ double* CMediumProperties::PermeabilityTensor(long index)
 //12.(ii) PERMEABILITY_FUNCTION_PRESSURE
 //------------------------------------------------------------------------
 //WX: implementation of ths permeability_function_pressure. 1. version only for multi_phase_flow. 05.2010
-double CMediumProperties::PermeabilityFunctionPressure(long index, double PG2)
+double CMediumProperties::PermeabilityFunctionPressure(long /*index*/, double PG2)
 {
 	int gueltig; //WX: for function GetCurveValue(). 11.05.2010
 	double fac_perm_pressure = 1;
@@ -4906,7 +4906,8 @@ double CMediumProperties::PermeabilityFunctionStrain(long index,
 			double threshold = 0.;
 			threshold = permeability_strain_model_value[0];
 
-			if(permeability_strain_model_value[3]>MKleinsteZahl)
+			// TODO: Error index out of bounds
+			if(permeability_strain_model_value[3] > MKleinsteZahl)
 				threshold = GetCurveValue(permeability_strain_model_value[3],
 		                                0,
 		                                vol_strain_temp,
@@ -7205,7 +7206,7 @@ double CMediumProperties::TortuosityFunction(long number,
    09/2004   CMCD In GeoSys 4
  */
 /**************************************************************************/
-double CMediumProperties::NonlinearFlowFunction(long index, int gp, double theta, CFiniteElementStd* assem)
+double CMediumProperties::NonlinearFlowFunction(long index, int gp, double /*theta*/, CFiniteElementStd* assem)
 {
 	double k_rel = 1.0;
 	//OK411
