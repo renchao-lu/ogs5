@@ -147,22 +147,22 @@ CElement::~CElement()
    05/2007 WW 1D in 2D
    Last modified:
 **************************************************************************/
-void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
+void CElement::ConfigElement(CElem* MElement, const int nquadrature_points,
+		                     bool FaceIntegration)
 {
-	int i;
 	CNode* a_node = NULL;                 //07.04.2009. WW
 	MeshElement = MElement;
 	Index = MeshElement->GetIndex();
 	nnodes = MeshElement->nnodes;
 	nnodesHQ = MeshElement->nnodesHQ;
 	bool done = false;
-	ConfigNumerics(MeshElement->GetElementType());
+	ConfigNumerics(MeshElement->GetElementType(), nquadrature_points);
 	if (MeshElement->quadratic)
 		nNodes = nnodesHQ;
 	else
 		nNodes = nnodes;
 	// Node indices
-	for(i = 0; i < nNodes; i++)
+	for(int i = 0; i < nNodes; i++)
 		nodes[i] = MeshElement->nodes_index[i];
 	// Put coordinates of nodes to buffer to enhance the computation
 	if(!FaceIntegration)
@@ -171,7 +171,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 		{
 //            a_node0 = MeshElement->nodes[0];      //07.04.2007. WW
 			double const* const coords_node_0 (MeshElement->nodes[0]->getData());
-			for(i = 0; i < nNodes; i++)
+			for(int i = 0; i < nNodes; i++)
 			{
 				double const* const coords_node_i (MeshElement->nodes[i]->getData());
 //               a_node = MeshElement->nodes[i];    //07.04.2007. WW
@@ -201,7 +201,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 			case 1:
 				if(coordinate_system % 10 == 1)
 				{
-					for(i = 0; i < nNodes; i++)
+					for(int i = 0; i < nNodes; i++)
 					{
 						//07.04.2007. WW
 //                        a_node = MeshElement->nodes[i];
@@ -218,7 +218,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 				}
 				else if(coordinate_system % 10 == 2)
 				{
-					for(i = 0; i < nNodes; i++)
+					for(int i = 0; i < nNodes; i++)
 					{
 						//07.04.2007. WW
 //                        a_node = MeshElement->nodes[i];
@@ -237,7 +237,7 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 			case 2:
 				if(coordinate_system % 10 == 2)
 				{
-					for(i = 0; i < nNodes; i++)
+					for(int i = 0; i < nNodes; i++)
 					{
 						//07.04.2007. WW
 //                        a_node = MeshElement->nodes[i];
@@ -258,7 +258,8 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 	}
 	//
 	if(!done)
-		for(i = 0; i < nNodes; i++)
+	{
+		for(int i = 0; i < nNodes; i++)
 		{
 			a_node = MeshElement->nodes[i]; //07.04.2007. WW
 			double const* const coords (a_node->getData());
@@ -266,41 +267,30 @@ void CElement::ConfigElement(CElem* MElement, bool FaceIntegration)
 			Y[i] = coords[1];
 			Z[i] = coords[2];
 		}
-
+	}
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
    if(!FaceIntegration)
    {
-	//int dof_p_node = pcs->pcs_number_of_primary_nvals;
-        //if(pcs->GetContinnumType() == 1)
-	// dof_p_node = 1;
-
-	//int i_buff = 0;
         if(MeshElement->g_index) // ghost nodes pcs->pcs_number_of_primary_nvals
-	  {
-	    act_nodes = MeshElement->g_index[0];
-	    act_nodes_h = MeshElement->g_index[1];
+        {
+            act_nodes = MeshElement->g_index[0];
+            act_nodes_h = MeshElement->g_index[1];
 
-	    for(i = 0; i < act_nodes_h; i++)
-	      {
-		local_idx[i] = MeshElement->g_index[i+2];
-	      }
-	  }
-	else
-	  {
-	    act_nodes = nnodes;
-	    act_nodes_h = nnodesHQ;
-	    for(i = 0; i < act_nodes_h; i++)
-	      {
-		local_idx[i] = i;
-	      }
-	  }
-
-
-	//i_buff = nn*nn;
-	//for(i = 0; i < i_buff; i++)
-	//  local_matrix[i] = 0.;
-	// If deformation related
+            for(int i = 0; i < act_nodes_h; i++)
+            {
+                local_idx[i] = MeshElement->g_index[i+2];
+            }
+        }
+        else
+        {
+            act_nodes = nnodes;
+            act_nodes_h = nnodesHQ;
+            for(int i = 0; i < act_nodes_h; i++)
+            {
+                local_idx[i] = i;
+            }
+        }
    }
 #endif
 
@@ -346,15 +336,15 @@ void CElement::setOrder(const int order)
    01/2010 NW Higher order line elements
    Last modified:
 **************************************************************************/
-void CElement::ConfigNumerics(MshElemType::type ele_type)
+void CElement::ConfigNumerics(MshElemType::type ele_type, const int nquadrature_points)
 {
 	// nGauss = GetNumericsGaussPoints(ElementType);
 	switch(ele_type)
 	{
 	case MshElemType::LINE:
 		ele_dim = 1;
-		nGauss = 2;
-		nGaussPoints = nGauss;
+		nGauss = nquadrature_points;
+		nGaussPoints = nquadrature_points;
 		ShapeFunction = ShapeFunctionLine;
 		ShapeFunctionHQ = ShapeFunctionLineHQ;
 		GradShapeFunction = GradShapeFunctionLine;
@@ -363,6 +353,7 @@ void CElement::ConfigNumerics(MshElemType::type ele_type)
 		return;
 	case MshElemType::QUAD:
 		ele_dim = 2;
+		nGauss = nquadrature_points;
 		nGaussPoints = nGauss * nGauss;
 		ShapeFunction = ShapeFunctionQuad;
 		ShapeFunctionHQ = ShapeFunctionQuadHQ;
@@ -372,6 +363,7 @@ void CElement::ConfigNumerics(MshElemType::type ele_type)
 		return;
 	case MshElemType::HEXAHEDRON:
 		ele_dim = 3;        
+		nGauss = nquadrature_points;
 		nGaussPoints = nGauss * nGauss * nGauss;
 		ShapeFunction = ShapeFunctionHex;
 		ShapeFunctionHQ = ShapeFunctionHexHQ;
