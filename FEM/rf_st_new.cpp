@@ -1892,7 +1892,7 @@ void CSourceTerm::FaceIntegration(CFEMesh* msh, std::vector<long> const &nodes_o
          face->SetOrder(msh->getOrder());
          face->ComputeVolume();
          fem->setOrder(msh->getOrder() + 1);
-         fem->ConfigElement(face, true);
+         fem->ConfigElement(face, this->_pcs->m_num->ele_gauss_points, true);
          fem->FaceIntegration(nodesFVal);
          for (k = 0; k < nfn; k++)
          {
@@ -2032,7 +2032,7 @@ std::vector<double>&node_value_vector) const
          continue;
       for (size_t j = 0; j < nn; j++)
          nodesFVal[j] = node_value_vector[G2L[e_nodes[j]->GetIndex()]];
-      fem->ConfigElement(elem, true);
+      fem->ConfigElement(elem, this->_pcs->m_num->ele_gauss_points, true);
       fem->setOrder(msh->getOrder() + 1);
       fem->FaceIntegration(nodesFVal);
       for (size_t j = 0; j < nn; j++)

@@ -5545,7 +5545,7 @@ void CRFProcess::GlobalAssembly()
 				elem->SetOrder(false);
 				//WW
 				fem->SetElementNodesDomain(m_dom->element_nodes_dom[i]);
-				fem->ConfigElement(elem, Check2D3D);
+				fem->ConfigElement(elem, m_num->ele_gauss_points, Check2D3D);
 				fem->m_dom = m_dom; //OK
 				fem->Assembly();
 			}
@@ -5589,7 +5589,7 @@ void CRFProcess::GlobalAssembly()
 				if (elem->GetMark() && elem->GetExcavState() == -1)
 				{
 					elem->SetOrder(false);
-					fem->ConfigElement(elem, Check2D3D);
+					fem->ConfigElement(elem, m_num->ele_gauss_points, Check2D3D);
 					fem->Assembly();
 					// NEUMANN CONTROL---------
 					if (Tim->time_control_type == TimeControlType::NEUMANN)
@@ -5691,7 +5691,7 @@ void CRFProcess::GlobalAssembly_std(bool is_quad, bool Check2D3D)
 			continue;     // For OpenMP. WW
 
 		elem->SetOrder(is_quad);
-		fem->ConfigElement(elem,Check2D3D);
+		fem->ConfigElement(elem, m_num->ele_gauss_points, Check2D3D);
 		fem->Assembly();
 	}
 }
@@ -5729,7 +5729,7 @@ void CRFProcess::Integration(vector<double> &node_velue)
 			n_val[k] = node_velue[elem->GetNodeIndex(k)];
 
 		elem->SetOrder(false);
-		fem->ConfigElement(elem,Check2D3D);
+		fem->ConfigElement(elem, m_num->ele_gauss_points, Check2D3D);
 		fem->FaceIntegration(n_val);
 
 		for(k = 0; k < elem->GetNodesNumber(false); k++)
@@ -10503,7 +10503,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				if (elem->GetMark()) // Marked for use
 				{
 					elem->SetOrder(false);
-					fem->ConfigElement(elem,false);
+					fem->ConfigElement(elem, m_num->ele_gauss_points, false);
 					fem->CalcSatution();
 				}
 			}
@@ -12362,7 +12362,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 					cout << m_ele->GetIndex() << "\n";
 					//WW ldummy = m_nod->GetIndex();
 					//WW ddummy = eqs->b[m_nod->GetIndex()];
-					fem->ConfigElement(m_ele,false);
+					fem->ConfigElement(m_ele, m_num->ele_gauss_points, false);
 					fem->AssembleParabolicEquationRHSVector();
 					//WW ddummy = eqs->b[m_nod->GetIndex()];
 				}
@@ -12380,7 +12380,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 					continue;
 				{
 					//cout << m_ele->GetIndex() << "\n";
-					fem->ConfigElement(m_ele,false);
+					fem->ConfigElement(m_ele, m_num->ele_gauss_points, false);
 					fem->AssembleParabolicEquationRHSVector();
 				}
 				break;
