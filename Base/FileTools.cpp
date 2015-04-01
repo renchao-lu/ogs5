@@ -5,6 +5,7 @@
  */
 
 #include "FileTools.h"
+#include "StringTools.h"
 
 #include <iostream>
 #include <fstream>
@@ -82,36 +83,6 @@ inline char getDirSep()
 #else
     return '/';
 #endif
-}
-
-
-/**
- * @brief removes all occurences of c from the beginning of str
- */
-std::string ltrim(const std::string& str, const char c)
-{
-	const size_t idx = str.find_first_not_of(c);
-	if (idx == std::string::npos) {
-		// string consists only of c
-		return "";
-	} else {
-		return str.substr(idx);
-	}
-}
-
-
-/**
- * @brief removes all occurences of c from the end of str
- */
-std::string rtrim(const std::string& str, const char c)
-{
-	const size_t idx = str.find_last_not_of(c);
-	if (idx == std::string::npos) {
-		// string consists only of c
-		return "";
-	} else {
-		return str.substr(0, idx+1);
-	}
 }
 
 
