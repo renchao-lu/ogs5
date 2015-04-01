@@ -1021,7 +1021,6 @@ void CRFProcess::Create()
 				Axisymm = -1;  // Axisymmetry is true
 			fem = new CFiniteElementStd(this, Axisymm
 			                            * m_msh->GetCoordinateFlag());
-			fem->SetGaussPointNumber(m_num->ele_gauss_points);
 		}
 	}
 
@@ -13088,7 +13087,6 @@ CRFProcess* PCSGetMass(size_t component_number)
 				Axisymm = -1;  // Axisymmetry is true
 			//OK4801 needs NUM
 			fem = new CFiniteElementStd(this, Axisymm * m_msh->GetCoordinateFlag());
-			fem->SetGaussPointNumber(m_num->ele_gauss_points);
 			if (!fem)
 				succeed = false;
 		}
