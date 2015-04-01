@@ -344,8 +344,8 @@ void CElement::ConfigNumerics(MshElemType::type ele_type, const int nquadrature_
 	{
 	case MshElemType::LINE:
 		ele_dim = 1;
-		nGauss = nquadrature_points;
-		nGaussPoints = nquadrature_points;
+		nGauss = 2;
+		nGaussPoints = nGauss;
 		ShapeFunction = ShapeFunctionLine;
 		ShapeFunctionHQ = ShapeFunctionLineHQ;
 		GradShapeFunction = GradShapeFunctionLine;
