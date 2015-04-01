@@ -688,8 +688,36 @@ void CInitialCondition::SetSurface(int nidx)
 
 	if(m_sfc && m_msh)
 	{
-
-		 m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector);
+		 // m_msh->GetNODOnSFC(m_sfc, sfc_nod_vector); // TF: use the following
+		 // lines to get mesh nodes on surfaces
+		GEOLIB::Surface const* sfc(
+			static_cast<const GEOLIB::Surface*> (getGeoObj()));
+		if (sfc == NULL) {
+			std::cerr << "CInitialCondition::SetSurface(): Did not find surface.\n";
+			return;
+		}
+		std::vector<std::size_t> msh_nod_vec;
+		m_msh->GetNODOnSFC(sfc, msh_nod_vec);
+		// copy node ids
+		for (size_t k(0); k < msh_nod_vec.size(); k++) {
+			sfc_nod_vector.push_back (msh_nod_vec[k]);
+		}
+#ifndef NDEBUG
+#ifdef DEBUGMESHNODESEARCH
+		{
+			std::string const debug_fname(geo_name+"-FoundNodes.gli");
+			std::ofstream debug_out(debug_fname.c_str());
+			debug_out << "#POINTS\n";
+			for (size_t k(0); k<msh_nod_vec.size(); k++) {
+				debug_out << k << " " <<
+					GEOLIB::Point((m_msh->getNodeVector())[msh_nod_vec[k]]->getData()) <<
+					" $NAME " << msh_nod_vec[k] << "\n";
+			}
+			debug_out << "#STOP" << "\n";
+			debug_out.close();
+		}
+#endif
+#endif
 
 		if(this->getProcessDistributionType() == FiniteElement::CONSTANT)
 			for(size_t i = 0; i < sfc_nod_vector.size(); i++)
