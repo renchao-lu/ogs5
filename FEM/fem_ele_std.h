@@ -36,7 +36,7 @@
 //N: Thermal nonequilibrium
 enum EnumProcessType { EPT_LIQUID_FLOW, EPT_UNCONFINED_FLOW, EPT_GROUNDWATER_FLOW, EPT_TWOPHASE_FLOW, EPT_COMPONENTAL_FLOW,
                        EPT_HEAT_TRANSPORT, EPT_MASS_TRANSPORT, EPT_OVERLAND_FLOW, EPT_RICHARDS_FLOW, EPT_FLUID_MOMENTUM,
-                       EPT_GAS_FLOW, EPT_V, EPT_P, EPT_S,
+                       EPT_GAS_FLOW, EPT_MULTIPHASE_FLOW, EPT_PSGLOBAL, EPT_MULTI_COMPONENTIAL_FLOW,
                        EPT_THERMAL_NONEQUILIBRIUM};
 //-----------------------------------------------------
 
