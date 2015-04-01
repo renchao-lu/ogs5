@@ -3801,7 +3801,7 @@ void COutput::CalculateTotalFlux(CFEMesh* msh, vector<long>&nodes_on_geo,
 			face->SetNormalVector();
 			face->DirectNormalVector();
 			element->setOrder(msh->getOrder() + 1);
-			element->ConfigElement(face, true); // 2D fem	
+			element->ConfigElement(face, m_pcs_flow->m_num->ele_gauss_points, true); // 2D fem
 
 			for (k = 0; k < nfn; k++)
 			{
