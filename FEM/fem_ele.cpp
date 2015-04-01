@@ -338,6 +338,7 @@ void CElement::setOrder(const int order)
 **************************************************************************/
 void CElement::ConfigNumerics(MshElemType::type ele_type, const int nquadrature_points)
 {
+	assert(nquadrature_points>0);
 	// nGauss = GetNumericsGaussPoints(ElementType);
 	switch(ele_type)
 	{
