@@ -2609,7 +2609,7 @@ int REACT::Call_Phreeqc(void)
 //WH: run IPQC
 #ifdef OGS_FEM_IPQC
   std::string ipqc_database; //WH: database name for IPQC
-  int returnCode = 0;
+  int returnCode = 1;
   int pqcId = CreateIPhreeqc(); // create IPQC instance
 
   if(this->file_name_database.size()==0)
@@ -2622,7 +2622,7 @@ int REACT::Call_Phreeqc(void)
   if (LoadDatabase(pqcId, (FilePath + ipqc_database).c_str()) != 0)
 	{
 	 OutputErrorString(pqcId);
-	 return returnCode;
+	 returnCode = 0;
 	}
 
   // Sets the selected-output file switch on, so that phreeqc will write output to the SELECTED_OUTPUT file "phout_sel.dat"
@@ -2632,16 +2632,16 @@ int REACT::Call_Phreeqc(void)
   if (RunFile(pqcId, "phinp.dat") != 0)
 	{
 	 OutputErrorString(pqcId);
-	 return returnCode;
+	 returnCode = 0;
 	}
 
   if (DestroyIPhreeqc(pqcId) != IPQ_OK) // destroy IPQC instance
 	{
 	 OutputErrorString(pqcId);
-	 return returnCode;
+	 returnCode = 0;
 	}	
 
-  return 1;
+  return returnCode;
 #endif
 
 #ifdef PHREEQC
