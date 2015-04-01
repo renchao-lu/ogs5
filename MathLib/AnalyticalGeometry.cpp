@@ -161,6 +161,12 @@ double calcTriangleArea(GEOLIB::Point const& a,
 bool isPointInTriangle (const double q[3], const double a[3], const double b[3], const double c[3],
 	double eps)
 {
+	if (sqrt(MathLib::sqrDist(q, a)) < eps ||
+		sqrt(MathLib::sqrDist(q, b)) < eps ||
+		sqrt(MathLib::sqrDist(q, c)) < eps) {
+		return true;
+	}
+
 	GEOLIB::Point const v(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
 	GEOLIB::Point const w(c[0] - a[0], c[1] - a[1], c[2] - a[2]);
 
