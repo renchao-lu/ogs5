@@ -130,7 +130,7 @@ void ScreenMessage(const char* message)
 	if(myrank > 0)
 		return;
 #endif
-	printf(message);
+	printf("%s",message);
 }
 
 /**************************************************************************/
