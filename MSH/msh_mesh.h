@@ -384,7 +384,9 @@ public:
 	/**
 	 * \brief gives the indices of nodes, which are contained in the surface
 	 */
-	void GetNODOnSFC(const GEOLIB::Surface* sfc, std::vector<size_t>& msh_nod_vector, const bool for_s_term = false) const;
+	void GetNODOnSFC(const GEOLIB::Surface* sfc,
+		std::vector<size_t>& msh_nod_vector,
+		const bool for_s_term = false) const;
 
 	/** @} */  // close doxygen group
 

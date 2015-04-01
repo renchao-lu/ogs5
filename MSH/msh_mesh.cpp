@@ -1696,7 +1696,8 @@ void CFEMesh::GetNODOnSFC(Surface* m_sfc, std::vector<long>&msh_nod_vector, cons
    last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
-                          std::vector<size_t>& msh_nod_vector,  const bool for_s_term) const
+	std::vector<size_t>& msh_nod_vector,
+	const bool for_s_term) const
 {
 	msh_nod_vector.clear();
 
@@ -1719,7 +1720,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
        const  size_t nodes_in_usage = (size_t) NodesInUsage();
 	for (size_t j(0); j < nodes_in_usage; j++) {
 		if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
-			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length/2.0)) {
 				msh_nod_vector.push_back(nod_vector[j]->GetIndex());
 			}
 		}
@@ -1733,7 +1734,7 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 
         for (size_t j=0; j < id_act_l_max; j++) {
            if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
-              if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+              if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length/2.0)) {
                   msh_nod_vector.push_back(nod_vector[j]->GetIndex());
               }
            }
@@ -1754,8 +1755,8 @@ void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 #else
 	const size_t nodes_in_usage((size_t) NodesInUsage());
 	for (size_t j(0); j < nodes_in_usage; j++) {
-		if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length / 2.0)) {
-			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length / 2.0)) {
+		if (sfc->isPntInBV((nod_vector[j])->getData(), _search_length*0.375)) {
+			if (sfc->isPntInSfc((nod_vector[j])->getData(), _search_length*0.375)) {
 				msh_nod_vector.push_back(nod_vector[j]->GetIndex());
 			}
 		}
