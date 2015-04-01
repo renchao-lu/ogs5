@@ -468,15 +468,15 @@ std::string readSurface(std::istream &in,
         // surface created by polygon
         if (ply_id != std::numeric_limits<size_t>::max() && ply_id != ply_vec.size())
         {
-            if (ply_vec[ply_id]->isClosed())
-            {
-                polygon_vec.push_back (new Polygon (*(ply_vec[ply_id]), true));
-            }
-            else
+            if (!ply_vec[ply_id]->isClosed())
             {
                 std::cerr << "\n\tcannot create surface " << name << " from polyline: "
                     << " polyline is not closed.\n";
+                std::cerr << "\tmodify the polyline to make it closed.\n";
+                Polyline* ply = const_cast<Polyline*>(ply_vec[ply_id]);
+                ply->addPoint(ply->getPointID(0));
             }
+            polygon_vec.push_back (new Polygon (*(ply_vec[ply_id]), true));
         }
     }
 
