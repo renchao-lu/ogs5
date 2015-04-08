@@ -2173,11 +2173,11 @@ double CFluidProperties::HeatConductivity(double* variables)
 	switch(heat_conductivity_model)
 	{
 	case 0:                               // rho = f(x)
-    {
-        int fct_number = 0;
-        int gueltig;
+	{
+		int fct_number = 0;
+		int gueltig;
 		heat_conductivity = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
-    }
+	}
 		break;
 	case 1:                               // c = const
 		heat_conductivity = heat_conductivity;
