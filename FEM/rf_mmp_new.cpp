@@ -8667,7 +8667,7 @@ double CMediumProperties::HeatTransferCoefficient(long number,double theta, CFin
 
     return val;
 }
-//TN - added for TNEQ process
+//TN - added for TNEQ/TEQ process
 void CMediumProperties::setFrictionPhase (FiniteElement::FrictionPhase fric_phase)
 {
 	_fric_phase = fric_phase;

@@ -209,7 +209,7 @@ public:
 	double permeability_tensor[9];
 	double permeability_porosity_updating_values[5]; //ABM: Maximum of 2 values in Verma-Pruess case
 	std::string permeability_tensor_type_name;
-    std::string permeability_porosity_updating_type_name; //ABM
+	std::string permeability_porosity_updating_type_name; //ABM
 	std::string tortuosity_tensor_type_name;
 	int permeability_tensor_type;
 	int permeability_porosity_updating_type; //ABM
@@ -217,7 +217,7 @@ public:
 
 	double ElementVolumeMultiplyer; // Multiplyer of element volume
 
-	  std::string PhaseHeatedByFriction; //In TNEQ models: dissipated heat due to friction into solid or fluid energy balance
+	std::string PhaseHeatedByFriction; //In TNEQ/TES models: dissipated heat due to friction into solid or fluid energy balance
 
 	int permeability_pressure_model;
 	double permeability_pressure_model_values[10];

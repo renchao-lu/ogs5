@@ -112,7 +112,7 @@ public:
 	int isConcentrationCoupling() const {return C_Flag; }
 
 	// Interpolate Gauss values
-	double interpolate (double* nodalVal, const int order = 1) const;
+	double interpolate (double const * const nodalVal, const int order = 1) const;
 	double interpolate (const int idx,  CRFProcess* m_pcs, const int order = 1);
 	//double elemnt_average (const int idx, const int order =1);
 	double elemnt_average (const int idx,  CRFProcess* m_pcs, const int order = 1);

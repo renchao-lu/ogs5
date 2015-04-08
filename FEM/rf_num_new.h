@@ -134,7 +134,7 @@ extern CNumerics* NUMGet(std::string);
 //////////////////////////////////////////////////////////////////////////
 // SOLVER
 //////////////////////////////////////////////////////////////////////////
-typedef struct
+struct LINEAR_SOLVER_PROPERTIES
 {
 	char* name;
 	long type;
@@ -149,9 +149,9 @@ typedef struct
 	double time;
 	long kind;
 	long level;
-} LINEAR_SOLVER_PROPERTIES;
+};
 
-typedef struct
+struct LINEAR_SOLVER
 {
 	char pcs_type_name[80];
 	void* matrix;
@@ -184,7 +184,7 @@ typedef struct
 	int* unknown_vector_indeces;          /* pointer of field unknown_vector_index[unknown_vector_dimension]   */
 	long* unknown_node_numbers;           /* pointer of field unknown_node_numbers[unknown_vector_dimension]   */
 	int* unknown_update_methods;          /* pointer of field unknown_update_methods[unknown_vector_dimension] */
-} LINEAR_SOLVER;
+};
 
 #ifdef USE_MPI                                    //WW
 extern LINEAR_SOLVER* InitVectorLinearSolver(LINEAR_SOLVER*);
