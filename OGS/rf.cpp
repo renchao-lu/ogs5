@@ -71,6 +71,10 @@ double elapsed_time_mpi;
 #endif
 #endif
 
+// declaration of defaultOutputPath
+#include "rf_out_new.h"
+
+
 /* Definitionen */
 
 /**************************************************************************/
@@ -96,6 +100,7 @@ int main ( int argc, char* argv[] )
 	/* parse command line arguments */
 	std::string anArg;
 	std::string modelRoot;
+
 	for( int i = 1; i < argc; i++ )
 	{
 		anArg = std::string( argv[i] );
@@ -103,9 +108,10 @@ int main ( int argc, char* argv[] )
 		{
 			std::cout << "Usage: ogs [MODEL_ROOT] [OPTIONS]\n"
 			          << "Where OPTIONS are:\n"
-			          << "  -h [--help]       print this message and exit\n"
-			          << "  -b [--build-info] print build info and exit\n"
-			          << "  --version         print ogs version and exit" << "\n";
+			          << "  -h [--help]               print this message and exit\n"
+			          << "  -b [--build-info]         print build info and exit\n"
+			          << "  --output-directory DIR    put output files into DIR\n"
+			          << "  --version                 print ogs version and exit" << "\n";
 			continue;
 		}
 		if( anArg == "--build-info" || anArg == "-b" )
@@ -133,7 +139,22 @@ int main ( int argc, char* argv[] )
 		}
 		if( anArg == "--model-root" || anArg == "-m" )
 		{
+			if (i+1 >= argc) {
+				std::cerr << "Error: Parameter " << anArg << " needs an additional argument" << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
 			modelRoot = std::string( argv[++i] );
+			continue;
+		}
+		if (anArg == "--output-directory")
+		{
+			if (i+1 >= argc) {
+				std::cerr << "Error: Parameter " << anArg << " needs an additional argument" << std::endl;
+				std::exit(EXIT_FAILURE);
+			}
+			std::string path = argv[++i];
+
+			if (! path.empty()) defaultOutputPath = path;
 			continue;
 		}
 		// anything left over must be the model root, unless already found
@@ -260,6 +281,9 @@ int main ( int argc, char* argv[] )
 		std::cout << " Error: Cannot find file " << dateiname << "\n";
 		return 1;
 	}
+
+	// If no option is given, output files are placed in the same directory as the input files
+	if (defaultOutputPath.empty()) defaultOutputPath = pathDirname(std::string(dateiname));
 
 	FileName = dateiname;
 	size_t indexChWin, indexChLinux;

@@ -41,7 +41,8 @@
 
 #include "mathlib.h"
 #include "fem_ele.h"
-#include "tools.h"  
+#include "tools.h"
+#include "FileTools.h"
 
 extern size_t max_dim;                            //OK411 todo
 
@@ -4152,8 +4153,16 @@ Programing:
 void COutput::SetTotalFluxNodesDOM(std::vector<long>& nodes_vector)
 {
 	nodes_vector.resize(m_msh->nod_vector.size());
-	for (long i = 0; i < m_msh->nod_vector.size(); i++)
+	for (std::size_t i = 0; i < m_msh->nod_vector.size(); i++)
 		nodes_vector[i] = m_msh->nod_vector[i]->GetIndex();
 	
 
 }
+
+
+void COutput::setFileBaseName(const std::string& fn)
+{
+	file_base_name = pathJoin(defaultOutputPath, pathBasename(fn));
+}
+
+

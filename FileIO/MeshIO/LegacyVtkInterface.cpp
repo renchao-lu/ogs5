@@ -29,6 +29,9 @@
 #include "vtkMath.h"
 #endif
 
+#include "Output.h"
+#include "FileTools.h"
+
 using namespace std;
 
 LegacyVtkInterface::LegacyVtkInterface(MeshLib::CFEMesh* mesh,
@@ -665,8 +668,10 @@ void LegacyVtkInterface::WriteVTKDataArraysPETSC(PetscViewer viewer) const
    12/2008 NW Remove ios::app, Add PCS name to VTK file name
 **************************************************************************/
 void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
-									  std::string baseFilename) const
+                                      std::string baseFilename) const
 {
+	baseFilename = pathJoin(defaultOutputPath, pathBasename(baseFilename));
+
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 	char tf_name[10];
 	cout << "Process " << myrank << " in WriteDataVTK" << "\n";
