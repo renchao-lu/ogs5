@@ -428,7 +428,7 @@ void CElement::ConfigNumerics(MshElemType::type ele_type, const int nquadrature_
    06/2004 WW Implementation
    Last modified:
 **************************************************************************/
-double CElement::interpolate(double* nodalVal, const int order) const
+double CElement::interpolate(double const * const nodalVal, const int order) const
 {
 	int nn = nnodes;
 	double* inTerpo = shapefct;
