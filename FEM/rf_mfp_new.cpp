@@ -922,7 +922,6 @@ double CFluidProperties::Density(double* variables)
 {
 	double pressure;
 	double Rho = 0.0;
-	double m_frac_w;
 	static double density;
 	// static double air_gas_density,vapour_density,vapour_pressure;
 	
@@ -1042,11 +1041,19 @@ double CFluidProperties::Density(double* variables)
 			   density *= 1. + drho_dC * (max(variables[2], 0.0) - C_0);
 			
 			break;
-	  case 26: //Dalton's law + ideal gas for use with TNEQ
-			m_frac_w = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
-			density = variables[0]/(GAS_CONSTANT/1000.0*variables[1]) * (cp_vec[1]->molar_mass*m_frac_w + cp_vec[0]->molar_mass*(1.0-m_frac_w)); //R_uni in mNs
+		case 26: //Dalton's law + ideal gas for use with TNEQ/TES
+		{
+			const double M0 = cp_vec[0]->molar_mass;
+			const double M1 = cp_vec[1]->molar_mass;
+			const double p = variables[0];
+			const double T = variables[1];
+			const double x = variables[2];
 
-          break;
+			// TODO [CL] max is redundant if it is guaranteed that 0 <= x <= 1
+			const double m_frac_w = max(M0*x/(M0*x + M1*(1.0-x)), 0.); //mass in mole fraction
+			density = p / (GAS_CONSTANT/1000.0 * T) * (M1*m_frac_w + M0*(1.0-m_frac_w)); //R_uni in mNs
+		}
+			break;
 
 		default:
 			std::cout << "Error in CFluidProperties::Density: no valid model" <<
@@ -1467,21 +1474,7 @@ double CFluidProperties::MATCalcFluidDensityMethod8(double Press, double TempK, 
 //OK4709
 double CFluidProperties::Viscosity(double* variables)
 {
-    CRFProcess* m_pcs;
-    m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW"); //NB: this should not be here! Most PCS are not "MULTI_COMPONENTIAL_FLOW"!
-	static double viscosity;
-	
-	int gueltig;
-	double mfp_arguments[2], x[2], Vs[2];
-	double density, my = 0.0;
-
-	// double TTT=0, PPP=0;
-	// long Element_Index;
-	// int nod_index;
-
-	//----------------------------------------------------------------------
-	//WW bool New = false;                              // To be
-	//WW if(fem_msh_vector.size()>0) New = true;
+	double viscosity = 0.0;
 
 	//----------------------------------------------------------------------
 	if(variables)                         //OK4709: faster data access
@@ -1496,8 +1489,11 @@ double CFluidProperties::Viscosity(double* variables)
 	switch(viscosity_model)
 	{
 	case 0:                               // rho = f(x)
+	{
+		int gueltig;
 		viscosity = GetCurveValue(viscosity_curve_number,0,primary_variable[1],&gueltig);
 		break;
+	}
 	case 1:                               // my = const
 		viscosity = my_0;
 		break;
@@ -1505,6 +1501,9 @@ double CFluidProperties::Viscosity(double* variables)
 		viscosity = my_0 * (1. + dmy_dp * (max(primary_variable[0],0.0) - p_0));
 		break;
 	case 3:                               // my^l(T), Yaws et al. (1976)
+	{
+		CRFProcess* m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
+
 		if(mode == 1)             //OK4704 for nodal output
 		{
 			m_pcs = PCSGet("HEAT_TRANSPORT");
@@ -1519,6 +1518,7 @@ double CFluidProperties::Viscosity(double* variables)
  		else primary_variable[1]+=viscosity_T_shift; //JM if viscosity_T_shift==273 (user defined), Celsius can be used within this model
 		viscosity = LiquidViscosity_Yaws_1976(primary_variable[1]);
 		break;
+	}
 	case 4:                               // my^g(T), Marsily (1986)
          viscosity = LiquidViscosity_Marsily_1986(primary_variable[1]);
          //viscosity = LiquidViscosity_Marsily_1986(primary_variable[0]);
@@ -1535,6 +1535,8 @@ double CFluidProperties::Viscosity(double* variables)
 		                                 primary_variable[2]);
 		break;
 	case 9:                               // viscosity as function of density and temperature, NB
+	{
+		double mfp_arguments[2];
 
 		if(!T_Process)
 			primary_variable[1] = T_0;
@@ -1544,25 +1546,31 @@ double CFluidProperties::Viscosity(double* variables)
 		mfp_arguments[0] = primary_variable[0]; // rescue primary_variable before its destroyed by Density();
 		mfp_arguments[1] = primary_variable[1];
 
-		density = Density(mfp_arguments); //TODO: (NB) store density (and viscosity) as secondary variable
+		const double density = Density(mfp_arguments); //TODO: (NB) store density (and viscosity) as secondary variable
 		                                  //NB
 		viscosity = Fluid_Viscosity(density,mfp_arguments[1],mfp_arguments[0],fluid_id);
 		break;
+	}
 	case 15: //mixture 1/�= sum_i y_i/�_i:: VTPR-EoS
+	{
+		CRFProcess* m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
+		double my = 0.0;
+
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-	{
-		if(eos_name == "CONSTANT") 
-	{
-		my += variables[CIndex]/mu[CIndex-2]; 
-	}
-		else
-	{
-		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
-		my += variables[CIndex]/Fluid_Viscosity(ComponentDensity(CIndex, variables), variables[1], variables[0], fluid_id);
-	}
+		{
+			if(eos_name == "CONSTANT")
+			{
+				my += variables[CIndex]/mu[CIndex-2];
+			}
+			else
+			{
+				therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
+				my += variables[CIndex]/Fluid_Viscosity(ComponentDensity(CIndex, variables), variables[1], variables[0], fluid_id);
+			}
 		}
 		viscosity =  1.0/my;
 		break;
+	}
 
 
 	case 18: //BG, NB using calculated viscosities at nodes from the phase transition model
@@ -1574,25 +1582,36 @@ double CFluidProperties::Viscosity(double* variables)
 	case 19: // reserved for GEMS coupling
 	        break;
 	case 26: //Wilke (see Poling, B. E.; Prausnitz, J. M.; John Paul, O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New York, 2001, 5: page 9.21) 
-		{
+	{
+		double x[2], Vs[2];
+
+		const double M1 = cp_vec[0]->molar_mass;
+		const double M2 = cp_vec[1]->molar_mass;
+
+		const double p = variables[0];
+		const double T = variables[1];
+		const double X = variables[2];
+
 		//reactive component
-		x[0] = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
-		Vs[0] = Fluid_Viscosity(cp_vec[1]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], variables[0], cp_vec[1]->fluid_id);
+		x[0] = M1*X/(M1*X + M2*(1.0-X)); //mass in mole fraction
+		Vs[0] = Fluid_Viscosity(M2*p/(GAS_CONSTANT/1000.0*T), T, p, cp_vec[1]->fluid_id);
 		//inert component
 		x[1] = 1.0 - x[0];
-		Vs[1] = Fluid_Viscosity(cp_vec[0]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], variables[0], cp_vec[0]->fluid_id);//R_uni in mNs
+		Vs[1] = Fluid_Viscosity(M1*p/(GAS_CONSTANT/1000.0*T), T, p, cp_vec[0]->fluid_id);//R_uni in mNs
 
-		const double M1_over_M2 (cp_vec[1]->molar_mass/cp_vec[0]->molar_mass); //reactive over inert
+		const double M1_over_M2 (M2/M1); //reactive over inert
 		const double V1_over_V2 (Vs[0]/Vs[1]);
 
-		const double phi_12 ((1.0 + pow(V1_over_V2,0.5) * pow(1.0/M1_over_M2,0.25))*(1.0 + pow(V1_over_V2,0.5) * pow(1.0/M1_over_M2,0.25))/(pow(8.0*(1.0+M1_over_M2),0.5)));
-		const double phi_21 (phi_12 * M1_over_M2/V1_over_V2);
+		const double phi_12 = (1.0 + pow(V1_over_V2,0.5) * pow(1.0/M1_over_M2,0.25))
+		                      * (1.0 + pow(V1_over_V2,0.5) * pow(1.0/M1_over_M2,0.25))
+		                      / pow(8.0*(1.0+M1_over_M2),0.5);
+		const double phi_21 = phi_12 * M1_over_M2 / V1_over_V2;
 
-		viscosity = Vs[0]*x[0]/(x[0]+x[1]*phi_12);
-		viscosity += Vs[1]*x[1]/(x[1]+x[0]*phi_21);
+		viscosity = Vs[0]*x[0] / (x[0] + x[1] * phi_12)
+		          + Vs[1]*x[1] / (x[1] + x[0] * phi_21);
 
 		break;
-		}
+	}
 	default:
 		cout << "Error in CFluidProperties::Viscosity: no valid model" << "\n";
 		break;
@@ -2142,15 +2161,6 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 //NB Dec 08 4.9.05
 double CFluidProperties::HeatConductivity(double* variables)
 {
-
-	CRFProcess* m_pcs;
-    m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
-	double Kappa = 0.0;
-	double x[2], k[2];
-
-	int fct_number = 0;
-	int gueltig;
-
 	if(variables)                         //NB Dec 08
 	{
 		primary_variable[0] = variables[0]; //p (single phase)
@@ -2163,7 +2173,11 @@ double CFluidProperties::HeatConductivity(double* variables)
 	switch(heat_conductivity_model)
 	{
 	case 0:                               // rho = f(x)
+	{
+		int fct_number = 0;
+		int gueltig;
 		heat_conductivity = GetCurveValue(fct_number,0,primary_variable[0],&gueltig);
+	}
 		break;
 	case 1:                               // c = const
 		heat_conductivity = heat_conductivity;
@@ -2181,40 +2195,56 @@ double CFluidProperties::HeatConductivity(double* variables)
 		heat_conductivity = Fluid_Heat_Conductivity(Density(primary_variable), primary_variable[1], fluid_id);
 		break;
 
-    case 11: //Wassilijewa, Maso&Saxena (see Poling, B. E.; Prausnitz, J. M.; John Paul, O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New York, 2001, 5: page 10.30f.)
+	case 11: //Wassilijewa, Maso&Saxena (see Poling, B. E.; Prausnitz, J. M.; John Paul, O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New York, 2001, 5: page 10.30f.)
 		{
-		 //reactive component
-		 x[0] = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
-		 k[0] = Fluid_Heat_Conductivity(cp_vec[1]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], cp_vec[1]->fluid_id); 
+		double x[2], k[2];
+		const double M0 = cp_vec[0]->molar_mass;
+		const double M1 = cp_vec[1]->molar_mass;
+		const double p = variables[0];
+		const double T = variables[1];
+		const double X = variables[2];
+
+		// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
+		//reactive component
+		x[0] = max(M0*X/(M0*X + M1*(1.0-X)), 0.); // convert mass to mole fraction
+		k[0] = Fluid_Heat_Conductivity(M1*p/(GAS_CONSTANT/1000.0*T), T, cp_vec[1]->fluid_id);
 		 //inert component
 		 x[1] = 1.0 - x[0];
-		 k[1] = Fluid_Heat_Conductivity(cp_vec[0]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], cp_vec[0]->fluid_id);
+		k[1] = Fluid_Heat_Conductivity(M0*p/(GAS_CONSTANT/1000.0*T), T, cp_vec[0]->fluid_id);
 
-		 const double M1_over_M2 (cp_vec[1]->molar_mass/cp_vec[0]->molar_mass); //reactive over inert
-		 const double V1_over_V2 (Fluid_Viscosity(cp_vec[1]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], variables[0], cp_vec[1]->fluid_id)/Fluid_Viscosity(cp_vec[0]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1], variables[0], cp_vec[0]->fluid_id));
-		 const double L1_over_L2 (V1_over_V2/M1_over_M2);
+		const double M1_over_M2 = M1/M0; //reactive over inert
+		const double V1_over_V2 = Fluid_Viscosity(M1*p/(GAS_CONSTANT/1000.0*T), T, p, cp_vec[1]->fluid_id)
+		                        / Fluid_Viscosity(M0*p/(GAS_CONSTANT/1000.0*T), T, p, cp_vec[0]->fluid_id);
+		const double L1_over_L2 = V1_over_V2 / M1_over_M2;
 
-		 const double phi_12 ((1.0 + pow(L1_over_L2,0.5) * pow(1.0/M1_over_M2,0.25))*(1.0 + pow(V1_over_V2,0.5) * pow(1.0/M1_over_M2,0.25))/(pow(8.0*(1.0+M1_over_M2),0.5)));
-		 const double phi_21 (phi_12 * M1_over_M2/V1_over_V2);
+		const double phi_12 =   (1.0 + pow(L1_over_L2, 0.5) * pow(M1_over_M2, -0.25))
+		                      * (1.0 + pow(V1_over_V2, 0.5) * pow(M1_over_M2, -0.25))
+		                      / pow(8.0 * (1.0 + M1_over_M2), 0.5);
+		const double phi_21 = phi_12 * M1_over_M2 / V1_over_V2;
 
-		 heat_conductivity = k[0]*x[0]/(x[0]+x[1]*phi_12);
-		 heat_conductivity += k[1]*x[1]/(x[1]+x[0]*phi_21);
-         break;
+		heat_conductivity = k[0]*x[0]/(x[0]+x[1]*phi_12);
+		heat_conductivity += k[1]*x[1]/(x[1]+x[0]*phi_21);
+		break;
 		}
 	case 15: // mixture k_m= sum_i y_i*k_i:: p, T, x
+	{
+		CRFProcess* m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
+		double Kappa = 0.0;
+
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
-	{
-		if(eos_name == "CONSTANT") 
-	{
-		Kappa += variables[CIndex]*kappa[CIndex-2]; 
-	}
-		else
-	{
-		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
-		Kappa += variables[CIndex]*Fluid_Heat_Conductivity(ComponentDensity(CIndex, variables), variables[1], fluid_id);
-	}
+		{
+			if(eos_name == "CONSTANT") 
+			{
+				Kappa += variables[CIndex]*kappa[CIndex-2]; 
+			}
+				else
+			{
+				therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
+				Kappa += variables[CIndex]*Fluid_Heat_Conductivity(ComponentDensity(CIndex, variables), variables[1], fluid_id);
+			}
 		}
 		heat_conductivity =  Kappa;
+	}
 		break;
 
 	}
@@ -3437,7 +3467,7 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	}
 
 	//std::vector<double> arguments(vec_var_names->size());
-	std::vector<double> arguments(std::max(static_cast<size_t>(3),vec_var_names->size()));
+	std::vector<double> arguments(std::max(size_t(3ul), vec_var_names->size()));
 	for (unsigned i=0; i<vec_var_names->size(); i++) {
 		CRFProcess* pcs = PCSGet((*vec_var_names)[i],true);
 		if (pcs) {
@@ -3467,15 +3497,16 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 	double mfp_value = .0;
 	switch(mfp_id)
 	{
-	case 0: mfp_value = m_mfp->Viscosity(&arguments[0]);
+
+	case 0: mfp_value = m_mfp->Viscosity(arguments.data());
 		break;
 	//NB 4.8.01
-	case 1:	mfp_value = m_mfp->Density(&arguments[0]);
+	case 1:	mfp_value = m_mfp->Density(arguments.data());
 		break;
-	case 2: mfp_value = m_mfp->HeatConductivity(&arguments[0]);
+	case 2: mfp_value = m_mfp->HeatConductivity(arguments.data());
 		break;
 	//NB AUG 2009
-	case 3: mfp_value = m_mfp->SpecificHeatCapacity(&arguments[0]);
+	case 3: mfp_value = m_mfp->SpecificHeatCapacity(arguments.data());
 		break;
 	default: cout << "MFPGetNodeValue: no MFP data" << "\n";
 		break;
