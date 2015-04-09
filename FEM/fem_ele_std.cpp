@@ -7510,11 +7510,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 
 	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 	{
-		for (int in = 0; in < pcs->dof; in++)
-		{
-			for (i=0;i<nnodes; i++)
-				NodalVal[i+in*nnodes] = 0.0;
-		}
+		for (int in = 0; in < pcs->dof * nnodes; in++) { NodalVal[in] = 0.0; }
 	}
 
 	if(pcs->m_num->nls_method > 0 && (!dynamic)) //Newton method
