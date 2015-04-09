@@ -4963,10 +4963,17 @@ double CRFProcess::Execute()
 			   const long nshift = ii*g_nnodes;
 			   for(j=0; j<g_nnodes; j++)
 			   {
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+				  k =  pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[j] + ii;
+				  const double val_n = GetNodeValue(j, nidx1);       //03.04.2009. WW
+				  SetNodeValue(j, nidx1, eqs_x[k] );
+				  eqs_x[k] = val_n;      // Used for time stepping. 03.04.2009. WW
+#else
 				  k = m_msh->Eqs2Global_NodeIndex[j];
 				  const double val_n = GetNodeValue(k, nidx1);       //03.04.2009. WW
 				  SetNodeValue(k, nidx1, eqs_x[j + nshift]);
 				  eqs_x[j + nshift] = val_n;      // Used for time stepping. 03.04.2009. WW
+#endif
 			   }
 			}
 		}
@@ -4978,10 +4985,17 @@ double CRFProcess::Execute()
 			   const long nshift = ii*g_nnodes;
 			   for(j=0; j<g_nnodes; j++)
 			   {
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+				  k = pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[j] + ii;
+				  const double val_n = GetNodeValue(j, nidx1);       
+				  SetNodeValue(j, nidx1, (1.0-nl_theta)*val_n + nl_theta * eqs_x[k]);
+				  eqs_x[k] = val_n;      // Used for time stepping. 03.04.2009. WW
+#else
 				  k = m_msh->Eqs2Global_NodeIndex[j];
 				  const double val_n = GetNodeValue(k, nidx1);       //03.04.2009. WW
 				  SetNodeValue(k, nidx1, (1.0-nl_theta)*val_n + nl_theta*eqs_x[j + nshift]);
 				  eqs_x[j + nshift] = val_n;      // Used for time stepping. 03.04.2009. WW
+#endif
 			   }
 			}
 		}
@@ -9234,6 +9248,10 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 	int num_dof_errors = pcs_number_of_primary_nvals;
 	double unknowns_norm = 0.0;
 	double absolute_error[DOF_NUMBER_MAX];
+#if defined(USE_PETSC) // || defined(other parallel libs)//02.2014. WW
+	g_nnodes = m_msh->getNumNodesLocal(); 
+	eqs_x = eqs_new->GetGlobalSolution();
+#else
 	g_nnodes = m_msh->GetNodesNumber(false);
 
 #ifdef NEW_EQS
@@ -9241,6 +9259,8 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 #else
 	eqs_x = eqs->x;
 #endif
+
+#endif // if defined(USE_PETSC)  
 
 	switch(method)
 	{
@@ -9253,7 +9273,11 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			if(m_num->nls_method > 0){  // NEWTON-RAPHSON
 				for(ii=0;ii<pcs_number_of_primary_nvals;ii++){
 					for(i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = eqs_x[ pcs_number_of_primary_nvals * m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   val1 = eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					}
 				}
@@ -9264,8 +9288,12 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 					//
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = GetNodeValue(i, nidx1) - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = GetNodeValue(k, nidx1) - eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					}
 				}
@@ -9287,9 +9315,14 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 					//
 					for(i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//02.2018. WW
+					   val1 = eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+					   val2 = GetNodeValue(i, nidx1);
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = eqs_x[i+ii*g_nnodes];
 					   val2 = GetNodeValue(k, nidx1);
+#endif
 					   //
 					   unknowns_norm += val1*val1;
 					   value += val2*val2;
@@ -9303,9 +9336,14 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					//
 					error = 0.0;
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = GetNodeValue(i, nidx1);
+					   val2 = val1 - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = GetNodeValue(k, nidx1);
 					   val2 = val1 - eqs_x[i+ii*g_nnodes];
+#endif
 					   //
 					   unknowns_norm += val2*val2;
 					   value += val1*val1;
@@ -9327,7 +9365,11 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				{
 					error = 0.0;
 					for(i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   val1 = eqs_x[i+ii*g_nnodes];
+#endif
 					   error += val1*val1;
 					}
 					unknowns_norm += error;
@@ -9341,8 +9383,12 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					//
 					error = 0.0;
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = GetNodeValue(i, nidx1) - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = GetNodeValue(k, nidx1) - eqs_x[i+ii*g_nnodes];
+#endif
 					   error += val1*val1;
 					}
 					unknowns_norm += error;
@@ -9360,7 +9406,11 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			if(m_num->nls_method > 0){  // NEWTON-RAPHSON
 				for(ii=0;ii<pcs_number_of_primary_nvals;ii++){
 					for(i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   val1 = eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					}
 				}
@@ -9371,8 +9421,12 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 					//
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+					   val1 = GetNodeValue(i, nidx1) - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = GetNodeValue(k, nidx1) - eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					}
 				}
@@ -9392,7 +9446,11 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 				{
 					error = 0.0;
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.3014. WW
+					   val1 = eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   val1 = eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					   val1 = fabs(val1);
 					   if(val1 > error)
@@ -9408,8 +9466,12 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					nidx1 = GetNodeValueIndex(pcs_primary_function_name[ii]) + 1;
 					//
 					for (i = 0; i < g_nnodes; i++){
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.3014. WW
+					   val1 = GetNodeValue(i, nidx1) - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+#else
 					   k = m_msh->Eqs2Global_NodeIndex[i];
 					   val1 = GetNodeValue(k, nidx1) - eqs_x[i+ii*g_nnodes];
+#endif
 					   unknowns_norm += val1*val1;
 					   val1 = fabs(val1);
 					   if(val1 > error)
@@ -9498,6 +9560,16 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		//
 		*/
 	}
+
+#if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
+	for(ii=0;ii<pcs_number_of_primary_nvals;ii++)
+	{
+	    double val_temp = pcs_absolute_error[ii];
+	    pcs_absolute_error[ii] = 0.;
+	    MPI_Allreduce(&val_temp, &pcs_absolute_error[ii], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	}
+#endif
+
 	//
 	// Store the error (JT)
 	// JT: now returning RELATIVE error. NECESSARY BECAUSE DOF MAY BE > 1 AND EACH DOF MAY HAVE DIFFERENT CHARACTER
