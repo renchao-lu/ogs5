@@ -511,6 +511,8 @@ SolidReactiveSystem convertSolidReactiveSystem( const std::string& reactive_stri
 		return CaOH2;
 	if (reactive_string.compare("Mn3O4") == 0)
 		return Mn3O4;
+	if (reactive_string.compare("Z13XBF") == 0)
+		return Z13XBF;
 
 	std::cout << "Convert error: " << reactive_string << " not found. \n";
 	return INVALID_REACTIVE_SYSTEM;
@@ -526,6 +528,8 @@ std::string convertSolidReactiveSystemToString(SolidReactiveSystem reactive_syst
 		return "CaOH2";
 	if (reactive_system == Mn3O4)
 		return "Mn3O4";
+	if (reactive_system == Z13XBF)
+		return "Z13XBF";
 
 	std::cout << "Invalid reactive system type. \n";
 	return "INVALID_REACTIVE_SYSTEM";

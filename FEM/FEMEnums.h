@@ -264,7 +264,8 @@ enum SolidReactiveSystem
 	INERT,
 	SINUSOIDAL,
 	CaOH2,
-	Mn3O4
+	Mn3O4,
+	Z13XBF
 };
 
 SolidReactiveSystem convertSolidReactiveSystem( const std::string& reactive_string);
