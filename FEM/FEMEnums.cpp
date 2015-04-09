@@ -55,6 +55,8 @@ ProcessType convertProcessType ( const std::string& pcs_type_string)
 		return MULTI_COMPONENTIAL_FLOW;
 	if (pcs_type_string.compare ("TNEQ") == 0)
 		return TNEQ;
+	if (pcs_type_string.compare ("TES") == 0)
+		return TES;
 	//else
 		//std::cout << "WARNING in convertProcessType: process type #" << pcs_type_string <<
 		//"# unknown" << "\n";
@@ -106,6 +108,8 @@ std::string convertProcessTypeToString ( ProcessType pcs_type )
 		return "MULTI_COMPONENTIAL_FLOW";
 	case TNEQ:
 		return "TNEQ";
+	case TES:
+		return "TES";
 	case NO_PCS:
 		return "NO_PCS";
 	}
@@ -116,14 +120,24 @@ std::string convertProcessTypeToString ( ProcessType pcs_type )
 
 bool isFlowProcess (ProcessType pcs_type)
 {
-	if (   pcs_type == LIQUID_FLOW || pcs_type == FLUID_FLOW 
-		|| pcs_type == RICHARDS_FLOW || pcs_type == GROUNDWATER_FLOW
-		|| pcs_type == PS_GLOBAL || pcs_type == MULTI_PHASE_FLOW
-		|| pcs_type == DEFORMATION_FLOW || pcs_type == DEFORMATION_H2
-	    || pcs_type == TWO_PHASE_FLOW || pcs_type == OVERLAND_FLOW 
-	    || pcs_type == AIR_FLOW || pcs_type == MULTI_COMPONENTIAL_FLOW
-		|| pcs_type == TNEQ)
+	switch (pcs_type)
+	{
+	case LIQUID_FLOW:
+	case FLUID_FLOW:
+	case RICHARDS_FLOW:
+	case GROUNDWATER_FLOW:
+	case PS_GLOBAL:
+	case MULTI_PHASE_FLOW:
+	case DEFORMATION_FLOW:
+	case DEFORMATION_H2:
+	case TWO_PHASE_FLOW:
+	case OVERLAND_FLOW:
+	case AIR_FLOW:
+	case MULTI_COMPONENTIAL_FLOW:
+	case TNEQ:
+	case TES:
 		return true;
+	}
 	return false;
 }
 

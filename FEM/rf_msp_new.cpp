@@ -205,20 +205,37 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			case 3:       // DECOVALEX THM1, Bentonite
 				in_sd.clear();
 				break;
-			   case 4:
-				   //0. Capacity at density 1
-				   //1. Capacity at density 2
-				   //2. density 1
-				   //3. density 2
-				  data_Capacity = new Matrix(5);
-                  for(i=0; i<4; i++)
-                     in_sd>> (*data_Capacity)(i);
-                  in_sd.clear();
-                  break;
-            }
-         }
+			case 4:
+				//0. Capacity at density 1
+				//1. Capacity at density 2
+				//2. density 1
+				//3. density 2
+				data_Capacity = new Matrix(5);
+				for(i=0; i<4; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+				// TES
+			case 5: //Capacity depending on solid conversion
+				//0. Capacity at lower_density_limit (reactive system property)
+				//1. Capacity at upper_density_limit (reactive system property)
+				data_Capacity = new Matrix(3);
+				for(i=0; i<2; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+			case 6: //Capacity depending on loading with adsorbate
+				//0. Capacity at desorbed state (lower density limit)
+				//1. Capacity of adsorbate
+				data_Capacity = new Matrix(3);
+				for(i=0; i<2; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+			}
+		}
 
-         //....................................................................
+		//....................................................................
 		// subkeyword found
 		if(line_string.compare("CONDUCTIVITY") == 0)
 		{

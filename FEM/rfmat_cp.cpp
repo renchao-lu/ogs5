@@ -134,6 +134,10 @@ bool CPRead(std::string file_base_name)
 			DisplayMsgLn("ERROR. TNEQ requires specification of inert and reactive components in mcp file.");
 			exit(1);
 		}
+        if (pcs_vector[0]->getProcessType() == FiniteElement::TES){
+			DisplayMsgLn("ERROR. TES requires specification of inert and reactive components in mcp file.");
+			exit(1);
+		}
 		return false;
 	}
 	cp_file.seekg(0L,ios::beg);
@@ -177,15 +181,19 @@ bool CPRead(std::string file_base_name)
 	}
 	if ( pcs_rwpt_count == 0) // HS, no random walk detected.
 	{
-		if ( (pcs_mt_count != cp_vec.size() || pcs_mt_count != cp_name_2_idx.size()) && !pcs_vector[0]->getProcessType() == FiniteElement::TNEQ)
+		if ((pcs_mt_count != cp_vec.size() || pcs_mt_count != cp_name_2_idx.size())
+		    && pcs_vector[0]->getProcessType() != FiniteElement::TNEQ
+		    && pcs_vector[0]->getProcessType() != FiniteElement::TES
+		    )
 		{
 			DisplayMsgLn(
 			        "Mass transport components and Mass transport processes do not fit!");
 			exit(1);
 		}
-		else if (cp_vec.size() < 2 && pcs_vector[0]->getProcessType() == FiniteElement::TNEQ)
+		else if (cp_vec.size() < 2
+		         && (pcs_vector[0]->getProcessType() == FiniteElement::TNEQ || pcs_vector[0]->getProcessType() == FiniteElement::TES))
 		{
-			DisplayMsgLn("ERROR. TNEQ requires specification of inert and reactive components in mcp file.");
+			DisplayMsgLn("ERROR. TNEQ/TES requires specification of inert and reactive components in mcp file.");
 			exit(1);
 		}
 		else
@@ -198,13 +206,15 @@ bool CPRead(std::string file_base_name)
 					cp_iter->second->setProcess( pcs_vector[i] );
 					++cp_iter;
 				}
-				if (pcs_vector[i]->getProcessType() == FiniteElement::TNEQ)
-					std::cout << "Warning! For TNEQ, the component order in the mcp file needs to be INERT, REACTIVE!\n";
+				if (pcs_vector[i]->getProcessType() == FiniteElement::TNEQ
+				    || pcs_vector[i]->getProcessType() == FiniteElement::TES)
+					std::cout << "Warning! For TNEQ/TES, the component order in the mcp file needs to be INERT, REACTIVE!\n";
 			}
 		} // end of else
 
 		//Assign fluid id's for use in fluid property calculation
-		if (pcs_vector[0]->getProcessType() == FiniteElement::TNEQ)
+		if (pcs_vector[0]->getProcessType() == FiniteElement::TNEQ
+		    || pcs_vector[0]->getProcessType() == FiniteElement::TES)
 			for (i=0;i<cp_vec.size();i++)
 			{
 				if (cp_vec[i]->compname == "N2")
@@ -216,7 +226,7 @@ bool CPRead(std::string file_base_name)
 					std::cout << "Warning: The thermal conductivity critical enhancement model for oxygen has not been implemented. Dilute and residual parts only.\n";
 				}
 				else
-					std::cout << "Warning: Component name unknown to TNEQ.\n";
+					std::cout << "Warning: Component name unknown to TNEQ/TES.\n";
 			}
 	}
 	return true;
