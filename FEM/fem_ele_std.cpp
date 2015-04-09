@@ -54,6 +54,18 @@ extern double gravity_constant;                   // TEST, must be put in input 
 
 using namespace std;
 #include "Eclipse.h"                              //BG 09/2009
+
+namespace
+{
+
+static inline double ipol(double const * const a, double const * const b, double theta, FiniteElement::CElement* obj)
+{
+    return (1.0-theta)*obj->interpolate(a) + theta*obj->interpolate(b);
+}
+
+}
+
+
 namespace FiniteElement
 {
 //========================================================================
@@ -434,9 +446,11 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	AuxMatrix = new Matrix(size_m, size_m);
 	AuxMatrix1 = new Matrix(size_m, size_m);
 
-	if (this->pcs->m_num->fct_method > 0) //NW
-
+	if (this->pcs->m_num->fct_method > 0)
+	{ //NW
 		FCT_MassL = new DiagonalMatrix(size_m);
+	}
+
 	time_unit_factor = pcs->time_unit_factor;
 
 	check_matrices = true;
@@ -840,9 +854,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
    06/2009 OK MMP test not here (time consuming)
    01/2010 NW Set geo_area here
  **************************************************************************/
-void CFiniteElementStd::SetMaterial(int phase)
+void CFiniteElementStd::SetMaterial(int /*phase*/)
 {
-	phase = 0;
 	//----------------------------------------------------------------------
 	// MMP
 	int mmp_index = 0;
@@ -2875,36 +2888,46 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 **************************************************************************/
 void CFiniteElementStd::CalCoefLaplaceMCF(int ip)
 {
-	int i, in, k, nDF=pcs->dof, Index = MeshElement->GetIndex();
+	const int nDF=pcs->dof;
+	const int Index = MeshElement->GetIndex();
 	double* tensor = NULL;
-	double arg_PV[6], rho; 
+	double arg_PV[6];
 	poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta); 
-	    ComputeShapefct(1); 
-	for(i = 0; i <nDF; i++) arg_PV[i] = interpolate(NodalValue[i]);
-	rho = FluidProp->Density(arg_PV);
-	for(in = 0; in <nDF *nDF; in++) 
-	{
-	for(k = 0; k < dim*dim;  k++)
-	{
-	LaplaceMatrixElements[in][k] = 0.0;
-	}
-	}
-	tensor = MediaProp->DispersionTensorMCF(ip, 0, 0, arg_PV);
-	for(k = 0; k < dim; k++)   
-	LaplaceMatrixElements[0][k*dim + k] = tensor[k*dim + k]*rho;
+	ComputeShapefct(1); 
+	assert(nDF<=6);
+	for(int i = 0; i<nDF; i++) arg_PV[i] = interpolate(NodalValue[i]);
+	const double rho = FluidProp->Density(arg_PV);
 
-    tensor = MediaProp->DispersionTensorMCF(ip, 1, 0, arg_PV);
-	for(k = 0; k < dim; k++)   
-	LaplaceMatrixElements[nDF + 1][k*dim + k] = tensor[k*dim + k];
+	for(int in = 0; in < nDF*nDF; in++)
+	{
+		for(size_t k = 0; k < dim*dim;  k++)
+		{
+			LaplaceMatrixElements[in][k] = 0.0;
+		}
+	}
+
+	tensor = MediaProp->DispersionTensorMCF(ip, 0, 0, arg_PV);
+	for(size_t k = 0; k < dim; k++)
+	{
+		LaplaceMatrixElements[0][k*dim + k] = tensor[k*dim + k]*rho;
+	}
+
+	tensor = MediaProp->DispersionTensorMCF(ip, 1, 0, arg_PV);
+	for(size_t k = 0; k < dim; k++)
+	{
+		LaplaceMatrixElements[nDF + 1][k*dim + k] = tensor[k*dim + k];
+	}
 
 	if(FluidProp->cmpN > 0)
 	{
-	for(int CIndex = 2; CIndex < FluidProp->cmpN + 2; CIndex++) 
-	{
-	tensor = MediaProp->DispersionTensorMCF(ip, 2, CIndex, arg_PV);
-	for(k = 0; k < dim; k++)   
-	LaplaceMatrixElements[(nDF + 1)*CIndex][k*dim + k] = tensor[k*dim + k]*rho; 
-	}
+		for(int CIndex = 2; CIndex < FluidProp->cmpN + 2; CIndex++)
+		{
+			tensor = MediaProp->DispersionTensorMCF(ip, 2, CIndex, arg_PV);
+			for(size_t k = 0; k < dim; k++)
+			{
+				LaplaceMatrixElements[(nDF + 1)*CIndex][k*dim + k] = tensor[k*dim + k]*rho;
+			}
+		}
 }
 
 }
@@ -3611,15 +3634,14 @@ void CFiniteElementStd::CalcMass()
 	double fkt,mat_fac;
 	// Material
 	mat_fac = 1.0;
-	double alpha[3], summand[8];
+	double alpha[3] = {}, summand[8] = {};
 	double vel[3];                        //NW
 	//  int indice = MeshElement->GetIndex();
 	//  int phase = pcs->pcs_type_number;
 	int upwind_method = pcs->m_num->ele_upwind_method;
-	MNulleVec(alpha,3);
-	MNulleVec(summand,8);
 
 	if(PcsType == EPT_TWOPHASE_FLOW)
+	{
 		if(upwind_method > 0)
 		{
 			// CB 11/07 this is to provide the velocity at the element center of gravity
@@ -3627,6 +3649,7 @@ void CFiniteElementStd::CalcMass()
 			Cal_Velocity_2();
 			UpwindAlphaMass(alpha); // CB 160507
 		}
+	}
 
 	ElementValue* gp_ele = ele_gp_value[Index]; //NW
 
@@ -4302,42 +4325,44 @@ void CFiniteElementStd::CalcMass2()
 	//======================================================================
 	// Loop over Gauss points
 	for (gp = 0; gp < nGaussPoints; gp++)
-	  {
-	    //---------------------------------------------------------
-	    //  Get local coordinates and weights
-	    //  Compute Jacobian matrix and its determinate
-	    //---------------------------------------------------------
-	    fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-	    // Compute geometry
-	    ComputeShapefct(1);       // Linear interpolation function
-	    for(in = 0; in < dof_n; in++)
-	      for(jn = 0; jn < dof_n; jn++)
+	{
+		//---------------------------------------------------------
+		//  Get local coordinates and weights
+		//  Compute Jacobian matrix and its determinate
+		//---------------------------------------------------------
+		fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+		// Compute geometry
+		ComputeShapefct(1);       // Linear interpolation function
+		for(in = 0; in < dof_n; in++)
 		{
-		  // Material
-		  mat_fac = CalCoefMass2(in * dof_n + jn);
-		  mat_fac *= fkt;
-		  // Calculate mass matrix
-		  const int jsh = jn * nnodes;
-#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-		  for (i = 0; i < act_nodes; i++)
-		    {
-		      const int ia = local_idx[ia];
-		      const int ish = ia + in * nnodes;
-		      for (j = 0; j < nnodes; j++)
+			for(jn = 0; jn < dof_n; jn++)
 			{
-			  (*Mass2)(ish,j + jsh) += mat_fac * shapefct[ia] * shapefct[j];
-			}
-		    }
+				// Material
+				mat_fac = CalCoefMass2(in * dof_n + jn);
+				mat_fac *= fkt;
+				// Calculate mass matrix
+				const int jsh = jn * nnodes;
+#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
+				for (i = 0; i < act_nodes; i++)
+				{
+					const int ia = local_idx[ia];
+					const int ish = ia + in * nnodes;
+					for (j = 0; j < nnodes; j++)
+					{
+						(*Mass2)(ish,j + jsh) += mat_fac * shapefct[ia] * shapefct[j];
+					}
+				}
 #else
-		  for (i = 0; i < nnodes; i++)
-		    {
-		      const int ish = i + in * nnodes;
-		      for (j = 0; j < nnodes; j++)
-			(*Mass2)(ish, j + jsh) += mat_fac * shapefct[i] * shapefct[j];
-		    }
+				for (i = 0; i < nnodes; i++)
+				{
+					const int ish = i + in * nnodes;
+					for (j = 0; j < nnodes; j++)
+						(*Mass2)(ish, j + jsh) += mat_fac * shapefct[i] * shapefct[j];
+				}
 #endif
+			}
 		}
-	  }
+	}
 }
 
 
@@ -4799,118 +4824,117 @@ void CFiniteElementStd::CalcContent()
  **************************************************************************/
 void CFiniteElementStd::CalcLaplace()
 {
-  int i, j,  l, in, jn;
-  size_t k;
-  // ---- Gauss integral
-  int gp_r = 0, gp_s = 0, gp_t;
-  gp_t = 0;
-  double fkt, water_depth;
-  int dof_n = 1;
-  
-   
-  // 03.03 2009 PCH
-  if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
-    dof_n = 2;
-  if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
-	  dof_n = 4;
-  if (PcsType == EPT_TES)
-	  dof_n = 3;
-  
-  //----------------------------------------------------------------------
-  // Loop over Gauss points
-  for (gp = 0; gp < nGaussPoints; gp++)
-    {
-      //---------------------------------------------------------
-      //  Get local coordinates and weights
-      //  Compute Jacobian matrix and its determinate
-      //---------------------------------------------------------
-      fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
-      //---------------------------------------------------------
-      // Compute geometry
-      ComputeGradShapefct(1);   // Linear interpolation function
-      // Calculate mass matrix
-      water_depth = 1.0;
-      // The following "if" is done by WW
-      if(PcsType == EPT_GROUNDWATER_FLOW && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim ==
-	 2 && !pcs->m_msh->hasCrossSection())
+	// ---- Gauss integral
+	int gp_r = 0, gp_s = 0, gp_t = 0;
+
+	size_t dof_n = 1; // TODO [CL] shouldn't that be equal to pcs->dof
+
+	// 03.03 2009 PCH
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
 	{
-	  water_depth = 0.0;
-	  for(i = 0; i < nnodes; i++)
-	    water_depth +=
-	      (pcs->GetNodeValue(nodes[i],idx1) - Z[i]) * shapefct[i];
+		dof_n = 2;
 	}
-      fkt *= water_depth;
-      //---------------------------------------------------------
-      
-      for (in = 0; in < dof_n; in++)
+	else if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 	{
-	  const int ishd = in * dof_n ;
-	  const int ish = in*nnodes;
-	  for (jn = 0; jn < dof_n;  jn++)
-	    {
-	      // Material
-	      if(dof_n == 1)
-		CalCoefLaplace(false,gp);
-	      else if (dof_n == 2)
-		{		  
-		  if (PcsType == EPT_MULTIPHASE_FLOW)
-		    CalCoefLaplace2(false, ishd + jn);
-		  else if (PcsType == EPT_PSGLOBAL)
-		    CalCoefLaplacePSGLOBAL(false,ishd + jn);
+		dof_n = 4;
+	}
+	else if (PcsType == EPT_TES)
+	{
+		dof_n = 3;
+	}
+
+	//----------------------------------------------------------------------
+	// Loop over Gauss points
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+		//---------------------------------------------------------
+		//  Get local coordinates and weights
+		//  Compute Jacobian matrix and its determinate
+		//---------------------------------------------------------
+		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+		//---------------------------------------------------------
+		// Compute geometry
+		ComputeGradShapefct(1);   // Linear interpolation function
+		// Calculate mass matrix
+		// The following "if" is done by WW
+		if(PcsType == EPT_GROUNDWATER_FLOW && MediaProp->unconfined_flow_group == 1 && MeshElement->ele_dim ==
+		   2 && !pcs->m_msh->hasCrossSection())
+		{
+			double water_depth = 0.0;
+			for (int i = 0; i < nnodes; i++)
+				water_depth += (pcs->GetNodeValue(nodes[i],idx1) - Z[i]) * shapefct[i];
+			fkt *= water_depth;
 		}
-		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
-			  CalCoefLaplaceTNEQ(ishd + jn);
-		else if (PcsType == EPT_TES)
-			CalCoefLaplaceTES(ishd + jn);
-	      const int jsh = jn*nnodes;
+		//---------------------------------------------------------
+
+		for (size_t in = 0; in < dof_n; in++)
+		{
+			const int ishd = in * dof_n;
+			const int ish = in*nnodes;
+			for (size_t jn = 0; jn < dof_n;  jn++)
+			{
+				// Material
+				if(dof_n == 1)
+					CalCoefLaplace(false,gp);
+				else if (dof_n == 2)
+				{
+					if (PcsType == EPT_MULTIPHASE_FLOW)
+						CalCoefLaplace2(false, ishd + jn);
+					else if (PcsType == EPT_PSGLOBAL)
+						CalCoefLaplacePSGLOBAL(false,ishd + jn);
+				}
+				else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+					CalCoefLaplaceTNEQ(ishd + jn);
+				else if (PcsType == EPT_TES)
+					CalCoefLaplaceTES(ishd + jn);
+				const int jsh = jn*nnodes;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-	    //---------------------------------------------------------
-		for (i = 0; i < act_nodes; i++)
-		{
-		  const int ia = local_idx[i];
-		  const int iish = ia + ish;
-		  for (j = 0; j < nnodes; j++)
-		    {
-		      const int jjsh = j + jsh;
-		      //  if(j>i) continue;  
-		      for (k = 0; k < dim; k++)
-              {
-                 const int ksh = k*nnodes + ia; 
-                 const int km = dim *k ;
-                 for(l=0; l< dim; l++)
-                 {
-                    (*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
-                               * mat[km + l] * dshapefct[l*nnodes+j];			      
-                 } 
-              }
-           } // j: nodes
-        } // i: nodes	
+				//---------------------------------------------------------
+				for (int i = 0; i < act_nodes; i++)
+				{
+					const int ia = local_idx[i];
+					const int iish = ia + ish;
+					for (int j = 0; j < nnodes; j++)
+					{
+						const int jjsh = j + jsh;
+						//  if(j>i) continue;
+						for (size_t k = 0; k < dim; k++)
+						{
+							const int ksh = k*nnodes + ia;
+							const int km = dim *k ;
+							for(l=0; l< dim; l++)
+							{
+								(*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
+								                          * mat[km + l] * dshapefct[l*nnodes+j];
+							}
+						}
+					} // j: nodes
+				} // i: nodes
 #else
-        //---------------------------------------------------------
-        for (i = 0; i < nnodes; i++)
-		{
-		  const int iish = i + ish;
-		  for (j = 0; j < nnodes; j++)
-		   {
-		      const int jjsh = j + jsh;
-		      //  if(j>i) continue;  
-		      for (k = 0; k < dim; k++)
-              {
-                 const int ksh = k*nnodes + i; 
-                 const int km = dim *k ;
-                 for(l=0; l< (int)dim; l++)
-                 {
-                    (*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
-                          * mat[km + l] * dshapefct[l*nnodes+j];			      
-                 } 
-              }
-           } // j: nodes
-		} // i: nodes	
+				//---------------------------------------------------------
+				for (int i = 0; i < nnodes; i++)
+				{
+					const int iish = i + ish;
+					for (int j = 0; j < nnodes; j++)
+					{
+						const int jjsh = j + jsh;
+						//  if(j>i) continue;
+						for (size_t k = 0; k < dim; k++)
+						{
+							const int ksh = k*nnodes + i;
+							const int km = dim *k ;
+							for (size_t l=0; l<dim; l++)
+							{
+								(*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] * mat[km + l] * dshapefct[l*nnodes+j];
+							}
+						}
+					} // j: nodes
+				} // i: nodes
 #endif    
-	  }
-	}
-   } //	//TEST OUTPUT
-  // Laplace->Write();
+			}
+		}
+	} //	//TEST OUTPUT
+	// Laplace->Write();
 }
 /***************************************************************************
    FEMLib-Method:
@@ -4921,7 +4945,7 @@ void CFiniteElementStd::CalcLaplace()
  **************************************************************************/
 void CFiniteElementStd::CalcLaplaceMCF()
 {
-	int gp_r = 0, gp_s = 0, gp_t, i, j, k, in, nDF=pcs->dof;
+	int gp_r = 0, gp_s = 0, gp_t, i, j, in, nDF=pcs->dof;
 	gp_t = 0;
 	double fkt;
 	for (gp = 0; gp < nGaussPoints; gp++)
@@ -4936,7 +4960,7 @@ void CFiniteElementStd::CalcLaplaceMCF()
 	{
 	for(j = 0;  j< nnodes; j++)
 	{
-	for(k = 0; k < dim; k++) 
+	for(size_t k = 0; k < dim; k++)
 	{
 	(*Laplace)(i + ish, j + ish) += fkt*LaplaceMatrixElements[in*nDF + in][dim*k + k] *dshapefct[k*nnodes + i]*dshapefct[k*nnodes + j];		
 	}
@@ -5322,7 +5346,7 @@ void CFiniteElementStd::CalcAdvection()
  **************************************************************************/
 void CFiniteElementStd::CalcAdvectionMCF()
 {
-	int gp_r = 0, gp_s = 0, gp_t = 0, i, j, k, in, jn, nDF=pcs->dof, Index = MeshElement->GetIndex();
+	int gp_r = 0, gp_s = 0, gp_t = 0, i, j, in, jn, nDF=pcs->dof, Index = MeshElement->GetIndex();
 	double fkt, vel[3];
 	ElementValue* gp_ele = ele_gp_value[Index];
 	CalCoefAdvectionMCF();
@@ -5345,7 +5369,7 @@ void CFiniteElementStd::CalcAdvectionMCF()
 				{
 					for (j = 0; j < nnodes; j++)
 					{
-	for (k = 0; k < dim; k++)
+	for (size_t k = 0; k < dim; k++)
 						{
 	(*Advection)(i + ish, j + jsh) += fkt*AdvectionMatrixElements[in*nDF + jn]*shapefct[i]*vel[k]*dshapefct[k*nnodes + j];
                      }
@@ -5814,7 +5838,7 @@ void CFiniteElementStd::Assemble_GravityMCF()
 {	
 	if((coordinate_system) % 10 != 2 && (!axisymmetry))
 	return;
-	int i, j, in, k, nDF=pcs->dof, in_sh = 0;
+	int i, j, in, nDF=pcs->dof;
 	// ---- Gauss integral
 	int gp_r = 0, gp_s = 0, gp_t;
 	gp_t = 0;
@@ -5825,7 +5849,7 @@ void CFiniteElementStd::Assemble_GravityMCF()
 	cshift = 0;
 	if(nDF > 1)
 	cshift = NodeShift[pcs->continuum];
-	for(k = 0; k < dim; k++) gravity_vector[k] = 0.0;
+	for(size_t k = 0; k < dim; k++) gravity_vector[k] = 0.0;
 	if((coordinate_system) % 10 == 2 && (!HEAD_Flag))
 	{
 	gravity_vector[dim - 1] = gravity_constant;
@@ -5854,7 +5878,7 @@ void CFiniteElementStd::Assemble_GravityMCF()
 	//
 	for (i = 0; i < nnodes; i++) 
 	{
-	for (k = 0; k < dim; k++)
+	for (size_t k = 0; k < dim; k++)
 	{
 	NodalVal[i] -= fkt*mat_fac*tensor[dim*k + dim - 1]*dshapefct[k* nnodes + i]*shapefct[j]*rho*gravity_vector[k];
 	}
@@ -6117,15 +6141,12 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
 void CFiniteElementStd::CalcSolidDensityRate()
 {
 	// ---- Gauss integral
-	int gp_r=0, gp_s=0, gp_t;
-	double rho_react;
-	double T_s, T_g, p_g, w_mf;
-	double delta_t;
-	Eigen::VectorXd yy_rho_s;     // rho_s
-	Eigen::VectorXd dydxx_rho_s;  // d{rho_s}/dt
+	int gp_r=0, gp_s=0, gp_t=0;
+
+	const double theta = pcs->m_num->ls_theta;
 	
 	//Find out material group - TN
-	long group = MeshElement->GetPatchIndex();
+	const long group = MeshElement->GetPatchIndex();
 
 	// Get room in the memory for local matrices
 	SetMemory();
@@ -6148,20 +6169,27 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		//---------------------------------------------------------
 		// ComputeGradShapefct(1);                  // Linear interpolation function
 
-		ComputeShapefct(1);                      // Moved from CalCoefLaplace(). 12.3.2007 WW
-
 		// get interpolated primary variable values
-		p_g = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
-		T_g = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
-		T_s = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t2_0) + pcs->m_num->ls_theta*interpolate(NodalVal_t2_1);
-		w_mf = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
+		const double p_g  = ipol(NodalVal0, NodalVal1, theta, this);
+		const double T_g  = ipol(NodalVal_t0, NodalVal_t1, theta, this);
+		const double w_mf = ipol(NodalVal_X0, NodalVal_X1, theta, this);
+		double T_s;
+
+		if (pcs->getProcessType() == TES) {
+			T_s = T_g;
+		} else if (pcs->getProcessType() == TNEQ) {
+			T_s = ipol(NodalVal_t2_0, NodalVal_t2_1, theta, this);
+			// T_s = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t2_0) + pcs->m_num->ls_theta*interpolate(NodalVal_t2_1);
+		} else {
+			T_s = T_g; // avoid compiler warning;
+		}
 
 		//get time step size
-		delta_t = this->pcs->Tim->time_step_length;
+		const double delta_t = pcs->Tim->time_step_length;
 
-		yy_rho_s    = Eigen::VectorXd::Zero(1);
-		dydxx_rho_s = Eigen::VectorXd::Zero(1);
-		double poro = mmp_vector[group]->porosity;
+		Eigen::VectorXd yy_rho_s    = Eigen::VectorXd::Zero(1); // rho_s
+		Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
+		const double poro = mmp_vector[group]->porosity;
 		// set parameters in the ca_hydaration class
 
 
@@ -6175,34 +6203,42 @@ void CFiniteElementStd::CalcSolidDensityRate()
 			}
 			else {//Fuer CaOH2 im Moment
 
-				this->pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp], 1.0-poro, delta_t, this->SolidProp->getSolidReactiveSystem());
+				pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp], 1.0-poro, delta_t, SolidProp->getSolidReactiveSystem());
 				yy_rho_s(0)    = gp_ele->rho_s_prev[gp];
 
+				const double xv_NR = SolidProp->non_reactive_solid_volume_fraction;
+				const double rho_NR = SolidProp->non_reactive_solid_density;
+
 				//TN - reactive fraction
-				yy_rho_s(0) = (yy_rho_s(0) - this->SolidProp->non_reactive_solid_volume_fraction * this->SolidProp->non_reactive_solid_density)/(1.0-this->SolidProp->non_reactive_solid_volume_fraction);
+				yy_rho_s(0) = (yy_rho_s(0) - xv_NR * rho_NR) / (1.0-xv_NR);
 
 				// make evaluation
-				this->pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
+				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
 				// supply clean value
-				this->pcs->m_solver->set_y(yy_rho_s);
-				this->pcs->m_solver->set_dydx(dydxx_rho_s);
+
+				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
+				slv.set_y(yy_rho_s);
+				slv.set_dydx(dydxx_rho_s);
 				// solve ODE
 				// run the ODE solver
-				pcs->m_solver->step(delta_t, this->pcs->m_conversion_rate);
-				yy_rho_s = pcs->m_solver->get_y();
-				dydxx_rho_s = pcs->m_solver->get_dydx();
+				slv.step(delta_t, pcs->m_conversion_rate);
+				yy_rho_s = slv.get_y();
+				dydxx_rho_s = slv.get_dydx();
 
-				if ( yy_rho_s(0) < this->SolidProp->lower_solid_density_limit )
-					rho_react = this->SolidProp->lower_solid_density_limit;
-				else if ( yy_rho_s(0) > this->SolidProp->upper_solid_density_limit ) //{
-					rho_react = this->SolidProp->upper_solid_density_limit;
+				double rho_react;
+
+				//cut off when limits are reached
+				if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+					rho_react = SolidProp->lower_solid_density_limit;
+				else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+					rho_react = SolidProp->upper_solid_density_limit;
 				else
 					rho_react = yy_rho_s(0);
 
 				//TN - reactive fraction
-				gp_ele->rho_s_curr[gp] = (1.0-this->SolidProp->non_reactive_solid_volume_fraction) * rho_react + this->SolidProp->non_reactive_solid_volume_fraction*this->SolidProp->non_reactive_solid_density;
+				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
-				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-this->SolidProp->non_reactive_solid_volume_fraction);
+				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);
 			}
 		}
 		else {//if not reactive solid
@@ -6302,9 +6338,9 @@ void CFiniteElementStd::Cal_Velocity()
 		for(int i = 0; i < nnodes; i++)
 			NodalVal1[i] = pcs->GetNodeValue(nodes[i], idx_pn);
 	}
-      Matrix tmp_gp_velocity(gp_ele->Velocity);
-      tmp_gp_velocity = 0.0;
-      //gp_ele->Velocity = 0.0;                     // CB inserted here and commented above due to conflict with transport calculation, needs
+	Matrix tmp_gp_velocity(gp_ele->Velocity);
+	tmp_gp_velocity = 0.0;
+	//gp_ele->Velocity = 0.0;                     // CB inserted here and commented above due to conflict with transport calculation, needs
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		//---------------------------------------------------------
@@ -6367,12 +6403,13 @@ void CFiniteElementStd::Cal_Velocity()
 			{
 				if (PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 				{
-					eos_arg[0] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
-					eos_arg[1] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
-					eos_arg[2] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
+					const double theta = pcs->m_num->ls_theta;
+					eos_arg[0] = ipol(NodalVal0, NodalVal1, theta, this);
+					eos_arg[1] = ipol(NodalVal_t0, NodalVal_t1, theta, this);
+					eos_arg[2] = ipol(NodalVal_X0, NodalVal_X1, theta, this);
 					coef = gravity_constant*FluidProp->Density(eos_arg);
 				}
-				else 				
+				else
 					coef = gravity_constant*FluidProp->Density();
 				if (dim == 3 && ele_dim == 2)
 				{
@@ -6442,9 +6479,10 @@ void CFiniteElementStd::Cal_Velocity()
 		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM
 		         || PcsType == EPT_TES)
 		{
-			eos_arg[0] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
-			eos_arg[1] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
-			eos_arg[2] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_X0) + pcs->m_num->ls_theta*interpolate(NodalVal_X1);
+			const double theta = pcs->m_num->ls_theta;
+			eos_arg[0] = ipol(NodalVal0, NodalVal1, theta, this);
+			eos_arg[1] = ipol(NodalVal_t0, NodalVal_t1, theta, this);
+			eos_arg[2] = ipol(NodalVal_X0, NodalVal_X1, theta, this);
 			coef  =  gravity_constant*FluidProp->Density(eos_arg);
 			for (size_t i = 0; i < dim; i++)
 			{
@@ -6472,6 +6510,7 @@ void CFiniteElementStd::Cal_Velocity()
 #endif
 
 				for(size_t j = 0; j < dim; j++)
+				{
 					//              gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 					//SI Unit
 #ifdef USE_TRANSPORT_FLUX
@@ -6480,7 +6519,8 @@ void CFiniteElementStd::Cal_Velocity()
 					else
 #endif
 						tmp_gp_velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
-				//gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+						//gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j]/time_unit_factor;
+				}
 			}
 
 		}
@@ -6490,9 +6530,7 @@ void CFiniteElementStd::Cal_Velocity()
 			CalCoefLaplacePSGLOBAL(true,4);
 			for (size_t i = 0; i < dim; i++)
 				for(size_t j = 0; j < dim; j++)
-					gp_ele->Velocity_g(i,
-					                   gp) -=
-					        mat[dim * i + j] * vel_g[j] / time_unit_factor;
+					gp_ele->Velocity_g(i, gp) -= mat[dim * i + j] * vel_g[j] / time_unit_factor;
 		}
 		//
 	}
@@ -6520,17 +6558,15 @@ void CFiniteElementStd::Cal_Velocity()
  **************************************************************************/
 void CFiniteElementStd::Cal_VelocityMCF()
 {
-	int j, in, k, nDF=pcs->dof;
-	static double vel[3];
+	int j, in, nDF=pcs->dof;
 	double* tensor = NULL;
-	double arg_PV[6], gravity_vector[3], rho, fkt;     
+	double arg_PV[6], gravity_vector[3], rho;
 	int gp_r = 0, gp_s = 0, gp_t;
-	double coef = 0.0;
 	gp_t = 0;
 	SetMemory();
 	SetMaterial();
 	ElementValue* gp_ele = ele_gp_value[Index];
-	for(k = 0; k < dim; k++) gravity_vector[k] = 0.0;
+	for(size_t k = 0; k < dim; k++) gravity_vector[k] = 0.0;
 	if((coordinate_system) % 10 == 2 && (!HEAD_Flag))
 	{
 	gravity_vector[dim - 1] = gravity_constant;
@@ -6545,7 +6581,8 @@ void CFiniteElementStd::Cal_VelocityMCF()
 	gp_ele->Velocity = 0.0;  
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
-	fkt=GetGaussData(gp, gp_r, gp_s, gp_t);
+
+	GetGaussData(gp, gp_r, gp_s, gp_t);
 	ComputeGradShapefct(1);
 	ComputeShapefct(1); 
 	tensor = MediaProp->DispersionTensorMCF(gp, 0, 0, arg_PV);
@@ -6555,7 +6592,7 @@ void CFiniteElementStd::Cal_VelocityMCF()
 	//
 	rho = FluidProp->Density(arg_PV);
 	//
-	for (k = 0; k<dim; k++)
+	for (size_t k = 0; k<dim; k++)
 	{
 	gp_ele->Velocity(k, gp) -= tensor[dim*k + k]*(dshapefct[k*nnodes + j]*pcs->GetNodeValue(nodes[j], idxMCF[0 + nDF]) + shapefct[j]*rho*gravity_vector[k]);
 	}
@@ -6975,7 +7012,7 @@ void CFiniteElementStd::Cal_Velocity_2()
    Programming:  BG
    08/2010	first version
  **************************************************************************/
-double CFiniteElementStd::Get_Element_Velocity(int Index, CRFProcess* m_pcs, int phase_index, int dimension)
+double CFiniteElementStd::Get_Element_Velocity(int Index, CRFProcess* /*m_pcs*/, int phase_index, int dimension)
 {
 	ostringstream temp;
 	string tempstring;
@@ -7635,30 +7672,30 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	if(pcs->continuum == 1)
 	idx = idxp20;
 	for (i = 0; i < nnodes; i++)
-	NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
-	
+		NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
+
 	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)// For DOF>1: 27.2.2007 WW
 	{
-	for (int in = 0; in < pcs->dof; in++)
-	{
-	for (i = 0; i < nnodes; i++)
-	{
-	NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
-	NodalVal[i + in*nnodes] = 0.0;
-	}
-	}
+		for (int in = 0; in < pcs->dof; in++)
+		{
+			for (i = 0; i < nnodes; i++)
+			{
+				NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
+				NodalVal[i + in*nnodes] = 0.0;
+			}
+		}
 	}
 	else if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)                              // For DOF>1: 27.2.2007 WW
 	{
-	for (i = 0; i < nnodes; i++)
-         {
+		for (i = 0; i < nnodes; i++)
+		{
 
-            NodalVal[i] = 0.0;
-            NodalVal0[i+nnodes] = pcs->GetNodeValue(nodes[i],idxt0);
-            NodalVal[i+nnodes] = 0.0;
+			NodalVal[i] = 0.0;
+			NodalVal0[i+nnodes] = pcs->GetNodeValue(nodes[i],idxt0);
+			NodalVal[i+nnodes] = 0.0;
 
 			NodalVal0[i+2*nnodes] = pcs->GetNodeValue(nodes[i],idx_t2_0);
-            NodalVal[i+2*nnodes] = 0.0;
+			NodalVal[i+2*nnodes] = 0.0;
 
 			NodalVal0[i+3*nnodes] = pcs->GetNodeValue(nodes[i],idx_x0);
 			NodalVal[i+3*nnodes] = 0.0;
@@ -7678,7 +7715,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 		}
 	}
 	else if(PcsType == EPT_PSGLOBAL)
-		{// For DOF>1:
+	{// For DOF>1:
 		for (i = 0; i < nnodes; i++)
 		{
 			NodalVal[i] = 0.0;
@@ -7981,7 +8018,6 @@ void CFiniteElementStd::add2GlobalMatrixII()
 void CFiniteElementStd::CalcFEM_FCT()
 {
 	const double dt_inverse = 1.0 / dt;
-	const double theta = pcs->m_num->ls_theta;
 #if defined(NEW_EQS)
 	CSparseMatrix* A = NULL;              //WW
 	if(m_dom)
@@ -8140,7 +8176,7 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 	double fac_mass, fac_laplace, fac_advection, fac_storage, fac_content;
 	//if(((aktueller_zeitschritt==1)||(pcs->tim_type_name.compare("TRANSIENT")==0))){   //SB-3
 	//SB-3
-	if(((aktueller_zeitschritt == 1) || (pcs->Memory_Type == 0)))
+	if (aktueller_zeitschritt == 1 || pcs->Memory_Type == 0)
 	{
 		// Initialize.
 		(*Mass) = 0.0;
@@ -9147,9 +9183,9 @@ void CFiniteElementStd::Assembly()
 		add2GlobalMatrixII(pcs->dof);
 #endif
 		break;
-         case EPT_THERMAL_NONEQUILIBRIUM:
-            AssembleParabolicEquation();
-            //Assemble_Gravity();
+		case EPT_THERMAL_NONEQUILIBRIUM:
+			AssembleParabolicEquation();
+			//Assemble_Gravity();
 			Assemble_RHS_TNEQ();
 #if defined(USE_PETSC)
 			add2GlobalMatrixII();
@@ -9169,7 +9205,7 @@ void CFiniteElementStd::Assembly()
 		break;
 	//....................................................................
 	default:
-            cout << "Fatal error: No valid PCS type" << '\n';
+		cout << "Fatal error: No valid PCS type" << '\n';
 		break;
 	}
 
@@ -9459,99 +9495,98 @@ using the gauss point calculated reaction rates.
 ***********************************************************************/
 void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs)
 {
-    int i, j, gp, gp_r, gp_s, gp_t, idx_v2=0;
-    int i_s, i_e, ish;
-    double EV, EV1=0.0, rhoEV, rhoEV1 = 0.0, varx=0.0;
-    int idx_nodal_react_rate;
+	int i, j, gp, gp_r, gp_s, gp_t;
+	int i_s, i_e, ish;
+	double EV, EV1=0.0, rhoEV, rhoEV1 = 0.0, varx=0.0;
+	int idx_nodal_react_rate;
 	int idx_nodal_solid_density;
 
-    // get the index pointing to nodal reaction rate. 
-    idx_nodal_react_rate = m_pcs->GetNodeValueIndex("REACT_RATE_N");
+	// get the index pointing to nodal reaction rate.
+	idx_nodal_react_rate = m_pcs->GetNodeValueIndex("REACT_RATE_N");
 	// get the index pointing to solid density.
 	idx_nodal_solid_density = m_pcs->GetNodeValueIndex("SOLID_DENSITY_N");
 
-    // get element type
-    MshElemType::type ElementType = MeshElement->GetElementType();
+	// get element type
+	MshElemType::type ElementType = MeshElement->GetElementType();
 
-    // Number of elements associated to nodes
-    for(i=0; i<nnodes; i++)
-        dbuff[i] = (double)MeshElement->nodes[i]->getConnectedElementIDs().size();
-      
-    gp_r=gp_s=gp_t=gp=0;
-    ElementValue* gp_ele = ele_gp_value[Index];
-      
-    // loop over all gauss points
-    for(gp=0; gp<nGaussPoints; gp++)
-    {
-        if(ElementType==MshElemType::QUAD||ElementType==MshElemType::HEXAHEDRON)
-        {
-            SetGaussPoint(gp, gp_r, gp_s, gp_t);
-            i = GetLocalIndex(gp_r, gp_s, gp_t);
-            if(i==-1) 
-                continue;
-        }
-        else
-            i = gp;
+	// Number of elements associated to nodes
+	for(i=0; i<nnodes; i++)
+		dbuff[i] = (double)MeshElement->nodes[i]->getConnectedElementIDs().size();
 
-        // copy the reaction rates on the gauss points into vector NodalVal4. 
-        NodalVal4[i] = gp_ele->q_R[gp]*time_unit_factor;
+	gp_r=gp_s=gp_t=gp=0;
+	ElementValue* gp_ele = ele_gp_value[Index];
+
+	// loop over all gauss points
+	for(gp=0; gp<nGaussPoints; gp++)
+	{
+		if(ElementType==MshElemType::QUAD||ElementType==MshElemType::HEXAHEDRON)
+		{
+			SetGaussPoint(gp, gp_r, gp_s, gp_t);
+			i = GetLocalIndex(gp_r, gp_s, gp_t);
+			if(i==-1)
+				continue;
+		}
+		else
+			i = gp;
+
+		// copy the reaction rates on the gauss points into vector NodalVal4.
+		NodalVal4[i] = gp_ele->q_R[gp]*time_unit_factor;
 		NodalVal5[i] = gp_ele->rho_s_curr[gp]*time_unit_factor;
-    }
-
-    if (ElementType==MshElemType::QUAD || ElementType==MshElemType::HEXAHEDRON)
-        Xi_p = CalcXi_p();
-
-		//
-    i_s=0;
-    i_e=nnodes;
-    ish=0;
-    if(ElementType==MshElemType::TETRAHEDRON)   // tet
-    {
-        i_s=1;
-        i_e=nnodes+1;
-        ish=1;
 	}
-    //---------------------------------------------------------
-    // Mapping Gauss point reaction rates to nodes and update nodal
-    // reaction rates:
-    //---------------------------------------------------------
-    double avgEV = .0, avg_rhoEV = .0;
-    double avgEV1 = .0, avg_rhoEV1 = .0;
-    if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_AVERAGE)
-    {   // average
-        avgEV = CalcAverageGaussPointValues(NodalVal4);
-}
 
-    for(i=0; i<nnodes; i++)
-    {
-        EV = EV1 = varx = rhoEV = rhoEV1 = 0.0;
+	if (ElementType==MshElemType::QUAD || ElementType==MshElemType::HEXAHEDRON)
+		Xi_p = CalcXi_p();
 
-        // Calculate values at nodes
-        if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_LINEAR)
-        {
-            SetExtropoGaussPoints(i);
-            //
-            ComputeShapefct(1);                   // Linear interpolation function
-            for(j=i_s; j<i_e; j++) {
-                EV += NodalVal4[j]*shapefct[j-ish];
+	i_s=0;
+	i_e=nnodes;
+	ish=0;
+	if(ElementType==MshElemType::TETRAHEDRON)   // tet
+	{
+		i_s=1;
+		i_e=nnodes+1;
+		ish=1;
+	}
+	//---------------------------------------------------------
+	// Mapping Gauss point reaction rates to nodes and update nodal
+	// reaction rates:
+	//---------------------------------------------------------
+	double avgEV = .0, avg_rhoEV = .0;
+	// double avgEV1 = .0, avg_rhoEV1 = .0;
+	if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_AVERAGE)
+	{   // average
+		avgEV = CalcAverageGaussPointValues(NodalVal4);
+	}
+
+	for(i=0; i<nnodes; i++)
+	{
+		EV = EV1 = varx = rhoEV = rhoEV1 = 0.0;
+
+		// Calculate values at nodes
+		if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_LINEAR)
+		{
+			SetExtropoGaussPoints(i);
+			//
+			ComputeShapefct(1);                   // Linear interpolation function
+			for(j=i_s; j<i_e; j++) {
+				EV += NodalVal4[j]*shapefct[j-ish];
 				rhoEV += NodalVal5[j]*shapefct[j-ish];
 			}
-        }
-        else if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_AVERAGE)
-        {   //average
-            EV = avgEV;
+		}
+		else if (this->GetExtrapoMethod()==ExtrapolationMethod::EXTRAPO_AVERAGE)
+		{   //average
+			EV = avgEV;
 			rhoEV = avg_rhoEV;
-        }
+		}
 		
-        EV /= dbuff[i];
-        EV += m_pcs->GetNodeValue(nodes[i],idx_nodal_react_rate);
-        m_pcs->SetNodeValue (nodes[i], idx_nodal_react_rate, EV);
+		EV /= dbuff[i];
+		EV += m_pcs->GetNodeValue(nodes[i],idx_nodal_react_rate);
+		m_pcs->SetNodeValue (nodes[i], idx_nodal_react_rate, EV);
 
 		rhoEV /= dbuff[i];
 		rhoEV += m_pcs->GetNodeValue(nodes[i],idx_nodal_solid_density);
-        m_pcs->SetNodeValue (nodes[i], idx_nodal_solid_density, rhoEV);
-    }  // end of for i over nnodes
-   
+		m_pcs->SetNodeValue (nodes[i], idx_nodal_solid_density, rhoEV);
+	}  // end of for i over nnodes
+
 }
 
 
@@ -9954,6 +9989,7 @@ void ElementValue::GetEleVelocity(double* vec)
 		vec[i] /= Velocity.Cols();
 	}
 }
+
 
 //WW
 ElementValue::~ElementValue()
@@ -10411,10 +10447,6 @@ void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
 	double fkt, fac;
 	// Material
 	int dof_n = 2;
-	double temp[10];
-
-	for (i = 0; i < 10; i++)
-		temp[i] = 0;              // remove
 
 	//----------------------------------------------------------------------
 	for (i = 0; i < dof_n * nnodes; i++)
