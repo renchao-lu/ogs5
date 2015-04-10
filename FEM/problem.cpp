@@ -1403,10 +1403,17 @@ bool Problem::CouplingLoop()
 				max_outer_error = MMax(max_outer_error,a_pcs->cpl_max_relative_error);
 
 				// Reapply BCs if constrained BC
+#if defined(USE_MPI) || defined(USE_PETSC)
+				bool has_constained_bc_i = a_pcs->hasConstrainedBC();
+				bool has_constained_bc = false;
+				MPI_Allreduce(&has_constained_bc_i, &has_constained_bc, 1, MPI_INT, MPI_LOR, MPI_COMM_WORLD);
+			    	if(has_constained_bc)   
+#else                                
 				if(a_pcs->hasConstrainedBC())
+#endif
 				{
-#ifdef USE_MPI
-					const int rank = myrank;
+#if defined(USE_MPI) || defined(USE_PETSC)
+					const int rank = mrank;
 #else
 					const int rank = -1;
 #endif
