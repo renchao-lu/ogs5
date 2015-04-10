@@ -58,7 +58,7 @@ using namespace std;
 namespace
 {
 
-static inline double ipol(double const * const a, double const * const b, double theta, FiniteElement::CElement* obj)
+static inline double time_interpolate(double const * const a, double const * const b, double theta, FiniteElement::CElement* obj)
 {
     return (1.0-theta)*obj->interpolate(a) + theta*obj->interpolate(b);
 }
@@ -6170,15 +6170,15 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		// ComputeGradShapefct(1);                  // Linear interpolation function
 
 		// get interpolated primary variable values
-		const double p_g  = ipol(NodalVal0, NodalVal1, theta, this);
-		const double T_g  = ipol(NodalVal_t0, NodalVal_t1, theta, this);
-		const double w_mf = ipol(NodalVal_X0, NodalVal_X1, theta, this);
+		const double p_g  = time_interpolate(NodalVal0, NodalVal1, theta, this);
+		const double T_g  = time_interpolate(NodalVal_t0, NodalVal_t1, theta, this);
+		const double w_mf = time_interpolate(NodalVal_X0, NodalVal_X1, theta, this);
 		double T_s;
 
 		if (pcs->getProcessType() == TES) {
 			T_s = T_g;
 		} else if (pcs->getProcessType() == TNEQ) {
-			T_s = ipol(NodalVal_t2_0, NodalVal_t2_1, theta, this);
+			T_s = time_interpolate(NodalVal_t2_0, NodalVal_t2_1, theta, this);
 			// T_s = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t2_0) + pcs->m_num->ls_theta*interpolate(NodalVal_t2_1);
 		} else {
 			T_s = T_g; // avoid compiler warning;
@@ -6404,9 +6404,9 @@ void CFiniteElementStd::Cal_Velocity()
 				if (PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 				{
 					const double theta = pcs->m_num->ls_theta;
-					eos_arg[0] = ipol(NodalVal0, NodalVal1, theta, this);
-					eos_arg[1] = ipol(NodalVal_t0, NodalVal_t1, theta, this);
-					eos_arg[2] = ipol(NodalVal_X0, NodalVal_X1, theta, this);
+					eos_arg[0] = time_interpolate(NodalVal0, NodalVal1, theta, this);
+					eos_arg[1] = time_interpolate(NodalVal_t0, NodalVal_t1, theta, this);
+					eos_arg[2] = time_interpolate(NodalVal_X0, NodalVal_X1, theta, this);
 					coef = gravity_constant*FluidProp->Density(eos_arg);
 				}
 				else
@@ -6480,9 +6480,9 @@ void CFiniteElementStd::Cal_Velocity()
 		         || PcsType == EPT_TES)
 		{
 			const double theta = pcs->m_num->ls_theta;
-			eos_arg[0] = ipol(NodalVal0, NodalVal1, theta, this);
-			eos_arg[1] = ipol(NodalVal_t0, NodalVal_t1, theta, this);
-			eos_arg[2] = ipol(NodalVal_X0, NodalVal_X1, theta, this);
+			eos_arg[0] = time_interpolate(NodalVal0, NodalVal1, theta, this);
+			eos_arg[1] = time_interpolate(NodalVal_t0, NodalVal_t1, theta, this);
+			eos_arg[2] = time_interpolate(NodalVal_X0, NodalVal_X1, theta, this);
 			coef  =  gravity_constant*FluidProp->Density(eos_arg);
 			for (size_t i = 0; i < dim; i++)
 			{
