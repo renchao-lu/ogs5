@@ -605,15 +605,12 @@ void CFiniteElementStd::Assemble_RHS_TES()
 
 		// Compute geometry
 		ComputeShapefct(1);
-		ComputeGradShapefct(1);
 
 		for(int ii=0; ii<pcs->dof; ii++)
 		{
 			double fac = CalCoef_RHS_TES(ii);
 			for (int i = 0; i < nnodes; i++)
 				NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
-			//std::cout << fac << " " << i << " " << ii << " " << shapefct[i] << " " << "\n";
-			//std::cout << fac << " " << fkt << " " << shapefct[i] << "\n";
 		}
 	}
 
@@ -629,12 +626,8 @@ void CFiniteElementStd::Assemble_RHS_TES()
 #else
 			(*RHS)[i+LocalShift+ii_sh] +=  NodalVal[i+ii_sh];
 #endif
-			//std::cout << eqs_rhs[i_sh + eqs_number[i]] << " " << (*RHS)(i+LocalShift+ii_sh) << " " << LocalShift << "\n";
 		}
 	}
-
-	// std::cout << __FUNCTION__ << ":" << __LINE__ << ":\n"
-	//           << (*RHS) << std::endl;
 }
 
 
