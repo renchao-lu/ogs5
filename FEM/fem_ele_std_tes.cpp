@@ -24,6 +24,7 @@ using Math_Group::CSparseMatrix;
 #include<iomanip>
 
 
+// TODO [CL] slightly wrong (Wikipedia: 8.314 462 1(75) J / (mol K)
 const double GAS_CONSTANT = 8314.41;                   // J/(kmol*K) WW
 
 

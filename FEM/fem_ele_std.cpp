@@ -6167,8 +6167,11 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 		if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
 			if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
-				gp_ele->rho_s_curr[gp] = 1.0 + 0.1*sin(2.0*3.1416*aktuelle_zeit)/(1.0-poro);//TN Test mass transfer
-				gp_ele->q_R[gp] = 0.1*2.0*3.1416*cos(2.0*3.1416*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+				const double rhoSR0 = 1.0;
+				const double rhoTil = 0.1;
+				const double omega  = 2.0*3.1416;
+				gp_ele->rho_s_curr[gp] = rhoSR0 + rhoTil * sin(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+				gp_ele->q_R[gp]        = rhoTil * omega  * cos(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
 			}
 			else {//Fuer CaOH2 im Moment
 
