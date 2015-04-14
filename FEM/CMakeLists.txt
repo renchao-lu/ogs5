@@ -97,7 +97,7 @@ set( SOURCES
 	rf_react_int.cpp
 	rf_st_new.cpp
 	rf_tim_new.cpp
-	rfmat_cp.cpp	
+	rfmat_cp.cpp
 	SourceTerm.cpp
 	timer.cpp
 	tools.cpp
@@ -105,10 +105,10 @@ set( SOURCES
 	Eclipse.cpp
 	DUMUX.cpp
 	Output.cpp
-    CAP_IO.h 
+    CAP_IO.h
     CAP_IO.cpp
-    rf_react_cap.h 
-    rf_react_cap.cpp 	
+    rf_react_cap.h
+    rf_react_cap.cpp
 )
 
 IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
@@ -119,19 +119,19 @@ ELSE(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
 	IF(OGS_FEM_SP OR OGS_FEM_MPI OR OGS_FEM_GEMS OR OGS_FEM_BRNS OR OGS_FEM_PQC OR OGS_FEM_MKL OR OGS_FEM_LIS OR OGS_FEM_JFNK )
 		SET( SOURCES ${SOURCES} equation_class.h equation_class.cpp )
 		IF(OGS_FEM_JFNK)
-			SET( SOURCES ${SOURCES} rf_pcs1.cpp ) 
-		ENDIF(OGS_FEM_JFNK)	
+			SET( SOURCES ${SOURCES} rf_pcs1.cpp )
+		ENDIF(OGS_FEM_JFNK)
 	ELSE()
 		SET( SOURCES ${SOURCES} solver.h solver.cpp matrix_routines.h matrix_routines.cpp)
 	ENDIF()
 ENDIF()
 
 IF(OGS_FEM_BRNS)
-	SET( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp ) 
+	SET( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp )
 ENDIF(OGS_FEM_BRNS)
 
 IF(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
-	SET( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp ) 
+	SET( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp )
 ENDIF(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 
 
@@ -170,14 +170,10 @@ IF(OGS_FEM_IPQC)
 	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/IPQC/src)
 ENDIF (OGS_FEM_IPQC)
 
-IF (PARALLEL_USE_MPI)
-	INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
-ENDIF (PARALLEL_USE_MPI)
-
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
 
-target_link_libraries( 
+target_link_libraries(
 	FEM
 	Base
 	FileIO
@@ -193,10 +189,10 @@ ENDIF(OGS_FEM_PQC)
 
 if (WIN32)
 	if (OGS_FEM_GEMS)
-		target_link_libraries( FEM GEM ) 
+		target_link_libraries( FEM GEM )
 	endif (OGS_FEM_GEMS)
 	if (LIS)
-		target_link_libraries( FEM ${LIS_LIBRARIES} ) 
+		target_link_libraries( FEM ${LIS_LIBRARIES} )
 		set_target_properties( FEM PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt" )
 	endif (LIS)
 	if (MKL)
@@ -208,10 +204,6 @@ if (WIN32)
 	if (OGS_FEM_CHEMAPP)
 		target_link_libraries( FEM ca_vc_e )
 	endif (OGS_FEM_CHEMAPP)
-	if (PARALLEL_USE_MPI)
-		SET( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${MPI_COMPILE_FLAGS} )
-		target_link_libraries( FEM ${MPI_LIBRARIES} )
-	endif (PARALLEL_USE_MPI)
 endif (WIN32)
 
 if (UNIX)
@@ -226,10 +218,6 @@ if (UNIX)
 	if (MKL)
 		target_link_libraries( FEM ${MKL_LIBRARIES} )
 	endif (MKL)
-	if (PARALLEL_USE_MPI)
-#		SET( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${MPI_COMPILE_FLAGS} )
-		target_link_libraries( FEM ${MPI_LIBRARIES} )
-	endif (PARALLEL_USE_MPI)
 endif (UNIX)
 
 IF (OGS_FEM_CHEMAPP)
@@ -240,14 +228,14 @@ ENDIF (OGS_FEM_CHEMAPP)
 
 IF (OGS_FEM_CAP)
 	INCLUDE_DIRECTORIES (  ${CMAKE_SOURCE_DIR}/CMP )
-	TARGET_LINK_LIBRARIES ( 	
+	TARGET_LINK_LIBRARIES (
 	 FEM
  	 GEO
  	 MSH
- 	 CMP 
+ 	 CMP
  	)
     IF (UNIX)
-        TARGET_LINK_LIBRARIES ( 	
+        TARGET_LINK_LIBRARIES (
           FEM
           ChemAppCS_64
           EChemAppS_64

@@ -262,34 +262,3 @@ IF(PARALLEL_USE_OPENMP)
 	SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
 	SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp" )
 ENDIF(PARALLEL_USE_OPENMP)
-
-IF(PARALLEL_USE_MPI)
-	IF (WIN32)
-#		MESSAGE (FATAL_ERROR "Aborting: MPI is only supported under UNIX/LINUX!")
-		#ADD_DEFINITIONS(-DMPICH_IGNORE_CXX_SEEK)
-		FIND_PACKAGE(MPI REQUIRED)
-	ENDIF(WIN32)
-	IF(UNIX)
-
-# If there is an mpi compiler find it and interogate (farther below) it for the include
-# and lib dirs otherwise we will continue to search from ${_MPI_BASE_DIR}.
-
-		IF( ${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} LESS 8)
-			find_program(MPI_COMPILER
-				NAMES mpic++ mpicxx mpiCC mpicc
-				HINTS "${_MPI_BASE_DIR}"
-				PATH_SUFFIXES bin
-				DOC "MPI compiler. Used only to detect MPI compilation flags.")
-			IF(MPI_COMPILER)
-
-			MESSAGE (STATUS  "CMake version is less than 2.8, MPI compiler is set directly" )
-			mark_as_advanced(MPI_COMPILER)
-				SET(CMAKE_C_COMPILER ${MPI_COMPILER})
-				SET(CMAKE_CXX_COMPILER ${MPI_COMPILER})
-			ENDIF(MPI_COMPILER)
-		ELSE( ${CMAKE_MAJOR_VERSION}  EQUAL 2 AND ${CMAKE_MINOR_VERSION} LESS 8)
-			FIND_PACKAGE(MPI REQUIRED)
-		ENDIF( ${CMAKE_MAJOR_VERSION} EQUAL 2 AND ${CMAKE_MINOR_VERSION} LESS 8)
-	ENDIF(UNIX)
-ENDIF(PARALLEL_USE_MPI)
-

@@ -13,7 +13,7 @@ set( SOURCES_FEM
 	MshEditor.h
 	MSHEnums.h
 	MeshNodesAlongPolyline.h
-	
+
 	GridAdapter.cpp
 	msh_core.cpp
 	msh_edge.cpp
@@ -29,13 +29,13 @@ set( SOURCES_FEM
 
 	MeshNodesAlongPolyline.cpp
 	#msh_pnt.cpp		# references removed elements.h nodes.h
-	
-	
+
+
 	#NW/delaunay2D.h
 	#NW/delaunay3D.h
 	#NW/delaunay2D.cpp
 	#NW/delaunay3D.cpp
-	
+
 	#TM/dtm_calculate.h
 	#TM/dtm_crowd.h
 	#TM/dtm_element.h
@@ -80,7 +80,7 @@ set( SOURCES_FEM
 )
 
 if(OGS_USE_QT) #By WW
-   set( SOURCES 
+   set( SOURCES
         ${SOURCES_FEM}
 		MeshQualityChecker.h
 		MeshQualityShortestLongestRatio.h
@@ -90,25 +90,25 @@ if(OGS_USE_QT) #By WW
 		MeshQualityArea.cpp
 		MeshQualityVolume.cpp
 		MeshQualityEquiAngleSkew.cpp
-        
+
 		Delaunay/DT_Matrix.h
 		Delaunay/tricommon.h
 		Delaunay/tri_algebra.cpp
 		Delaunay/tri_geometry.cpp
 		Delaunay/tri_main.cpp
 		Delaunay/tri_triangulation.cpp
-		Delaunay/tri_utility.cpp        
+		Delaunay/tri_utility.cpp
         )
 else (OGS_USE_QT)
 		set( SOURCES ${SOURCES_FEM})
 endif (OGS_USE_QT)
 
 IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS) #By WW
-   SET( SOURCES 
+   SET( SOURCES
         ${SOURCES_FEM}
-       msh_lib_ext.cpp  
+       msh_lib_ext.cpp
       )
-ENDIF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS) 
+ENDIF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
 
 
 
@@ -122,11 +122,6 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/LIB
 	${CMAKE_SOURCE_DIR}/OGSProject
 )
-
-
-IF (PARALLEL_USE_MPI)
-	INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
-ENDIF (PARALLEL_USE_MPI)
 
 # Create the library
 add_library( MSH STATIC ${SOURCES} )
