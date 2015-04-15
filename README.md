@@ -3,7 +3,8 @@
 - General homepage: http://www.opengeosys.org
 - Wiki: https://svn.ufz.de/ogs
 - Build instructions: http://devguide.opengeosys.org
-- Jenkins: https://svn.ufz.de:8443/job/OGS-5-GitHub/
+- Jenkins(trunk): https://svn.ufz.de:8443/job/OGS-5/
+- Jenkins(develop): https://svn.ufz.de:8443/job/OGS-5-GitHub/
 
 ## Quickstart ##
 
