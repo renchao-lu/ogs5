@@ -44,11 +44,9 @@ static inline double ipol(double const * const a, double const * const b,
 namespace FiniteElement
 {
 
-/***************************************************************************
-	GeoSys - Funktion:
-		  CFiniteElementStd:: CalcMassPTC
+/*************************************************************************
 	Programming:
-	02/2007   WW
+	07/2013 TN
 **************************************************************************/
 void CFiniteElementStd::CalcMassTES()
 {
@@ -98,6 +96,11 @@ void CFiniteElementStd::CalcMassTES()
 	//           << (*Mass2) << std::endl;
 }
 
+
+/*************************************************************************
+	Programming:
+	07/2013 TN
+**************************************************************************/
 void CFiniteElementStd::CalcLumpedMassTES()
 {
 	int gp_r, gp_s, gp_t;
@@ -143,11 +146,11 @@ void CFiniteElementStd::CalcLumpedMassTES()
 
 /**************************************************************************
 	FEMLib-Method:
-	Task: Calculate material coefficient for mass matrix for
-	Pressure-Temperature Coupled global approach
+	Task: Calculate material coefficient for mass matrix
 	Implementaion:
 	03/2011 AKS /  NB
 	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 {
@@ -238,11 +241,11 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 
 /**************************************************************************
 	FEMLib-Method:
-	Task: Calculate material coefficient for Laplacian matrix for
-	Pressure-Temperature Coupled global approach
+	Task: Calculate material coefficient for Laplacian matrix
 	Implementaion:
 	03/2011 AKS /  NB
-	last modification: 07/2013 TN
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 {
@@ -450,7 +453,8 @@ void CFiniteElementStd::CalcAdvectionTES()
 	03/2005 WW Heat transport
 	07/2005 WW Change for geometry element object
 	09/2005 SB
-	last modification: 07/2013 TN
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefAdvectionTES(const int dof_index)
 {
@@ -509,6 +513,7 @@ double CFiniteElementStd::CalCoefAdvectionTES(const int dof_index)
 	TES
 	Implementaion:
 	03/2011 AKS
+	07/2013 TN
 **************************************************************************/
 void CFiniteElementStd::CalcContentTES()
 {
@@ -557,7 +562,8 @@ void CFiniteElementStd::CalcContentTES()
 	FEMLib-Method:
 	Task:
 	Programing:
-	last modification: 07/2013 TN
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 {
@@ -593,6 +599,7 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 	GeoSys - Funktion:
 	Assemble_RHS_TES:
 	11/2011   AKS
+	07/2013 TN
 **************************************************************************/
 void CFiniteElementStd::Assemble_RHS_TES()
 {
@@ -638,7 +645,8 @@ void CFiniteElementStd::Assemble_RHS_TES()
 	Task: Calculate  coefficient of temperature induced RHS of multi-phase flow
 	Programing:
 	02/2007 WW Implementation
-	last modification:
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoef_RHS_TES(const int dof_index)
 {
