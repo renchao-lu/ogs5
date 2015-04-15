@@ -744,6 +744,17 @@ void CreateEQS_LinearSolver()
          eqs->Init(sparse_info);
          eqs->set_rank_size(rank_p, size_p);
       }     
+      else if( pcs_type == TEQ)
+      {
+         sparse_info[0] = max_cnct_nodes * 3;
+         sparse_info[1] = 0; //max_cnct_nodes * 3;
+         sparse_info[2] = max_cnct_nodes * 3;
+         sparse_info[3] = mesh->getNumNodesLocal() * 3;
+
+         eqs = new PETScLinearSolver(3 * nn);
+         eqs->Init(sparse_info);
+         eqs->set_rank_size(rank_p, size_p);
+      }      
       //else if( pcs_type == FLUID_MOMENTUM ) {}
       else 
       {

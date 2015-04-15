@@ -732,16 +732,18 @@ void CRFProcess::Create()
 #ifdef USE_MPI
      eqs_new = EQS_Vector[eqs_num * k];
 #else
-     if(getProcessType() == FiniteElement::MULTI_PHASE_FLOW || getProcessType() == FiniteElement::PS_GLOBAL || getProcessType() == FiniteElement::TNEQ)
-	 {
-	   eqs_new = EQS_Vector[eqs_num * k + 2 ];
-     }
-	 else
-	 {
-	   eqs_new = EQS_Vector[eqs_num * k];
-	 }
+	if (getProcessType() == FiniteElement::MULTI_PHASE_FLOW || getProcessType() == FiniteElement::PS_GLOBAL
+	    || getProcessType() == FiniteElement::TNEQ
+	    || getProcessType() == FiniteElement::TES)
+	{
+		eqs_new = EQS_Vector[eqs_num * k + 2 ];
+	}
+	else
+	{
+		eqs_new = EQS_Vector[eqs_num * k];
+	}
 #endif
-   } //WW 02.2013. Pardiso
+	} //WW 02.2013. Pardiso
 #else
 	//WW  phase=1;
 	//CRFProcess *m_pcs = NULL;                      //
@@ -2506,11 +2508,16 @@ void CRFProcess::Config(void)
 		type = 1111;
 		ConfigMULTI_COMPONENTIAL_FLOW();
 	}
-   if (this->getProcessType() == FiniteElement::TNEQ)        //24.02.2007 WW
-   {
-      type = 1414;
-      ConfigTNEQ();
-}
+	if (this->getProcessType() == FiniteElement::TNEQ)        //24.02.2007 WW
+	{
+		type = 1414;
+		ConfigTNEQ();
+	}
+	if (this->getProcessType() == FiniteElement::TES)        //24.02.2007 WW
+	{
+		type = 1415;
+		ConfigTES();
+	}
 }
 
 
@@ -4220,7 +4227,7 @@ void CRFProcess::ConfigTNEQ()
    //pcs_number_of_evals++;
 
    for(size_t i=0; i<GetPrimaryVNumber(); i++)
-      Shift[i] = i*m_msh->GetNodesNumber(true);
+      Shift[i] = i*m_msh->GetNodesNumber(false);
 
    //// HS
    //// initialize the pointers for rho_s ODE calculation
@@ -4275,6 +4282,134 @@ void CRFProcess::ConfigTNEQ()
 	// HS, end of thermal storage case-------------------------------------------------------------
    //}
 }
+
+
+/**************************************************************************
+FEMLib-Method: For reactive thermal non-equilibrium flow
+Task:
+Programing:
+07/2013 HS/TN Implementation
+**************************************************************************/
+void CRFProcess::ConfigTES()
+{
+	dof = 3;
+	// 1.1 primary variables
+	pcs_number_of_primary_nvals = 3;
+	pcs_primary_function_name[0] = "PRESSURE1";
+	pcs_primary_function_unit[0] = "Pa";
+	pcs_primary_function_name[1] = "TEMPERATURE1";
+	pcs_primary_function_unit[1] = "K";
+	pcs_primary_function_name[2] = "CONCENTRATION1";
+	pcs_primary_function_unit[2] = "kg/kg";
+	// 1.2 secondary variables
+	pcs_number_of_secondary_nvals = 0;
+	// Nodal velocity.
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_X1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Y1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "VELOCITY_Z1";
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "m/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	// this is the nodal based reaction rate of solid density in PTC flow.
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "REACT_RATE_N"; //TN TEST
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "kg/m3s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+	// this is the nodal based solid density in PTC flow.
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = "SOLID_DENSITY_N"; //TN TEST
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "kg/m3";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 1;
+	pcs_number_of_secondary_nvals++;
+
+	pcs_number_of_evals = 0;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_X";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Y";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "VELOCITY1_Z";
+	pcs_eval_unit[pcs_number_of_evals] = "m/s";
+	pcs_number_of_evals++;
+	//pcs_eval_name[pcs_number_of_evals] = "POROSITY";
+	//pcs_eval_unit[pcs_number_of_evals] = "-";
+	//pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "PERMEABILITY";
+	pcs_eval_unit[pcs_number_of_evals] = "m2";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "SOLID_DENSITY";
+	pcs_eval_unit[pcs_number_of_evals] = "kg/m3";
+	pcs_number_of_evals++;
+	pcs_eval_name[pcs_number_of_evals] = "REACT_RATE";
+	pcs_eval_unit[pcs_number_of_evals] = "kg/m3s";
+	pcs_number_of_evals++;
+	//pcs_eval_name[pcs_number_of_evals] = "T_EQUIL"; //TN
+	//pcs_eval_unit[pcs_number_of_evals] = "K";
+	//pcs_number_of_evals++;
+
+	for(size_t i=0; i<GetPrimaryVNumber(); i++)
+		Shift[i] = i*m_msh->GetNodesNumber(false);
+
+	//// HS
+	//// initialize the pointers for rho_s ODE calculation
+	//rho_s = Eigen::VectorXd::Zero(1); // HS, temp storage for density of the solid phase
+	//qR = Eigen::VectorXd::Zero(1);    // HS, temp storage for solid density change rate
+	//this->m_hydration  = new conversion_rate(400/*solid temperature*/,
+	//                                   600/*gass temperature*/,
+	//							 2.0/*pressure of gas phase*/,
+	//							 0.2/*mass fraction of H2O in gas*/,
+	//							 1700/*initial solid density*/,
+	//							 0.0/*delta_time*/);
+	//this->m_ode_solver = new StepperBulischStoer<conversion_rate>(rho_s/*y value vector*/,
+	//                                                        qR/*dydx value vector*/,
+	//												  this->GetTimeStepping()->time_current/*t0 value*/,
+	//												  1e-12 /*relative tolerance*/,
+	//												  1e-12 /*relative tolerance*/,
+	//												  false /*if dense output*/);
+
+
+	// HS, thermal storage case-------------------------------------------------------------------
+
+	//Loop material group - TN
+	//for (long group_count = 0; group_count < mmp_vector.size(); group_count ++){
+	long group_count = 0;
+	m_rho_s_0 = msp_vector[group_count]->Density();      // get initial solid density
+	double poro = mmp_vector[group_count]->porosity;
+	FiniteElement::SolidReactiveSystem react_syst = msp_vector[group_count]->getSolidReactiveSystem();
+	//if (group_count != 0) break;
+	// if (this->m_num->reaction_scaling!=.0) {
+	double start_t = 0.0;
+	// now initialize the conversion_rate class
+	m_conversion_rate = new conversion_rate(573.0,     // T_solid, Kelvin
+	                                        573.0,     // T_gas, Kelvin
+	                                        0.0,       // p_gas
+	                                        0.0,       // w_water, mass fraction unitless
+	                                        m_rho_s_0, //kg/m3, // rho_s_initial,
+	                                        1.0-poro, //solid volume fraction
+	                                        1.0,   // delta_t
+	                                        react_syst);
+
+	yy_rho_s    = Eigen::VectorXd::Zero(1);
+	dydxx_rho_s = Eigen::VectorXd::Zero(1);
+	// initial value for y
+	yy_rho_s(0) = m_rho_s_0;
+
+	// evaluate inital value of dydt
+	//m_conversion_rate->eval(start_t, yy_rho_s, dydxx_rho_s);
+	dydxx_rho_s(0) = 0.0;
+	// initialize the solver
+	m_solver = new StepperBulischStoer<conversion_rate>(yy_rho_s, dydxx_rho_s, start_t, 1e-6, 1e-6, true);
+	// }
+	// HS, end of thermal storage case-------------------------------------------------------------
+	//}
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -5089,21 +5224,14 @@ void CRFProcess::CalculateElementMatrices(void)
 	switch(this->type)
 	{
 	case 1:                               //SM
-		break;
 	case 2:                               //MTM2
-		break;
 	case 3:                               //HTM
-		break;
 	case 5:                               // Gas flow
-		break;
 	case 11:
-		break;
 	case 12:                              //MMP
-		break;
 	case 13:                              //MPC
-		break;
-	  case 14:									//TNEQ
-		  break;
+	case 14:                              //TNEQ
+	case 15:                              //TES
 	case 66:                              //OF
 		break;
 	default:
@@ -5773,22 +5901,29 @@ void CRFProcess::CalIntegrationPointValue()
 	//			"TWO_PHASE_FLOW") != string::npos
 	//			|| _pcs_type_name.find("AIR_FLOW") != string::npos
 	//			|| _pcs_type_name.find("PS_GLOBAL") != string::npos) //WW/CB
-	if (getProcessType() == FiniteElement::LIQUID_FLOW || getProcessType() == FiniteElement::RICHARDS_FLOW
-	    || getProcessType() == FiniteElement::MULTI_PHASE_FLOW
-	    || getProcessType() == FiniteElement::GROUNDWATER_FLOW
-	    || getProcessType() == FiniteElement::TWO_PHASE_FLOW
-	    || getProcessType() == FiniteElement::DEFORMATION_H2 // 07.2011. WW
-	    || getProcessType() == FiniteElement::AIR_FLOW
-	    || getProcessType() == FiniteElement::PS_GLOBAL
-	    || getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW  //AKS/NB
-	    || getProcessType() == FiniteElement::DEFORMATION_FLOW //NW
-	    || getProcessType() == FiniteElement::TNEQ //HS, TN
-		|| getProcessType() == FiniteElement::HEAT_TRANSPORT //JOD 2014-11-10
-		|| getProcessType() == FiniteElement::MASS_TRANSPORT // JOD 2014-11-10
-	    )
+
+	switch (getProcessType())
+	{
+	case FiniteElement::LIQUID_FLOW:
+	case FiniteElement::RICHARDS_FLOW:
+	case FiniteElement::MULTI_PHASE_FLOW:
+	case FiniteElement::GROUNDWATER_FLOW:
+	case FiniteElement::TWO_PHASE_FLOW:
+	case FiniteElement::DEFORMATION_H2: // 07.2011. WW
+	case FiniteElement::AIR_FLOW:
+	case FiniteElement::PS_GLOBAL:
+	case FiniteElement::MULTI_COMPONENTIAL_FLOW:  //AKS/NB
+	case FiniteElement::DEFORMATION_FLOW: //NW
+	case FiniteElement::TNEQ: //HS, TN
+	case FiniteElement::TES: //HS, TN
+	case FiniteElement::HEAT_TRANSPORT: //JOD 2014-11-10
+	case FiniteElement::MASS_TRANSPORT: // JOD 2014-11-10
 		cal_integration_point_value = true;
-	if (!cal_integration_point_value)
+		break;
+	default:
+		cal_integration_point_value = false;
 		return;
+	}
 
    std::cout << "->Calculate velocity" << '\n';
 
@@ -5817,8 +5952,10 @@ void CRFProcess::CalIntegrationPointValue()
 			else
 				fem->Cal_Velocity();
 			//moved here from additional lower loop
-			if (getProcessType() == FiniteElement::TNEQ)
+			if (getProcessType() == FiniteElement::TNEQ || getProcessType() == FiniteElement::TES)
+			{
 				fem->CalcSolidDensityRate(); // HS, thermal storage reactions
+			}
 		}
 	}
    } else { //NW
@@ -5860,7 +5997,7 @@ void CRFProcess::CalIntegrationPointValue()
        std::cout << "  Local Picard iteration: itr. count = " << i_itr << "/" << v_itr_max << ", error(max. norm)=" << vel_error << std::endl;
    }
 
-    //if (getProcessType() == FiniteElement::TNEQ) {
+    //if (getProcessType() == FiniteElement::TNEQ || getProcessType() == FiniteElement::TEQ) {
     //    const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
     //    for (size_t i = 0; i < mesh_ele_vector_size; i++)
     //    {
@@ -8185,6 +8322,7 @@ std::valarray<double> CRFProcess::getNodeVelocityVector(const long node_id)
 		}
 		iter_count =  SpBICGSTAB_Parallel(dom_vector[myrank], eqs->x, dim_eqs);
 #else // ifdef USE_MPI
+
 		iter_count = eqs->LinearSolver(eqs->b,eqs->x,eqs->dim);
 #endif
 
@@ -8612,11 +8750,14 @@ std::valarray<double> CRFProcess::getNodeVelocityVector(const long node_id)
 		switch (getProcessType())
 		{
 		case FiniteElement::TNEQ:
-         CalcSecondaryVariablesTNEQ();        //HS
-         break;
+			CalcSecondaryVariablesTNEQ();        //HS
+			break;
+		case FiniteElement::TES:
+			CalcSecondaryVariablesTES();        //HS
+			break;
 		case FiniteElement::LIQUID_FLOW:
-            if(aktueller_zeitschritt>0)
-              CalcSecondaryVariablesLiquidFlow();
+			if(aktueller_zeitschritt>0)
+				CalcSecondaryVariablesLiquidFlow();
 			break;
 		case FiniteElement::GROUNDWATER_FLOW:
 			break;
@@ -10635,9 +10776,48 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
         {
             fem->ConfigElement(elem, m_num->ele_gauss_points);
 			fem->UpdateSolidDensity(i);          // HS, thermal storage reactions
-            fem->ExtrapolateGauss_ReactRate_TNEQ( this ); // HS added 19.02.2013
-        }
-    }
+			fem->ExtrapolateGauss_ReactRate_TNEQ_TES( this ); // HS added 19.02.2013
+		}
+	}
+}
+
+
+/*************************************************************************
+   GeoSys-FEM Function:
+Task: Updating rho_s values in TES
+
+Programming: 
+11/2011 HS Implementation for thermal storage project
+**************************************************************************/
+void CRFProcess::CalcSecondaryVariablesTES()
+{
+	CElem* elem = NULL;
+	size_t i;
+
+	// loop over all the nodes,
+	// clean the nodal reaction rate values
+	const size_t node_vector_size(m_msh->nod_vector.size());
+	const int idx_nodal_react_rate = this->GetNodeValueIndex("REACT_RATE_N");
+	const int idx_nodal_solid_density = this->GetNodeValueIndex("SOLID_DENSITY_N");
+
+	for (size_t idx_node=0; idx_node<node_vector_size; idx_node++)
+	{
+		this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
+		this->SetNodeValue( idx_node, idx_nodal_solid_density, 0.0);
+	}
+
+	// loop over all the elements and update the rho_s values.
+	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
+	for (i = 0; i < mesh_ele_vector_size; i++)
+	{
+		elem = m_msh->ele_vector[i];
+		if (elem->GetMark())                        // Marked for use
+		{
+			fem->ConfigElement(elem, m_num->ele_gauss_points);
+			fem->UpdateSolidDensity(i);          // HS, thermal storage reactions
+			fem->ExtrapolateGauss_ReactRate_TNEQ_TES( this ); // HS added 19.02.2013
+		}
+	}
 }
 
 

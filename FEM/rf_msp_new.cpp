@@ -205,20 +205,37 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			case 3:       // DECOVALEX THM1, Bentonite
 				in_sd.clear();
 				break;
-			   case 4:
-				   //0. Capacity at density 1
-				   //1. Capacity at density 2
-				   //2. density 1
-				   //3. density 2
-				  data_Capacity = new Matrix(5);
-                  for(i=0; i<4; i++)
-                     in_sd>> (*data_Capacity)(i);
-                  in_sd.clear();
-                  break;
-            }
-         }
+			case 4:
+				//0. Capacity at density 1
+				//1. Capacity at density 2
+				//2. density 1
+				//3. density 2
+				data_Capacity = new Matrix(5);
+				for(i=0; i<4; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+				// TES
+			case 5: //Capacity depending on solid conversion
+				//0. Capacity at lower_density_limit (reactive system property)
+				//1. Capacity at upper_density_limit (reactive system property)
+				data_Capacity = new Matrix(3);
+				for(i=0; i<2; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+			case 6: //Capacity depending on loading with adsorbate
+				//0. Capacity at desorbed state (lower density limit)
+				//1. Capacity of adsorbate
+				data_Capacity = new Matrix(3);
+				for(i=0; i<2; i++)
+					in_sd>> (*data_Capacity)(i);
+				in_sd.clear();
+				break;
+			}
+		}
 
-         //....................................................................
+		//....................................................................
 		// subkeyword found
 		if(line_string.compare("CONDUCTIVITY") == 0)
 		{
@@ -1180,37 +1197,48 @@ void CSolidProperties::NullDensity()
 	(*data_Density) = 0.0;
 }
 
-   /**************************************************************************
+/**************************************************************************
    FEMLib-Method: CSolidProperties::Heat_Capacity(const double refence = 0.0) const
    Task: Get heat capacity
    Programing:
    08/2004 WW Implementation
    **************************************************************************/
-   double CSolidProperties::Heat_Capacity(double refence)
-   {
-      double val = 0.0;
-      switch(Capacity_mode)
-      {
-         case 0:
-            val = CalulateValue(data_Capacity, refence);
-            break;
-         case 1:
-            val = (*data_Capacity)(0);
-            break;
-         case 3:
-            //WW        val=1.38*(273.15+refence)+732.5;
-            val=1.38*refence+732.5;
-            break;
-		 case 4: //solid capacity depending on solid density (for thermochemical heat storage) - TN
-			 //refence contains value of solid density (current)
-			 val = (*data_Capacity)(0) + ((*data_Capacity)(1)-(*data_Capacity)(0))/((*data_Capacity)(3)-(*data_Capacity)(2))*(refence - (*data_Capacity)(2));
-			 break;
-         default:
-            val = (*data_Capacity)(0);
-            break;
-      }
-      return val;
-   }
+double CSolidProperties::Heat_Capacity(double refence)
+{
+	double val = 0.0;
+	switch(Capacity_mode)
+	{
+	case 0:
+		val = CalulateValue(data_Capacity, refence);
+		break;
+	case 1:
+		val = (*data_Capacity)(0);
+		break;
+	case 3:
+		//WW        val=1.38*(273.15+refence)+732.5;
+		val=1.38*refence+732.5;
+		break;
+	case 4: //solid capacity depending on solid density (for thermochemical heat storage) - TN
+		//refence contains value of solid density (current)
+		val = (*data_Capacity)(0) + ((*data_Capacity)(1)-(*data_Capacity)(0))/((*data_Capacity)(3)-(*data_Capacity)(2))*(refence - (*data_Capacity)(2));
+		break;
+	case 5:
+		// TODO [CL]: TES heat capacity model number changed 4-->5
+		val = (*data_Capacity)(0) + ((*data_Capacity)(1)-(*data_Capacity)(0))/(upper_solid_density_limit  - lower_solid_density_limit)*(refence - lower_solid_density_limit);
+		break;
+	case 6: //in a sorption system
+	{
+		// TODO [CL]: TES heat capacity model number changed 5-->6
+		double C = refence/lower_solid_density_limit - 1.0;
+		val = lower_solid_density_limit/refence * ((*data_Capacity)(0) + C * (*data_Capacity)(1));
+	}
+		break;
+	default:
+		val = (*data_Capacity)(0);
+		break;
+	}
+	return val;
+}
 
    /*************************************************************************
    FEMLib-Method:

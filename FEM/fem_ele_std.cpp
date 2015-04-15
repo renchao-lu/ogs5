@@ -234,6 +234,8 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	case TWO_PHASE_FLOW:
 		if (pcs->getProcessType() == FiniteElement::TNEQ)
 			PcsType = EPT_THERMAL_NONEQUILIBRIUM;
+		else if (pcs->getProcessType() == FiniteElement::TES)
+			PcsType = EPT_TES;
 		else // Two-phase flow
 			PcsType = EPT_TWOPHASE_FLOW;
 		break;
@@ -375,31 +377,53 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		PcsType = EPT_THERMAL_NONEQUILIBRIUM;
 		size_m = 64;
 		break;
+
+	case TES:
+		for (i = 0; i < pcs->pcs_number_of_primary_nvals; i++)
+			NodeShift[i] = i * pcs->m_msh->GetNodesNumber(false);
+		idx0 = pcs->GetNodeValueIndex("PRESSURE1");
+		idx1 = idx0 + 1;
+		idxt0 = pcs->GetNodeValueIndex("TEMPERATURE1");
+		idxt1 = idxt0 + 1;
+		idx_x0 = pcs->GetNodeValueIndex("CONCENTRATION1");
+		idx_x1 = idx_x0 + 1;
+		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
+		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
+		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
+		PcsType = EPT_TES;
+		size_m = 64;
+		break;
 	}
 
 	if (pcs->Memory_Type == 0)            // Do not store local matrices
 	{
 		// 04.03.2009 PCH
-		if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		switch(PcsType)
+		{
+		case EPT_MULTIPHASE_FLOW: case EPT_PSGLOBAL: case EPT_MULTI_COMPONENTIAL_FLOW:
+		case EPT_THERMAL_NONEQUILIBRIUM: case EPT_TES:
 			Mass2 = new Matrix(size_m, size_m);
-		else
+			break;
+		default:
 			Mass = new Matrix(size_m, size_m);
+		}
 		Laplace = new Matrix(size_m, size_m);
 
-        switch (pcs->getProcessType())
-        {
-        case HEAT_TRANSPORT:
-        case MASS_TRANSPORT:
-        case AIR_FLOW:
-        case MULTI_COMPONENTIAL_FLOW:
-        case TNEQ:
-            Advection = new Matrix(size_m, size_m);
-            Storage = new Matrix(size_m, size_m);
-            Content = new Matrix(size_m, size_m);
-            break;
-        default:
-            break;
-        }
+		switch (pcs->getProcessType())
+		{
+		case HEAT_TRANSPORT:
+		case MASS_TRANSPORT:
+		case AIR_FLOW:
+		case MULTI_COMPONENTIAL_FLOW:
+		case TNEQ:
+		case TES:
+			Advection = new Matrix(size_m, size_m);
+			Storage = new Matrix(size_m, size_m);
+			Content = new Matrix(size_m, size_m);
+			break;
+		default:
+			break;
+		}
 
 		if (D_Flag)
 			StrainCoupling = new Matrix(size_m, 60);
@@ -539,19 +563,25 @@ void CFiniteElementStd::SetMemory()
 	int Size = nnodes;
 	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL) //4.3.2009 PCH
 		Size *= 2;
-	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) Size *= pcs->dof;//AKS
+
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		Size *= pcs->dof;//AKS
 
 	ElementMatrix* EleMat = NULL;
 	// Prepare local matrices
 	// If local matrices are not stored, resize the matrix
 	if(pcs->Memory_Type == 0)
 	{
-		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //04.3.2009 PCH
+		if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES) //04.3.2009 PCH
 			Mass2->LimitSize(Size, Size);
 		else
 			Mass->LimitSize(nnodes, nnodes);  // Mass->LimitSize(nnodes); // unsymmetric in case of Upwinding
+
 		Laplace->LimitSize(Size, Size);
-		if(PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_GAS_FLOW || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+
+		if (PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_GAS_FLOW
+		    || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 		{
 			Advection->LimitSize(Size, Size); //SB4200
 			Storage->LimitSize(Size, Size); //SB4200
@@ -572,7 +602,8 @@ void CFiniteElementStd::SetMemory()
 		Mass = EleMat->GetMass();
 		Laplace = EleMat->GetLaplace();
 		// Advection, Storage, Content SB4200
-		if(PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if (PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 		{
 			Advection = EleMat->GetAdvection();
 			Storage = EleMat->GetStorage();
@@ -608,17 +639,6 @@ void CFiniteElementStd::SetMemory()
 **************************************************************************/
 void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, bool dyn)
 {
-	char pcsT;
-	//  pcsT = pcs->pcs_type_name[0]; // TF
-	// TF
-	ProcessType pcs_type (pcs->getProcessType());
-	pcsT = convertProcessTypeToString(pcs_type)[0];
-
-	//  if(pcs->pcs_type_name.find("AIR")!=string::npos) //OK
-	if(pcs_type == AIR_FLOW)              //OK
-		pcsT = 'A';
-	if(pcs_type == MULTI_PHASE_FLOW)      //24.2.2007 WW
-		pcsT = 'V';
 	if (D_Flag > 0)
 	{
 		for (size_t i = 0; i < pcs_vector.size(); i++)
@@ -654,7 +674,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 				NodeShift[i] = Shift[i];
 	}
 
-	switch(pcsT)
+
+	switch(pcs->getProcessType())
 	{
 	default:
 		if(T_Flag)
@@ -664,7 +685,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'L':                             // Liquid flow
+
+	case LIQUID_FLOW:
 		if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -672,9 +694,12 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'U':                             // Unconfined flow
-		break;
-	case 'G':                             // Groundwater flow
+
+	// No enum item for this case
+	// case 'U':                             // Unconfined flow
+	// 	break;
+
+	case GROUNDWATER_FLOW:
 		if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -682,10 +707,9 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'T':                             // Two-phase flow
-		if( pcs_type == TNEQ )
-				break;
-		else if(pcs->pcs_type_number == 0)
+
+	case TWO_PHASE_FLOW:
+		if(pcs->pcs_type_number == 0)
 		{
 			cpl_pcs = pcs_vector[pcs->pcs_number + 1];
 			idx_c0 = cpl_pcs->GetNodeValueIndex("SATURATION2");
@@ -699,9 +723,11 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-	case 'C':                             // Componental flow
-		break;
-	case 'H':                             // heat transport
+		// No enum item for this case
+		// case 'C':                             // Componental flow
+		//	break;
+
+	case HEAT_TRANSPORT:
 		//SB CMCD this needs to be fixed
 		cpl_pcs = PCSGet("GROUNDWATER_FLOW");
 		if(cpl_pcs)               //WW
@@ -728,12 +754,12 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 					//WW
 					idxS = cpl_pcs->GetNodeValueIndex("SATURATION1") + 1;
 			}
-            if(cpl_pcs == NULL) //CB_merge_05.13 
-            {
-               cpl_pcs = PCSGet("PS_GLOBAL");
-               if(cpl_pcs)
-                  idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1;
-            }
+			if(cpl_pcs == NULL) //CB_merge_05.13
+			{
+				cpl_pcs = PCSGet("PS_GLOBAL");
+				if(cpl_pcs)
+					idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1;
+			}
 			
 			if(cpl_pcs == NULL) //23.02.2009 NB 4.9.05
 			{
@@ -752,7 +778,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			}
 		}
 		break;
-	case 'M':                             // Mass transport
+
+	case MASS_TRANSPORT:
 	 if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -760,9 +787,13 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'O':                             // Liquid flow
+
+	 // case 'O':                             // Liquid flow
+	case OVERLAND_FLOW:
 		break;
-	case 'R':                             // Richards flow
+
+	case RICHARDS_FLOW:
+		// case 'R':                             // Richards flow
 		if(T_Flag)                //if(PCSGet("HEAT_TRANSPORT"))
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -770,7 +801,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'V':                             // Multi-phase flow. 24.2.2007 WW
+
+	case MULTI_PHASE_FLOW:
 		if(T_Flag)                //if(PCSGet("HEAT_TRANSPORT"))
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -778,7 +810,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'A':                             //Gas flow
+
+	case AIR_FLOW:
 		if(T_Flag)                //NB 23.01.2009 4.9.05
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -786,7 +819,8 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
-	case 'P':                             // Multi-phase flow. 03.03.2009 PCH
+
+	case PS_GLOBAL:
 		if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -4779,6 +4813,8 @@ void CFiniteElementStd::CalcLaplace()
     dof_n = 2;
   if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
 	  dof_n = 4;
+  if (PcsType == EPT_TES)
+	  dof_n = 3;
   
   //----------------------------------------------------------------------
   // Loop over Gauss points
@@ -4824,6 +4860,8 @@ void CFiniteElementStd::CalcLaplace()
 		}
 		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 			  CalCoefLaplaceTNEQ(ishd + jn);
+		else if (PcsType == EPT_TES)
+			CalCoefLaplaceTES(ishd + jn);
 	      const int jsh = jn*nnodes;
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	    //---------------------------------------------------------
@@ -5623,7 +5661,7 @@ void CFiniteElementStd::Assemble_Gravity()
 	// ---- Gauss integral
 	int gp_r = 0, gp_s = 0, gp_t;
 	gp_t = 0;
-      double fkt, rho, dens_arg[3];               //, rich_f;
+	double fkt, rho;               //, rich_f;
 	double k_rel_iteration;
 	// GEO
 	//NW  double geo_fac = MediaProp->geo_area;
@@ -5632,11 +5670,17 @@ void CFiniteElementStd::Assemble_Gravity()
 	long cshift = 0;                      //WW
 	//
 	//
+	// TODO [CL] shouldn't that be equal to pcs->dof?
 	int dof_n = 1;                        // 27.2.2007 WW
 	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
+	{
 		dof_n = 2;
-	if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	}
+	else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM
+	         || PcsType == EPT_TES)
+	{
 		dof_n = 4;
+	}
 
 	//WW 05.01.07
 	cshift = 0;
@@ -5666,17 +5710,20 @@ void CFiniteElementStd::Assemble_Gravity()
 		ComputeGradShapefct(1);   // Linear interpolation function
 		ComputeShapefct(1);       // Moved from CalCoefLaplace(). 12.3.2007 WW
 		// Material
-         if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
-         {
-            dens_arg[0]=interpolate(NodalVal0);   // pressure
-            dens_arg[1]=interpolate(NodalVal_t0); // temperature
-            dens_arg[2] = Index;
-            rho = FluidProp->Density(dens_arg);
-         }
-         else
-         {
+		if (PcsType == EPT_THERMAL_NONEQUILIBRIUM
+		    || PcsType == EPT_TES)
+		{
+			double dens_arg[] = {
+			    interpolate(NodalVal0),    // pressure
+			    interpolate(NodalVal_t0),  // temperature
+			    (double) Index
+			};
+			rho = FluidProp->Density(dens_arg);
+		}
+		else
+		{
 			rho = FluidProp->Density();
-         }
+		}
 		if(gravity_constant < MKleinsteZahl) // HEAD version
 			rho = 1.0;
 		else if(HEAD_Flag)
@@ -5693,7 +5740,7 @@ void CFiniteElementStd::Assemble_Gravity()
 					CalCoefLaplace(false);
 				else
 					CalCoefLaplace(true);
-            }
+			}
 
 			if(dof_n == 2)
 			{
@@ -5706,6 +5753,8 @@ void CFiniteElementStd::Assemble_Gravity()
 			{
 				if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 					CalCoefLaplaceTNEQ(ii*dof_n);
+				else if(PcsType == EPT_TES)
+					CalCoefLaplaceTES(ii*dof_n);
 			}
 			// Calculate mass matrix
 			const int iinn =  ii * nnodes; //19.06.2012. WW
@@ -6118,8 +6167,11 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 		if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
 			if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
-				gp_ele->rho_s_curr[gp] = 1.0 + 0.1*sin(2.0*3.1416*aktuelle_zeit)/(1.0-poro);//TN Test mass transfer
-				gp_ele->q_R[gp] = 0.1*2.0*3.1416*cos(2.0*3.1416*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+				const double rhoSR0 = 1.0;
+				const double rhoTil = 0.1;
+				const double omega  = 2.0*3.1416;
+				gp_ele->rho_s_curr[gp] = rhoSR0 + rhoTil * sin(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+				gp_ele->q_R[gp]        = rhoTil * omega  * cos(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
 			}
 			else {//Fuer CaOH2 im Moment
 
@@ -6179,11 +6231,14 @@ void CFiniteElementStd::Cal_Velocity()
 	// ---- Gauss integral
 	int gp_r = 0, gp_s = 0, gp_t;
 	double coef = 0.0;
+	// TODO [CL] shouldn't that be equal to pcs->dof
 	int dof_n = 1;
 	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
 		dof_n = 2;
 	if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		dof_n = 4;
+	if(PcsType == EPT_TES)
+		dof_n = 3;
 	//
 	gp_t = 0;
 
@@ -6270,7 +6325,9 @@ void CFiniteElementStd::Cal_Velocity()
 		if(dof_n == 1)
 			CalCoefLaplace(true);
 		else if (dof_n==4 && PcsType==EPT_THERMAL_NONEQUILIBRIUM)
-            CalCoefLaplaceTNEQ(0);
+			CalCoefLaplaceTNEQ(0);
+		else if (dof_n==3 && PcsType==EPT_TES)
+			CalCoefLaplaceTES(0);
 		else if (dof_n == 2 && PcsType == EPT_MULTIPHASE_FLOW) // PCH 05.2009
 			CalCoefLaplace2(true,0);
 		else if (dof_n == 2 && PcsType == EPT_PSGLOBAL) // PCH 05.2009
@@ -6308,7 +6365,7 @@ void CFiniteElementStd::Cal_Velocity()
 		if (PcsType != EPT_HEAT_TRANSPORT && PcsType != EPT_MASS_TRANSPORT) { // JOD 2014-11-10
 			if (k == 2 && (!HEAD_Flag) && FluidProp->CheckGravityCalculation())
 			{
-				if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+				if (PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 				{
 					eos_arg[0] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
 					eos_arg[1] = (1 - pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
@@ -6382,7 +6439,8 @@ void CFiniteElementStd::Cal_Velocity()
 					gp_ele->Velocity_g(i, gp) -= coef_tmp * mat[dim * i + j] * vel_g[j] / time_unit_factor;
 			//WX:modified.08.2010
 		}
-		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM
+		         || PcsType == EPT_TES)
 		{
 			eos_arg[0] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal0) + pcs->m_num->ls_theta*interpolate(NodalVal1);
 			eos_arg[1] = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t0) + pcs->m_num->ls_theta*interpolate(NodalVal_t1);
@@ -7307,18 +7365,17 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//----------------------------------------------------------------------
 	// Initialize.
 	// if (pcs->Memory_Type==2) skip the these initialization
-	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+	    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 		(*Mass2) = 0.0;
 	else
 		(*Mass) = 0.0;
+
 	(*Laplace) = 0.0;
-	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)
-	{
-		(*Advection) = 0.0;
-		  (*Content) = 0.0;
-    }
 	   
-	if (PcsType==EPT_THERMAL_NONEQUILIBRIUM)
+	if (PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		|| PcsType == EPT_TES
+		|| PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 	{
 		(*Advection) = 0.0;
 		  (*Content) = 0.0;
@@ -7352,8 +7409,16 @@ void CFiniteElementStd::AssembleParabolicEquation()
 			CalcMassMCF();
 	}
 	else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	{
 		CalcMassTNEQ();
-
+	}
+	else if (PcsType == EPT_TES)
+	{
+		if(pcs->m_num->ele_mass_lumping)
+			CalcLumpedMassTES();
+		else
+			CalcMassTES();
+	}
 	else
 	{
 		if(pcs->m_num->ele_mass_lumping)
@@ -7361,20 +7426,25 @@ void CFiniteElementStd::AssembleParabolicEquation()
 		else
 			CalcMass();
 	}
+
 	// Laplace matrix.......................................................
-	     if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
-		   CalcLaplaceMCF(); //AKS
-		 else
-	CalcLaplace();
-      if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
-	  {                             
-         CalcAdvectionMCF();
-         CalcContentMCF();
-      }
-      if (PcsType==EPT_THERMAL_NONEQUILIBRIUM) {                              //AKS/NB
-         CalcAdvectionTNEQ();
-         CalcContentTNEQ();
-      }
+	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
+		CalcLaplaceMCF(); //AKS
+	else
+		CalcLaplace();
+	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
+	{
+		CalcAdvectionMCF();
+		CalcContentMCF();
+	}
+	if (PcsType==EPT_THERMAL_NONEQUILIBRIUM) {                              //AKS/NB
+		CalcAdvectionTNEQ();
+		CalcContentTNEQ();
+	}
+	if (PcsType==EPT_TES) {                              //AKS/NB
+		CalcAdvectionTES();
+		CalcContentTES();
+	}
 	if(RD_Flag)                           //YD /WW
 		Assemble_DualTransfer();
 	if(pcs->Tim->time_control_type == TimeControlType::NEUMANN)
@@ -7399,12 +7469,18 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//Mass matrix
 	if(pcs->PartialPS != 1)               // PCH if not partial-pressure-based
 	{
-		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		{
 			*StiffMatrix    = *Mass2;
+		}
 		else
+		{
 			*StiffMatrix    = *Mass;
+		}
 		(*StiffMatrix) *= fac1;
 	}
+
 	// Laplace matrix
 	// PCH to reduce PDE to ODE in Saturation model
 	// PCH: If equation 2 in Two-phase flow.
@@ -7414,11 +7490,12 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		*AuxMatrix      = *Laplace;
-		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
- {
+		if (PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		{
 			*AuxMatrix     += *Advection;
-         *AuxMatrix += *Content;
-	}
+			*AuxMatrix += *Content;
+		}
 	}
 
 	(*AuxMatrix)   *= fac2;
@@ -7433,14 +7510,12 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	if(PcsType == EPT_MULTIPHASE_FLOW)                      // For DOF>1: 27.2.2007 WW
 		for (i = 0; i < nnodes; i++)
 			NodalVal[i + nnodes] = 0.0;
-	  if(PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
-      {
-	  for (int in = 0; in < pcs->dof; in++)
-	  {
-      for (i=0;i<nnodes; i++)
-      NodalVal[i+in*nnodes] = 0.0;
-      }
-	  }
+
+	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+	{
+		for (int in = 0; in < pcs->dof * nnodes; in++) { NodalVal[in] = 0.0; }
+	}
+
 	if(pcs->m_num->nls_method > 0 && (!dynamic)) //Newton method
 		StiffMatrix->multi(NodalVal1, NodalVal, -1.0);
 
@@ -7530,7 +7605,8 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	// Mass - Storage
 	if(pcs->PartialPS != 1)               // PCH if not partial-pressure-based
 	{
-		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //PCH
+		if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES) //PCH
 			*AuxMatrix1 = *Mass2;
 		else
 			*AuxMatrix1 = *Mass;
@@ -7545,11 +7621,11 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		*AuxMatrix      = *Laplace;
-	if(PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType==EPT_THERMAL_NONEQUILIBRIUM)
-	{
+		if(PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType==EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		{
 			*AuxMatrix     += *Advection;
-	*AuxMatrix     += *Content;
-	}
+			*AuxMatrix     += *Content;
+		}
 	}
 	(*AuxMatrix)  *= fac2;
 	*AuxMatrix1   -= *AuxMatrix;
@@ -7585,9 +7661,22 @@ void CFiniteElementStd::AssembleParabolicEquation()
             NodalVal[i+2*nnodes] = 0.0;
 
 			NodalVal0[i+3*nnodes] = pcs->GetNodeValue(nodes[i],idx_x0);
-            NodalVal[i+3*nnodes] = 0.0;
-         }
-      }
+			NodalVal[i+3*nnodes] = 0.0;
+		}
+	}
+	else if(PcsType==EPT_TES)                              // For DOF>1: 27.2.2007 WW
+	{
+		for (i = 0; i < nnodes; i++)
+		{
+
+			NodalVal[i] = 0.0;
+			NodalVal0[i+nnodes] = pcs->GetNodeValue(nodes[i], idxt0);
+			NodalVal[i+nnodes] = 0.0;
+
+			NodalVal0[i+2*nnodes] = pcs->GetNodeValue(nodes[i], idx_x0);
+			NodalVal[i+2*nnodes] = 0.0;
+		}
+	}
 	else if(PcsType == EPT_PSGLOBAL)
 		{// For DOF>1:
 		for (i = 0; i < nnodes; i++)
@@ -7617,11 +7706,11 @@ void CFiniteElementStd::AssembleParabolicEquation()
 		Laplace->multi(NodalVal0, NodalVal, -1.0);
 	}
 
-	//
-	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
-		{
+	if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+	    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+	{
 		int nDF = 2;
-		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
+		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES) nDF=pcs->dof;
 		for(ii = 0; ii < nDF; ii++)
 		{
 			i_sh = NodeShift[ii + dm_shift];
@@ -7818,10 +7907,15 @@ void CFiniteElementStd::add2GlobalMatrixII()
 		A = pcs->eqs_new->A;
 #endif
 	// For DOF>1:
-	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+	    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 	{
 		int nDF = 2;
-		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
+		if (PcsType == EPT_MULTI_COMPONENTIAL_FLOW
+		    || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		{
+			nDF=pcs->dof;
+		}
 
 		int jj_sh;
 		long j_sh = 0;
@@ -8813,21 +8907,31 @@ void CFiniteElementStd::Config()
 	for(int in = 0; in < pcs->dof; in++)  NodalVal1[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
 	for(int in = 0; in < pcs->dof; in++)  NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
 		}
-	if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)  // TNEQ
-	  {
-		  for(i=0;i<nnodes;i++)
-		  {
-			  NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
-			  NodalVal_t2_1[i] = pcs->GetNodeValue(nodes[i],idx_t2_1);
-			  NodalVal_X1[i] = pcs->GetNodeValue(nodes[i],idx_x1);
+	if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
+	{
+		for(i=0;i<nnodes;i++)
+		{
+			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
+			NodalVal_t2_1[i] = pcs->GetNodeValue(nodes[i],idx_t2_1);
+			NodalVal_X1[i] = pcs->GetNodeValue(nodes[i],idx_x1);
 
-			  NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
-			  NodalVal_t2_0[i] = pcs->GetNodeValue(nodes[i],idx_t2_0);
-			  NodalVal_X0[i] = pcs->GetNodeValue(nodes[i],idx_x0);
-		  }
+			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
+			NodalVal_t2_0[i] = pcs->GetNodeValue(nodes[i],idx_t2_0);
+			NodalVal_X0[i] = pcs->GetNodeValue(nodes[i],idx_x0);
+		}
+	}
 
+	if(PcsType==EPT_TES)
+	{
+		for(i=0;i<nnodes;i++)
+		{
+			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
+			NodalVal_X1[i] = pcs->GetNodeValue(nodes[i],idx_x1);
 
-	  }
+			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
+			NodalVal_X0[i] = pcs->GetNodeValue(nodes[i],idx_x0);
+		}
+	}
 
 	if(PcsType == EPT_PSGLOBAL)
 		for(i = 0; i < nnodes; i++)
@@ -9052,7 +9156,17 @@ void CFiniteElementStd::Assembly()
 #else
 			add2GlobalMatrixII(pcs->dof);
 #endif
-            break;
+		break;
+	case EPT_TES:
+		AssembleParabolicEquation();
+		//Assemble_Gravity();
+		Assemble_RHS_TES();
+#if defined(USE_PETSC)
+		add2GlobalMatrixII();
+#else
+		add2GlobalMatrixII(pcs->dof);
+#endif
+		break;
 	//....................................................................
 	default:
             cout << "Fatal error: No valid PCS type" << '\n';
@@ -9343,7 +9457,7 @@ void CFiniteElementStd::ExtropolateGauss(CRFProcess* m_pcs, const int idof)
 This function is needed to extrapolate the nodal reaction rate values, 
 using the gauss point calculated reaction rates. 
 ***********************************************************************/
-void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ(CRFProcess *m_pcs)
+void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs)
 {
     int i, j, gp, gp_r, gp_s, gp_t, idx_v2=0;
     int i_s, i_e, ish;
@@ -9783,28 +9897,28 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 		Velocity_g = 0.0;
 	}
 
-	if (pcs->type == 1414)
+	if (pcs->getProcessType() == FiniteElement::TNEQ || pcs->getProcessType() == FiniteElement::TES)
 	{
-	  rho_s_prev = new double[NGPoints];
-	  rho_s_curr = new double[NGPoints];
-	  q_R = new double[NGPoints]; 
-	
+		rho_s_prev = new double[NGPoints];
+		rho_s_curr = new double[NGPoints];
+		q_R = new double[NGPoints];
 
-	  for (int i=0; i<NGPoints; i++)
-	  {
-		  long group = ele->GetPatchIndex();
-		  rho_s_prev[i] = msp_vector[group]->Density() ;
-		  rho_s_curr[i] = rho_s_prev[i];
-		  q_R[i] = 0.0;	  
-      }
+		for (int i=0; i<NGPoints; i++)
+		{
+			long group = ele->GetPatchIndex();
+			rho_s_prev[i] = msp_vector[group]->Density() ;
+			rho_s_curr[i] = rho_s_prev[i];
+			q_R[i] = 0.0;
+		}
 	}
 	
-    // CB _ctx_ CB_merge_0513
+	// CB _ctx_ CB_merge_0513
 	// SB electric field
-    //_ctx_Gauss.resize(3,NGPoints);
-    //_ctx_Gauss = 0.0;
-
+	//_ctx_Gauss.resize(3,NGPoints);
+	//_ctx_Gauss = 0.0;
 }
+
+
 //WW 08/2007
 void ElementValue::getIPvalue_vec(const int IP, double* vec)
 {
@@ -9840,21 +9954,22 @@ void ElementValue::GetEleVelocity(double* vec)
 		vec[i] /= Velocity.Cols();
 	}
 }
+
 //WW
 ElementValue::~ElementValue()
 {
-	Velocity.resize(0, 0); 
+	Velocity.resize(0, 0);
 #ifdef USE_TRANSPORT_FLUX
 	TransportFlux.resize(0, 0); // JOD 2014-11-10
 #endif
 	Velocity_g.resize(0,0);
 
-	if (pcs->type == 1414){
-	  delete [] rho_s_prev;
-	  delete [] rho_s_curr;
-	  delete [] q_R; 
+	if (pcs->getProcessType() == FiniteElement::TNEQ || pcs->getProcessType() == FiniteElement::TES) {
+		delete [] rho_s_prev;
+		delete [] rho_s_curr;
+		delete [] q_R;
+	}
 }
-   }
 
 /**************************************************************************
    FEMLib-Method:

@@ -595,7 +595,7 @@ Problem::~Problem()
     3: PS_GLOBAL   | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     | 14: TNEQ
+   12: DEFORMATION     | 14: TNEQ             |15: TES
    Return:
    Programming:
    07/2008 WW
@@ -738,15 +738,23 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 		active_processes[5] = &Problem::MULTI_COMPONENTIAL_FLOW;
 		return 5;
 	}
-   else if (m_pcs->getProcessType() == FiniteElement::TNEQ)
-   {
-      if (!activefunc)
-         return 14;
-      total_processes[14] = m_pcs;
-      active_processes[14] = &Problem::TNEQ;
-      return 14;
-   }
-   std::cout << "Error: no process is specified. " << '\n';
+	else if (m_pcs->getProcessType() == FiniteElement::TNEQ)
+	{
+		if (!activefunc)
+			return 14;
+		total_processes[14] = m_pcs;
+		active_processes[14] = &Problem::TNEQ;
+		return 14;
+	}
+	else if (m_pcs->getProcessType() == FiniteElement::TES)
+	{
+		if (!activefunc)
+			return 15;
+		total_processes[15] = m_pcs;
+		active_processes[15] = &Problem::TES;
+		return 15;
+	}
+	std::cout << "Error: no process is specified. " << '\n';
 	return -1;
 }
 
@@ -759,7 +767,7 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
     3: TWO_PHASE_FLOW  | 4: MULTI_PHASE_FLOW  | 5: COMPONENTAL_FLOW
     6: OVERLAND_FLOW   | 7: AIR_FLOW          | 8: HEAT_TRANSPORT
     9: FLUID_MOMENTUM  |10: RANDOM_WALK       |11: MASS_TRANSPORT
-   12: DEFORMATION     |13: PS_GLOBAL         |14: TNEQ
+   12: DEFORMATION     |13: PS_GLOBAL         |14: TNEQ              | 15: TES
    Return:
    Programming:
    07/2008 WW
@@ -768,28 +776,27 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
    --------------------------------------------------------------------*/
 void Problem::SetActiveProcesses()
 {
-	int i;
 	CRFProcess* m_pcs = NULL;
-   const int max_processes = 15;                  // PCH, TN
+	const size_t max_processes = 16;                  // PCH, TN, CL
 	total_processes.resize(max_processes);
 	active_processes = new ProblemMemFn[max_processes];
 	coupled_process_index.resize(max_processes);
 	exe_flag = new bool[max_processes];
 	//
-	for(i = 0; i < max_processes; i++)
+	for(size_t i = 0; i < max_processes; i++)
 	{
 		total_processes[i] = NULL;
 		active_processes[i] = NULL;
 		coupled_process_index[i] = -1;
 	}
 	//
-	for(i = 0; i < (int)pcs_vector.size(); i++)
+	for(size_t i = 0; i < pcs_vector.size(); i++)
 	{
 		m_pcs = pcs_vector[i];
 		AssignProcessIndex(m_pcs);
 	}
 	//
-	for(i = 0; i < max_processes; i++)
+	for(size_t i = 0; i < max_processes; i++)
 		if(total_processes[i])
 		{
 			// JT: Check for a coupled variable or process (variable is probably necessary for multiple component transport situations.
@@ -2838,6 +2845,28 @@ inline double Problem::TNEQ()
 		m_pcs->CalIntegrationPointValue();
 	return error;
 }
+
+
+/*-------------------------------------------------------------------------
+GeoSys - Function: TES()
+Task: Simulate Reactive thermal nonequilibrium flow
+Return: error
+Programming:
+07/2013 HS,TN Implementation
+Modification:
+-------------------------------------------------------------------------*/
+inline double Problem::TES()
+{
+	double error = 1.0e+8;
+	CRFProcess* m_pcs = total_processes[15];
+	if(!m_pcs->selected)
+		return error;
+	error = m_pcs->ExecuteNonLinear(loop_process_number); 
+	if(m_pcs->TimeStepAccept())
+		m_pcs->CalIntegrationPointValue();
+	return error;
+}
+
 
 /*-------------------------------------------------------------------------
    GeoSys - Function: GroundWaterFlow()
