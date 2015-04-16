@@ -744,7 +744,7 @@ void CreateEQS_LinearSolver()
          eqs->Init(sparse_info);
          eqs->set_rank_size(rank_p, size_p);
       }     
-      else if( pcs_type == TEQ)
+      else if( pcs_type == TES)
       {
          sparse_info[0] = max_cnct_nodes * 3;
          sparse_info[1] = 0; //max_cnct_nodes * 3;
