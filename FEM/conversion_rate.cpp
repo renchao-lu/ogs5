@@ -3,6 +3,8 @@
 #include <math.h>
 #include <cmath>
 
+#include "physical_constants.h"
+
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
 
 #define COMP_MOL_MASS_WATER 0.018016
@@ -10,14 +12,14 @@
 #define COMP_MOL_MASS_O2 0.032
 
 conversion_rate::conversion_rate(double T_solid, 
-	                       double T_gas,  
-						   double p_gas,
-						   double x_reactive, 
-						   double rho_s_initial,
-						   double phi_S,
-						   double delta_t,
-						   FiniteElement::SolidReactiveSystem system)
-:R(8.314510),p_eq(1.0) // , n_col(3)
+                                 double T_gas,
+                                 double p_gas,
+                                 double x_reactive,
+                                 double rho_s_initial,
+                                 double phi_S,
+                                 double delta_t,
+                                 FiniteElement::SolidReactiveSystem system)
+    :R(phc::R_SI), p_eq(1.0)
 {
 	x = Eigen::VectorXd(1);
 	update_param( T_solid, T_gas, p_gas, x_reactive, rho_s_initial, phi_S, delta_t, system);

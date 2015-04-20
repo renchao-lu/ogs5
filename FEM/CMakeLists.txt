@@ -50,6 +50,7 @@ set( SOURCES
 	DistributionInfo.h
 	LinearFunctionData.h
 	Output.h
+	physical_constants.h
 	GeoInfo.cpp
 	ProcessInfo.cpp
 	DistributionInfo.cpp
