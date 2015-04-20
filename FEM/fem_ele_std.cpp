@@ -4902,7 +4902,7 @@ void CFiniteElementStd::CalcLaplace()
 						{
 							const int ksh = k*nnodes + ia;
 							const int km = dim *k ;
-							for(l=0; l< dim; l++)
+							for(std::size_t l=0; l< dim; l++)
 							{
 								(*Laplace)(iish, jjsh) += fkt * dshapefct[ksh] \
 								                          * mat[km + l] * dshapefct[l*nnodes+j];
@@ -8105,6 +8105,7 @@ void CFiniteElementStd::CalcFEM_FCT()
 	//----------------------------------------------------------------------
 #ifdef USE_PETSC
 	// A=1/dt*ML + theta*K
+	const double theta = pcs->m_num->ls_theta;
 	*AuxMatrix   *= theta;
 	*StiffMatrix  = *FCT_MassL;
 	*StiffMatrix *= dt_inverse;
