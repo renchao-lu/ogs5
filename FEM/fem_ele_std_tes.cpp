@@ -21,8 +21,6 @@ using Math_Group::CSparseMatrix;
 #endif
 
 
-#include<iomanip>
-
 #include "physical_constants.h"
 
 
@@ -177,6 +175,7 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
+		// TODO: [CL] 1/p ???
 		val = poro/p * FluidProp->Density(eos_arg);
 		break;
 
@@ -394,6 +393,7 @@ void CFiniteElementStd::CalcAdvectionTES()
 		ComputeShapefct(1);
 
 		//Velocity
+		// TODO [CL] vel includes porosity? cf. \tilde w
 		double vel[] = {
 		    gp_ele->Velocity(0, gp),
 		    gp_ele->Velocity(1, gp),
@@ -585,6 +585,7 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 	//    case 7:
 	//        break;
 	case 8: // x x
+		// TODO [CL] why so complicated?
 		val = (MediaProp->Porosity(Index, theta) - 1.0) * gp_ele->q_R[gp];
 		break;
 	}
