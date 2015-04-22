@@ -160,42 +160,6 @@ ELSE()
         MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARIES}")
 ENDIF()
 
-## VTK ##
-IF (OGS_LIBS_DIR_FOUND AND NOT VTK_DIR)
-	SET (VTK_DIR ${OGS_LIBS_DIR}/VTK/build)
-ENDIF () # OGS_LIBS_DIR_FOUND
-IF(NOT OGS_DONT_USE_VTK)
-	FIND_PACKAGE( VTK )
-ENDIF()
-IF(VTK_FOUND)
-	ADD_DEFINITIONS(-DVTK_FOUND)
-	FIND_PACKAGE(QVTK)
-	IF(NOT QVTK_FOUND AND OGS_USE_QT)
-		MESSAGE(FATAL_ERROR "QVTK was not found but is required for OGS_BUILD_GUI! On Ubuntu it can be installed via 'sudo apt-get install libvtk5-qt4-dev'")
-	ENDIF()
-ENDIF()
-
-## NetCDF ##
-IF("${VTK_MAJOR_VERSION}.${VTK_MINOR_VERSION}.${VTK_PATCH_VERSION}" VERSION_GREATER 5.6)
-	FIND_PATH(VTK_NETCDF_FOUND netcdf.h
-		PATHS ${VTK_INCLUDE_DIRS}/vtknetcdf ${VTK_SOURCE_DIR}/Utilities/vtknetcdf
-		PATH_SUFFIXES include
-		NO_DEFAULT_PATH)
-ENDIF()
-
-IF(VTK_NETCDF_FOUND)
-	ADD_DEFINITIONS(-DVTK_NETCDF_FOUND)
-	INCLUDE_DIRECTORIES(
-		${VTK_NETCDF_FOUND} ${VTK_DIR}/Utilities ${VTK_NETCDF_FOUND}/..
-		${VTK_NETCDF_FOUND}/../.. ${VTK_NETCDF_FOUND}/../cxx)
-ELSE()
-	SET(NETCDF_CXX TRUE)
-	FIND_PACKAGE(NetCDF)
-	IF(NOT NETCDF_FOUND AND OGS_USE_QT)
-		MESSAGE(FATAL_ERROR "NetCDF was not found but is required for OGS_BUILD_GUI!")
-	ENDIF()
-ENDIF()
-
 ## geotiff ##
 IF(NOT MSVC)
 	FIND_PACKAGE( LibTiff )
@@ -208,27 +172,6 @@ ENDIF() # libgeotiff_FOUND
 IF (OGS_PYTHON)
 	FIND_PACKAGE (PythonLibs 2.5 REQUIRED)
 ENDIF (OGS_PYTHON)
-
-## Qt4 library ##
-IF(NOT OGS_DONT_USE_QT)
-	FIND_PACKAGE( Qt4 4.5)
-ENDIF(NOT OGS_DONT_USE_QT)
-
-IF ( QT4_FOUND )
-	# OPTION(OGS_GUI OFF )
-	# this is needed to correctly link the qt libraries through target_link_libraries
-	# By default only QtCore and QtGui modules are enabled
-	# other modules must be enabled like this:
-	SET( QT_USE_QTOPENGL TRUE )
-	SET( QT_USE_QTSQL TRUE )
-	SET( QT_USE_QTTEST TRUE )
-	SET( QT_USE_QTXML TRUE )
-	IF (QT_QTXMLPATTERNS_FOUND)
-		set( QT_USE_QTXMLPATTERNS TRUE )
-	ENDIF (QT_QTXMLPATTERNS_FOUND)
-	INCLUDE( ${QT_USE_FILE} )
-	ADD_DEFINITIONS(${QT_DEFINITIONS})
-ENDIF (QT4_FOUND )
 
 ## VRPN ##
 FIND_PACKAGE( VRPN )

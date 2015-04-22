@@ -34,9 +34,6 @@
 #include "AnalyticalGeometry.h"
 #include "EarClippingTriangulation.h"
 
-// Qt/Base
-#include "OGSError.h"
-
 using namespace GEOLIB;
 
 namespace FileIO

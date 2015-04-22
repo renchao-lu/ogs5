@@ -23,9 +23,9 @@ IF (NOT MSVC)
 		testOgs.cxx
 		testBmSkel.cxx)
 ENDIF (NOT MSVC)
- 
+
 SET ( SOURCES ${SOURCES}
-	Matrix/testMatrix.cpp 
+	Matrix/testMatrix.cpp
     )
 
 INCLUDE_DIRECTORIES(
@@ -96,8 +96,3 @@ ENDIF (OGS_ONE_BIG_GTEST)
 IF (NOT MSVC)
 	ADD_SUBDIRECTORY( data/bmskel )
 ENDIF (NOT MSVC)
-
-IF(OGS_USE_QT AND TESTDATA_DIR_FOUND)
-  ADD_SUBDIRECTORY( gdiff ) # depends on Qt
-  ADD_SUBDIRECTORY( Qt )
-ENDIF()
