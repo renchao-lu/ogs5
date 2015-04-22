@@ -7,7 +7,6 @@ INCLUDE_DIRECTORIES(
 	../../MathLib
 	../../FEM
 	../../MSH
-	../../Qt/OpenSG
 )
 
 # Create executables

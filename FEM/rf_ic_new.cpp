@@ -353,9 +353,7 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 					std::cerr <<
 					"error in CInitialCondition::Read: point name \"" <<
 					geo_name << "\" not found!" << "\n";
-#ifndef OGS_USE_QT	//KR
 					exit (1);
-#endif
 				}
 				setGeoType (GEOLIB::POINT);
 				setGeoObj (pnt);
@@ -374,9 +372,7 @@ ios::pos_type CInitialCondition::Read(std::ifstream* ic_file,
 					std::cerr <<
 					"error in CInitialCondition::Read: polyline name \"" <<
 					geo_name << "\" not found!" << "\n";
-#ifndef OGS_USE_QT	//KR
 					exit (1);
-#endif
 				}
 				setGeoType (GEOLIB::POLYLINE);
 				setGeoObj (ply);
@@ -520,7 +516,7 @@ void CInitialCondition::Set(int nidx)
 		case GEOLIB::GEODOMAIN:
 			SetDomain(nidx);
 			if (storeValues)
-			  StoreInitialValues();// JOD 2014-11-10 
+			  StoreInitialValues();// JOD 2014-11-10
 			break;
 		case GEOLIB::INVALID:
 			std::cout << "WARNING: CInitialCondition::Set - invalid geo type" << "\n";
@@ -583,7 +579,7 @@ void CInitialCondition::SetPoint(int nidx)
 		                                                                                getGeoObj(
 		                                                                                        ))),
 		                                 nidx,
-		                                 geo_node_value);	
+		                                 geo_node_value);
 	else
 		std::cerr << "Error in CInitialCondition::SetPoint - point: "
 		          << *(static_cast<const GEOLIB::Point*>(getGeoObj()))
@@ -1158,10 +1154,10 @@ void CInitialCondition::StoreInitialValues() {
 	int index = this->getProcess()->GetNodeValueIndex(variable_name);
 	for (int i = 0; i < (long)m_msh->nod_vector.size(); i++)
 	{
-	
+
 		this->getProcess()->SetNodeValue(i, this->getProcess()->GetNodeValueIndex(variable_name),
 			this->getProcess()->GetNodeValue(i, 0));
-		
+
 	}
 
 }
