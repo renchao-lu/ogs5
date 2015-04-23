@@ -5137,7 +5137,9 @@ double CRFProcess::Execute()
 
 		// maybe works also for other processes involving velocities
 		// update nod velocity if constrained BC
-		if (this->accepted		// do I really need to check every single bc node, or how can I access a bc group?
+		// do I really need to check every single bc node, or how can I access a bc group?
+		if ( (this->hasConstrainedBC() || this->hasConstrainedST())
+			&& this->accepted
 			&& (this->getProcessType() == FiniteElement::RICHARDS_FLOW
 				|| this->getProcessType() == FiniteElement::LIQUID_FLOW) )
 		{
