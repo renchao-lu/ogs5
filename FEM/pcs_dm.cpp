@@ -7,6 +7,8 @@
 #include <iostream>
 #include <time.h>
 
+#include "StringTools.h"
+
 #include "FEMEnums.h"
 #include "mathlib.h"
 //#include "femlib.h"
@@ -3073,13 +3075,6 @@ void CRFProcessDeformation::UpdateStress()
 	//}
 }
 
-// Coupling
-/*
-   void CRFProcessDeformation::ConfigureCoupling()
-   {
-    fem_dm->ConfigureCoupling(this, Shift);
-   }
- */
 /**************************************************************************
    ROCKFLOW - Funktion: WriteGaussPointStress()
 
@@ -3093,14 +3088,20 @@ void CRFProcessDeformation::UpdateStress()
 **************************************************************************/
 void CRFProcessDeformation::WriteGaussPointStress()
 {
-	long i;
-	string StressFileName = FileName + ".sts";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
+#else
+	const std::string StressFileName = FileName + ".sts";
+#endif
+
 	fstream file_stress(StressFileName.data(),ios::binary | ios::out);
 	ElementValue_DM* eleV_DM = NULL;
 
 	long ActiveElements = 0;
 	MeshLib::CElem* elem = NULL;
-	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (ExcavMaterialGroup > -1)//WX:if excavation write all eles
@@ -3112,7 +3113,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 	}
 	}
 	file_stress.write((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark()||ExcavMaterialGroup > -1)      // Marked for use//WX:if excavation write all eles
@@ -3141,19 +3142,22 @@ void CRFProcessDeformation::WriteGaussPointStress()
 **************************************************************************/
 void CRFProcessDeformation::ReadGaussPointStress()
 {
-	long i, index, ActiveElements;
-	string StressFileName;
-#ifdef MFC                                  //WW
-	StressFileName = ext_file_name + ".sts";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
 #else
-	StressFileName = FileName + ".sts";
+	const std::string StressFileName = FileName + ".sts";
 #endif
+
 	fstream file_stress (StressFileName.data(),ios::binary | ios::in);
 	ElementValue_DM* eleV_DM = NULL;
 	//
+	long ActiveElements;
 	file_stress.read((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (i = 0; i < ActiveElements; i++)
+	for (long i = 0; i < ActiveElements; i++)
 	{
+        long index;
 		file_stress.read((char*)(&index), sizeof(index));
 		eleV_DM = ele_value_dm[index];
 		eleV_DM->Read_BIN(file_stress);
