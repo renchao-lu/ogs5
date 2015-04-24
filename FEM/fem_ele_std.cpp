@@ -83,6 +83,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	  pcs(Pcs), dm_pcs(NULL), HEAD_Flag(false)
 {
 	int i;
+	// TODO [CL] what is size_m?
       int size_m = 64;                            //25.2.2007
 	string name2;
 	char name1[MAX_ZEILE];
@@ -6190,12 +6191,15 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 		Eigen::VectorXd yy_rho_s    = Eigen::VectorXd::Zero(1); // rho_s
 		Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
-		const double poro = mmp_vector[group]->porosity;
+
+		// TODO [CL] Why?
+		// poro = mmp_vector[group]->porosity;
+		const double poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
+
 		// set parameters in the ca_hydaration class
-
-
 		if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
 			if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
+				// std::cerr << "@@@ time: " << aktuelle_zeit << std::endl;
 				const double rhoSR0 = 1.0;
 				const double rhoTil = 0.1;
 				const double omega  = 2.0*3.1416;
@@ -7375,6 +7379,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	// JT2012: Get the time step of this process! Now dt can be independently controlled.
 	pcs_time_step = pcs->Tim->time_step_length;
 	dt_inverse = 1.0/pcs_time_step; // (also, no need to check minimum. It is handeled in Tim.
+	// std::cerr << "@@@ time step size: " << pcs_time_step << std::endl;
 
 	//WW 05.01.07
 	relax0 = pcs->m_num->nls_relaxation;  //WW
@@ -9015,6 +9020,8 @@ void CFiniteElementStd::Assembly()
 	if(pcs->Write_Matrix)
 		(*pcs->matrix_file) << "### Element: " << Index << "\n";
 
+	write_mat_coeff_cap_ele(pcs, Index);
+
 	//======================================================================
 	switch(PcsType)
 	{
@@ -9185,17 +9192,20 @@ void CFiniteElementStd::Assembly()
 		add2GlobalMatrixII(pcs->dof);
 #endif
 		break;
-		case EPT_THERMAL_NONEQUILIBRIUM:
-			AssembleParabolicEquation();
-			//Assemble_Gravity();
-			Assemble_RHS_TNEQ();
+	case EPT_THERMAL_NONEQUILIBRIUM:
+		CalcSolidDensityRate();
+		AssembleParabolicEquation();
+		//Assemble_Gravity();
+		Assemble_RHS_TNEQ();
 #if defined(USE_PETSC)
-			add2GlobalMatrixII();
+		add2GlobalMatrixII();
 #else
-			add2GlobalMatrixII(pcs->dof);
+		// TODO [CL] give PETSC function the same signature (avoids ifdef)
+		add2GlobalMatrixII(pcs->dof);
 #endif
 		break;
 	case EPT_TES:
+		CalcSolidDensityRate();
 		AssembleParabolicEquation();
 		//Assemble_Gravity();
 		Assemble_RHS_TES();
@@ -9945,7 +9955,10 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 			long group = ele->GetPatchIndex();
 			rho_s_prev[i] = msp_vector[group]->Density() ;
 			rho_s_curr[i] = rho_s_prev[i];
-			q_R[i] = 0.0;
+			// TODO [CL] calc rate?
+			// q_R[i] = 2.0944;
+			// q_R[i] = 0.0;
+			q_R[i] = 888.888;
 		}
 	}
 	
@@ -11783,6 +11796,21 @@ double CFiniteElementStd::Get_ctx_(long ele_index, int gaussp, int i_dim){
 	return val;
 }*/
 
+
+void
+CFiniteElementStd
+::write_mat_coeff_cap_mat(CRFProcess * const pcs, const std::string& str)
+{
+	if (Index != 3) return;
+
+	if (pcs->Write_Matrix_Coefficients)
+	{
+		std::ofstream& fh = *pcs->matrix_coeff_file;
+
+		fh << std::endl
+		   << "# function: " << str << std::endl;
+	}
+}
 
 
 }                                                 // end namespace
