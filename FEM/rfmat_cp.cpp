@@ -8,7 +8,7 @@
    10/2004   SB  First Implemented
  */
 /**************************************************************************/
-#ifdef WINDOWS
+#ifdef WIN32
 #pragma warning (disable:4786)                    /*Visual C++ 6.0*/
 #endif
 // C
@@ -607,7 +607,7 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
      DisplayMsgLn("Error in VALENCE - setting valence to 0!");
 		   valence = 0;
 	  }
- } 
+ }
 	if(line_string.find("$A_ZERO")!=std::string::npos) { // subkeyword found
 	  in.str(GetLineFromFile1(rfd_file));
     in >> a_zero;
@@ -616,7 +616,7 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
      // DisplayMsgLn("Error in A_ZERO - setting valence to 0!");
 	    //a_zero = 0.0;
 	  }
- } 
+ }
 	}                                     //end while
 	return position;
 }
@@ -750,7 +750,7 @@ if(mineral_density>0){
 	*rfe_file << "$MINERAL_DENSITY" << "\n";
 	*rfe_file << mineral_density << "  ";
 	*rfe_file << "\n";
-} 
+}
 
 
 	*rfe_file << "\n";
@@ -902,7 +902,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
                 }
                 // Attention....this does not work for gas phase/non wetting phase ....tr_phase=10
                 dummy *=saturation; // account for "mean element" saturation in Archies law ....better would be to get node saturations!
-                Dm = k[0] * pow(dummy,k[1]) * dummy; //node based diffusion coefficient---last porosity is for effective diffusion coefficient                
+                Dm = k[0] * pow(dummy,k[1]) * dummy; //node based diffusion coefficient---last porosity is for effective diffusion coefficient
                 // then get the values for initial porosity from nodes
                 dummy = m_vec_GEM->REACT_GEM::GetNodePorosityValueInitial(m_Elem->GetNodeIndex ( i ));   //ATTENTION: This does not include initial saturation different from 1
                 Dm /= pow(dummy,k[1]); //node based diffusion coefficient with modified Archies relation
@@ -981,7 +981,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
             return Dm;
         }
 #endif
-      case 10:  // Temperature dependence Yaws 
+      case 10:  // Temperature dependence Yaws
         {
         if (count_of_diffusion_model_values < 2)
           return 0.0;
@@ -1003,9 +1003,9 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         }
         //else
         //  return 0;
-        if(temperature_average >0) 
+        if(temperature_average >0)
           Dm = pow(10, (k[0]+k[1]/temperature_average))  / 10000; //cm^2/s -> m^2/s;
-        else{ 
+        else{
           Dm = 0;
           DisplayMsgLn("Something wrong in diffusion model 10! T = 0.");
         }
@@ -1223,7 +1223,7 @@ int CompProperties::GetNumberDiffusionValuesCompProperties(int diffusion_model)
 		break;                    /* Archies Law */
     case 10:
         n = 2;   break;                          /* Yaws empirical model*/
-		
+
 	}                                     /* switch */
 
 	/* switch */
