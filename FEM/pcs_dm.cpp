@@ -7,6 +7,8 @@
 #include <iostream>
 #include <time.h>
 
+#include "StringTools.h"
+
 #include "FEMEnums.h"
 #include "mathlib.h"
 //#include "femlib.h"
@@ -2812,7 +2814,7 @@ void CRFProcessDeformation::PostExcavation()
 		for(size_t l=0; l<m_msh->ele_vector.size();l++)
 		{
 			//if((m_msh->ele_vector[l]->GetExcavState()>0)&&!(m_msh->ele_vector[l]->GetMark()))//WX:07.2011 HM excav
-			if(ExcavMaterialGroup == m_msh->ele_vector[l]->GetPatchIndex())
+			if(ExcavMaterialGroup == static_cast<int>(m_msh->ele_vector[l]->GetPatchIndex()))
 			{
 				if((m_msh->ele_vector[l]->GetExcavState()>-1)&&m_msh->ele_vector[l]->GetMark())
 				{
@@ -2869,7 +2871,7 @@ void CRFProcessDeformation::PostExcavation()
 			done = false;
 			for(size_t i=0; i<deact_dom.size(); i++)
 			{
-				if(elem->GetPatchIndex()== deact_dom[i])
+				if(elem->GetPatchIndex() == static_cast<std::size_t>(deact_dom[i]))
 				{
 					elem->MarkingAll(false);
 					*(eleV_DM->Stress) = 0.;
@@ -2898,7 +2900,7 @@ void CRFProcessDeformation::PostExcavation()
 			{
 				for(int i=0; i<NumDeactivated_SubDomains; i++)
 				{
-					if(elem->GetPatchIndex() == Deactivated_SubDomain[i])
+					if(elem->GetPatchIndex() == static_cast<std::size_t>(Deactivated_SubDomain[i]))
 					{
 						elem->MarkingAll(false);
 						done = true;
@@ -2984,24 +2986,26 @@ void CRFProcessDeformation::UpdateIniStateValue()
 		CalIniTotalStress();
 	if((fem_dm->Flow_Type==0||fem_dm->Flow_Type==1||fem_dm->Flow_Type==2 )&&Neglect_H_ini==2)
 	{
-		int tmp_type, idx_p1_ini, idx_p2_ini, idx_p1_1, idx_p2_1;//,idx_sw_ini,  idx_sw_1;
+		int tmp_type;
 		CRFProcess *h_pcs=NULL;
 		h_pcs = fem_dm->h_pcs;
 		tmp_type = fem_dm->Flow_Type;
-		idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
-		idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
-		if(tmp_type==2)
+		int idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		int idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+		if(tmp_type==0||tmp_type==1)//LiquideFlow,RichardsFlow
 		{
-			idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
-			//idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
-			idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
-			//idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
-		}
-		for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
-		{
-			if(tmp_type==0||tmp_type==1)//LiquideFlow,RichardsFlow
+			for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
+			{
 				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
-			else if (tmp_type==2)
+			}
+		}
+		else if (tmp_type==2)
+		{
+			int idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+			//int idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+			int idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+			//int idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
+			for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
 			{
 				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
 				h_pcs->SetNodeValue(i, idx_p2_ini, h_pcs->GetNodeValue(i, idx_p2_1));
@@ -3073,13 +3077,6 @@ void CRFProcessDeformation::UpdateStress()
 	//}
 }
 
-// Coupling
-/*
-   void CRFProcessDeformation::ConfigureCoupling()
-   {
-    fem_dm->ConfigureCoupling(this, Shift);
-   }
- */
 /**************************************************************************
    ROCKFLOW - Funktion: WriteGaussPointStress()
 
@@ -3093,14 +3090,20 @@ void CRFProcessDeformation::UpdateStress()
 **************************************************************************/
 void CRFProcessDeformation::WriteGaussPointStress()
 {
-	long i;
-	string StressFileName = FileName + ".sts";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
+#else
+	const std::string StressFileName = FileName + ".sts";
+#endif
+
 	fstream file_stress(StressFileName.data(),ios::binary | ios::out);
 	ElementValue_DM* eleV_DM = NULL;
 
 	long ActiveElements = 0;
 	MeshLib::CElem* elem = NULL;
-	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for(std::size_t i=0; i<m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (ExcavMaterialGroup > -1)//WX:if excavation write all eles
@@ -3112,7 +3115,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 	}
 	}
 	file_stress.write((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for(std::size_t i=0; i<m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark()||ExcavMaterialGroup > -1)      // Marked for use//WX:if excavation write all eles
@@ -3141,19 +3144,22 @@ void CRFProcessDeformation::WriteGaussPointStress()
 **************************************************************************/
 void CRFProcessDeformation::ReadGaussPointStress()
 {
-	long i, index, ActiveElements;
-	string StressFileName;
-#ifdef MFC                                  //WW
-	StressFileName = ext_file_name + ".sts";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
 #else
-	StressFileName = FileName + ".sts";
+	const std::string StressFileName = FileName + ".sts";
 #endif
+
 	fstream file_stress (StressFileName.data(),ios::binary | ios::in);
 	ElementValue_DM* eleV_DM = NULL;
 	//
+	long ActiveElements;
 	file_stress.read((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (i = 0; i < ActiveElements; i++)
+	for (long i = 0; i < ActiveElements; i++)
 	{
+		long index;
 		file_stress.read((char*)(&index), sizeof(index));
 		eleV_DM = ele_value_dm[index];
 		eleV_DM->Read_BIN(file_stress);

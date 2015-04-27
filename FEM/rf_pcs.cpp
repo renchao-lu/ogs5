@@ -1274,23 +1274,15 @@ void CRFProcess:: WriteSolution()
 	if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 )
 		return;
 
-#if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
-	string rank_str;
-    	int rank , msize;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &msize);
-	stringstream ss (stringstream::in | stringstream::out);
-	ss.clear();
-	ss.str("");
-	ss << rank;
-	rank_str = ss.str();
-	ss.clear();
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
-	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-	                          pcs_primary_function_name[0] + "_primary_value_"+rank_str+".asc";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
+	                          + pcs_primary_function_name[0] + "_primary_value_"
+	                          + number2str(rank) + ".asc";
 
 #else
-	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
 #endif
@@ -1332,24 +1324,15 @@ void CRFProcess:: WriteSolution()
 **************************************************************************/
 void CRFProcess:: ReadSolution()
 {
-
-#if defined(USE_PETSC)  //|| defined(other parallel libs)//03.3012. WW
-        string rank_str;
-	int rank , msize;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &msize);
-	stringstream ss (stringstream::in | stringstream::out);
-	ss.clear();
-	ss.str("");
-	ss << rank;
-	rank_str = ss.str();
-	ss.clear();
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
-	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-	                          pcs_primary_function_name[0] + "_primary_value_"+rank_str+".asc";
+#if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
+	                          + pcs_primary_function_name[0] + "_primary_value_"
+	                          + number2str(rank) + ".asc";
 
 #else
-	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
 	                          pcs_primary_function_name[0] + "_primary_value.asc";
 #endif
