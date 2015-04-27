@@ -297,7 +297,8 @@ struct IterationType
 		INVALID,
 		LINEAR,
 		NONLINEAR,
-		COUPLED
+		COUPLED,
+		COUPLED_STABLE_ERROR
 	};
 };
 
