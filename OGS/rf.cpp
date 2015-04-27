@@ -37,6 +37,7 @@
 #include "makros.h"
 #include "display.h"
 #include "memory.h"
+#include "ogs_display.h"
 #define TEST
 /* Benutzte Module */
 #include "break.h"
