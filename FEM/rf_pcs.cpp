@@ -5987,7 +5987,7 @@ void CRFProcess::CalIntegrationPointValue()
 			else
 				fem->Cal_Velocity();
 
-			/*
+			/* TODO [CL]: keep that or use the value calculated during solving the equation system?
 			//moved here from additional lower loop
 			if (getProcessType() == FiniteElement::TNEQ || getProcessType() == FiniteElement::TES)
 			{
