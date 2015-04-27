@@ -719,9 +719,9 @@ void CreateEQS_LinearSolver()
           if(pcs_type == DEFORMATION_H2)
           {
              eqs_dim += 2*nn;
-      }
-          else if(  (pcs_type == DEFORMATION_FLOW) 
-                   ||(pcs_type == DEFORMATION_DYNAMIC) ) 
+          }
+          else if(  (pcs_type == DEFORMATION_FLOW)
+                  ||(pcs_type == DEFORMATION_DYNAMIC) )
             eqs_dim += nn;
 
           sparse_info[0] = max_cnct_nodes * dim;
@@ -734,7 +734,7 @@ void CreateEQS_LinearSolver()
       }
       else if(  (pcs_type == MULTI_PHASE_FLOW)
               ||(pcs_type == TWO_PHASE_FLOW)
-              ||(pcs_type == PS_GLOBAL) ) 
+              ||(pcs_type == PS_GLOBAL) )
       {
          sparse_info[0] = max_cnct_nodes * 2;
          sparse_info[1] = 0; //max_cnct_nodes * 2;
@@ -755,7 +755,7 @@ void CreateEQS_LinearSolver()
          eqs = new PETScLinearSolver(3 * nn);
          eqs->Init(sparse_info);
          eqs->set_rank_size(rank_p, size_p);
-      }      
+      }
       //else if( pcs_type == FLUID_MOMENTUM ) {}
       else 
       {
