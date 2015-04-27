@@ -6,10 +6,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
 # Project name
 PROJECT(OGS)
 
-IF(CMAKE_VERSION VERSION_GREATER 3.1)
-	CMAKE_POLICY(SET CMP0054 NEW)
-ENDIF()
-
 ###############
 ### Options ###
 ###############
