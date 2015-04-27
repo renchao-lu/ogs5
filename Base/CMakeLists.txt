@@ -14,6 +14,9 @@ set( HEADERS
 	wait.h	
 	display.h
 	makros.h
+	timer.h
+	memory.h
+	break.h
 )
 
 set( SOURCES
@@ -23,6 +26,9 @@ set( SOURCES
 	StringTools.cpp
 	binarySearch.cpp
 	display.cpp
+	timer.cpp
+	memory.cpp
+	break.cpp
 )
 
 # Create the library
