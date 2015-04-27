@@ -1278,9 +1278,9 @@ void CRFProcess:: WriteSolution()
 #if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-	                          pcs_primary_function_name[0] + "_primary_value_"
-                              + number2str(rank) + ".asc";
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
+	                          + pcs_primary_function_name[0] + "_primary_value_"
+	                          + number2str(rank) + ".asc";
 
 #else
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
@@ -1328,9 +1328,9 @@ void CRFProcess:: ReadSolution()
 #if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
-	                          pcs_primary_function_name[0] + "_primary_value_"
-                              + number2str(rank) + ".asc";
+	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
+	                          + pcs_primary_function_name[0] + "_primary_value_"
+	                          + number2str(rank) + ".asc";
 
 #else
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_" +
