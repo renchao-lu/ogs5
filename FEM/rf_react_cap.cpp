@@ -15,6 +15,7 @@ Kiel, 11/2008
 #include <signal.h>
 #include "display.h"
 #include "makros.h"
+#include "memory.h"
 #include "rf_pcs.h"
 //#include "nodes.h"
 #include "rf_pcs.h"

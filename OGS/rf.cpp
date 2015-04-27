@@ -35,6 +35,8 @@
 
 /* Preprozessor-Definitionen */
 #include "makros.h"
+#include "display.h"
+#include "memory.h"
 #define TEST
 /* Benutzte Module */
 #include "break.h"

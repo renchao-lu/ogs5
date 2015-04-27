@@ -41,6 +41,8 @@
 #include <set>
 
 #include "isnan.h"
+#include "display.h"
+#include "memory.h"
 // GEOLib
 #include "PointWithID.h"
 

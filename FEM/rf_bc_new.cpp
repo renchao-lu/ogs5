@@ -12,6 +12,9 @@
 #include <cmath>
 #include <iostream>
 
+#include "display.h"
+#include "memory.h"
+
 // FileIO
 #include "BoundaryConditionIO.h"
 #include "GeoIO.h"

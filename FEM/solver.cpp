@@ -36,6 +36,8 @@ using namespace std;
 #include "solver.h"
 #include "tools.h"
 #include "mathlib.h"
+#include "memory.h"
+#include "display.h"
 
 /* AMG-Solver */
 #ifdef AMG1R5

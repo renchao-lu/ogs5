@@ -12,7 +12,7 @@
 //#include <fstream>
 #include <iostream>
 //#include <string>
-//#include <vector>
+#include <vector>
 #include "makros.h" // JT2012
 #include "FEMEnums.h"
 // kg44 this is to synchronize time step size  for PETSC
@@ -23,6 +23,7 @@
 typedef Mat PETSc_Mat;
 typedef Vec PETSc_Vec;
 #endif
+using namespace std;
 //----------------------------------------------------------------
 class CRFProcess;                                 //21.08.2008. WW
 class CTimeDiscretization

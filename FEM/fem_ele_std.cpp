@@ -8,6 +8,7 @@
 #include <cfloat>
 //#include <iostream>
 //#include <limits>	// PCH to better use system max and min
+#include "memory.h"
 // Method
 #include "fem_ele_std.h"
 #include "mathlib.h"

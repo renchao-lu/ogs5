@@ -13,6 +13,7 @@
 #include <iostream>
 #include <set>
 
+#include "display.h"
 #include "files0.h"
 #include "mathlib.h"
 

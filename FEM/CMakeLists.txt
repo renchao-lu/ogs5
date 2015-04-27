@@ -7,7 +7,7 @@ set( SOURCES
 	break.h
 	Constrained.h
 	conversion_rate.h
-	display.h
+	#display.h
 	eos.h
 	fem_ele.h
 	fem_ele_std.h
@@ -17,7 +17,7 @@ set( SOURCES
 	femlib.h
 	files0.h
 	InitialCondition.h
-	makros.h
+	#makros.h
 	mathlib.h
 	matrix_class.h
 	SparseMatrixDOK.h
@@ -63,7 +63,7 @@ set( SOURCES
 	BoundaryCondition.cpp
 	break.cpp
 	conversion_rate.cpp
-	display.cpp
+	#display.cpp
 	eos.cpp
 	fem_ele.cpp
 	fem_ele_std.cpp

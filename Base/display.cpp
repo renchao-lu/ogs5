@@ -11,12 +11,12 @@
    01/2002     MK         Umleitung der DisplayX-Funktionen in MSG-Datei
                           Ausnahmen: DisplayStartMsg/DisplayEndMsg                                                  */
 /**************************************************************************/
-#include "Configure.h"
 #include "display.h"
+#include "Configure.h"
 #include "makros.h"
-#if defined(USE_MPI) // JT
-#include "par_ddc.h"
-#endif
+//#if defined(USE_MPI) // JT
+//#include "par_ddc.h"
+//#endif
 extern FILE* OpenMsgFile(void);
 extern void CloseMsgFile(FILE*);
 

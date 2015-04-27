@@ -12,6 +12,7 @@
 #include <cctype>
 // FEM-Makros
 #include "makros.h"
+#include "display.h"
 // GeoSys-GeoLib
 #include "files0.h"
 // GeoSys-FEMLib
