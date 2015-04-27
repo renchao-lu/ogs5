@@ -8,14 +8,6 @@ SET( SOURCES
 	FEMIO/GeoIO.cpp
 	FEMIO/ProcessIO.cpp
 	FEMIO/BoundaryConditionIO.cpp
-	GeoIO/Gmsh2GeoIO.cpp
-	MeshIO/GMSHInterface.cpp
-	MeshIO/GMSHFixedMeshDensity.cpp
-	MeshIO/GMSHAdaptiveMeshDensity.cpp
-	MeshIO/GMSHPoint.cpp
-	MeshIO/GMSHLine.cpp
-	MeshIO/GMSHLineLoop.cpp
-	MeshIO/GMSHPolygonTree.cpp
 	MeshIO/LegacyVtkInterface.cpp
 	MeshIO/OGSMeshIO.cpp
 	XmlIO/RapidXMLInterface.cpp
@@ -31,17 +23,7 @@ SET( HEADERS
 	FEMIO/GeoIO.h
 	FEMIO/ProcessIO.h
 	FEMIO/BoundaryConditionIO.h
-	GeoIO/Gmsh2GeoIO.h
 	MathIO/CRSIO.h
-	MeshIO/GMSHInterface.h
-	MeshIO/GMSHMeshDensityStrategy.h
-	MeshIO/GMSHNoMeshDensity.h
-	MeshIO/GMSHFixedMeshDensity.h
-	MeshIO/GMSHAdaptiveMeshDensity.h
-	MeshIO/GMSHPoint.h
-	MeshIO/GMSHLine.h
-	MeshIO/GMSHLineLoop.h
-	MeshIO/GMSHPolygonTree.h
 	MeshIO/LegacyVtkInterface.h
 	MeshIO/OGSMeshIO.h
 	XmlIO/RapidXMLInterface.h
