@@ -11,7 +11,6 @@
 #include "Configure.h"
 
 // FileIO
-#include "GMSHInterface.h"
 #include "OGSIOVer4.h"
 
 // Base
