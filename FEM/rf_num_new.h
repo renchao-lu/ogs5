@@ -21,25 +21,7 @@
 //----------------------------------------------------------------
 class CNumerics
 {
-private:
-	// cf. Computational Geomachanics pp.62 WW
-	double* DynamicDamping;
-	/// For GMRES solver. 30.06.2010. WW
-	long m_cols;
-	FiniteElement::ErrorMethod _pcs_nls_error_method;
-	FiniteElement::ErrorMethod _pcs_cpl_error_method;
-	std::string lsover_name;    //WW          
-	std::string pres_name;              
 public:
-	const char *getLinearSolverName() const
-	{
-		return lsover_name.c_str();
-	}
-	const char *getPreconditionerName() const
-	{
-		return pres_name.c_str();
-	}
-
 	// method
 	std::string method_name;              //OK
 	// PCS
@@ -123,6 +105,30 @@ public:
 	~CNumerics(void);
 	std::ios::pos_type Read(std::ifstream*);
 	void Write(std::fstream*);
+
+#ifdef USE_PETSC
+	const char *getLinearSolverName() const
+	{
+		return lsover_name.c_str();
+	}
+	const char *getPreconditionerName() const
+	{
+		return pres_name.c_str();
+	}
+#endif
+
+private:
+	// cf. Computational Geomechanics pp.62 WW
+	double* DynamicDamping;
+	/// For GMRES solver. 30.06.2010. WW
+	long m_cols;
+	FiniteElement::ErrorMethod _pcs_nls_error_method;
+	FiniteElement::ErrorMethod _pcs_cpl_error_method;
+
+#ifdef USE_PETSC
+	std::string lsover_name;    //WW
+	std::string pres_name;
+#endif
 };
 
 extern std::vector<CNumerics*>num_vector;
