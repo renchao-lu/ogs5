@@ -326,4 +326,13 @@ extern std::string FileName;
 extern std::string FilePath;                      //WW
 
 #define RESET_4410                                // H2_ELE test
+
+//---- MPI Parallel --------------
+#if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
+        defined(USE_MPI_GEMS) || defined(USE_MPI_BRNS) || defined(USE_MPI_KRC) || defined(USE_PETSC)
+extern int mysize;                                //WW
+extern int myrank;
+#endif
+//---- MPI Parallel --------------
+
 #endif
