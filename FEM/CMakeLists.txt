@@ -2,7 +2,7 @@
 
 set( SOURCES
 	Stiff_Bulirsch-Stoer.h
-    StepperBulischStoer.h
+	StepperBulischStoer.h
 	BoundaryCondition.h
 	break.h
 	Constrained.h
@@ -78,7 +78,7 @@ set( SOURCES
 	InitialCondition.cpp
 	mathlib.cpp
 	matrix_class.cpp
-    SparseMatrixDOK.cpp
+	SparseMatrixDOK.cpp
 	memory.cpp
 	pcs_dm.cpp
 	problem.cpp
@@ -107,10 +107,10 @@ set( SOURCES
 	Eclipse.cpp
 	DUMUX.cpp
 	Output.cpp
-    CAP_IO.h
-    CAP_IO.cpp
-    rf_react_cap.h
-    rf_react_cap.cpp
+	CAP_IO.h
+	CAP_IO.cpp
+	rf_react_cap.h
+	rf_react_cap.cpp
 )
 
 IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
@@ -151,25 +151,20 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/GCC
 )
 
-
-IF((NOT OGS_FEM_GEMS) AND (NOT OGS_FEM_PETSC_GEMS))
-        include_directories(${CMAKE_SOURCE_DIR}/FEM/Eigen)
-ENDIF((NOT OGS_FEM_GEMS) AND (NOT OGS_FEM_PETSC_GEMS))
-
 IF (LIS)
-  INCLUDE_DIRECTORIES(${LIS_INCLUDE_DIR})
+	INCLUDE_DIRECTORIES(${LIS_INCLUDE_DIR})
 ENDIF (LIS)
 
 IF (MKL)
-  INCLUDE_DIRECTORIES(${MKL_INCLUDES})
+	INCLUDE_DIRECTORIES(${MKL_INCLUDES})
 ENDIF (MKL)
 
 IF(OGS_FEM_PQC)
-  INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/PQC)
+	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/ThirdParty/PQC)
 ENDIF (OGS_FEM_PQC)
 
 IF(OGS_FEM_IPQC)
-	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/IPQC/src)
+	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/ThirdParty/IPQC/src)
 ENDIF (OGS_FEM_IPQC)
 
 # Create the library
@@ -179,14 +174,14 @@ target_link_libraries(
 	FEM
 	Base
 	FileIO
- 	GEO
- 	MSH
+	GEO
+	MSH
 	OGSProject
 	GCC
 )
 
 IF(OGS_FEM_PQC)
-   target_link_libraries(FEM PQC)
+	target_link_libraries(FEM PQC)
 ENDIF(OGS_FEM_PQC)
 
 if (WIN32)
@@ -231,18 +226,18 @@ ENDIF (OGS_FEM_CHEMAPP)
 IF (OGS_FEM_CAP)
 	INCLUDE_DIRECTORIES (  ${CMAKE_SOURCE_DIR}/CMP )
 	TARGET_LINK_LIBRARIES (
-	 FEM
- 	 GEO
- 	 MSH
- 	 CMP
- 	)
-    IF (UNIX)
-        TARGET_LINK_LIBRARIES (
-          FEM
-          ChemAppCS_64
-          EChemAppS_64
-      )
-    ENDIF (UNIX)
+		FEM
+		GEO
+		MSH
+		CMP
+	)
+	IF (UNIX)
+		TARGET_LINK_LIBRARIES (
+			FEM
+			ChemAppCS_64
+			EChemAppS_64
+		)
+	ENDIF (UNIX)
 ENDIF (OGS_FEM_CAP)
 
 
