@@ -43,10 +43,10 @@ void PETScLinearSolver::Init(const int *sparse_index)
 {
    if(sparse_index)
    {
-      d_nz = sparse_index[0]; 
-      o_nz = sparse_index[1]; 	
+      d_nz = sparse_index[0];
+      o_nz = sparse_index[1];
       nz = sparse_index[2]; 
-      m_size_loc = sparse_index[3];          
+      m_size_loc = sparse_index[3];
    }   
     
    VectorCreate(m_size);   
@@ -55,7 +55,6 @@ void PETScLinearSolver::Init(const int *sparse_index)
    global_x = new PetscScalar[m_size];
 
 }
-
 
 /*!
   \brief KSP and PC type
@@ -137,7 +136,8 @@ void PETScLinearSolver::Init(const int *sparse_index)
  PCGAMG            "gamg"
 
 */
-void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const KSPType lsol, const PCType prec_type )
+void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const KSPType lsol,
+                               const PCType prec_type, const std::string &prefix)
 {
    ltolerance = tol;
    sol_type = lsol;
@@ -156,9 +156,16 @@ void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const
    KSPGetPC(lsolver, &prec);
    PCSetType(prec, prec_type); //  PCJACOBI); //PCNONE);
    KSPSetTolerances(lsolver,ltolerance, PETSC_DEFAULT, PETSC_DEFAULT, maxits);
-   KSPSetFromOptions(lsolver);
 
+   if( !prefix.empty() )
+   {
+       KSPSetOptionsPrefix(lsolver, prefix.c_str());
+       PCSetOptionsPrefix(prec, prefix.c_str());
+   }
+
+   KSPSetFromOptions(lsolver);
 }
+
 //-----------------------------------------------------------------
 void PETScLinearSolver::VectorCreate(PetscInt m)
 {

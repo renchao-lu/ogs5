@@ -136,7 +136,11 @@ CNumerics::CNumerics(string name)
 		ls_storage_method = 4;
 		nls_max_iterations = 25;
 	}
-	//
+
+#ifdef USE_PETSC
+	lsover_name = "bcgs";
+	pres_name = "bjacobi";
+#endif
 }
 
 /**************************************************************************
@@ -437,30 +441,32 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 		// subkeyword found
 		if(line_string.find("$LINEAR_SOLVER") != string::npos)
 		{
-		  std::string str_buf = GetLineFromFile1(num_file); //WW
-		  line.str(str_buf);
-                  if(str_buf.find("petsc") != string::npos) //03.2012. WW
-		    {
-		      line >> str_buf 
-			   >> lsover_name
-			   >> pres_name
-			   >> ls_error_tolerance
-			   >> ls_max_iterations
-			   >> ls_theta;
-		    }
-		  else
-		    {
-			line >> ls_method;
-			line >> ls_error_method;
-			line >> ls_error_tolerance;
-			line >> ls_max_iterations;
-			line >> ls_theta;
-			line >> ls_precond;
-			line >> ls_storage_method;
-			/// For GMRES. 06.2010. WW
-			if(ls_method == 13)
-				line >> m_cols;
-		    }
+			std::string str_buf = GetLineFromFile1(num_file); //WW
+			line.str(str_buf);
+#ifdef USE_PETSC
+			if(str_buf.find("petsc") != string::npos) //03.2012. WW
+			{
+				line >> str_buf 
+				>> lsover_name
+				>> pres_name
+				>> ls_error_tolerance
+				>> ls_max_iterations
+				>> ls_theta;
+			}
+			else
+#endif
+			{
+				line >> ls_method;
+				line >> ls_error_method;
+				line >> ls_error_tolerance;
+				line >> ls_max_iterations;
+				line >> ls_theta;
+				line >> ls_precond;
+				line >> ls_storage_method;
+				/// For GMRES. 06.2010. WW
+				if(ls_method == 13)
+					line >> m_cols;
+			}
 			line.clear();
 			continue;
 		}
