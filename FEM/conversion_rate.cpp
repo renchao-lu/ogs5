@@ -169,7 +169,7 @@ void conversion_rate::get_x(Eigen::VectorXd& output_x)
 }
 
 
-void conversion_rate::eval(double /*t*/, Eigen::VectorXd &y, Eigen::VectorXd &dydx)
+void conversion_rate::eval(double /*t*/, Eigen::VectorXd const& y, Eigen::VectorXd &dydx)
 {
 	assert( y.size() == dydx.size() );
 

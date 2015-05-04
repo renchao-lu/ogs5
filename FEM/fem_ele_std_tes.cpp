@@ -273,17 +273,7 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 
 	const int Index = MeshElement->GetIndex();
 
-	double fluid_heat_conductivity_tensor[9];
-	double solid_heat_conductivity_tensor[9];
-	double diffusion_tensor[9];
-
-	for (size_t i = 0; i < dim*dim; i++)
-	{
-		fluid_heat_conductivity_tensor[i] = 0.0;
-		solid_heat_conductivity_tensor[i] = 0.0;
-		diffusion_tensor[i] = 0.0;
-		mat[i] = 0.0;
-	}
+	// std::fill_n(mat, dim*dim, 0);
 
 	switch(dof_index)
 	{
@@ -310,16 +300,20 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 		break;
 	}
 
-		//    case 1:
-		//    case 2:
-		//    case 3:
-		//        break;
+	//    case 1:
+	//    case 2:
+	//    case 3:
+	//        break;
 
 	case 4:
 	{
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
+
+		// TODO [CL]: only diagonal neeeded, and only one array needed
+		double fluid_heat_conductivity_tensor[9] = { 0. };
+		double solid_heat_conductivity_tensor[9] = { 0. };
 
 		poro = MediaProp->Porosity(Index, theta);
 		const double lamf = FluidProp->HeatConductivity(eos_arg);
@@ -359,6 +353,8 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
+
+		double diffusion_tensor[9] = { 0. };
 
 		poro = MediaProp->Porosity(Index, theta);
 		tort = MediaProp->TortuosityFunction(Index, unit, theta);
