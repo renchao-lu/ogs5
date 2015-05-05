@@ -93,7 +93,10 @@ public:
 	IterationType::type adapt_itr_type;
 	size_t last_rejected_timestep;
 	size_t stay_steps_after_rejection;
-
+	double desired_error;
+	double max_increase;
+	double min_increase;
+	double SEA_a, SEA_b, SEA_c;
 
 	//
 	//WW double minish; // JOD
@@ -136,6 +139,12 @@ public:
 	double ErrorControlAdaptiveTimeControl();
 	double NeumannTimeControl();
 	double SelfAdaptiveTimeControl();
+	double StableErrorAdaptive( void );
+	bool SEA_parameters_are_bad( void );
+	void SEA_calc_parameters( void );
+	double SEA_zbrent(const double tol);
+	double SEA_func(double const c);
+	inline float SEA_SIGN(const double &a, const float &b);
 	double DynamicVariableTimeControl(); //JT2012
 	double DynamicTimeSmoothing(double suggested_time_step_change);		//JT2012
 	//
