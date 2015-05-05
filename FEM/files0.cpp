@@ -843,6 +843,7 @@ int LineFeed ( FILE* f )
    03/2004 OK Implementation
    last modification:
 **************************************************************************/
+// TODO [CL] obsolete
 void remove_white_space(std::string* buffer)
 {
 	int pos = 0;
