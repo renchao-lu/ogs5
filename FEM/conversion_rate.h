@@ -58,7 +58,7 @@ private:
 	//const double rho_caoh2, rho_cao; // density for Ca(OH)2 and CaO
 	const double R;  // [J/mol/K]
 	double rho_s;    // solid phase density
-	double rho_s_0;  // initial solid phase density
+	const double rho_s_0;  // initial solid phase density
 	double phi_solid; //solid volume fraction
 	double p_gas;    // gas phase pressure; 
 	double p_r_g;    // pressure of H2O on gas phase; 
