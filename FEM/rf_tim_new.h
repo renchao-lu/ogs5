@@ -96,6 +96,8 @@ public:
 	double desired_error;
 	double max_increase;
 	double min_increase;
+	double last_time_step_length;
+	double dampening;
 	double SEA_a, SEA_b, SEA_c;
 
 	//
