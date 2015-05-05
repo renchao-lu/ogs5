@@ -81,9 +81,11 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			new_keyword = true;
 			break;
 		}
-		//....................................................................
-		//NAME //OK
-		//subkeyword found
+
+		/*!
+		 * \ogs_subkw_msp $NAME -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$NAME") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -91,8 +93,11 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			in_sd.clear();
 			continue;
 		}
-		//....................................................................
-		// subkeyword found
+
+		/*!
+		 * \ogs_subkw_msp $SWELLING_PRESSURE_TYPE -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$SWELLING_PRESSURE_TYPE") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -108,12 +113,12 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				if(!PCSGet("MULTI_PHASE_FLOW") || !PCSGet("RICHARDS_FLOW"))
 				{
 					data_Youngs = new Matrix(9);
-					//! 0: \f$ \kappa_i0     \f$
+					//! 0: \f$ \kappa_{i0}  \f$
 					//! 1: \f$ \alpha_i     \f$
 					//! 2: \f$ \kappa_{s0}  \f$
 					//! 3: \f$ \alpha_{sp}  \f$
 					//! 4: \f$ \alpha_{ss}  \f$
-					//! 5: \f$ p_ref        \f$
+					//! 5: \f$ p_{ref}      \f$
 					//! 6: \f$ buffer       \f$
 					if (SwellingPressureType == 3)
 						in_sd >> (*data_Youngs)(0) >> (*data_Youngs)(1) >>
@@ -135,8 +140,14 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				}
 			}
 		}
-		//....................................................................
-		// subkeyword found
+
+		/*!
+		 * \ogs_subkw_msp $DENSITY -- density of the solid phase
+		 *   * params[0] -- density_mode
+		 *   * if density_mode == 1: params[1] -- constant density
+		 *   * if density_mode == 0: params[1] -- number \m{n} of \m{(x, \text{density})} pairs.
+		 *     The subsequent \m{n} lines will contain those pairs
+		 */
 		if(line_string.find("$DENSITY") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -160,15 +171,22 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				in_sd.clear();
 			}
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $THERMAL -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$THERMAL") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> sub_line >> ThermalExpansion;
 			in_sd.clear();
 		}
-		//....................................................................
-		// subkeyword found
+
+		/*!
+		 * \ogs_subkw_msp $CAPACITY -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("CAPACITY") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -235,8 +253,10 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			}
 		}
 
-		//....................................................................
-		// subkeyword found
+		/*!
+		 * \ogs_subkw_msp $CONDUCTIVITY -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.compare("CONDUCTIVITY") == 0)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -313,7 +333,10 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			in_sd.clear();
 		}
 
-		//....................................................................
+		/*!
+		 * \ogs_subkw_msp $CONDUCTIVITY_TENSOR -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("CONDUCTIVITY_TENSOR") != string::npos) //subkeyword found
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -383,23 +406,32 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			in_sd.clear();
 		}
 
-		//....................................................................
-		// subkeyword found
+		/*!
+		 * \ogs_subkw_msp $ELASTICITY -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$ELASTICITY") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> sub_line >> PoissonRatio;
 			in_sd.clear();
 		}
-		//....................................................................
-		//12.2009. WW
+
+		/*!
+		 * \ogs_subkw_msp $EXCAVATION -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$EXCAVATION") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> excavation;
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $YOUNGS_MODULUS -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("YOUNGS_MODULUS") != string::npos)
 		{                         // subkeyword found
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -451,15 +483,22 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				break;
 			}
 		}
-		//....................................................................
-		//WX:06.2012 E_Function
+
+		/*!
+		 * \ogs_subkw_msp $E_Function -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$E_Function")!=string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd>>E_Function_Model>>E_Function_Model_Value[0];
 			in_sd.clear();
 		}
-		//Time dependent YOUNGS POISSON
+
+		/*!
+		 * \ogs_subkw_msp $TIME_DEPENDENT_YOUNGS_POISSON -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$TIME_DEPENDENT_YOUNGS_POISSON")!=string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -480,7 +519,11 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			}
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $CREEP -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$CREEP") != string::npos)
 		{
 			if(line_string.find("NORTON") != string::npos)
@@ -569,28 +612,44 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				in_sd.clear();
 			}
 		}
-		//WX:10.2012, threshold dev. stress for Lubby2
+
+		/*!
+		 * \ogs_subkw_msp $THRESHOLD_DEV_STR -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$THRESHOLD_DEV_STR")!=string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd>>threshold_dev_str;
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $BIOT_CONSTANT -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$BIOT_CONSTANT") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> biot_const;
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $SOLID_BULK_MODULUS -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$SOLID_BULK_MODULUS") != string::npos)//WX: 04.2013
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> Ks;
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $BISHOP_COEFFICIENT -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("BISHOP_COEFFICIENT") != string::npos) //WX
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -611,13 +670,22 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			}
 			in_sd.clear();
 		}
-		//....................................................................
+
+		/*!
+		 * \ogs_subkw_msp $STRESS_INTEGRATION_TOLERANCE -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$STRESS_INTEGRATION_TOLERANCE") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd >> f_tol >> s_tol;
 			in_sd.clear();
 		}
+
+		/*!
+		 * \ogs_subkw_msp $STRESS_UNIT -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$STRESS_UNIT") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -628,15 +696,22 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				grav_const = 9.81e-3;
 			in_sd.clear();
 		}
-		//WX:08.2011 define gravity constant
+
+		/*!
+		 * \ogs_subkw_msp $GRAVITY_CONSTANT -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$GRAVITY_CONSTANT")!=string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
 			in_sd>>grav_const;
 			in_sd.clear();
 		}
-		//....................................................................
-		// subkeyword found
+
+		/*!
+		 * \ogs_subkw_msp $PLASTICITY -- \todo NO DESC
+		 *   * params: ??
+		 */
 		if(line_string.find("$PLASTICITY") != string::npos)
 		{
 			in_sd.str(GetLineFromFile1(msp_file));
@@ -782,7 +857,11 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 				in_sd.clear();
 			}
 		}
-		 //Solid reaction system 
+
+		/*!
+		 * \ogs_subkw_msp $REACTIVE_SYSTEM -- \todo NO DESC
+		 *   * params: ??
+		 */
 		 if(line_string.find("$REACTIVE_SYSTEM")!=string::npos)
          {
 	         in_sd.str(GetLineFromFile1(msp_file));
@@ -798,7 +877,10 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			
          }
 
-		 //Solid non reactive fraction
+		 /*!
+		  * \ogs_subkw_msp $NON_REACTIVE_FRACTION -- \todo NO DESC
+		  *   * params: ??
+		  */
 		 if(line_string.find("$NON_REACTIVE_FRACTION")!=string::npos)
          {
 	         in_sd.str(GetLineFromFile1(msp_file));
@@ -807,6 +889,10 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			
          }
 
+		 /*!
+		  * \ogs_subkw_msp $SPECIFIC_HEAT_SOURCE -- \todo NO DESC
+		  *   * params: ??
+		  */
 		 if(line_string.find("$SPECIFIC_HEAT_SOURCE")!=string::npos)
          {
 	         in_sd.str(GetLineFromFile1(msp_file));
@@ -814,6 +900,10 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
 			 in_sd.clear();
 		 }
 
+		 /*!
+		  * \ogs_subkw_msp $MICRO_STRUCTURE_PLAS -- \todo NO DESC
+		  *   * params: ??
+		  */
 		if(line_string.find("$MICRO_STRUCTURE_PLAS")!=string::npos)//WX:09.2011 for anisotropic plasticity
 		{
 			if (line_string.find("NORETURNMAPPING")!=string::npos)
@@ -874,6 +964,7 @@ std::ios::pos_type CSolidProperties::Read(std::ifstream* msp_file)
    FEMLib-Method:
    Task: Set values for solid reactive system
 **************************************************************************/
+// TODO [CL] change
 void CSolidProperties::SetSolidReactiveSystemProperties() //Definition auch in conversion_rate::conversion_rate
 {
 	if (reaction_system.compare("CaOH2") == 0) {

@@ -44,6 +44,10 @@ namespace SolidProp
    using process::CRFProcessDeformation;
    using ::CRFProcess;
    /*---------------------------------------------------------------*/
+
+/*!
+	* \brief The CSolidProperties class
+	*/
    class CSolidProperties
    {
       private:
@@ -199,6 +203,10 @@ namespace SolidProp
          CSolidProperties();
          ~CSolidProperties();
 
+		 /*!
+		  * \brief Parses the *.msp input file
+		  * \return The position in the input file after this method has finished
+		  */
          std::ios::pos_type Read(std::ifstream*);
                                                   //CMCD
          FiniteElement::CFiniteElementStd *Fem_Ele_Std;
