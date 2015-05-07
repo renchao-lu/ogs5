@@ -456,7 +456,8 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 					m_pcs->adaption = true;
 					line.clear();
 				}
-				else if(time_control_type == TimeControlType::SELF_ADAPTIVE)
+				else if(time_control_type == TimeControlType::SELF_ADAPTIVE
+					|| time_control_type == TimeControlType::STABLE_ERROR_ADAPTIVE)
 				{
 					//m_pcs->adaption = true; JOD removed
 					//WW minish = 10;
@@ -793,6 +794,9 @@ double CTimeDiscretization::CalcTimeStep(double current_time)
 		else if(time_control_type == TimeControlType::SELF_ADAPTIVE){
 			time_step_length = SelfAdaptiveTimeControl();
 		}
+	}
+	else if(time_control_type == TimeControlType::STABLE_ERROR_ADAPTIVE){
+			time_step_length = StableErrorAdaptive();
 	}
 	else if(time_control_type == TimeControlType::ERROR_CONTROL_ADAPTIVE){
 		if(aktuelle_zeit < MKleinsteZahl){
