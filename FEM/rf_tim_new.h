@@ -146,7 +146,7 @@ public:
 	void SEA_calc_parameters( void );
 	double SEA_zbrent(const double tol);
 	double SEA_func(double const c);
-	inline float SEA_SIGN(const double &a, const float &b);
+	inline double SEA_SIGN(const double a, const float b);
 	double DynamicVariableTimeControl(); //JT2012
 	double DynamicTimeSmoothing(double suggested_time_step_change);		//JT2012
 	//

@@ -1553,7 +1553,7 @@ double CTimeDiscretization::SEA_zbrent(const double tol)
 		if (fabs(d) > tol1)
 			b += d;
 		else
-			b += (double)SEA_SIGN(tol1,(float)xm);  //OK411
+			b += SEA_SIGN(tol1,xm);  //OK411
 		fb = SEA_func(b);
 	}
 	throw("Maximum number of iterations exceeded in zbrent");
@@ -1566,9 +1566,9 @@ double CTimeDiscretization::SEA_func(double const c)
 
 
 // copied and modified from eos.cpp SIGN()
-inline float CTimeDiscretization::SEA_SIGN(const double &a, const float &b)
+inline double CTimeDiscretization::SEA_SIGN(const double a, const float b)
 {
-	return (float)(b >= 0 ? (a >= 0 ? a : -a) : (a >= 0 ? -a : a));
+	return (b >= 0 ? (a >= 0 ? a : -a) : (a >= 0 ? -a : a));
 }
 
 /**************************************************************************
