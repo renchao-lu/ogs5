@@ -3,6 +3,9 @@
 #include <math.h>
 #include <cmath>
 
+#include <iostream>
+#include <iomanip>
+
 #include "physical_constants.h"
 
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
@@ -102,12 +105,18 @@ void conversion_rate::set_chemical_equilibrium()
 void conversion_rate::set_sorption_equilibrium()
 {
 	//determine adsorption potential
-	const double A = get_potential(T_s,p_r_g);
+	const double A = get_potential(T_s, p_r_g);
 	//determine adsorbed volume
 	const double W = characteristic_curve(A);
 	//determine equilibrium loading
 	C_eq = W * get_adsorbate_density(T_s); //kg/kg
-	}
+
+	// std::cerr << "@@@ T_S   = " << std::setprecision(15) << T_s << std::endl;
+	// std::cerr << "@@@ p_r_g = " << std::setprecision(15) << p_r_g << std::endl;
+	// std::cerr << "@@@ adsorption potential = " << std::setprecision(15) << A << std::endl;
+	// std::cerr << "@@@ occupied pore space = " << std::setprecision(15) << W << std::endl;
+	// std::cerr << "@@@ equilibrium loading = " << std::setprecision(15) << C_eq << std::endl;
+}
 
 double conversion_rate::get_mole_fraction(double xm)
 {
