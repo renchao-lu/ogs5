@@ -9657,7 +9657,7 @@ void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs)
 			//
 			ComputeShapefct(1);                   // Linear interpolation function
 			for(j=i_s; j<i_e; j++) {
-				EV += NodalVal4[j]*shapefct[j-ish];
+				EV    += NodalVal4[j]*shapefct[j-ish];
 				rhoEV += NodalVal5[j]*shapefct[j-ish];
 			}
 		}

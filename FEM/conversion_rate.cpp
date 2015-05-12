@@ -7,6 +7,8 @@
 
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
 
+
+// TODO [CL] move to physical constants
 #define COMP_MOL_MASS_WATER 0.018016
 #define COMP_MOL_MASS_N2   0.028013
 #define COMP_MOL_MASS_O2 0.032
