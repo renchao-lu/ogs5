@@ -1,3 +1,5 @@
+[![Shippable](https://api.shippable.com/projects/553ff718edd7f2c052d6b180/badge?branchName=develop)](https://app.shippable.com/projects/553ff718edd7f2c052d6b180/builds/latest)
+
 # OGS-5 #
 
 - General homepage: http://www.opengeosys.org
