@@ -4,10 +4,8 @@ set( SOURCES
 	Stiff_Bulirsch-Stoer.h
 	StepperBulischStoer.h
 	BoundaryCondition.h
-	#break.h
 	Constrained.h
 	conversion_rate.h
-	#display.h
 	eos.h
 	fem_ele.h
 	fem_ele_std.h
@@ -17,11 +15,9 @@ set( SOURCES
 	femlib.h
 	files0.h
 	InitialCondition.h
-	#makros.h
 	mathlib.h
 	matrix_class.h
 	SparseMatrixDOK.h
-	#memory.h
 	pcs_dm.h
 	problem.h
 	prototyp.h
@@ -45,7 +41,6 @@ set( SOURCES
 	rfmat_cp.h
 	solver.h
 	SourceTerm.h
-	#timer.h
 	tools.h
 	vtk.h
 	Eclipse.h
@@ -61,9 +56,7 @@ set( SOURCES
 	LinearFunctionData.cpp
 	Stiff_Bulirsch-Stoer.cpp
 	BoundaryCondition.cpp
-	#break.cpp
 	conversion_rate.cpp
-	#display.cpp
 	eos.cpp
 	fem_ele.cpp
 	fem_ele_std.cpp
@@ -79,7 +72,6 @@ set( SOURCES
 	mathlib.cpp
 	matrix_class.cpp
 	SparseMatrixDOK.cpp
-	#memory.cpp
 	pcs_dm.cpp
 	problem.cpp
 	rf_bc_new.cpp
@@ -101,7 +93,6 @@ set( SOURCES
 	rf_tim_new.cpp
 	rfmat_cp.cpp
 	SourceTerm.cpp
-	#timer.cpp
 	tools.cpp
 	vtk.cpp
 	Eclipse.cpp

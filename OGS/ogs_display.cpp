@@ -1,16 +1,4 @@
-/**************************************************************************/
-/* ROCKFLOW - Modul: display.c
- */
-/* Aufgabe:
-   Enthaelt alle Funktionen fuer Standard Ein- und Ausgabe (Bildschirm,
-   Tastatur)
- */
-/* Programmaenderungen:
-   03/1994     MSR        Erste Version
-   10/1999     AH         Warnung entfernt
-   01/2002     MK         Umleitung der DisplayX-Funktionen in MSG-Datei
-                          Ausnahmen: DisplayStartMsg/DisplayEndMsg                                                  */
-/**************************************************************************/
+
 #include "ogs_display.h"
 
 #include <cstdarg>
@@ -19,7 +7,6 @@
 #include <cstring>
 
 #include "Configure.h"
-//#include "makros.h"
 
 
 /**************************************************************************/
