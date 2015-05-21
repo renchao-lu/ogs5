@@ -780,6 +780,7 @@ public:
 	double pcs_absolute_error[DOF_NUMBER_MAX];	// JT2012: for NLS, we store error for each DOF
 	double pcs_unknowns_norm;
 	double cpl_max_relative_error;				// JT2012: For CPL, we just store the maximum, not each dof value
+	double nls_max_relative_error;
 	double cpl_absolute_error[DOF_NUMBER_MAX];	// JT2012:
 	double temporary_absolute_error[DOF_NUMBER_MAX];	// JT2012:
 	int temporary_num_dof_errors;

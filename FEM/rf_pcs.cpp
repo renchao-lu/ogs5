@@ -9717,6 +9717,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		   pcs_relative_error[ii] = absolute_error[ii] / m_num->nls_error_tolerance[ii];
 		   error_g = MMax(error_g, pcs_relative_error[ii]);
 		}
+		nls_max_relative_error = error_g;
 		pcs_num_dof_errors = num_dof_errors;
 		pcs_unknowns_norm = unknowns_norm;
 	}
