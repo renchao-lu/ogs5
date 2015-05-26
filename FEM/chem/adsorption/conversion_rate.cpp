@@ -58,7 +58,8 @@ conversion_rate::conversion_rate(double T_solid,
 		M_carrier = COMP_MOL_MASS_N2; //consider switch to air
 		M_react = COMP_MOL_MASS_WATER;
 		W0 = 0.291/1.e3; //in m^3/kg
-		p_min = .1; //in Pa
+		// p_min = .01; //in Pa
+		p_min = 0.0;
 	}
 }
 
@@ -350,7 +351,7 @@ double conversion_rate::characteristic_curve(const double A)
 	//parameters from least squares fit (experimental data)
 	const double c[] = {0.34102920966608297, -0.0013106032830951296, -0.00060754147575378876, 3.7843404172683339e-07, 4.0107503869519016e-07, 3.1274595098338057e-10, -7.610441241719489e-11};
 	double W = (c[0]+c[2]*A+c[4]*pow(A,2)+c[6]*pow(A,3))/(1.0+c[1]*A+c[3]*pow(A,2)+c[5]*pow(A,3)); //cm^3/g
-	assert(W >= 0.0);
+	// assert(W >= 0.0);
 	return W/1.e3; //m^3/kg
 }
 

@@ -5,7 +5,13 @@ set( SOURCES
 	StepperBulischStoer.h
 	BoundaryCondition.h
 	Constrained.h
+<<<<<<< HEAD
 	conversion_rate.h
+=======
+	# conversion_rate.h
+	chem/adsorption/conversion_rate.h
+	display.h
+>>>>>>> some changes
 	eos.h
 	fem_ele.h
 	fem_ele_std.h

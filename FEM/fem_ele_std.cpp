@@ -6233,12 +6233,13 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 				double rho_react;
 
+				// TODO [CL] leads to problems when zeolite adsorbate volume is negative
 				//cut off when limits are reached
-				if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
-					rho_react = SolidProp->lower_solid_density_limit;
-				else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
-					rho_react = SolidProp->upper_solid_density_limit;
-				else
+				// if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+				// 	rho_react = SolidProp->lower_solid_density_limit;
+				// else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+				// 	rho_react = SolidProp->upper_solid_density_limit;
+				// else
 					rho_react = yy_rho_s(0);
 
 				// TN - reactive fraction
@@ -9347,21 +9348,15 @@ void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
 {
 	ElementValue* gp_ele = ele_gp_value[Index];
 
-	const int idx_T = pcs->GetNodeValueIndex("TEMPERATURE1");
-	const int idx_p = pcs->GetNodeValueIndex("PRESSURE1");
-	const int idx_X = pcs->GetNodeValueIndex("CONCENTRATION1");
-	assert(idx_T >= 0 && idx_p >= 0 && idx_X >= 0);
-
-	const std::vector<double*>& nvs = pcs->nod_val_vector;
-
-	const int idx_rho = pcs->GetElementValueIndex("SOLID_DENSITY") + 1;
-	const int idx_qR  = pcs->GetElementValueIndex("REACT_RATE")    + 1;
-
-	double rho_s_elem = 0.0;
-	double qR_elem    = 0.0;
-
 	if (initial)
 	{
+		const std::vector<double*>& nvs = pcs->nod_val_vector;
+
+		const int idx_T = pcs->GetNodeValueIndex("TEMPERATURE1");
+		const int idx_p = pcs->GetNodeValueIndex("PRESSURE1");
+		const int idx_X = pcs->GetNodeValueIndex("CONCENTRATION1");
+		assert(idx_T >= 0 && idx_p >= 0 && idx_X >= 0);
+
 		// TODO [CL] somehow merge this with CalcSolidDensityRate();
 		SetMaterial();
 
@@ -9417,11 +9412,12 @@ void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
 					double rho_react;
 
 					// cut off when limits are reached
-					if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
-						rho_react = SolidProp->lower_solid_density_limit;
-					else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
-						rho_react = SolidProp->upper_solid_density_limit;
-					else
+					// TODO [CL] leads to problems when zeolite adsorbate volume is negative
+					// if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+					// 	rho_react = SolidProp->lower_solid_density_limit;
+					// else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+					// 	rho_react = SolidProp->upper_solid_density_limit;
+					// else
 						rho_react = yy_rho_s(0);
 
 					// TN - reactive fraction
@@ -9436,6 +9432,9 @@ void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
 		}
 	}
 
+	double rho_s_elem = 0.0;
+	double qR_elem    = 0.0;
+
 	// loop over all Gauss points
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
@@ -9446,6 +9445,9 @@ void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
 	}
 	rho_s_elem /= nGaussPoints;
 	qR_elem    /= nGaussPoints;
+
+	const int idx_rho = pcs->GetElementValueIndex("SOLID_DENSITY") + 1;
+	const int idx_qR  = pcs->GetElementValueIndex("REACT_RATE")    + 1;
 
 	pcs->SetElementValue(elem_idx, idx_rho, rho_s_elem);
 	pcs->SetElementValue(elem_idx, idx_qR, qR_elem);

@@ -1247,7 +1247,7 @@ bool Problem::CouplingLoop()
 	int i, index, cpl_index;
 	double max_outer_error, max_inner_error; //, error;
     bool transient_bc = false;
-	bool run_flag[14];
+	bool run_flag[16]; // TODO [CL] problem!!
 	int outer_index, inner_index, inner_max; //, inner_min;
 	//
 	CRFProcess* a_pcs = NULL;

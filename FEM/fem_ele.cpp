@@ -439,7 +439,10 @@ double CElement::interpolate(double const * const nodalVal, const int order) con
 	}
 	double val = 0.0;
 	for(int i = 0; i < nn; i++)
+	{
+        // assert(0.0 <= inTerpo[i] && inTerpo[i] <= 1.0);
 		val += nodalVal[i] * inTerpo[i];
+	}
 	return val;
 }
 
