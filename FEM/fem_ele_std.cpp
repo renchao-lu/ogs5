@@ -6195,7 +6195,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		// set parameters in the ca_hydaration class
 		if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
 			if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
-				// std::cerr << "@@@ time: " << aktuelle_zeit << std::endl;
 				const double rhoSR0 = 1.0;
 				const double rhoTil = 0.1;
 				const double omega  = 2.0*3.1416;
@@ -6221,7 +6220,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
 				// supply clean value
 
-				// TODO [CL] is Bulirsch-Stoer necessary here?
 				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
 				slv.set_y(yy_rho_s);
 				slv.set_dydx(dydxx_rho_s);
@@ -6233,16 +6231,15 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 				double rho_react;
 
-				// TODO [CL] leads to problems when zeolite adsorbate volume is negative
 				//cut off when limits are reached
-				// if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
-				// 	rho_react = SolidProp->lower_solid_density_limit;
-				// else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
-				// 	rho_react = SolidProp->upper_solid_density_limit;
-				// else
+				if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+					rho_react = SolidProp->lower_solid_density_limit;
+				else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+					rho_react = SolidProp->upper_solid_density_limit;
+				else
 					rho_react = yy_rho_s(0);
 
-				// TN - reactive fraction
+				//TN - reactive fraction
 				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
 				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);
@@ -7381,7 +7378,6 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	// JT2012: Get the time step of this process! Now dt can be independently controlled.
 	pcs_time_step = pcs->Tim->time_step_length;
 	dt_inverse = 1.0/pcs_time_step; // (also, no need to check minimum. It is handeled in Tim.
-	// std::cerr << "@@@ time step size: " << pcs_time_step << std::endl;
 
 	//WW 05.01.07
 	relax0 = pcs->m_num->nls_relaxation;  //WW
@@ -10032,10 +10028,7 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 			long group = ele->GetPatchIndex();
 			rho_s_prev[i] = msp_vector[group]->Density() ;
 			rho_s_curr[i] = rho_s_prev[i];
-			// TODO [CL] calc rate?
-			// q_R[i] = 2.0944;
-			// q_R[i] = 0.0;
-			q_R[i] = 888.888;
+			q_R[i] = 0.0;
 		}
 	}
 	
