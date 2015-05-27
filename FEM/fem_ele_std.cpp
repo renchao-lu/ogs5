@@ -9406,12 +9406,11 @@ void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
 					double rho_react;
 
 					// cut off when limits are reached
-					// TODO [CL] leads to problems when zeolite adsorbate volume is negative
-					// if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
-					// 	rho_react = SolidProp->lower_solid_density_limit;
-					// else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
-					// 	rho_react = SolidProp->upper_solid_density_limit;
-					// else
+					if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+						rho_react = SolidProp->lower_solid_density_limit;
+					else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+						rho_react = SolidProp->upper_solid_density_limit;
+					else
 						rho_react = yy_rho_s(0);
 
 					// TN - reactive fraction
