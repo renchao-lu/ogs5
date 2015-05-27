@@ -20,7 +20,7 @@
 #include "rf_bc_new.h"
 #include "rf_num_new.h"
 #include "rf_tim_new.h"
-#include "chem/adsorption/conversion_rate.h"          // HS, 10.2011
+#include "conversion_rate.h"          // HS, 10.2011
 #include "SparseMatrixDOK.h"
 //#include "Stiff_Bulirsch-Stoer.h"   // HS, 10.2011
 #include "StepperBulischStoer.h"   // HS, 10.2011

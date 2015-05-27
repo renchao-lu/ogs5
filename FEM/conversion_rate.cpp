@@ -24,11 +24,13 @@ conversion_rate::conversion_rate(double T_solid,
                                  double phi_S,
                                  double delta_t,
                                  FiniteElement::SolidReactiveSystem system)
-    : R(phc::R_SI), p_eq(1.0), rho_s_0(rho_s_initial),
-      x(Eigen::VectorXd(1)),
+    : R(phc::R_SI),
+      rho_s_0(rho_s_initial),
+      p_eq(1.0),
       tol_l (1.0e-4),
       tol_u (1.0 - tol_l),
-      tol_rho (0.1)
+      tol_rho (0.1),
+      x(Eigen::VectorXd(1))
 {
 	update_param( T_solid, T_gas, p_gas, x_reactive, rho_s_initial, phi_S, delta_t, system);
 
@@ -342,7 +344,12 @@ double conversion_rate::get_specific_heat_capacity(const double Tads)
 double conversion_rate::get_potential(const double Tads, double pads)
 {
 	pads = std::max(pads, p_min);
-	return R * Tads * log(get_ps(Tads)/pads) / (M_react*1.e3); //in kJ/kg = J/g
+	double A = R * Tads * log(get_ps(Tads)/pads) / (M_react*1.e3); //in kJ/kg = J/g
+	if (A < 0.0) {
+		// vapour partial pressure > saturation pressure
+		// A = 0.0; // TODO [CL] debug output
+	}
+	return A;
 }
 
 //Characteristic curve. Return W (A)
@@ -352,6 +359,9 @@ double conversion_rate::characteristic_curve(const double A)
 	const double c[] = {0.34102920966608297, -0.0013106032830951296, -0.00060754147575378876, 3.7843404172683339e-07, 4.0107503869519016e-07, 3.1274595098338057e-10, -7.610441241719489e-11};
 	double W = (c[0]+c[2]*A+c[4]*pow(A,2)+c[6]*pow(A,3))/(1.0+c[1]*A+c[3]*pow(A,2)+c[5]*pow(A,3)); //cm^3/g
 	// assert(W >= 0.0);
+	if (W < 0.0) {
+		W = 0.0; // TODO [CL] debug output
+	}
 	return W/1.e3; //m^3/kg
 }
 
