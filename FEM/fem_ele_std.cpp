@@ -9018,8 +9018,6 @@ void CFiniteElementStd::Assembly()
 	if(pcs->Write_Matrix)
 		(*pcs->matrix_file) << "### Element: " << Index << "\n";
 
-	write_mat_coeff_cap_ele(pcs, Index);
-
 	//======================================================================
 	switch(PcsType)
 	{
@@ -11866,21 +11864,6 @@ double CFiniteElementStd::Get_ctx_(long ele_index, int gaussp, int i_dim){
 	return val;
 }*/
 
-
-void
-CFiniteElementStd
-::write_mat_coeff_cap_mat(CRFProcess * const pcs, const std::string& str)
-{
-	if (Index != 3) return;
-
-	if (pcs->Write_Matrix_Coefficients)
-	{
-		std::ofstream& fh = *pcs->matrix_coeff_file;
-
-		fh << std::endl
-		   << "# function: " << str << std::endl;
-	}
-}
 
 
 }                                                 // end namespace
