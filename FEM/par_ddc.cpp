@@ -1256,52 +1256,7 @@ void DOMCreate()
 #ifndef USE_MPI
 	}
 #endif
-	}
-
-/**************************************************************************
-   DDCLib-Function
-   07/2007 OK Encapsulation
-   10/2010 TF changed access to process type
- ***************************************************************************/
-	void DDCCreate()
-	{
-		//----------------------------------------------------------------------
-		// DDC
-		if(dom_vector.size() > 0)
-		{
-			//WW ----- Domain decomposition ------------------
-			int i;
-			int no_processes = (int)pcs_vector.size();
-			CRFProcess* m_pcs = NULL;
-			bool DOF_gt_one = false;
-			//----------------------------------------------------------------------
-			for(i = 0; i < no_processes; i++)
-			{
-				m_pcs = pcs_vector[i];
-				//if(m_pcs->pcs_type_name.find("DEFORMATION")!=string::npos) { // TF 10/2010
-				if(m_pcs->getProcessType () == FiniteElement::DEFORMATION ||
-				   m_pcs->getProcessType() == FiniteElement::DEFORMATION_FLOW)
-				{
-					DOF_gt_one = true;
-					break;
-				}
-			}
-			if(!DOF_gt_one)
-				m_pcs = pcs_vector[0];
-			// -----------------------
-			DOMCreate();
-			//
-			for(i = 0; i < no_processes; i++)
-			{
-				m_pcs = pcs_vector[i];
-				// Config boundary conditions for domain decomposition
-				m_pcs->SetBoundaryConditionSubDomain(); //WW
-			}
-			//
-			node_connected_doms.clear();
-		}
-		// PA PCSProcessDependencies();
-	}
+}
 
 #if defined(USE_MPI)                              //WW
 //------------------------For parallel solvers------------------------------

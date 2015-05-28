@@ -6391,7 +6391,8 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		for(i = 0; i < Size; i++)
 		{
 			l_index = st_node_value[i]->geo_node_number;
-			st_node_value[i]->node_value /= (double)node_connected_doms[l_index];
+			if(node_connected_doms[l_index] > 0)
+				st_node_value[i]->node_value /= (double)node_connected_doms[l_index];
 		}
 	}
 
