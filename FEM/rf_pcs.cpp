@@ -5056,14 +5056,14 @@ double CRFProcess::Execute()
 	}                                     // END PICARD
 #else
 	// JT: Coupling error was wrong. Now ok.
-    if(iter_nlin > 0){	// Just getting NL error
-	  pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);     //OK4105//WW4117//JT
-    }
-    else{				// Getting NL and CPL error
-	  pcs_error = CalcIterationNODError(m_num->getCouplingErrorMethod(),true,true);		//JT2012
-      if(m_num->getNonLinearErrorMethod() != m_num->getCouplingErrorMethod())				//JT: If CPL error method is different, must call separately
-		pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);   //JT2012 // get the NLS error. CPL was obtained before.
-    }
+	if(iter_nlin > 0){	// Just getting NL error
+		pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);     //OK4105//WW4117//JT
+	}
+	else{				// Getting NL and CPL error
+		pcs_error = CalcIterationNODError(m_num->getCouplingErrorMethod(),true,true);		//JT2012
+		if(m_num->getNonLinearErrorMethod() != m_num->getCouplingErrorMethod())				//JT: If CPL error method is different, must call separately
+			pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);   //JT2012 // get the NLS error. CPL was obtained before.
+	}
 
 	//----------------------------------------------------------------------
 	// PICARD
