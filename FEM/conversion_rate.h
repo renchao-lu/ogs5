@@ -29,7 +29,6 @@ public:
 	
 	double get_mole_fraction(double xm);
 private:
-	// TODO [CL] remove these functions
 	void calculate_qR();
 	double get_qR();
 	void get_x(Eigen::VectorXd& output_x);
