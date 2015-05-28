@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
+#include <cstring>
 #if defined(WIN32)
   #include <direct.h>
 #else

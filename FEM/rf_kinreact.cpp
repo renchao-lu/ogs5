@@ -17,12 +17,14 @@
 #include <iostream>
 #include <vector>
 
+#include "display.h"
 #include "StringTools.h"
 #include "files0.h"
 #include "makros.h"
 #include "msh_lib.h"
 #include "rf_kinreact.h"
 #include "mathlib.h"
+#include "timer.h"
 #include "rf_mfp_new.h"
 #include "rf_mmp_new.h"
 #include "rf_msp_new.h"

@@ -23,9 +23,6 @@
 //#undef SEEK_END  //WW
 //#undef SEEK_CUR  //WW
 #include <mpi.h>
-int size;
-int myrank;
-int mysize;
 char t_fname[3];
 double time_ele_paral;
 #endif

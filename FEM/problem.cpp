@@ -25,6 +25,8 @@
 /*------------------------------------------------------------------------*/
 /* Pre-processor definitions */
 #include "makros.h"
+#include "display.h"
+#include "MemWatch.h"
 /*------------------------------------------------------------------------*/
 // MSHLib
 #include "msh_lib.h"
@@ -64,6 +66,7 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #include "rf_node.h"
 #include "rf_out_new.h"
 #include "tools.h"
+#include "timer.h"
 #include "rf_msp_new.h"//WX:01.2013
 //
 #ifdef CHEMAPP
@@ -88,10 +91,6 @@ namespace process
 {class CRFProcessDeformation;
 }
 using process::CRFProcessDeformation;
-
-//NW: moved the following variables from rf.cpp to avoid linker errors
-std::string FileName;                             //WW
-std::string FilePath;                             //23.02.2009. WW
 
 /**************************************************************************
    GeoSys - Function: Constructor

@@ -9,6 +9,7 @@
 // C++ STL
 //#include <iostream>
 #include <cfloat>
+#include "display.h"
 
 // FEMLib
 #include "tools.h"

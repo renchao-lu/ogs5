@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "memory.h"
+
 // GEOLib
 #include "files0.h"
 #include "geo_lib.h"
