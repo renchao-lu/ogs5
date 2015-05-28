@@ -30,7 +30,6 @@ OPTION(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 OPTION(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
 
-
 ### CMake setup ###
 INCLUDE(CMakeConfiguration/CMakeSetup.cmake)
 
