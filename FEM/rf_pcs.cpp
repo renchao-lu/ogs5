@@ -9868,10 +9868,6 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 							//
 							if(num_fail > 1) diverged = true; // require 2 consecutive failures
 							last_error = nonlinear_iteration_error;
-							if (iter_nlin + 1 == m_num->nls_max_iterations)
-							{
-								accepted = false;
-							}
 						}
 						break;
 
@@ -9975,6 +9971,9 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 
 			// CHECK FOR TIME STEP FAILURE
 			// ---------------------------------------------------
+
+			if (!converged && iter_nlin+1 == m_num->nls_max_iterations) accepted = false;
+
 			if(!accepted || Tim->isDynamicTimeFailureSuggested(this)){
 				  accepted = false;
 				  Tim->last_dt_accepted = false;
