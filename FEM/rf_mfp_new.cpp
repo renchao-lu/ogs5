@@ -49,9 +49,6 @@ using namespace std;
 #define T_KILVIN_ZERO  273.15                     //AKS
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
 
-
-
-
 //==========================================================================
 std::vector<CFluidProperties*>mfp_vector;
 
