@@ -242,18 +242,10 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			break;
 		}
 
-		/**
-		 * @ogs_subkw_bc $PCS_TYPE -- process to which the boundary condition applies
-		 *   * param[0] -- name of the process type
-		 */
 		if (line_string.find("$PCS_TYPE") != std::string::npos)
 			if (!FileIO::ProcessIO::readProcessInfo (*bc_file, _pcs_type))
 				valid = false;
 
-		/**
-		 * @ogs_subkw_bc $PRIMARY_VARIABLE -- primary variable to which the boundary condition applies
-		 *   * param[0] -- name of the variable
-		 */
 		if (line_string.find("$PRIMARY_VARIABLE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -283,10 +275,6 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 
-		/**
-		 * @ogs_subkw_bc $COMP_NAME -- @todo NO DESC
-		 *   * params -- ??
-		 */
 		// HS, this is new. later on we should stick to COMP_NAME, PRIMARY_VARIABLE support will be removed.
 		if (line_string.find("$COMP_NAME") != std::string::npos)
 		{
@@ -312,21 +300,12 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 
-		/**
-		 * @ogs_subkw_bc $GEO_TYPE -- geometry on which the boundary condition is defined
-		 *   * param[0] -- type of the geometry (e.g. POINT or POLYLINE) TODO: ref
-		 *   * param[1] -- name of the geometry
-		 */
 		if (line_string.find("$GEO_TYPE") != std::string::npos)
 			if (!FileIO::GeoIO::readGeoInfo (this, *bc_file, geo_name, geo_obj,
 			                                 unique_fname))
 				valid = false;
 
-		/**
-		 * @ogs_subkw_bc $DIS_TYPE -- distribution type
-		 *   * param[0] -- type (e.g. CONSTANT or CONSTANT_NEUMANN) TODO: finish
-		 *   * param[1] -- value
-		 */
+		//PCH
 		if (line_string.find("$DIS_TYPE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -382,12 +361,6 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			}
 		}
 
-		/**
-		 * @ogs_subkw_bc $GRADIENT -- @todo NO DESC
-		 *   * param[0] -- depth
-		 *   * param[1] -- value
-		 *   * param[2] -- gradient
-		 */
 		if (line_string.find("GRADIENT") != std::string::npos) // 6/2012  JOD
 		{
 			this->setProcessDistributionType(FiniteElement::GRADIENT);
@@ -397,11 +370,8 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 
-		/**
-		 * @ogs_subkw_bc $TIM_TYPE -- Time dependent function / Time dependent curve
-		 *   * param[0] -- CURVE
-		 *   * param[1] -- curve index TODO finish
-		 */
+		// Time dependent function
+		//..Time dependent curve ............................................
 		if (line_string.find("$TIM_TYPE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -421,10 +391,6 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			continue;
 		}
 
-		/**
-		 * @ogs_subkw_bc $FCT_TYPE -- @todo NO DESC
-		 *   * param[0] -- function name
-		 */
 		if (line_string.find("$FCT_TYPE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -432,11 +398,6 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in.clear();
 		}
 
-		/**
-		 * @ogs_subkw_bc $MSH_TYPE -- @todo NO DESC
-		 *   * param[0] -- NODE
-		 *   * param[1] -- mesh node number
-		 */
 		if (line_string.find("$MSH_TYPE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -449,10 +410,6 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			}
 		}
 
-		/**
-		 * @ogs_subkw_bc $DIS_TYPE_CONDITION -- @todo NO DESC
-		 *   * params -- ??
-		 */
 		if (line_string.find("$DIS_TYPE_CONDITION") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file)); // CONSTANT -21500.0
@@ -475,55 +432,38 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			conditional = true;
 		}
 
-		/**
-		 * @ogs_subkw_bc $EPSILON -- @todo NO DESC
-		 *   * param[0] -- epsilon
-		 */
 		if (line_string.find("$EPSILON") != std::string::npos) // NW
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			in >> epsilon;
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $TIME_CONTROLLED_ACTIVE -- active state of the bc is time controlled
-		 *   * param[0] -- time control curve
-		 */
+		//....................................................................
+		//aktive state of the bc is time controlled  WX
 		if (line_string.find("$TIME_CONTROLLED_ACTIVE") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			in >> time_contr_curve;
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $EXCAVATION -- bc for excated boundaries
-		 *   * params -- ??
-		 */
+		//....................................................................
+		//bc for excated boundaries WX
 		if (line_string.find("$EXCAVATION") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			in >> bcExcav >> MatGr;
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $NO_DISP_INCREMENT -- no displacement increment
-		 *   * params -- ??
-		 */
+		//....................................................................
+		//NO DISPLACEMENT INCREMENT WX:12.2012
 		if (line_string.find("$NO_DISP_INCREMENT") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
 			in >> NoDispIncre;
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $COPY_VALUE -- bc for copying of primary variables
-		 *   * param[0] -- geometry type
-		 *   * param[1] -- name
-		 */
+        //....................................................................
+		//bc for copying of primary variables; give geometry type and name SB 09.2012
 		if (line_string.find("$COPY_VALUE") != std::string::npos)
 		{
 			// CB_merge_0513 ??
@@ -532,11 +472,7 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			in >> copy_geom >> copy_geom_name;
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $PRESSURE_AS_HEAD -- @todo NO DESC
-		 *   * params -- ??
-		 */
+		//....................................................................
 		if (line_string.find("$PRESSURE_AS_HEAD") != std::string::npos)
 		{
 			in.str(readNonBlankLineFromInputStream(*bc_file));
@@ -550,11 +486,7 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 			}
 			in.clear();
 		}
-
-		/**
-		 * @ogs_subkw_bc $CONSTRAINED -- @todo NO DESC
-		 *   * params -- ??
-		 */
+		//....................................................................
 		if (line_string.find("$CONSTRAINED") != std::string::npos)
 		{
 			Constrained temp;
@@ -618,6 +550,7 @@ std::ios::pos_type CBoundaryCondition::Read(std::ifstream* bc_file,
 				this->_constrainedBC.push_back(temp);
 			in.clear();
 		}
+		//....................................................................
 
 	}
 	return position;
