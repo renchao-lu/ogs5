@@ -9975,7 +9975,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			// CHECK FOR TIME STEP FAILURE
 			// ---------------------------------------------------
 
-			if (!converged && iter_nlin+1 == m_num->nls_max_iterations) accepted = false;
+			if (m_num->nls_max_iterations>1 && !converged && iter_nlin+1 == m_num->nls_max_iterations) accepted = false;
 
 			if(!accepted || Tim->isDynamicTimeFailureSuggested(this)){
 				  accepted = false;
