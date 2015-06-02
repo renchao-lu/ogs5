@@ -15,7 +15,7 @@ conversion_rate::conversion_rate(double T_solid,
                                  double phi_S,
                                  double delta_t,
                                  FiniteElement::SolidReactiveSystem system)
-    : R(phc::R),
+    : R(Phys::R),
       rho_s_0(rho_s_initial),
       p_eq(1.0),
       tol_l (1.0e-4),
@@ -30,16 +30,16 @@ conversion_rate::conversion_rate(double T_solid,
 		rho_up = 2200.0;
 		reaction_enthalpy = -1.12e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -143.5; //in J/mol K
-		M_carrier = phc::MolMass::N2;
-		M_react   = phc::MolMass::Water;
+		M_carrier = Phys::MolMass::N2;
+		M_react   = Phys::MolMass::Water;
 	}
 	else if (system == FiniteElement::Mn3O4){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
 		rho_low = 4500.0;
 		rho_up = 4860.0;
 		reaction_enthalpy = -1.376e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -114.1; //in J/mol K
-		M_carrier = phc::MolMass::N2;
-		M_react   = phc::MolMass::O2;
+		M_carrier = Phys::MolMass::N2;
+		M_react   = Phys::MolMass::O2;
 	}
 	else if (system == FiniteElement::Z13XBF){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
 		// TODO [CL] read those values from some input file
@@ -47,8 +47,8 @@ conversion_rate::conversion_rate(double T_solid,
 		rho_up = -1.0; //not needed
 		reaction_enthalpy = 0.0; //see CalcEnthalpy13XBF()
 		reaction_entropy = 0.0; //see CalcEntropy13XBF()
-		M_carrier = phc::MolMass::N2; //consider switch to air
-		M_react   = phc::MolMass::Water;
+		M_carrier = Phys::MolMass::N2; //consider switch to air
+		M_react   = Phys::MolMass::Water;
 		W0 = 0.291/1.e3; //in m^3/kg
 		// p_min = .01; //in Pa
 		p_min = 0.0;
