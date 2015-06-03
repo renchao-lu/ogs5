@@ -2318,7 +2318,7 @@ for(ii=0;ii<this->nodenumber;ii++){	//ii==0 as boundary point without reaction c
 				//return redox Eh value of given reaction at this node
         if(pcs_redox>-1){
 		  value1=0.0;
-		  for(i=2;i<(int)species_redox_name.size();i++){
+		  for(i=2;i<species_redox_name.size();i++){
 			  if(species_redox_phase[i]==0)
 				  CAP_tqgetr((char *)"ac", species_redox_idx[i], 0, &value, &noerr);
 			  else

@@ -3955,7 +3955,7 @@ void COutput::NODWritePrimaryVariableList(double time_current)
 
 		case GEOLIB::GEODOMAIN:
 
-			for (long i = 0; i < m_msh->nod_vector.size(); i++)
+			for (std::size_t i = 0; i < m_msh->nod_vector.size(); i++)
 				tec_file << m_msh->nod_vector[i]->GetIndex() << "        " << m_pcs_out->GetNodeValue(m_msh->nod_vector[i]->GetIndex(), 1) << "\n";
 
 			cout << "Data output: " << convertProcessTypeToString(getProcessType()) << " primary variables - DOMAIN - " << m_msh->nod_vector.size() << " nodes" << endl;
@@ -3966,7 +3966,7 @@ void COutput::NODWritePrimaryVariableList(double time_current)
 			if (m_sfc)
 				m_msh->GetNODOnSFC(m_sfc, nodes_vector);
 
-			for (long i = 0; i < nodes_vector.size(); i++)
+			for (std::size_t i = 0; i < nodes_vector.size(); i++)
 				tec_file << nodes_vector[i] << "        " << m_pcs_out->GetNodeValue(nodes_vector[i], 1) << "\n";
 
 			cout << "Data output: " << convertProcessTypeToString(getProcessType()) << " primary variables - SURFACE " << geo_name << " -  " << nodes_vector.size() << " nodes" << endl;
@@ -3980,7 +3980,7 @@ void COutput::NODWritePrimaryVariableList(double time_current)
 				m_msh->GetNODOnPLY(ply, nodes_vector);
 			}
 
-			for (long i = 0; i < nodes_vector.size(); i++)
+			for (std::size_t i = 0; i < nodes_vector.size(); i++)
 				tec_file << nodes_vector[i] << "        " << m_pcs_out->GetNodeValue(nodes_vector[i], 1) << "\n";
 
 			cout << "Data output: " << convertProcessTypeToString(getProcessType()) << " primary variables - POLYLINE " << geo_name << " - " << nodes_vector.size() << " nodes" << endl;

@@ -2997,7 +2997,7 @@ void GetNODValue(double& value, CNodeValue* cnodev, CSourceTerm* st)
  **************************************************************************/
 void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    CRFProcess* m_pcs_this = NULL;
-   int i,Index;
+   int Index;
    double poro;
 
    //Get process type
@@ -3006,13 +3006,13 @@ void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    CFEMesh* mesh (m_pcs_this->m_msh);
    
    //Get number of conneted elements
-   long number_of_connected_elements = mesh->nod_vector[geo_node]->getConnectedElementIDs().size();
+   size_t number_of_connected_elements = mesh->nod_vector[geo_node]->getConnectedElementIDs().size();
 
    poro = 0.0;
    double geo_area = 0.0;
 
    //loop over connected elements and get average porosity
-   for (i=0;i<number_of_connected_elements;i++){
+   for (size_t i=0;i<number_of_connected_elements;i++){
 	   long msh_ele = mesh->nod_vector[geo_node]->getConnectedElementIDs()[i];
 	   CElem *m_ele = mesh->ele_vector[msh_ele];
 	   Index = m_ele->GetIndex();
@@ -3035,6 +3035,7 @@ void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    double temp = m_pcs_this->GetNodeValue(geo_node, nidx1);
 
    //Find position of current node in st vectors
+   size_t i;
    for (i=0; i<st->get_node_value_vectorArea().size(); i++){
 	   if (geo_node == st->st_node_ids[i])
 		   break;

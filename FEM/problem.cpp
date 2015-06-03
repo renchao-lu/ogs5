@@ -394,7 +394,7 @@ Problem::Problem (char* filename) :
 		// Release memory of other domains. WW
 		for(size_t i = 0; i < dom_vector.size(); i++)
 		{
-			if(i != myrank)
+			if(i != (size_t)myrank)
 			{
 				// If shared memory, skip the following line
 #if defined(NEW_BREDUCE2)
