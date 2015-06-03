@@ -298,13 +298,13 @@ double conversion_rate::get_hv(double Tads) //in kJ/kg
 	if (Tads <= 10.){
 		const double c[] = {2.50052e3,-2.1068,-3.57500e-1,1.905843e-1,-5.11041e-2,7.52511e-3,-6.14313e-4,2.59674e-5,-4.421e-7};
 		double hv = 0.;
-		for (unsigned i=0; i< sizeof(c)/sizeof(c[0]);i++)
+		for (size_t i=0; i< sizeof(c)/sizeof(c[0]);i++)
 			hv += c[i] * pow(Tads,i);
 		return hv;
 	} else if (Tads <= 300.){
 		const double c[] = {2.50043e3,-2.35209,1.91685e-4,-1.94824e-5,2.89539e-7,-3.51199e-9,2.06926e-11,-6.4067e-14,8.518e-17,1.558e-20,-1.122e-22};
 		double hv = 0.;
-		for (unsigned i=0; i< sizeof(c)/sizeof(c[0]);i++)
+		for (size_t i=0; i< sizeof(c)/sizeof(c[0]);i++)
 			hv += c[i] * pow(Tads,i);
 		return hv;
 	} else {
