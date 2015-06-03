@@ -3035,7 +3035,7 @@ void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    double temp = m_pcs_this->GetNodeValue(geo_node, nidx1);
 
    //Find position of current node in st vectors
-   for (i=0; i<st->get_node_value_vectorArea().size(); i++){
+   for (i=0; i<(int)st->get_node_value_vectorArea().size(); i++){
 	   if (geo_node == st->st_node_ids[i])
 		   break;
    }

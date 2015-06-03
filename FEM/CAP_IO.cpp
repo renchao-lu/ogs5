@@ -350,12 +350,12 @@ int OGS_keyword_check(std::string in_file_new, std::string in_file_old, std::str
 		line_old=IO::vector_reduce(line_old);
 
 
-		for(i=0;i<key_new.size();i++) cout << ext_name << " file: Line. " << key_new[i] << "   -> not consistent !" << endl;
-		for(i=0;i<key_old.size();i++) cout << ext_name << " file: Line. " << key_old[i] << "   -> changed !" << endl;
-		for(i=0;i<subkey_new.size();i++) cout << ext_name << " file: Line. " << subkey_new[i] << "   -> not consistent !" << endl;
-		for(i=0;i<subkey_old.size();i++) cout << ext_name << " file: Line. " << subkey_old[i] << "   -> changed !" << endl;
-		for(i=0;i<line_new.size();i++) cout << ext_name << " file: Line. " << line_new[i] << "   -> not consistent !" << endl;
-		for(i=0;i<line_old.size();i++) cout << ext_name << " file: Line. " << line_old[i] << "   -> changed !" << endl;
+		for(i=0;i<(int)key_new.size();i++) cout << ext_name << " file: Line. " << key_new[i] << "   -> not consistent !" << endl;
+		for(i=0;i<(int)key_old.size();i++) cout << ext_name << " file: Line. " << key_old[i] << "   -> changed !" << endl;
+		for(i=0;i<(int)subkey_new.size();i++) cout << ext_name << " file: Line. " << subkey_new[i] << "   -> not consistent !" << endl;
+		for(i=0;i<(int)subkey_old.size();i++) cout << ext_name << " file: Line. " << subkey_old[i] << "   -> changed !" << endl;
+		for(i=0;i<(int)line_new.size();i++) cout << ext_name << " file: Line. " << line_new[i] << "   -> not consistent !" << endl;
+		for(i=0;i<(int)line_old.size();i++) cout << ext_name << " file: Line. " << line_old[i] << "   -> changed !" << endl;
 
 	}
 	else{
