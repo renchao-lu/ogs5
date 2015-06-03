@@ -2583,7 +2583,9 @@ void RandomWalk::AdvanceToNextTimeStep(double dt,double ctime)
 	    exit(1);
     }
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 	for(int i = 0; i < numOfParticles; ++i)
 	{
 		TimeMobility = 0;         //JT 2010, using this for now. Setting identity = 1 causes simulation failure... not sure why??
