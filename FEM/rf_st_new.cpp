@@ -1489,7 +1489,7 @@ std::vector<double>&node_value_vector) const
       static bool isIDinRange( const size_t n_id, const size_t id_max0, 
                                    const size_t id_min1,  const size_t id_max1 )
       {
-	return ( (n_id < id_max0) || (n_id >= id_min1) && (n_id <  id_max1) ) ? true : false;
+	return (n_id < id_max0) || (n_id >= id_min1 && n_id <  id_max1);
       }
    };
 #endif
