@@ -28,12 +28,7 @@ public:
 	                  FiniteElement::SolidReactiveSystem system);
 	
 	double get_mole_fraction(double xm);
-private:
-	void calculate_qR();
-	double get_qR();
-	void get_x(Eigen::VectorXd& output_x);
-	void set_rho_s(double new_rho_s);
-public:
+
 	void eval(double t, Eigen::VectorXd const& y, Eigen::VectorXd &dydx);
 
 	//Adsorbate EOS
@@ -42,6 +37,11 @@ public:
 	double get_enthalpy(const double Tads, const double pads);
 
 private:
+	void calculate_qR();
+	double get_qR();
+	void get_x(Eigen::VectorXd& output_x);
+	void set_rho_s(double new_rho_s);
+
 	//Adsorbate EOS
 	double get_alphaT(const double Tads);
 	double get_ps(const double Tads);
