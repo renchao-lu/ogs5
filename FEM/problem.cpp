@@ -498,14 +498,9 @@ Problem::Problem (char* filename) :
 	CRFProcessDeformation* dm_pcs = NULL;
 
 	//  //WW
-	bool fluid_mom_pcs = false;
 	for (size_t i = 0; i < no_processes; i++)
 	{
 		m_pcs = pcs_vector[i];
-		if(m_pcs->getProcessType() == FiniteElement::FLUID_MOMENTUM) //09.2012 WW
-		{
-			fluid_mom_pcs = true;
-		}
 		m_pcs->CalcSecondaryVariables(true); //WW
 		m_pcs->Extropolation_MatValue(); //WW
 	}
@@ -518,12 +513,22 @@ Problem::Problem (char* filename) :
 
 #ifdef OGS_DELETE_EDGES_AFTER_INIT
 	// Free memory occupied by edges. 09.2012. WW
+	bool fluid_mom_pcs = false;
+	for (size_t i = 0; i < no_processes; i++)
+	{
+		m_pcs = pcs_vector[i];
+		if(m_pcs->getProcessType() == FiniteElement::FLUID_MOMENTUM) //09.2012 WW
+		{
+			fluid_mom_pcs = true;
+			break;
+		}
+	}
 	if(!fluid_mom_pcs)
 	{
-       for(size_t k = 0; k < fem_msh_vector.size(); k++)
-       {
-		  fem_msh_vector[k]->FreeEdgeMemory();
-}
+		for(size_t k = 0; k < fem_msh_vector.size(); k++)
+		{
+			fem_msh_vector[k]->FreeEdgeMemory();
+		}
 	}
 #endif
 }
