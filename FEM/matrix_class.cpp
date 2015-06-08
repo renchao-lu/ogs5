@@ -1825,7 +1825,9 @@ int CSparseMatrix::GetCRSValue(double* value)
 	int success = 1;
 	int i;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 	for(i = 0; i < size_entry_column * DOF * DOF; ++i)
 		value[i] = entry[entry_index[i]];
 

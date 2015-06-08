@@ -788,7 +788,9 @@ int Linear_EQS::Solver(CNumerics* num)
 		//OK411 int iflag = 0;
 		ierr = lis_vector_duplicate(AA,&bb);
 		ierr = lis_vector_duplicate(AA,&xx);
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 		for(i = 0; i < size; ++i)
 		{
 			ierr = lis_vector_set_value(LIS_INS_VALUE,i,x[i],xx);
@@ -812,7 +814,9 @@ int Linear_EQS::Solver(CNumerics* num)
 		//	lis_vector_print(bb);
 
 		// Update the solution (answer) into the x vector
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 		for(i = 0; i < size; ++i)
 			lis_vector_get_value(xx,i,&(x[i]));
 
