@@ -1747,7 +1747,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 	Residual = false;
 	fact = 1.0;
 	k = 0;
-	int idx_p1_ini, idx_p2_ini;//, idx_sw_ini;//WX:08.2011 neglect ini h affect
+	int idx_p1_ini = 0, idx_p2_ini = 0;//, idx_sw_ini;//WX:08.2011 neglect ini h affect
 
 	biot = smat->biot_const;
 	if(Flow_Type >= 0)
@@ -1855,9 +1855,10 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 				AuxNodal[i] = LoadFactor * h_pcs->GetNodeValue(nodes[i],idx_P1);
 			break;
 		case 1:                   // Richards flow
+		{
 			//WX:08.2011
-			double bishop_coef_ini; 
-			double S_e, S_e_ini, sw_ini;
+			double bishop_coef_ini = 0.0;
+			double S_e, S_e_ini = 0.0, sw_ini;
 
 			if(pcs->Neglect_H_ini==2)
 			{
@@ -1935,6 +1936,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 #endif
 			}
 			break;
+		}
 		case 2: {                   // Multi-phase-flow: p_g-Sw*p_c
 			// 07.2011. WW
 			const int dim_times_nnodesHQ(dim * nnodesHQ);
@@ -1950,8 +1952,8 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 
 			if(smat->bishop_model > 0)
 			{
-				double bishop_coef, bishop_coef_ini;        //bishop
-				double S_e, S_e_ini, sw_ini;
+				double bishop_coef = 0.0, bishop_coef_ini = 0.0;
+				double S_e, S_e_ini = 0.0, sw_ini;
 
 				for (i = 0; i < nnodes; i++)
 				{
@@ -1983,6 +1985,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 					default:
 						break;
 					}
+
 					if(smat->bishop_model == 1 || smat->bishop_model == 2 || smat->bishop_model == 3) // pg-bishop*pc 05.2011 WX
 					{
 						val_n = h_pcs->GetNodeValue(nodes[i],idx_P2)
@@ -2015,13 +2018,13 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			else
 			{
 
-                if(pcs->Neglect_H_ini==2)
+				if(pcs->Neglect_H_ini==2)
 				{
-				   for (i=0;i<nnodes;i++)
-				   {
-			          AuxNodal0[i] -= h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
-			          AuxNodal2[i] -= h_pcs->GetNodeValue(nodes[i],idx_p2_ini);
-				   }
+					for (i=0;i<nnodes;i++)
+					{
+						AuxNodal0[i] -= h_pcs->GetNodeValue(nodes[i],idx_p1_ini);
+						AuxNodal2[i] -= h_pcs->GetNodeValue(nodes[i],idx_p2_ini);
+					}
 				}
 
 				PressureC->multi(AuxNodal2, AuxNodal1, LoadFactor);
@@ -2031,6 +2034,7 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			break;
 		}
 		case 3:                   // Multi-phase-flow: SwPw+SgPg	// PCH 05.05.2009
+		{
 			for (i = 0; i < nnodes; i++)
 			{
 				double Snw = h_pcs->GetNodeValue(nodes[i],idx_Snw);
@@ -2046,106 +2050,107 @@ void CFiniteElementVec::GlobalAssembly_RHS()
 			break;
 		}
 
+			// If dymanic
+			if(dynamic)
+				for (i = 0; i < nnodes; i++)
+				{
+					AuxNodal[i] *= fact;
+					AuxNodal[i] += dt * a_n[nodes[i] + NodeShift[problem_dimension_dm]]
+					        + pcs->GetNodeValue(nodes[i],idx_P);
+				}
+
+			const int dim_times_nnodesHQ(dim * nnodesHQ);
+			// Coupling effect to RHS
+			if(Flow_Type != 2)        // 07.2011. WW
+			{
+				for (i = 0; i < dim_times_nnodesHQ; i++)
+					AuxNodal1[i] = 0.0;
+				PressureC->multi(AuxNodal, AuxNodal1);
+			}
+			for (i = 0; i < dim_times_nnodesHQ; i++)
+				(*RHS)[i] -= fabs(biot) * AuxNodal1[i];
+		}                                     // End if partioned
+
 		// If dymanic
 		if(dynamic)
-			for (i = 0; i < nnodes; i++)
-			{
-				AuxNodal[i] *= fact;
-				AuxNodal[i] += dt * a_n[nodes[i] + NodeShift[problem_dimension_dm]]
-				               + pcs->GetNodeValue(nodes[i],idx_P);
-			}
+			for (size_t i = 0; i < dim; i++)
+				for (j = 0; j < nnodesHQ; j++)
+					for (k = 0; k < nnodesHQ; k++)
+						(*RHS)[i * nnodesHQ + j] += (*Mass)(j,k) * (
+					                                    (*dAcceleration)(i * nnodesHQ + k)
+					                                    + a_n[nodes[k] + NodeShift[i]]);
 
-		const int dim_times_nnodesHQ(dim * nnodesHQ);
-		// Coupling effect to RHS
-		if(Flow_Type != 2)        // 07.2011. WW
-		{
-			for (i = 0; i < dim_times_nnodesHQ; i++)
-				AuxNodal1[i] = 0.0;
-			PressureC->multi(AuxNodal, AuxNodal1);
-		}
-		for (i = 0; i < dim_times_nnodesHQ; i++)
-			(*RHS)[i] -= fabs(biot) * AuxNodal1[i];
-	}                                     // End if partioned
-
-	// If dymanic
-	if(dynamic)
+		//RHS->Write();
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//06.2013. WW
 		for (size_t i = 0; i < dim; i++)
 			for (j = 0; j < nnodesHQ; j++)
-				for (k = 0; k < nnodesHQ; k++)
-					(*RHS)[i * nnodesHQ + j] += (*Mass)(j,k) * (
-					        (*dAcceleration)(i * nnodesHQ + k)
-					        + a_n[nodes[k] + NodeShift[i]]);
-
-	//RHS->Write();
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//06.2013. WW
-	for (size_t i = 0; i < dim; i++)
-		for (j = 0; j < nnodesHQ; j++)
-			b_rhs[eqs_number[j] + NodeShift[i]] -= (*RHS)[i * nnodesHQ + j];
+				b_rhs[eqs_number[j] + NodeShift[i]] -= (*RHS)[i * nnodesHQ + j];
 #endif
 
-	//WX:07.2011 if not on excav boundary, RHS=0
-	int valid = 0;
-	if (excavation)
-	{
-		excavation = true;
-		bool onExBoundary = false;
-
-		CNode* node;
-		CElem* elem;
-		CSolidProperties* smat_e;
-
-		for (int i = 0; i < nnodesHQ; i++)
+		//WX:07.2011 if not on excav boundary, RHS=0
+		int valid = 0;
+		if (excavation)
 		{
-			node = MeshElement->nodes[i];
-			onExBoundary = false;
-			const size_t n_elements (node->getConnectedElementIDs().size());
-			for (size_t j = 0; j < n_elements; j++)
-			{
-				elem = pcs->m_msh->ele_vector[node->getConnectedElementIDs()[j]];
-				if (!elem->GetMark())
-					continue;
+			excavation = true;
+			bool onExBoundary = false;
 
-				smat_e = msp_vector[elem->GetPatchIndex()];
-				if (smat_e->excavation > 0)
+			CNode* node;
+			CElem* elem;
+			CSolidProperties* smat_e;
+
+			for (int i = 0; i < nnodesHQ; i++)
+			{
+				node = MeshElement->nodes[i];
+				onExBoundary = false;
+				const size_t n_elements (node->getConnectedElementIDs().size());
+				for (size_t j = 0; j < n_elements; j++)
 				{
-					if (fabs(GetCurveValue(smat_e->excavation, 0,
-					                       aktuelle_zeit,
-					                       &valid) - 1.0) < DBL_MIN)
+					elem = pcs->m_msh->ele_vector[node->getConnectedElementIDs()[j]];
+					if (!elem->GetMark())
+						continue;
+
+					smat_e = msp_vector[elem->GetPatchIndex()];
+					if (smat_e->excavation > 0)
+					{
+						if (fabs(GetCurveValue(smat_e->excavation, 0,
+						                       aktuelle_zeit,
+						                       &valid) - 1.0) < DBL_MIN)
+						{
+							onExBoundary = true;
+							break;
+						}
+					}
+					else if(pcs->ExcavMaterialGroup > -1)
+					{
+						double const* ele_center(elem->GetGravityCenter());
+						if((GetCurveValue(pcs->ExcavCurve,0,aktuelle_zeit,
+						                  &valid) + pcs->ExcavBeginCoordinate) <
+						   (ele_center[pcs->ExcavDirection]))
+						{
+							onExBoundary = true;
+							break;
+						}
+						else if (elem->GetPatchIndex() != static_cast<size_t>(pcs->ExcavMaterialGroup))
+						{
+							onExBoundary = true;
+							break;
+						}
+					}
+					else
 					{
 						onExBoundary = true;
 						break;
 					}
 				}
-				else if(pcs->ExcavMaterialGroup > -1)
+
+				if (!onExBoundary)
 				{
-					double const* ele_center(elem->GetGravityCenter());
-					if((GetCurveValue(pcs->ExcavCurve,0,aktuelle_zeit,
-					                  &valid) + pcs->ExcavBeginCoordinate) <
-					   (ele_center[pcs->ExcavDirection]))
-					{
-						onExBoundary = true;
-						break;
-					}
-					else if (elem->GetPatchIndex() != static_cast<size_t>(pcs->ExcavMaterialGroup))
-					{
-						onExBoundary = true;
-						break;
-					}
-				}
-				else
-				{
-					onExBoundary = true;
-					break;
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//06.2013. WW
+					for (size_t j = 0; j < dim; j++)
+						b_rhs[eqs_number[i] + NodeShift[j]] = 0.0;
+#endif
 				}
 			}
-
-			if (!onExBoundary)
-            {
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//06.2013. WW
-				for (size_t j = 0; j < dim; j++)
-					b_rhs[eqs_number[i] + NodeShift[j]] = 0.0;
-#endif
-            }
 		}
 	}
 }

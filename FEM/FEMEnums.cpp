@@ -112,9 +112,9 @@ std::string convertProcessTypeToString ( ProcessType pcs_type )
 		return "TES";
 	case NO_PCS:
 		return "NO_PCS";
+	default:
+		return "INVALID_PROCESS";
 	}
-
-	return "INVALID_PROCESS";
 }
 
 
@@ -137,8 +137,9 @@ bool isFlowProcess (ProcessType pcs_type)
 	case TNEQ:
 	case TES:
 		return true;
+	default:
+		return false;
 	}
-	return false;
 }
 
 bool isMultiFlowProcess (ProcessType pcs_type)

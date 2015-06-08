@@ -1377,14 +1377,11 @@ void COutput::WriteELEValuesTECHeader(fstream &tec_file)
 **************************************************************************/
 void COutput::WriteELEValuesTECData(fstream &tec_file)
 {
-	CRFProcess* m_pcs = NULL;
-   CRFProcess* m_pcs_2 = NULL;
-	if (!_ele_value_vector.empty())
-		m_pcs = GetPCS_ELE(_ele_value_vector[0]);
-	else
+	CRFProcess* m_pcs_2 = NULL;
+	if (_ele_value_vector.empty())
 		return;
 
-   vector <bool> skip; // CB
+	vector <bool> skip; // CB
 	size_t no_ele_values = _ele_value_vector.size();
 	bool out_element_vel = false;
 	bool out_element_transport_flux = false; // JOD 2014-11-10
@@ -1444,15 +1441,15 @@ void COutput::WriteELEValuesTECData(fstream &tec_file)
 				tec_file << gp_ele->Velocity(2, 0) << " ";
 			}
 		}
-#ifdef USE_TRANSPORT_FLUX
 		else if (out_element_transport_flux) // JOD 2014-11-10
 		{
+#ifdef USE_TRANSPORT_FLUX
 			gp_ele = ele_gp_value[i];
 			tec_file << gp_ele->TransportFlux(0, 0) << " ";
 			tec_file << gp_ele->TransportFlux(1, 0) << " ";
 			tec_file << gp_ele->TransportFlux(2, 0) << " ";
-		}
 #endif
+		}
       for (size_t j = 0; j < ele_value_index_vector.size(); j++)
       {
         if(skip[j]) // CB: allow output of velocity AND other ele values
@@ -3892,7 +3889,6 @@ void COutput::NODWritePointsCombined(double time_current)
 
 	tec_file << geo_name << " ";
 	std::string nod_value_name;
-	int nidx = m_pcs_out->GetNodeValueIndex(nod_value_name) + 1;
 
 	double val_n;
 
@@ -3978,6 +3974,7 @@ void COutput::NODWritePrimaryVariableList(double time_current)
 				double min_edge_length(m_msh->getMinEdgeLength());
 				m_msh->setMinEdgeLength(m_polyline->epsilon);
 				m_msh->GetNODOnPLY(ply, nodes_vector);
+				m_msh->setMinEdgeLength(min_edge_length);
 			}
 
 			for (std::size_t i = 0; i < nodes_vector.size(); i++)
@@ -4115,9 +4112,10 @@ void COutput::SetTotalFluxNodesPLY(std::vector<long>& nodes_vector)
 
 	if (ply) {
 		CGLPolyline* m_polyline = GEOGetPLYByName(geo_name);
-		double min_edge_length(m_msh->getMinEdgeLength()); // ?????
+		double min_edge_length(m_msh->getMinEdgeLength());
 		m_msh->setMinEdgeLength(m_polyline->epsilon);
 		m_msh->GetNODOnPLY(ply, nodes_vector);
+		m_msh->setMinEdgeLength(min_edge_length);
 	}
 
 }
