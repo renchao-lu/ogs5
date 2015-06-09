@@ -3,56 +3,55 @@
 #include <math.h>
 #include <cmath>
 
+#include "physical_constants.h"
+
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
 
-#define COMP_MOL_MASS_WATER 0.018016
-#define COMP_MOL_MASS_N2   0.028013
-#define COMP_MOL_MASS_O2 0.032
-
 conversion_rate::conversion_rate(double T_solid, 
-	                       double T_gas,  
-						   double p_gas,
-						   double x_reactive, 
-						   double rho_s_initial,
-						   double phi_S,
-						   double delta_t,
-						   FiniteElement::SolidReactiveSystem system)
-:R(8.314510),p_eq(1.0) // , n_col(3)
+                                 double T_gas,
+                                 double p_gas,
+                                 double x_reactive,
+                                 double rho_s_initial,
+                                 double phi_S,
+                                 double delta_t,
+                                 FiniteElement::SolidReactiveSystem system)
+    : R(Phys::R),
+      rho_s_0(rho_s_initial),
+      p_eq(1.0),
+      tol_l (1.0e-4),
+      tol_u (1.0 - tol_l),
+      tol_rho (0.1),
+      x(Eigen::VectorXd(1))
 {
-	x = Eigen::VectorXd(1);
 	update_param( T_solid, T_gas, p_gas, x_reactive, rho_s_initial, phi_S, delta_t, system);
-	conversion_rate::rho_s_0 = rho_s_initial;
+
 	if (system == FiniteElement::CaOH2){ //Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
 		rho_low = 1656.0;
 		rho_up = 2200.0;
 		reaction_enthalpy = -1.12e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -143.5; //in J/mol K
-		M_carrier = COMP_MOL_MASS_N2;
-		M_react = COMP_MOL_MASS_WATER;
+		M_carrier = Phys::MolMass::N2;
+		M_react   = Phys::MolMass::Water;
 	}
 	else if (system == FiniteElement::Mn3O4){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
 		rho_low = 4500.0;
 		rho_up = 4860.0;
 		reaction_enthalpy = -1.376e+05; //in J/mol; negative for exothermic composition reaction
 		reaction_entropy = -114.1; //in J/mol K
-		M_carrier = COMP_MOL_MASS_N2;
-		M_react = COMP_MOL_MASS_O2;
+		M_carrier = Phys::MolMass::N2;
+		M_react   = Phys::MolMass::O2;
 	}
 	else if (system == FiniteElement::Z13XBF){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
+		// TODO [CL] read those values from some input file
 		rho_low = 1150.0;
 		rho_up = -1.0; //not needed
 		reaction_enthalpy = 0.0; //see CalcEnthalpy13XBF()
 		reaction_entropy = 0.0; //see CalcEntropy13XBF()
-		M_carrier = COMP_MOL_MASS_N2; //consider switch to air
-		M_react = COMP_MOL_MASS_WATER;
+		M_carrier = Phys::MolMass::N2; //consider switch to air
+		M_react   = Phys::MolMass::Water;
 		W0 = 0.291/1.e3; //in m^3/kg
-		p_min = 500.; //in Pa
+		p_min = 0.0; //in Pa
 	}
-
-	tol_l = 1.0e-4;
-	tol_u = 1.0 - tol_l;
-	tol_rho = 0.1;
-	
 }
 
 conversion_rate::~conversion_rate(void)
@@ -98,12 +97,12 @@ void conversion_rate::set_chemical_equilibrium()
 void conversion_rate::set_sorption_equilibrium()
 {
 	//determine adsorption potential
-	const double A = get_potential(T_s,p_r_g);
+	const double A = get_potential(T_s, p_r_g);
 	//determine adsorbed volume
 	const double W = characteristic_curve(A);
 	//determine equilibrium loading
 	C_eq = W * get_adsorbate_density(T_s); //kg/kg
-	}
+}
 
 double conversion_rate::get_mole_fraction(double xm)
 {
@@ -167,7 +166,7 @@ void conversion_rate::get_x(Eigen::VectorXd& output_x)
 }
 
 
-void conversion_rate::eval(double /*t*/, Eigen::VectorXd &y, Eigen::VectorXd &dydx)
+void conversion_rate::eval(double /*t*/, Eigen::VectorXd const& y, Eigen::VectorXd &dydx)
 {
 	assert( y.size() == dydx.size() );
 
@@ -328,7 +327,12 @@ double conversion_rate::get_specific_heat_capacity(const double Tads)
 double conversion_rate::get_potential(const double Tads, double pads)
 {
 	pads = std::max(pads, p_min);
-	return R * Tads * log(get_ps(Tads)/pads) / (M_react*1.e3); //in kJ/kg = J/g
+	double A = R * Tads * log(get_ps(Tads)/pads) / (M_react*1.e3); //in kJ/kg = J/g
+	if (A < 0.0) {
+		// vapour partial pressure > saturation pressure
+		// A = 0.0; // TODO [CL] debug output
+	}
+	return A;
 }
 
 //Characteristic curve. Return W (A)
@@ -337,6 +341,9 @@ double conversion_rate::characteristic_curve(const double A)
 	//parameters from least squares fit (experimental data)
 	const double c[] = {0.34102920966608297, -0.0013106032830951296, -0.00060754147575378876, 3.7843404172683339e-07, 4.0107503869519016e-07, 3.1274595098338057e-10, -7.610441241719489e-11};
 	double W = (c[0]+c[2]*A+c[4]*pow(A,2)+c[6]*pow(A,3))/(1.0+c[1]*A+c[3]*pow(A,2)+c[5]*pow(A,3)); //cm^3/g
+	if (W < 0.0) {
+		W = 0.0; // TODO [CL] debug output
+	}
 	return W/1.e3; //m^3/kg
 }
 

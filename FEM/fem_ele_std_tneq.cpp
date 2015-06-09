@@ -28,8 +28,7 @@ const bool GasMassForm = true;
 const bool GasMassForm = false;
 #endif
 
-
-const double GAS_CONSTANT = 8314.41;                   // J/(kmol*K) WW
+#include "physical_constants.h"
 
 
 
@@ -157,9 +156,9 @@ double CFiniteElementStd::CalCoefMassTNEQ(const int dof_index)
 		dxn_dxm /= (M0 * X + M1 * (1.0 - X)) * (M0 * X + M1 * (1.0 - X));
 
 		if (GasMassForm) {
-			val = (M1-M0) * p / (GAS_CONSTANT/1000.0 * T) * dxn_dxm * poro;
+			val = (M1-M0) * p / (Phys::R * T) * dxn_dxm * poro;
 		} else {
-			val = (M1-M0) * p / (GAS_CONSTANT/1000.0 * T) * dxn_dxm * poro
+			val = (M1-M0) * p / (Phys::R * T) * dxn_dxm * poro
 			       / FluidProp->Density(eos_arg);
 		}
 		break;

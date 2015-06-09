@@ -83,7 +83,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	  pcs(Pcs), dm_pcs(NULL), HEAD_Flag(false)
 {
 	int i;
-      int size_m = 64;                            //25.2.2007
+	int size_m = 64;                            //25.2.2007
 	string name2;
 	char name1[MAX_ZEILE];
 	cpl_pcs = NULL;
@@ -6146,7 +6146,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 	const double theta = pcs->m_num->ls_theta;
 	
 	//Find out material group - TN
-	const long group = MeshElement->GetPatchIndex();
+	// const long group = MeshElement->GetPatchIndex();
 
 	// Get room in the memory for local matrices
 	SetMemory();
@@ -6170,7 +6170,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		// ComputeGradShapefct(1);                  // Linear interpolation function
 
 		// get interpolated primary variable values
-		const double p_g  = time_interpolate(NodalVal0, NodalVal1, theta, this);
+		const double p_g  = time_interpolate(NodalVal0,   NodalVal1,   theta, this);
 		const double T_g  = time_interpolate(NodalVal_t0, NodalVal_t1, theta, this);
 		const double w_mf = time_interpolate(NodalVal_X0, NodalVal_X1, theta, this);
 		double T_s;
@@ -6179,7 +6179,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 			T_s = T_g;
 		} else if (pcs->getProcessType() == TNEQ) {
 			T_s = time_interpolate(NodalVal_t2_0, NodalVal_t2_1, theta, this);
-			// T_s = (1-pcs->m_num->ls_theta)*interpolate(NodalVal_t2_0) + pcs->m_num->ls_theta*interpolate(NodalVal_t2_1);
 		} else {
 			T_s = T_g; // avoid compiler warning;
 		}
@@ -6187,12 +6186,11 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		//get time step size
 		const double delta_t = pcs->Tim->time_step_length;
 
-		Eigen::VectorXd yy_rho_s    = Eigen::VectorXd::Zero(1); // rho_s
-		Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
-		const double poro = mmp_vector[group]->porosity;
+		// TODO [CL] Why?
+		// poro = mmp_vector[group]->porosity;
+		const double poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
+
 		// set parameters in the ca_hydaration class
-
-
 		if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
 			if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
 				const double rhoSR0 = 1.0;
@@ -6203,14 +6201,18 @@ void CFiniteElementStd::CalcSolidDensityRate()
 			}
 			else {//Fuer CaOH2 im Moment
 
-				pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp], 1.0-poro, delta_t, SolidProp->getSolidReactiveSystem());
-				yy_rho_s(0)    = gp_ele->rho_s_prev[gp];
+				pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp],
+				                                     1.0-poro, delta_t,
+				                                     SolidProp->getSolidReactiveSystem());
 
-				const double xv_NR = SolidProp->non_reactive_solid_volume_fraction;
+				const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
 				const double rho_NR = SolidProp->non_reactive_solid_density;
 
-				//TN - reactive fraction
-				yy_rho_s(0) = (yy_rho_s(0) - xv_NR * rho_NR) / (1.0-xv_NR);
+				Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1); // rho_s
+				// TN - reactive fraction
+				yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
+
+				Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
 
 				// make evaluation
 				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
@@ -9184,17 +9186,22 @@ void CFiniteElementStd::Assembly()
 		add2GlobalMatrixII(pcs->dof);
 #endif
 		break;
-		case EPT_THERMAL_NONEQUILIBRIUM:
-			AssembleParabolicEquation();
-			//Assemble_Gravity();
-			Assemble_RHS_TNEQ();
+	case EPT_THERMAL_NONEQUILIBRIUM:
+		Cal_Velocity();
+		CalcSolidDensityRate();
+		AssembleParabolicEquation();
+		//Assemble_Gravity();
+		Assemble_RHS_TNEQ();
 #if defined(USE_PETSC)
-			add2GlobalMatrixII();
+		add2GlobalMatrixII();
 #else
-			add2GlobalMatrixII(pcs->dof);
+		// TODO [CL] give PETSC function the same signature (avoids ifdef)
+		add2GlobalMatrixII(pcs->dof);
 #endif
 		break;
 	case EPT_TES:
+		Cal_Velocity();
+		CalcSolidDensityRate();
 		AssembleParabolicEquation();
 		//Assemble_Gravity();
 		Assemble_RHS_TES();
@@ -9328,38 +9335,114 @@ void CFiniteElementStd::Assembly(int option, int dimension)
    Programing:
    11/2011 HS Implementation
    last modification:
-   **************************************************************************/
-   void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx)
-   {
-	   ElementValue* gp_ele = ele_gp_value[Index];
-	   int idx_rho, idx_qR;
-	   double rho_s_elem, qR_elem; 
+**************************************************************************/
+void CFiniteElementStd::UpdateSolidDensity(size_t elem_idx, const bool initial)
+{
+	ElementValue* gp_ele = ele_gp_value[Index];
 
-	   idx_rho = this->pcs->GetElementValueIndex("SOLID_DENSITY") + 1;
-	   idx_qR  = this->pcs->GetElementValueIndex("REACT_RATE")    + 1; 
-	   rho_s_elem = this->pcs->GetElementValue(elem_idx, idx_rho);
-	   qR_elem = this->pcs->GetElementValue(elem_idx, idx_qR);
-	   
-	   this->pcs->SetElementValue(elem_idx, idx_rho-1, rho_s_elem);
-	   this->pcs->SetElementValue(elem_idx, idx_qR-1, qR_elem);
+	if (initial)
+	{
+		const std::vector<double*>& nvs = pcs->nod_val_vector;
 
-	   rho_s_elem = 0.0; 
-	   qR_elem    = 0.0;
+		const int idx_T = pcs->GetNodeValueIndex("TEMPERATURE1");
+		const int idx_p = pcs->GetNodeValueIndex("PRESSURE1");
+		const int idx_X = pcs->GetNodeValueIndex("CONCENTRATION1");
+		assert(idx_T >= 0 && idx_p >= 0 && idx_X >= 0);
 
-	   // loop over all Gauss points
-	   for (gp = 0; gp < nGaussPoints; gp++)
-	   {
-		   // copy current to previous. 
-		   gp_ele->rho_s_prev[gp] = gp_ele->rho_s_curr[gp];    
-		   rho_s_elem += gp_ele->rho_s_curr[gp];
-		   qR_elem    += gp_ele->q_R[gp];
-	   }
-	   rho_s_elem /= nGaussPoints;
-	   qR_elem    /= nGaussPoints;
-	   
-	   this->pcs->SetElementValue(elem_idx, idx_rho, rho_s_elem);
-	   this->pcs->SetElementValue(elem_idx, idx_qR, qR_elem);
-   }
+		// TODO [CL] somehow merge this with CalcSolidDensityRate();
+		SetMaterial();
+
+		int gp_r = 0, gp_s = 0, gp_t = 0;
+		for (gp = 0; gp < nGaussPoints; gp++)
+		{
+			GetGaussData(gp, gp_r, gp_s, gp_t);
+			ComputeShapefct(1);
+
+			// get interpolated primary variable values
+			const double p_g  = interpolate(nvs[idx_p]);
+			const double T_g  = interpolate(nvs[idx_T]);
+			const double w_mf = interpolate(nvs[idx_X]);
+			double T_s;
+
+			if (pcs->getProcessType() == TES) {
+				T_s = T_g;
+			} else if (pcs->getProcessType() == TNEQ) {
+				T_s = interpolate(NodalVal_t2_0);
+			} else {
+				T_s = T_g; // avoid compiler warning;
+			}
+
+			const double delta_t = pcs->Tim->time_step_length;
+			poro = MediaProp->Porosity(Index, pcs->m_num->ls_theta);
+
+			if (this->SolidProp->getSolidReactiveSystem() != FiniteElement::INERT){
+				if (this->SolidProp->getSolidReactiveSystem() == FiniteElement::SINUSOIDAL) {//For Benchmarks
+					const double rhoSR0 = 1.0;
+					const double rhoTil = 0.1;
+					const double omega  = 2.0*3.1416;
+					gp_ele->rho_s_curr[gp] = rhoSR0 + rhoTil * sin(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+					gp_ele->q_R[gp]        = rhoTil * omega  * cos(omega*aktuelle_zeit)/(1.0-poro); //TN Test mass transfer
+				}
+				else {//Fuer CaOH2 im Moment
+
+					pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp],
+					                                     1.0-poro, delta_t,
+					                                     SolidProp->getSolidReactiveSystem());
+
+					const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
+					const double rho_NR = SolidProp->non_reactive_solid_density;
+
+					Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1); // rho_s
+					// TN - reactive fraction
+					yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
+
+					Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
+
+					// make evaluation
+					pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
+
+					double rho_react;
+
+					// cut off when limits are reached
+					if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+						rho_react = SolidProp->lower_solid_density_limit;
+					else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+						rho_react = SolidProp->upper_solid_density_limit;
+					else
+						rho_react = yy_rho_s(0);
+
+					// TN - reactive fraction
+					gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
+					gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);
+				}
+			}
+			else {//if not reactive solid
+				gp_ele->rho_s_curr[gp] = gp_ele->rho_s_prev[gp];
+				gp_ele->q_R[gp] = 0.0;
+			}
+		}
+	}
+
+	double rho_s_elem = 0.0;
+	double qR_elem    = 0.0;
+
+	// loop over all Gauss points
+	for (gp = 0; gp < nGaussPoints; gp++)
+	{
+		// copy current to previous.
+		gp_ele->rho_s_prev[gp] = gp_ele->rho_s_curr[gp];
+		rho_s_elem += gp_ele->rho_s_curr[gp];
+		qR_elem    += gp_ele->q_R[gp];
+	}
+	rho_s_elem /= nGaussPoints;
+	qR_elem    /= nGaussPoints;
+
+	const int idx_rho = pcs->GetElementValueIndex("SOLID_DENSITY") + 1;
+	const int idx_qR  = pcs->GetElementValueIndex("REACT_RATE")    + 1;
+
+	pcs->SetElementValue(elem_idx, idx_rho, rho_s_elem);
+	pcs->SetElementValue(elem_idx, idx_qR, qR_elem);
+}
 /**************************************************************************
    FEMLib-Method:
    Task:
@@ -9499,13 +9582,11 @@ void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs)
 	int i, j, gp, gp_r, gp_s, gp_t;
 	int i_s, i_e, ish;
 	double EV, EV1=0.0, rhoEV, rhoEV1 = 0.0, varx=0.0;
-	int idx_nodal_react_rate;
-	int idx_nodal_solid_density;
 
 	// get the index pointing to nodal reaction rate.
-	idx_nodal_react_rate = m_pcs->GetNodeValueIndex("REACT_RATE_N");
+	const int idx_nodal_react_rate = m_pcs->GetNodeValueIndex("REACT_RATE_N");
 	// get the index pointing to solid density.
-	idx_nodal_solid_density = m_pcs->GetNodeValueIndex("SOLID_DENSITY_N");
+	const int idx_nodal_solid_density = m_pcs->GetNodeValueIndex("SOLID_DENSITY_N");
 
 	// get element type
 	MshElemType::type ElementType = MeshElement->GetElementType();
@@ -9569,7 +9650,7 @@ void CFiniteElementStd::ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs)
 			//
 			ComputeShapefct(1);                   // Linear interpolation function
 			for(j=i_s; j<i_e; j++) {
-				EV += NodalVal4[j]*shapefct[j-ish];
+				EV    += NodalVal4[j]*shapefct[j-ish];
 				rhoEV += NodalVal5[j]*shapefct[j-ish];
 			}
 		}
@@ -9901,13 +9982,11 @@ void CFiniteElementStd::CalcNodeMatParatemer()
 //WW 08/2007
 ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 {
-	int NGPoints = 0, NGP = 0;
-	int ele_dim;
-
 	MshElemType::type ele_type = ele->GetElementType();
-	ele_dim = ele->GetDimension();
+	const int ele_dim = ele->GetDimension();
 
-	NGP = GetNumericsGaussPoints(ele_type);
+	const int NGP = GetNumericsGaussPoints(ele_type);
+	int NGPoints;
 	if(ele_type == MshElemType::LINE)
 		//OKWW
 		NGPoints = m_pcs->m_num->ele_gauss_points;
@@ -9916,7 +9995,7 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 	else if(ele_type == MshElemType::TETRAHEDRON)
 		NGPoints = 15;
 	else
-		NGPoints = (int)MathLib::fastpow(NGP, ele_dim);
+		NGPoints = MathLib::fastpow(NGP, ele_dim);
 
 	//WW Velocity.resize(m_pcs->m_msh->GetCoordinateFlag()/10, NGPoints);
 	Velocity.resize(3, NGPoints);

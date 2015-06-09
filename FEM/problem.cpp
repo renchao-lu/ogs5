@@ -781,7 +781,6 @@ inline int Problem::AssignProcessIndex(CRFProcess* m_pcs, bool activefunc)
 void Problem::SetActiveProcesses()
 {
 	CRFProcess* m_pcs = NULL;
-	const size_t max_processes = 16;                  // PCH, TN, CL
 	total_processes.resize(max_processes);
 	active_processes = new ProblemMemFn[max_processes];
 	coupled_process_index.resize(max_processes);
@@ -1252,7 +1251,7 @@ bool Problem::CouplingLoop()
 	int i, index, cpl_index;
 	double max_outer_error, max_inner_error; //, error;
     bool transient_bc = false;
-	bool run_flag[14];
+	bool run_flag[max_processes];
 	int outer_index, inner_index, inner_max; //, inner_min;
 	//
 	CRFProcess* a_pcs = NULL;

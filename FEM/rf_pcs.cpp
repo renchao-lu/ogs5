@@ -4245,14 +4245,15 @@ void CRFProcess::ConfigTNEQ()
 	double start_t = 0.0;
 	// now initialize the conversion_rate class
 	m_conversion_rate = new conversion_rate(573.0,     // T_solid, Kelvin
-			                          573.0,     // T_gas, Kelvin
-			                          0.0,       // p_gas
-			                          0.0,       // w_water, mass fraction unitless
-			                          m_rho_s_0, //kg/m3, // rho_s_initial,
-									  1.0-poro, //solid volume fraction
-			                          1.0,   // delta_t
-									  react_syst);
+	                                        573.0,     // T_gas, Kelvin
+	                                        0.0,       // p_gas
+	                                        0.0,       // w_water, mass fraction unitless
+	                                        m_rho_s_0, // kg/m3, // rho_s_initial,
+	                                        1.0-poro,  // solid volume fraction
+	                                        1.0,       // delta_t
+	                                        react_syst);
 
+	// TODO [CL] eliminate this, rewirte stepper bulirsch stoer
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
 	dydxx_rho_s = Eigen::VectorXd::Zero(1);
 	// initial value for y
@@ -4375,9 +4376,9 @@ void CRFProcess::ConfigTES()
 	                                        573.0,     // T_gas, Kelvin
 	                                        0.0,       // p_gas
 	                                        0.0,       // w_water, mass fraction unitless
-	                                        m_rho_s_0, //kg/m3, // rho_s_initial,
-	                                        1.0-poro, //solid volume fraction
-	                                        1.0,   // delta_t
+	                                        m_rho_s_0, // kg/m3, // rho_s_initial,
+	                                        1.0-poro,  // solid volume fraction
+	                                        1.0,       // delta_t
 	                                        react_syst);
 
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
@@ -5054,15 +5055,15 @@ double CRFProcess::Execute()
 
 	}                                     // END PICARD
 #else
-    // JT: Coupling error was wrong. Now ok.
-    if(iter_nlin > 0){	// Just getting NL error
-	  pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);     //OK4105//WW4117//JT
-    }
-    else{				// Getting NL and CPL error
-	  pcs_error = CalcIterationNODError(m_num->getCouplingErrorMethod(),true,true);		//JT2012
-      if(m_num->getNonLinearErrorMethod() != m_num->getCouplingErrorMethod())				//JT: If CPL error method is different, must call separately
-		pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);   //JT2012 // get the NLS error. CPL was obtained before.
-    }
+	// JT: Coupling error was wrong. Now ok.
+	if(iter_nlin > 0){	// Just getting NL error
+		pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);     //OK4105//WW4117//JT
+	}
+	else{				// Getting NL and CPL error
+		pcs_error = CalcIterationNODError(m_num->getCouplingErrorMethod(),true,true);		//JT2012
+		if(m_num->getNonLinearErrorMethod() != m_num->getCouplingErrorMethod())				//JT: If CPL error method is different, must call separately
+			pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);   //JT2012 // get the NLS error. CPL was obtained before.
+	}
 
 	//----------------------------------------------------------------------
 	// PICARD
@@ -5937,11 +5938,14 @@ void CRFProcess::CalIntegrationPointValue()
 				fem->Cal_VelocityMCF();
 			else
 				fem->Cal_Velocity();
+
+			/* TODO [CL]: keep that or use the value calculated during solving the equation system?
 			//moved here from additional lower loop
 			if (getProcessType() == FiniteElement::TNEQ || getProcessType() == FiniteElement::TES)
 			{
 				fem->CalcSolidDensityRate(); // HS, thermal storage reactions
 			}
+			*/
 		}
 	}
    } else { //NW
@@ -8740,7 +8744,7 @@ std::valarray<double> CRFProcess::getNodeVelocityVector(const long node_id)
 			CalcSecondaryVariablesTNEQ();        //HS
 			break;
 		case FiniteElement::TES:
-			CalcSecondaryVariablesTES();        //HS
+			CalcSecondaryVariablesTES(initial);        //HS
 			break;
 		case FiniteElement::LIQUID_FLOW:
 			if(aktueller_zeitschritt>0)
@@ -9467,16 +9471,16 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					error = 0.0;
 					for (i = 0; i < g_nnodes; i++){
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
-					   val1 = GetNodeValue(i, nidx1);
-					   val2 = val1 - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
+						val1 = GetNodeValue(i, nidx1);
+						val2 = val1 - eqs_x[pcs_number_of_primary_nvals*m_msh->Eqs2Global_NodeIndex[i] + ii];
 #else
-					   k = m_msh->Eqs2Global_NodeIndex[i];
-					   val1 = GetNodeValue(k, nidx1);
-					   val2 = val1 - eqs_x[i+ii*g_nnodes];
+						k = m_msh->Eqs2Global_NodeIndex[i];
+						val1 = GetNodeValue(k, nidx1);
+						val2 = val1 - eqs_x[i+ii*g_nnodes];
 #endif
-					   //
-					   unknowns_norm += val2*val2;
-					   value += val1*val1;
+						//
+						unknowns_norm += val2*val2;
+						value += val1*val1;
 					}
 				}
 			}
@@ -10780,32 +10784,30 @@ Task: Updating rho_s values in TES
 Programming: 
 11/2011 HS Implementation for thermal storage project
 **************************************************************************/
-void CRFProcess::CalcSecondaryVariablesTES()
+void CRFProcess::CalcSecondaryVariablesTES(const bool initial)
 {
-	CElem* elem = NULL;
-	size_t i;
-
+	// TODO [CL] merge with TNEQ
 	// loop over all the nodes,
 	// clean the nodal reaction rate values
-	const size_t node_vector_size(m_msh->nod_vector.size());
-	const int idx_nodal_react_rate = this->GetNodeValueIndex("REACT_RATE_N");
-	const int idx_nodal_solid_density = this->GetNodeValueIndex("SOLID_DENSITY_N");
+	const size_t node_vector_size     = m_msh->nod_vector.size();
+	const int idx_nodal_react_rate    = GetNodeValueIndex("REACT_RATE_N");
+	const int idx_nodal_solid_density = GetNodeValueIndex("SOLID_DENSITY_N");
 
 	for (size_t idx_node=0; idx_node<node_vector_size; idx_node++)
 	{
-		this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
-		this->SetNodeValue( idx_node, idx_nodal_solid_density, 0.0);
+		SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
+		SetNodeValue( idx_node, idx_nodal_solid_density, 0.0);
 	}
 
 	// loop over all the elements and update the rho_s values.
 	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
-	for (i = 0; i < mesh_ele_vector_size; i++)
+	for (size_t i = 0; i < mesh_ele_vector_size; i++)
 	{
-		elem = m_msh->ele_vector[i];
+		CElem *const elem = m_msh->ele_vector[i];
 		if (elem->GetMark())                        // Marked for use
 		{
 			fem->ConfigElement(elem, m_num->ele_gauss_points);
-			fem->UpdateSolidDensity(i);          // HS, thermal storage reactions
+			fem->UpdateSolidDensity(i, initial);          // HS, thermal storage reactions
 			fem->ExtrapolateGauss_ReactRate_TNEQ_TES( this ); // HS added 19.02.2013
 		}
 	}

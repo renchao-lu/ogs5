@@ -824,7 +824,7 @@ public:
 	//WW
 
 	void CalcSecondaryVariablesTNEQ();      //HS
-	void CalcSecondaryVariablesTES();      //HS
+	void CalcSecondaryVariablesTES(const bool initial = true);      //HS
 	void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false);
 	void CalcSecondaryVariablesPSGLOBAL(); // PCH
 	void CalcSecondaryVariablesLiquidFlow();                                                  // PCH

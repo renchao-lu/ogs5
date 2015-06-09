@@ -21,11 +21,7 @@ using Math_Group::CSparseMatrix;
 #endif
 
 
-#include<iomanip>
-
-
-// TODO [CL] slightly wrong (Wikipedia: 8.314 462 1(75) J / (mol K)
-const double GAS_CONSTANT = 8314.41;                   // J/(kmol*K) WW
+#include "physical_constants.h"
 
 
 
@@ -67,7 +63,9 @@ void CFiniteElementStd::CalcMassTES()
 			for (int jn=0; jn<pcs->dof; jn++)
 			{
 				// Material
-				double mat_fac = fkt*CalCoefMassTES(in*pcs->dof+jn);
+				const double coeff = CalCoefMassTES(in*pcs->dof+jn);
+
+				const double mat_fac = fkt * coeff;
 				// Calculate mass matrix
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
@@ -104,8 +102,8 @@ void CFiniteElementStd::CalcMassTES()
 void CFiniteElementStd::CalcLumpedMassTES()
 {
 	int gp_r, gp_s, gp_t;
-	const int nDF=pcs->dof;
-	double factor=0.0, vol = 0.0;
+	const int nDF = pcs->dof;
+	double vol = 0.0;
 
 	// Volume
 	if(axisymmetry)
@@ -132,7 +130,8 @@ void CFiniteElementStd::CalcLumpedMassTES()
 		for(int jn = 0; jn < nDF; jn++)
 		{
 			const int jsh = jn * nnodes;
-			factor = CalCoefMassTES(in * nDF + jn);
+			double factor = CalCoefMassTES(in * nDF + jn);
+
 			//			pcs->timebuffer = factor; // Tim Control "Neumann"
 			factor *= vol;
 			for (int i = 0; i < nnodes; i++)
@@ -201,7 +200,7 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		double dxn_dxm = M0 * M1; // 0 is inert, 1 is reactive
 		dxn_dxm /= (M0 * X + M1 * (1.0 - X)) * (M0 * X + M1 * (1.0 - X));
 
-		val = (M1-M0) * p / (GAS_CONSTANT/1000.0 * T) * dxn_dxm * poro;
+		val = (M1-M0) * p / (Phys::R * T) * dxn_dxm * poro;
 		break;
 	}
 
@@ -215,10 +214,12 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
 
-		const double rho_s = gp_ele->rho_s_curr[gp];
+		const double rhoSR = gp_ele->rho_s_curr[gp];
+		const double rhoGR = FluidProp->Density(eos_arg);
+		const double cpG   = FluidProp->SpecificHeatCapacity(eos_arg);
+		const double cpS   = SolidProp->Heat_Capacity(rhoSR);
 
-		val = poro * FluidProp->Density(eos_arg) * FluidProp->SpecificHeatCapacity(eos_arg)
-		      + (1.0-poro) * rho_s * SolidProp->Heat_Capacity(rho_s);
+		val = poro * rhoGR * cpG + (1.0-poro) * rhoSR * cpS;
 		break;
 	}
 
@@ -264,17 +265,7 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 
 	const int Index = MeshElement->GetIndex();
 
-	double fluid_heat_conductivity_tensor[9];
-	double solid_heat_conductivity_tensor[9];
-	double diffusion_tensor[9];
 
-	for (size_t i = 0; i < dim*dim; i++)
-	{
-		fluid_heat_conductivity_tensor[i] = 0.0;
-		solid_heat_conductivity_tensor[i] = 0.0;
-		diffusion_tensor[i] = 0.0;
-		mat[i] = 0.0;
-	}
 
 	switch(dof_index)
 	{
@@ -301,16 +292,20 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 		break;
 	}
 
-		//    case 1:
-		//    case 2:
-		//    case 3:
-		//        break;
+	//    case 1:
+	//    case 2:
+	//    case 3:
+	//        break;
 
 	case 4:
 	{
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
+
+		// TODO [CL]: only diagonal neeeded, and only one array needed
+		double fluid_heat_conductivity_tensor[9] = { 0. };
+		double solid_heat_conductivity_tensor[9] = { 0. };
 
 		poro = MediaProp->Porosity(Index, theta);
 		const double lamf = FluidProp->HeatConductivity(eos_arg);
@@ -347,9 +342,12 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 		//        break;
 
 	case 8:
+	{
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
+
+		double diffusion_tensor[9] = { 0. };
 
 		poro = MediaProp->Porosity(Index, theta);
 		tort = MediaProp->TortuosityFunction(Index, unit, theta);
@@ -367,6 +365,10 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 			mat[i] = diffusion_tensor[i]; //TN
 		}
 		break;
+	}
+
+	default:
+		std::fill_n(mat, dim*dim, 0);
 	}
 }
 
@@ -389,6 +391,7 @@ void CFiniteElementStd::CalcAdvectionTES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
 	ElementValue* gp_ele = ele_gp_value[Index];
+
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -396,6 +399,7 @@ void CFiniteElementStd::CalcAdvectionTES()
 		ComputeShapefct(1);
 
 		//Velocity
+		// TODO [CL] vel includes porosity? cf. \tilde w
 		double vel[] = {
 		    gp_ele->Velocity(0, gp),
 		    gp_ele->Velocity(1, gp),
@@ -406,7 +410,8 @@ void CFiniteElementStd::CalcAdvectionTES()
 		{
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
-				double mat_fac = fkt*CalCoefAdvectionTES(in*pcs->dof + jn);
+				const double coeff = CalCoefAdvectionTES(in*pcs->dof + jn);
+				const double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
 				const int jn_offset = jn*nnodes;
@@ -518,6 +523,7 @@ double CFiniteElementStd::CalCoefAdvectionTES(const int dof_index)
 void CFiniteElementStd::CalcContentTES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
+
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -527,7 +533,8 @@ void CFiniteElementStd::CalcContentTES()
 		{
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
-				double mat_fac = fkt*CalCoefContentTES(in*pcs->dof + jn);
+				const double coeff = CalCoefContentTES(in*pcs->dof + jn);
+				double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
 				const int jn_offset = jn*nnodes;
@@ -604,6 +611,7 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 void CFiniteElementStd::Assemble_RHS_TES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
+
 	for (int i = 0; i < pcs->dof*nnodes; i++) NodalVal[i] = 0.0;
 
 	// Loop over Gauss points
@@ -616,7 +624,8 @@ void CFiniteElementStd::Assemble_RHS_TES()
 
 		for(int ii=0; ii<pcs->dof; ii++)
 		{
-			double fac = CalCoef_RHS_TES(ii);
+			const double fac = CalCoef_RHS_TES(ii);
+
 			for (int i = 0; i < nnodes; i++)
 				NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
 		}
@@ -666,7 +675,7 @@ double CFiniteElementStd::CalCoef_RHS_TES(const int dof_index)
 	const int Index = MeshElement->GetIndex();
 	poro = MediaProp->Porosity(Index, theta);
 	const ElementValue* gp_ele = ele_gp_value[Index];
-	const double q_r= gp_ele->q_R[gp];
+	const double q_r= gp_ele->q_R[gp]; // reaction rate
 
 	double val = 0.0;
 

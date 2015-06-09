@@ -199,7 +199,7 @@ public:
 	void ExtropolateGauss(CRFProcess* m_pcs, const int idof);
 	// Extrapolate reaction rates on TNEQ flow
 	void ExtrapolateGauss_ReactRate_TNEQ_TES(CRFProcess *m_pcs);
-	void UpdateSolidDensity(size_t elem_idx);       // HS
+	void UpdateSolidDensity(size_t elem_idx, const bool initial = true);       // HS
 	// CB _ctx_ CB_merge_0513
 	//void Set_ctx_(long ele_index, double val, int gaussp, int i_dim);
 	//double Get_ctx_(long ele_index, int gaussp, int i_dim);
