@@ -6,7 +6,7 @@
 ##                     03.2010
 ##-------------------------------------------------------
 
-INCLUDE_DIRECTORIES(
+include_directories(
 	${CMAKE_SOURCE_DIR}
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/Base
@@ -20,11 +20,11 @@ INCLUDE_DIRECTORIES(
 	${CMAKE_SOURCE_DIR}/UTL/MSHGEOTOOLS
 )
 
-SET(GIS2FEM_SOURCES main.cpp misc.cpp )
+set(GIS2FEM_SOURCES main.cpp misc.cpp )
 
 add_executable(fem_toolkits ${GIS2FEM_SOURCES})
 
-TARGET_LINK_LIBRARIES( fem_toolkits
+target_link_libraries( fem_toolkits
 	FileIO
 	MSH
 	MSHGEOTOOLS

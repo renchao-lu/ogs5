@@ -8,9 +8,9 @@ set( SOURCES
 	MathTools.cpp
 )
 
-IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
+if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
 	set( SOURCES ${SOURCES} PETSC/PETScLinearSolver.cpp)
-ENDIF()
+endif()
 
 add_library( MathLib STATIC ${SOURCES} )
 

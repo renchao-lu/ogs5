@@ -1,6 +1,6 @@
-FILE(GLOB Eigen_QR_SRCS "*.h")
+file(GLOB Eigen_QR_SRCS "*.h")
 
-INSTALL(FILES
+install(FILES
   ${Eigen_QR_SRCS}
   DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/QR COMPONENT Devel
   )

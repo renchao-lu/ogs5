@@ -9,48 +9,48 @@
 #  MKL_DIR         - Location to start searching for MKL libraries
 #
 
-SET(MKL_DIR "${MKL_DIR}" CACHE PATH "MKL root diretory")
+set(MKL_DIR "${MKL_DIR}" CACHE PATH "MKL root diretory")
 
-FIND_PATH(MKL_INCLUDES NAMES mkl.h
+find_path(MKL_INCLUDES NAMES mkl.h
     HINTS ${MKL_DIR} PATH_SUFFIXES include
 )
 
 # list up MKL library names
-IF (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
 	#64 bit
 	set(MKL_LIB_NAMES mkl_intel_lp64 mkl_core)
 	set(MKL_PATH_SUFFIXES "lib/intel64" "lib/em64t")
-ELSE()
+else()
 	#32 bit
 	set(MKL_LIB_NAMES mkl_core mkl_intel mkl_solver)
 	set(MKL_PATH_SUFFIXES "lib/32")
-ENDIF()
+endif()
 
-IF (PARALLEL_USE_OPENMP)
-	IF(CMAKE_C_COMPILER EQUAL "icc")
+if (PARALLEL_USE_OPENMP)
+	if(CMAKE_C_COMPILER EQUAL "icc")
         list(APPEND MKL_LIB_NAMES mkl_intel_thread iomp5 pthread)
-	ELSE()
+	else()
         list(APPEND MKL_LIB_NAMES mkl_gnu_thread)
-	ENDIF()
-ELSE()
+	endif()
+else()
         list(APPEND MKL_LIB_NAMES mkl_sequential)
-ENDIF()
-#MESSAGE (STATUS "MKL_LIB_NAMES ${MKL_LIB_NAMES}")
+endif()
+#message (STATUS "MKL_LIB_NAMES ${MKL_LIB_NAMES}")
 
 # find the libraries
 foreach (lib_name ${MKL_LIB_NAMES})
 	find_library(${lib_name}_LIBRARY ${lib_name} HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
-    IF(${lib_name}_LIBRARY)
-        LIST(APPEND MKL_LIBRARIES ${${lib_name}_LIBRARY})
-    ENDIF()
-    #MESSAGE (STATUS "${lib_name} - ${${lib_name}_LIBRARY}")
+    if(${lib_name}_LIBRARY)
+        list(APPEND MKL_LIBRARIES ${${lib_name}_LIBRARY})
+    endif()
+    #message (STATUS "${lib_name} - ${${lib_name}_LIBRARY}")
 endforeach()
-MESSAGE (STATUS "MKL libraries found: ${MKL_LIBRARIES}")
+message (STATUS "MKL libraries found: ${MKL_LIBRARIES}")
 
 # 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INCLUDES MKL_LIBRARIES)
-IF(MKL_FOUND)
+if(MKL_FOUND)
 	mark_as_advanced(MKL_DIR MKL_INCLUDES MKL_LIBRARIES)
-ENDIF()
+endif()
 

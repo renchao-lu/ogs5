@@ -2,87 +2,87 @@
 ### Find OGS directories ###
 ############################
 
-IF(DEFINED BENCHMARK_DIR)
-	FIND_PATH (BENCHMARK_DIR_FOUND copy.py ${BENCHMARK_DIR})
-ELSE()
-	FIND_PATH (BENCHMARK_DIR_FOUND copy.py ${PROJECT_SOURCE_DIR}/../benchmarks)
-ENDIF()
+if(DEFINED BENCHMARK_DIR)
+	find_path (BENCHMARK_DIR_FOUND copy.py ${BENCHMARK_DIR})
+else()
+	find_path (BENCHMARK_DIR_FOUND copy.py ${PROJECT_SOURCE_DIR}/../benchmarks)
+endif()
 
-IF(DEFINED EXAMPLEDATA_DIR)
-	FIND_PATH (EXAMPLEDATA_DIR_FOUND points.gli ${EXAMPLEDATA_DIR})
-ELSE()
-	FIND_PATH (EXAMPLEDATA_DIR_FOUND points.gli ${PROJECT_SOURCE_DIR}/../ExampleData)
-ENDIF()
+if(DEFINED EXAMPLEDATA_DIR)
+	find_path (EXAMPLEDATA_DIR_FOUND points.gli ${EXAMPLEDATA_DIR})
+else()
+	find_path (EXAMPLEDATA_DIR_FOUND points.gli ${PROJECT_SOURCE_DIR}/../ExampleData)
+endif()
 
-IF(DEFINED TESTDATA_DIR)
-	FIND_PATH(TESTDATA_DIR_FOUND testdata.dummy ${TESTDATA_DIR})
-ELSE()
-	FIND_PATH(TESTDATA_DIR_FOUND testdata.dummy ${PROJECT_SOURCE_DIR}/../testdata)
-ENDIF()
+if(DEFINED TESTDATA_DIR)
+	find_path(TESTDATA_DIR_FOUND testdata.dummy ${TESTDATA_DIR})
+else()
+	find_path(TESTDATA_DIR_FOUND testdata.dummy ${PROJECT_SOURCE_DIR}/../testdata)
+endif()
 
 ######################
 ### Find tools     ###
 ######################
 
 # Find Python interpreter
-FIND_PACKAGE (PythonInterp)
+find_package (PythonInterp)
 
 # Find Subversion
-FIND_PACKAGE(Subversion)
+find_package(Subversion)
 
 # Find Git
-FIND_PACKAGE(Git)
+find_package(Git)
 
 # msysGit on Windows
-IF(WIN32 AND GIT_FOUND)
-	FIND_PACKAGE(MsysGit)
-ENDIF() # WIN32 AND GIT_FOUND
+if(WIN32 AND GIT_FOUND)
+	find_package(MsysGit)
+endif() # WIN32 AND GIT_FOUND
 
 # Find dot tool from graphviz
-FIND_PROGRAM(DOT_TOOL_PATH dot DOC "Dot tool from graphviz")
+find_program(DOT_TOOL_PATH dot DOC "Dot tool from graphviz")
 
 # Find doxygen
-FIND_PACKAGE(Doxygen)
+find_package(Doxygen)
 
 # Find gnu profiler gprof
-FIND_PROGRAM(GPROF_PATH gprof DOC "GNU profiler gprof")
+find_program(GPROF_PATH gprof DOC "GNU profiler gprof")
 
-FIND_PACKAGE(cppcheck)
+find_package(cppcheck)
 
 # Find Exuberant ctags or BBEdit for code completion
-FIND_PROGRAM(CTAGS_TOOL_PATH ctags DOC "Exuberant ctags")
-FIND_PROGRAM(BBEDIT_TOOL_PATH bbedit DOC "BBEdit Editor")
-IF(BBEDIT_TOOL_PATH)
-	ADD_CUSTOM_TARGET(ctags
+find_program(CTAGS_TOOL_PATH ctags DOC "Exuberant ctags")
+find_program(BBEDIT_TOOL_PATH bbedit DOC "BBEdit Editor")
+if(BBEDIT_TOOL_PATH)
+	add_custom_target(ctags
 		bbedit --maketags
 		WORKING_DIRECTORY ${CMAKE_SOURCES_DIR}
 		COMMENT "Creating tags..." VERBATIM
 	)
-	ADD_CUSTOM_COMMAND(TARGET ctags POST_BUILD
+	add_custom_command(TARGET ctags POST_BUILD
 		COMMAND mv -f tags ../tags
 		WORKING_DIRECTORY ${CMAKE_SOURCES_DIR}
 		COMMENT "Moving tags..." VERBATIM
 	)
-ELSE()
-	IF(CTAGS_TOOL_PATH)
-		ADD_CUSTOM_TARGET(ctags
+else()
+	if(CTAGS_TOOL_PATH)
+		add_custom_target(ctags
 			ctags -R --fields=+iamS -f ${CMAKE_SOURCES_DIR}/../tags
 			WORKING_DIRECTORY ${CMAKE_SOURCES_DIR}
 			COMMENT "Creating tags..." VERBATIM
 		)
-	ENDIF()
-ENDIF()
+	endif()
+endif()
 
 ## Unix tools ##
 # Date
-FIND_PROGRAM(DATE_TOOL_PATH date PATHS ${MSYSGIT_BIN_DIR})
+find_program(DATE_TOOL_PATH date PATHS ${MSYSGIT_BIN_DIR})
 # Grep
-FIND_PROGRAM(GREP_TOOL_PATH grep PATHS ${MSYSGIT_BIN_DIR})
+find_program(GREP_TOOL_PATH grep PATHS ${MSYSGIT_BIN_DIR})
 # Unzip
-FIND_PROGRAM(UNZIP_TOOL_PATH unzip PATHS ${MSYSGIT_BIN_DIR})
+find_program(UNZIP_TOOL_PATH unzip PATHS ${MSYSGIT_BIN_DIR})
 
 # Hide these variables for the CMake user
-MARK_AS_ADVANCED(DOT_TOOL_PATH GPROF_PATH CTAGS_TOOL_PATH BBEDIT_TOOL_PATH
+mark_as_advanced(DOT_TOOL_PATH GPROF_PATH CTAGS_TOOL_PATH BBEDIT_TOOL_PATH
 	UNZIP_TOOL_PATH
 )
 ########################
@@ -90,91 +90,91 @@ MARK_AS_ADVANCED(DOT_TOOL_PATH GPROF_PATH CTAGS_TOOL_PATH BBEDIT_TOOL_PATH
 ########################
 
 # Check if on Jenkins
-IF(NOT $ENV{JENKINS_URL} STREQUAL "")
-	SET(JENKINS_URL $ENV{JENKINS_URL})
-	SET(JENKINS_JOB_NAME $ENV{JOB_NAME})
-ENDIF()
+if(NOT $ENV{JENKINS_URL} STREQUAL "")
+	set(JENKINS_URL $ENV{JENKINS_URL})
+	set(JENKINS_JOB_NAME $ENV{JOB_NAME})
+endif()
 
 
 ######################
 ### Find libraries ###
 ######################
-IF(OGS_FEM_PETSC OR OGS_NO_EXTERNAL_LIBS)
-	RETURN()
-ENDIF()
+if(OGS_FEM_PETSC OR OGS_NO_EXTERNAL_LIBS)
+	return()
+endif()
 
-FIND_PATH (OGS_LIBS_DIR_FOUND geotiff.lib ${PROJECT_SOURCE_DIR}/../Libs/libgeotiff)
+find_path (OGS_LIBS_DIR_FOUND geotiff.lib ${PROJECT_SOURCE_DIR}/../Libs/libgeotiff)
 
 # Find precompiled libraries (for BRNS GEMS LIS)
-FIND_PATH (OGS_PRECOMPILED_LIBS_DIR_FOUND BrnsDll.lib ${PROJECT_SOURCE_DIR}/../Libs/precompiled)
-IF (OGS_PRECOMPILED_LIBS_DIR_FOUND)
-	INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/../Libs/precompiled)
-	LINK_DIRECTORIES (${PROJECT_SOURCE_DIR}/../Libs/precompiled)
-ELSE (OGS_PRECOMPILED_LIBS_DIR_FOUND)
-	IF (WIN32)
-		IF (OGS_FEM_BRNS OR OGS_FEM_GEMS OR OGS_FEM_CHEMAPP)
-			MESSAGE (FATAL_ERROR "Precompiled libraries not found! Make sure to also check out the trunk/Libs directory beneath your sources directory.")
-		ENDIF (OGS_FEM_BRNS OR OGS_FEM_GEMS OR OGS_FEM_CHEMAPP)
-	ELSE (WIN32)
-		IF (OGS_FEM_LIS)
-			MESSAGE (FATAL_ERROR "Precompiled libraries not found! Make sure to also check out the trunk/Libs directory beneath your sources directory.")
-		ENDIF (OGS_FEM_LIS)
-	ENDIF (WIN32)
-ENDIF (OGS_PRECOMPILED_LIBS_DIR_FOUND)
+find_path (OGS_PRECOMPILED_LIBS_DIR_FOUND BrnsDll.lib ${PROJECT_SOURCE_DIR}/../Libs/precompiled)
+if (OGS_PRECOMPILED_LIBS_DIR_FOUND)
+	include_directories (${PROJECT_SOURCE_DIR}/../Libs/precompiled)
+	link_directories (${PROJECT_SOURCE_DIR}/../Libs/precompiled)
+else (OGS_PRECOMPILED_LIBS_DIR_FOUND)
+	if (WIN32)
+		if (OGS_FEM_BRNS OR OGS_FEM_GEMS OR OGS_FEM_CHEMAPP)
+			message (FATAL_ERROR "Precompiled libraries not found! Make sure to also check out the trunk/Libs directory beneath your sources directory.")
+		endif (OGS_FEM_BRNS OR OGS_FEM_GEMS OR OGS_FEM_CHEMAPP)
+	else (WIN32)
+		if (OGS_FEM_LIS)
+			message (FATAL_ERROR "Precompiled libraries not found! Make sure to also check out the trunk/Libs directory beneath your sources directory.")
+		endif (OGS_FEM_LIS)
+	endif (WIN32)
+endif (OGS_PRECOMPILED_LIBS_DIR_FOUND)
 
 
 ## pthread ##
-SET ( CMAKE_THREAD_PREFER_PTHREAD ON CACHE BOOL "" )
-FIND_PACKAGE( Threads )
-IF ( CMAKE_USE_PTHREADS_INIT AND NOT HAVE_PTHREADS)
-	SET (HAVE_PTHREADS TRUE CACHE BOOL "Is PThreads found.")
-	MESSAGE (STATUS "pthread library found." )
-ENDIF ()
-IF(HAVE_PTHREADS)
-  ADD_DEFINITIONS(-DHAVE_PTHREADS)
-ENDIF()
-MARK_AS_ADVANCED(CMAKE_THREAD_PREFER_PTHREAD)
+set ( CMAKE_THREAD_PREFER_PTHREAD ON CACHE BOOL "" )
+find_package( Threads )
+if ( CMAKE_USE_PTHREADS_INIT AND NOT HAVE_PTHREADS)
+	set (HAVE_PTHREADS TRUE CACHE BOOL "Is PThreads found.")
+	message (STATUS "pthread library found." )
+endif ()
+if(HAVE_PTHREADS)
+  add_definitions(-DHAVE_PTHREADS)
+endif()
+mark_as_advanced(CMAKE_THREAD_PREFER_PTHREAD)
 
 ## boost (see FindBoost.cmake for more options) ##
 ##kg44 this configuration works for boost and petsc on a cray
-OPTION(Boost_USE_STATIC_LIBS "" ON)
-OPTION(Boost_USE_MULTITHREADED "" ON)
-OPTION(Boost_USE_STATIC_RUNTIME "" ON)
-MARK_AS_ADVANCED(Boost_USE_STATIC_LIBS Boost_USE_MULTITHREADED Boost_USE_STATIC_RUNTIME)
+option(Boost_USE_STATIC_LIBS "" ON)
+option(Boost_USE_MULTITHREADED "" ON)
+option(Boost_USE_STATIC_RUNTIME "" ON)
+mark_as_advanced(Boost_USE_STATIC_LIBS Boost_USE_MULTITHREADED Boost_USE_STATIC_RUNTIME)
 
-IF(NOT OGS_FEM_GEMS AND NOT OGS_FEM_PETSC_GEMS)
-	IF(NOT OGS_DONT_USE_BOOST)
-		FIND_PACKAGE( Boost 1.50.0 COMPONENTS filesystem system regex)
-	ENDIF()
-ELSE()
+if(NOT OGS_FEM_GEMS AND NOT OGS_FEM_PETSC_GEMS)
+	if(NOT OGS_DONT_USE_BOOST)
+		find_package( Boost 1.50.0 COMPONENTS filesystem system regex)
+	endif()
+else()
 	# Boost with threads is required for GEMS
-	FIND_PACKAGE(Boost 1.50.0 COMPONENTS system thread REQUIRED)
-        MESSAGE(STATUS "** Boost root: ${BOOST_ROOT}")
-        MESSAGE(STATUS "** Boost include: ${Boost_INCLUDE_DIR}")
-        MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARY_DIRS}")
-        MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARIES}")
-ENDIF()
+	find_package(Boost 1.50.0 COMPONENTS system thread REQUIRED)
+        message(STATUS "** Boost root: ${BOOST_ROOT}")
+        message(STATUS "** Boost include: ${Boost_INCLUDE_DIR}")
+        message(STATUS "** Boost libraries: ${Boost_LIBRARY_DIRS}")
+        message(STATUS "** Boost libraries: ${Boost_LIBRARIES}")
+endif()
 
-IF(OGS_FEM_MKL)
+if(OGS_FEM_MKL)
 	# Find MKLlib
-	FIND_PACKAGE( MKL REQUIRED )
-	INCLUDE_DIRECTORIES (${MKL_INCLUDE_DIR})
-ENDIF()
+	find_package( MKL REQUIRED )
+	include_directories (${MKL_INCLUDE_DIR})
+endif()
 
-IF(OGS_FEM_LIS OR OGS_FEM_MKL)
+if(OGS_FEM_LIS OR OGS_FEM_MKL)
 	# Find LISlib
-	FIND_PACKAGE( LIS REQUIRED )
+	find_package( LIS REQUIRED )
 	set (NEW_EQS ON)
 	add_definitions(
 		-o3
 		-DIPMGEMPLUGIN
 	)
-ENDIF()
+endif()
 
 # Find OpenMP
-IF(PARALLEL_USE_OPENMP)
-	FIND_PACKAGE( OpenMP REQUIRED )
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
-	SET( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
-	SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp" )
-ENDIF(PARALLEL_USE_OPENMP)
+if(PARALLEL_USE_OPENMP)
+	find_package( OpenMP REQUIRED )
+	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}" )
+	set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}" )
+	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgomp" )
+endif(PARALLEL_USE_OPENMP)

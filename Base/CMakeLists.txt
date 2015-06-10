@@ -20,7 +20,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/Base
 )
 
-IF(OGS_BUILD_CORRECT_SCIENTIFIC)
+if(OGS_BUILD_CORRECT_SCIENTIFIC)
 	# Create utility executable
 	add_executable( correctScientificNotation CorrectScientificNotationMain.cpp )
-ENDIF(OGS_BUILD_CORRECT_SCIENTIFIC)
+endif(OGS_BUILD_CORRECT_SCIENTIFIC)

@@ -51,28 +51,28 @@ set( SOURCES
 	vtk.cpp
 )
 
-IF(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
-	SET( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.cpp)
-ELSE(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
-	SET( SOURCES ${SOURCES} par_ddc.cpp)
+if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
+	set( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.cpp)
+else(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
+	set( SOURCES ${SOURCES} par_ddc.cpp)
 	## New sparse class. WW
-	IF(OGS_USE_NEW_EQS)
-		SET( SOURCES ${SOURCES} equation_class.cpp )
-		IF(OGS_FEM_JFNK)
-			SET( SOURCES ${SOURCES} rf_pcs1.cpp )
-		ENDIF(OGS_FEM_JFNK)
-	ELSE()
-		SET( SOURCES ${SOURCES} solver.cpp matrix_routines.cpp)
-	ENDIF()
-ENDIF()
+	if(OGS_USE_NEW_EQS)
+		set( SOURCES ${SOURCES} equation_class.cpp )
+		if(OGS_FEM_JFNK)
+			set( SOURCES ${SOURCES} rf_pcs1.cpp )
+		endif(OGS_FEM_JFNK)
+	else()
+		set( SOURCES ${SOURCES} solver.cpp matrix_routines.cpp)
+	endif()
+endif()
 
-IF(OGS_FEM_BRNS)
-	SET( SOURCES ${SOURCES} rf_REACT_BRNS.cpp )
-ENDIF(OGS_FEM_BRNS)
+if(OGS_FEM_BRNS)
+	set( SOURCES ${SOURCES} rf_REACT_BRNS.cpp )
+endif(OGS_FEM_BRNS)
 
-IF(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
-	SET( SOURCES ${SOURCES} rf_REACT_GEM.cpp )
-ENDIF(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
+if(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
+	set( SOURCES ${SOURCES} rf_REACT_GEM.cpp )
+endif(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 
 
 include_directories(
@@ -89,21 +89,21 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/OGSProject
 )
 
-IF (LIS)
-	INCLUDE_DIRECTORIES(${LIS_INCLUDE_DIR})
-ENDIF (LIS)
+if (LIS)
+	include_directories(${LIS_INCLUDE_DIR})
+endif (LIS)
 
-IF (MKL)
-	INCLUDE_DIRECTORIES(${MKL_INCLUDES})
-ENDIF (MKL)
+if (MKL)
+	include_directories(${MKL_INCLUDES})
+endif (MKL)
 
-IF(OGS_FEM_PQC)
-	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/ThirdParty/PQC)
-ENDIF (OGS_FEM_PQC)
+if(OGS_FEM_PQC)
+	include_directories(${CMAKE_SOURCE_DIR}/ThirdParty/PQC)
+endif (OGS_FEM_PQC)
 
-IF(OGS_FEM_IPQC)
-	INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/ThirdParty/IPQC/src)
-ENDIF (OGS_FEM_IPQC)
+if(OGS_FEM_IPQC)
+	include_directories(${CMAKE_SOURCE_DIR}/ThirdParty/IPQC/src)
+endif (OGS_FEM_IPQC)
 
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
@@ -117,9 +117,9 @@ target_link_libraries(FEM
 	OGSProject
 )
 
-IF(OGS_FEM_PQC)
+if(OGS_FEM_PQC)
 	target_link_libraries(FEM PQC)
-ENDIF(OGS_FEM_PQC)
+endif(OGS_FEM_PQC)
 
 if (WIN32)
 	if (OGS_FEM_GEMS)
@@ -154,27 +154,27 @@ if (UNIX)
 	endif (MKL)
 endif (UNIX)
 
-IF (OGS_FEM_CHEMAPP)
-	INCLUDE_DIRECTORIES ( ${CMAKE_SOURCE_DIR}/EQL )
-	TARGET_LINK_LIBRARIES ( FEM EQL )
-ENDIF (OGS_FEM_CHEMAPP)
+if (OGS_FEM_CHEMAPP)
+	include_directories ( ${CMAKE_SOURCE_DIR}/EQL )
+	target_link_libraries ( FEM EQL )
+endif (OGS_FEM_CHEMAPP)
 
 
-IF (OGS_FEM_CAP)
-	INCLUDE_DIRECTORIES (  ${CMAKE_SOURCE_DIR}/CMP )
-	TARGET_LINK_LIBRARIES (
+if (OGS_FEM_CAP)
+	include_directories (  ${CMAKE_SOURCE_DIR}/CMP )
+	target_link_libraries (
 		FEM
 		GEO
 		MSH
 		CMP
 	)
-	IF (UNIX)
-		TARGET_LINK_LIBRARIES (
+	if (UNIX)
+		target_link_libraries (
 			FEM
 			ChemAppCS_64
 			EChemAppS_64
 		)
-	ENDIF (UNIX)
-ENDIF (OGS_FEM_CAP)
+	endif (UNIX)
+endif (OGS_FEM_CAP)
 
 

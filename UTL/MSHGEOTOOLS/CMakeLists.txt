@@ -1,5 +1,5 @@
 
-INCLUDE_DIRECTORIES(
+include_directories(
 	${CMAKE_SOURCE_DIR}
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/Base
@@ -14,16 +14,16 @@ INCLUDE_DIRECTORIES(
 )
 
 # Create executables
-ADD_EXECUTABLE( ExtractMeshNodes mainExtractMeshNodes.cpp )
-ADD_EXECUTABLE( ExtractMeshNodeIDs mainExtractMeshNodeIDs.cpp )
-ADD_EXECUTABLE( ModifyMeshProperties mainModifyMeshProperties.cpp ModifyMeshProperties.cpp )
-ADD_EXECUTABLE( filterMeshNodes filterMeshNodes.cpp )
-ADD_EXECUTABLE( convertGLIVerticalSurfaceToPolygon mainConvertGLIVerticalSurfaceToPolygon.cpp )
+add_executable( ExtractMeshNodes mainExtractMeshNodes.cpp )
+add_executable( ExtractMeshNodeIDs mainExtractMeshNodeIDs.cpp )
+add_executable( ModifyMeshProperties mainModifyMeshProperties.cpp ModifyMeshProperties.cpp )
+add_executable( filterMeshNodes filterMeshNodes.cpp )
+add_executable( convertGLIVerticalSurfaceToPolygon mainConvertGLIVerticalSurfaceToPolygon.cpp )
 
-SET_TARGET_PROPERTIES(ExtractMeshNodeIDs ExtractMeshNodes ModifyMeshProperties filterMeshNodes convertGLIVerticalSurfaceToPolygon
+set_target_properties(ExtractMeshNodeIDs ExtractMeshNodes ModifyMeshProperties filterMeshNodes convertGLIVerticalSurfaceToPolygon
   PROPERTIES FOLDER Utilities)
 
-TARGET_LINK_LIBRARIES( ExtractMeshNodeIDs
+target_link_libraries( ExtractMeshNodeIDs
 	FEM
 	FileIO
 	GEO
@@ -32,17 +32,7 @@ TARGET_LINK_LIBRARIES( ExtractMeshNodeIDs
 	OGSProject
 )
 
-TARGET_LINK_LIBRARIES( ExtractMeshNodes
-	FEM
-	FileIO
-	GEO
-	MSH
-	MSHGEOTOOLS
-	OGSProject
-)
-
-
-TARGET_LINK_LIBRARIES( convertGLIVerticalSurfaceToPolygon
+target_link_libraries( ExtractMeshNodes
 	FEM
 	FileIO
 	GEO
@@ -52,7 +42,17 @@ TARGET_LINK_LIBRARIES( convertGLIVerticalSurfaceToPolygon
 )
 
 
-TARGET_LINK_LIBRARIES( ModifyMeshProperties
+target_link_libraries( convertGLIVerticalSurfaceToPolygon
+	FEM
+	FileIO
+	GEO
+	MSH
+	MSHGEOTOOLS
+	OGSProject
+)
+
+
+target_link_libraries( ModifyMeshProperties
 	FEM
 	FileIO
 	GEO
@@ -62,13 +62,13 @@ TARGET_LINK_LIBRARIES( ModifyMeshProperties
 	OGSProject
 )
 
-TARGET_LINK_LIBRARIES( filterMeshNodes
+target_link_libraries( filterMeshNodes
 	Base
 	MSH
 )
 
-ADD_EXECUTABLE( testMeshSearchAlgorithms testMeshSearchAlgorithms.cpp )
-TARGET_LINK_LIBRARIES( testMeshSearchAlgorithms
+add_executable( testMeshSearchAlgorithms testMeshSearchAlgorithms.cpp )
+target_link_libraries( testMeshSearchAlgorithms
 	Base
 	FileIO
 	GEO

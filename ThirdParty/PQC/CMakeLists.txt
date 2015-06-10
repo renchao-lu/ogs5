@@ -65,7 +65,7 @@ set( HEADERS
      sundialstypes.h
 )
 
-INCLUDE_DIRECTORIES (
+include_directories (
 	.
 )
 
