@@ -10041,7 +10041,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		// NON-LINEAR ITERATIONS COMPLETE
 		// ------------------------------------------------------------
 		// PI time step size control. 27.08.2008. WW
-		if(accepted && Tim->GetPITimeStepCrtlType() > 0){
+		if(Tim->GetPITimeStepCrtlType() > 0){
 			PI_TimeStepSize(); // might also set accepted to false here.
 		}
 		//
