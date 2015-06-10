@@ -1,16 +1,6 @@
 set(SOURCES
-	GridAdapter.h
-	msh_core.h
-	msh_edge.h
-	msh_elem.h
-	msh_faces.h
-	msh_lib.h
-	msh_mesh.h
-	msh_node.h
-	MshEditor.h
-	MSHEnums.h
-	MeshNodesAlongPolyline.h
 	GridAdapter.cpp
+	MeshNodesAlongPolyline.cpp
 	msh_core.cpp
 	msh_edge.cpp
 	msh_elem.cpp
@@ -20,7 +10,6 @@ set(SOURCES
 	msh_node.cpp
 	MshEditor.cpp
 	MSHEnums.cpp
-	MeshNodesAlongPolyline.cpp
 )
 
 
@@ -29,13 +18,13 @@ if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS) #By WW
 endif()
 
 include_directories(
-	${CMAKE_SOURCE_DIR}/MSH
 	${CMAKE_SOURCE_DIR}/Base
-	${CMAKE_SOURCE_DIR}/GEO
-	${CMAKE_SOURCE_DIR}/MathLib
-	${CMAKE_SOURCE_DIR}/FileIO
 	${CMAKE_SOURCE_DIR}/FEM
+	${CMAKE_SOURCE_DIR}/FileIO
+	${CMAKE_SOURCE_DIR}/GEO
 	${CMAKE_SOURCE_DIR}/LIB
+	${CMAKE_SOURCE_DIR}/MathLib
+	${CMAKE_SOURCE_DIR}/MSH
 	${CMAKE_SOURCE_DIR}/OGSProject
 )
 
@@ -44,8 +33,8 @@ add_library(MSH STATIC ${SOURCES})
 
 target_link_libraries(
 	MSH
+	${CMAKE_THREAD_LIBS_INIT}
 	FEM
 	FileIO
 	GEO
-	${CMAKE_THREAD_LIBS_INIT}
 )

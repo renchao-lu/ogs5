@@ -29,26 +29,26 @@ SET ( SOURCES ${SOURCES}
     )
 
 INCLUDE_DIRECTORIES(
-	${CMAKE_SOURCE_DIR}/tests/gtest
 	${CMAKE_SOURCE_DIR}/Base
+	${CMAKE_SOURCE_DIR}/FEM
 	${CMAKE_SOURCE_DIR}/FileIO
 	${CMAKE_SOURCE_DIR}/GEO
 	${CMAKE_SOURCE_DIR}/MathLib
-	${CMAKE_SOURCE_DIR}/FEM
 	${CMAKE_SOURCE_DIR}/MSH
 	${CMAKE_SOURCE_DIR}/OGSProject
+	${CMAKE_SOURCE_DIR}/tests/gtest
 )
 
 ADD_EXECUTABLE (testrunner ${SOURCES})
 TARGET_LINK_LIBRARIES(testrunner
-  GTest
-  Base
-  FileIO
-  GEO
-  MathLib
-  FEM
-  MSH
-  OGSProject
+	Base
+	FEM
+	FileIO
+	GEO
+	GTest
+	MathLib
+	MSH
+	OGSProject
 )
 
 IF (MSVC)
