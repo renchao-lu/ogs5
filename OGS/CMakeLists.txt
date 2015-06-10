@@ -18,7 +18,7 @@ include_directories(
 
 if (LIS)
 	include_directories(${LIS_INCLUDE_DIR})
-endif (LIS)
+endif ()
 
 
 if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
@@ -26,11 +26,11 @@ if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
 endif()
 if(OGS_FEM_IPQC)
 	include_directories(${CMAKE_SOURCE_DIR}/IPQC/src)
-endif (OGS_FEM_IPQC)
+endif ()
 
 if (Shapelib_FOUND)
 	include_directories(${Shapelib_INCLUDE_DIR})
-endif (Shapelib_FOUND)
+endif ()
 
 
 # Create the library
@@ -72,9 +72,9 @@ if (OGS_PACKAGING)
 
 	if(MSVC)
 		set(OGS_EXE ${OGS_EXECUTABLE}.exe)
-	else(MSVC)
+	else()
 		set(OGS_EXE ${OGS_EXECUTABLE})
-	endif(MSVC)
+	endif()
 
 	include(GetPrerequisites)
 	if (EXISTS ${OGS_EXE})
@@ -86,7 +86,7 @@ if (OGS_PACKAGING)
 				GP_RESOLVE_ITEM ("/" "${DEPENDENCY}" ${OGS_EXE} "/usr/local/lib;/;${VTK_DIR}" DEPENDENCY_PATH)
 				set (DEPENDENCY_PATHS ${DEPENDENCY_PATHS} ${DEPENDENCY_PATH})
 			endif()
-		endforeach (DEPENDENCY IN ${OGS_DEPENDENCIES})
+		endforeach ()
 		install (FILES ${DEPENDENCY_PATHS} DESTINATION bin COMPONENT ogs)
-	endif (EXISTS ${OGS_EXE})
-endif (OGS_PACKAGING)
+	endif ()
+endif ()

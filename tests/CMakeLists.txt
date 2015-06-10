@@ -22,7 +22,7 @@ if (NOT MSVC)
 	set ( SOURCES ${SOURCES}
 		testOgs.cxx
 		testBmSkel.cxx)
-endif (NOT MSVC)
+endif ()
 
 set ( SOURCES ${SOURCES}
 	Matrix/testMatrix.cpp
@@ -87,12 +87,12 @@ endif() # OGS_COVERAGE
 # or run each gtest individually
 if (OGS_ONE_BIG_GTEST)
 	add_test (GTests ${testrunnerExe}  --gtest_output=xml:./)
-else (OGS_ONE_BIG_GTEST)
+else ()
 	ADD_GOOGLE_TESTS ( ${testrunnerExe} ${SOURCES})
-endif (OGS_ONE_BIG_GTEST)
+endif ()
 
 # add new test models here not all of these models will be needed, depending
 # on compile flags but it is safe to copy them all across
 if (NOT MSVC)
 	add_subdirectory( data/bmskel )
-endif (NOT MSVC)
+endif ()

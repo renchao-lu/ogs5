@@ -26,13 +26,13 @@ if (WIN32)
       set(ENV{PATH} "$ENV{PATH};$ENV{VS100COMNTOOLS}..\\..\\VC\\bin")
     endif ()
 
-	else (MSVC)
+	else ()
 #FOR CYGWIN.  25.02.2010. WW
 		message (STATUS "Might be GCC under cygwin.")
 		set(GCC ON)
 #		message (FATAL_ERROR "Aborting: On Windows only the Visual Studio compiler is supported!")
-	endif (MSVC)
-endif (WIN32)
+	endif ()
+endif ()
 
 ### For GNU C/CXX. WW
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
@@ -40,10 +40,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 	if( NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
 		if (OGS_FEM_PETSC_GEMS)
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -DNDEBUG")
-		else(OGS_FEM_PETSC_GEMS)
+		else()
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
-		endif(OGS_FEM_PETSC_GEMS)
-	endif(NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
+		endif()
+	endif()
 	# -g
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wall -Wextra -fno-nonansi-builtins")
 
@@ -63,7 +63,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC)
 		endif()
 		set(PROFILE_FLAGS "-pg -fno-omit-frame-pointer -O2 -DNDEBUG -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROFILE_FLAGS}")
-	endif (OGS_PROFILE)
+	endif ()
 endif() # CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_GNUCC
 
 if(BLUE_G)

@@ -2,11 +2,11 @@
 if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 	set( HAVE_64_BIT 0 )
 	set( BITS 32 )
-else( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+else()
 	set( HAVE_64_BIT 1 )
 	add_definitions(-DHAVE_64_BIT)
 	set( BITS 64)
-endif( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+endif()
 
 # Visual Studio detection
 if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005"
@@ -45,13 +45,13 @@ macro(COPY_FILE_IF_CHANGED in_file out_file target)
 				ARGS       -E copy ${in_file} ${out_file}
 		)
 	endif()
-endmacro(COPY_FILE_IF_CHANGED)
+endmacro()
 
 macro(COPY_FILE_INTO_DIRECTORY_IF_CHANGED in_file out_dir target)
 		get_filename_component(file_name ${in_file} NAME)
 		COPY_FILE_IF_CHANGED(${in_file} ${out_dir}/${file_name}
 ${target})
-endmacro(COPY_FILE_INTO_DIRECTORY_IF_CHANGED)
+endmacro()
 
 #Copies all the files from in_file_list into the out_dir.
 # sub-trees are ignored (files are stored in same out_dir)
@@ -59,8 +59,8 @@ macro(COPY_FILES_INTO_DIRECTORY_IF_CHANGED in_file_list out_dir target)
 	foreach(in_file ${in_file_list})
 				COPY_FILE_INTO_DIRECTORY_IF_CHANGED(${in_file}
 ${out_dir} ${target})
-		endforeach(in_file)
-endmacro(COPY_FILES_INTO_DIRECTORY_IF_CHANGED)
+		endforeach()
+endmacro()
 
 macro(COPY_FILE_INTO_EXECUTABLE_DIRECTORY in_file target)
 	if(WIN32)
@@ -74,14 +74,14 @@ macro(COPY_FILE_INTO_EXECUTABLE_DIRECTORY in_file target)
 			${EXECUTABLE_OUTPUT_PATH}/Release
 			${target}
 		)
-	else(WIN32)
+	else()
 		COPY_FILE_INTO_DIRECTORY_IF_CHANGED(
 			${CMAKE_CURRENT_SOURCE_DIR}/${in_file}
 			${EXECUTABLE_OUTPUT_PATH}
 			${target}
 		)
-	endif(WIN32)
-endmacro(COPY_FILE_INTO_EXECUTABLE_DIRECTORY)
+	endif()
+endmacro()
 
 # Adds a benchmark run.
 # authorName Your short name
@@ -136,14 +136,14 @@ function (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	if("${ogsConfiguration}" STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
 	  set(CONFIG_MATCH TRUE)
 	endif()
-  endif (UNIX)
+  endif ()
 
   if (CONFIG_MATCH)
 	if(WIN32)
 	  set(ogsExe ${EXECUTABLE_OUTPUT_PATH}/Release/ogs)
-	else(WIN32)
+	else()
 	  set(ogsExe ${EXECUTABLE_OUTPUT_PATH}/ogs)
-	endif(WIN32)
+	endif()
 
 	# Set timeout
 	string(REGEX MATCH "EXCEEDING" benchmarkExceeding ${benchmarkName})
@@ -165,7 +165,7 @@ function (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	# Delete output files on testing
 	foreach (entry ${ARGN})
 	set (FILES_TO_DELETE "${FILES_TO_DELETE} ${entry}")
-	endforeach (entry ${ARGN})
+	endforeach ()
 	if(OGS_PROFILE)
 		set(FILES_TO_DELETE "${FILES_TO_DELETE} gmon.out")
 	endif()
@@ -194,7 +194,7 @@ function (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 		file (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
 		foreach (entry ${ARGN})
 			file (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
-		endforeach (entry ${ARGN})
+		endforeach ()
 		add_test(
 			${authorName}_FILECOMPARE_${benchmarkName}
 			${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
@@ -205,18 +205,18 @@ function (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 			${authorName}_${benchmarkNameUnderscore}.html
 			../
 		)
-	endif(PYTHONINTERP_FOUND)
+	endif()
 
   # copy benchmark output files to reference directory
   if(COPY_BENCHMARKS_TO_REF)
 	foreach (entry ${ARGN})
 	  configure_file( ${PROJECT_SOURCE_DIR}/../benchmarks/${entry} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${entry} COPYONLY)
-	endforeach (entry ${ARGN})
-  endif(COPY_BENCHMARKS_TO_REF)
+	endforeach ()
+  endif()
 
-  endif(CONFIG_MATCH)
+  endif()
 
-endfunction (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToCompare numProcesses)
+endfunction ()
 
 # Checks if a valid ogs configuration is given
 function(CHECK_CONFIG)
@@ -240,14 +240,14 @@ function(CHECK_CONFIG)
 	foreach(config ${configs})
 		if(config)
 			math(EXPR counter "${counter} + 1")
-		endif(config)
+		endif()
 #		message(STATUS "config test ${config} found total ${counter}")
 	endforeach()
 	if(counter EQUAL 0)
 		message(STATUS "No configuration specified. Assuming default configuration...")
 		set(OGS_FEM ON)
                 set(counter 1)
-	endif(counter EQUAL 0)
+	endif()
 
 	if(counter GREATER 1)
 		message(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
@@ -264,7 +264,7 @@ function(CHECK_CONFIG)
 			OGS_FEM_PETSC
 			OGS_FEM_PETSC_GEMS
 			OGS_FEM_CAP")
-	endif(counter GREATER 1)
+	endif()
 
 endfunction()
 
@@ -278,7 +278,7 @@ macro(ADD_GOOGLE_TESTS executable)
 			string(REGEX REPLACE ".*\\(([A-Za-z_0-9]+)[, ]*([A-Za-z_0-9]+)\\).*" "\\1.\\2" test_name ${hit})
 			add_test(${test_name} ${executable}  --gtest_output=xml --gtest_filter=${test_name} ${MI3CTestingDir})
 			# message ("Adding test: ${test_name}")
-		endforeach(hit)
+		endforeach()
 	endforeach()
 endmacro()
 
@@ -299,5 +299,5 @@ macro ( UPDATE_MODEL_FILES dirOUT fileLIST )
 			${_file} ${dest})
 
 		add_dependencies( testrunner ${_tdir}.${_fdest} )
-	endforeach(_file1 ${${fileLIST}})
-endmacro ( UPDATE_MODEL_FILES dirOUT fileLIST)
+	endforeach()
+endmacro ()

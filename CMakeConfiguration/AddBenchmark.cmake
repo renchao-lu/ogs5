@@ -14,7 +14,7 @@ if (WIN32)
 		TIMEOUT ${BENCHMARK_TIMEOUT}
 		RESULT_VARIABLE EXIT_CODE)
 
-else (WIN32)
+else ()
 
 	separate_arguments(FILES_TO_DELETE_VARS UNIX_COMMAND ${FILES_TO_DELETE})
 
@@ -59,7 +59,7 @@ else (WIN32)
 			RESULT_VARIABLE EXIT_CODE)
 	endif()
 
-endif (WIN32)
+endif ()
 
 if(EXIT_CODE GREATER 0)
 	message(FATAL_ERROR "Benchmark exited with code: ${EXIT_CODE}")

@@ -53,14 +53,14 @@ set( SOURCES
 
 if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
 	set( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.cpp)
-else(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
+else()
 	set( SOURCES ${SOURCES} par_ddc.cpp)
 	## New sparse class. WW
 	if(OGS_USE_NEW_EQS)
 		set( SOURCES ${SOURCES} equation_class.cpp )
 		if(OGS_FEM_JFNK)
 			set( SOURCES ${SOURCES} rf_pcs1.cpp )
-		endif(OGS_FEM_JFNK)
+		endif()
 	else()
 		set( SOURCES ${SOURCES} solver.cpp matrix_routines.cpp)
 	endif()
@@ -68,11 +68,11 @@ endif()
 
 if(OGS_FEM_BRNS)
 	set( SOURCES ${SOURCES} rf_REACT_BRNS.cpp )
-endif(OGS_FEM_BRNS)
+endif()
 
 if(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 	set( SOURCES ${SOURCES} rf_REACT_GEM.cpp )
-endif(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
+endif()
 
 
 include_directories(
@@ -91,19 +91,19 @@ include_directories(
 
 if (LIS)
 	include_directories(${LIS_INCLUDE_DIR})
-endif (LIS)
+endif ()
 
 if (MKL)
 	include_directories(${MKL_INCLUDES})
-endif (MKL)
+endif ()
 
 if(OGS_FEM_PQC)
 	include_directories(${CMAKE_SOURCE_DIR}/ThirdParty/PQC)
-endif (OGS_FEM_PQC)
+endif ()
 
 if(OGS_FEM_IPQC)
 	include_directories(${CMAKE_SOURCE_DIR}/ThirdParty/IPQC/src)
-endif (OGS_FEM_IPQC)
+endif ()
 
 # Create the library
 add_library( FEM STATIC ${SOURCES} )
@@ -119,45 +119,45 @@ target_link_libraries(FEM
 
 if(OGS_FEM_PQC)
 	target_link_libraries(FEM PQC)
-endif(OGS_FEM_PQC)
+endif()
 
 if (WIN32)
 	if (OGS_FEM_GEMS)
 		target_link_libraries( FEM GEM )
-	endif (OGS_FEM_GEMS)
+	endif ()
 	if (LIS)
 		target_link_libraries( FEM ${LIS_LIBRARIES} )
 		set_target_properties( FEM PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt" )
-	endif (LIS)
+	endif ()
 	if (MKL)
 		target_link_libraries( FEM ${MKL_LIBRARIES} )
-	endif (MKL)
+	endif ()
 	if (OGS_FEM_BRNS)
 		target_link_libraries( FEM BrnsDll )
-	endif (OGS_FEM_BRNS)
+	endif ()
 	if (OGS_FEM_CHEMAPP)
 		target_link_libraries( FEM ca_vc_e )
-	endif (OGS_FEM_CHEMAPP)
-endif (WIN32)
+	endif ()
+endif ()
 
 if (UNIX)
 	if (OGS_FEM_BRNS)
 		target_link_libraries( FEM dl ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-	endif (OGS_FEM_BRNS)
+	endif ()
 
 	if (LIS)
 		target_link_libraries( FEM ${LIS_LIBRARIES} )
-	endif (LIS)
+	endif ()
 
 	if (MKL)
 		target_link_libraries( FEM ${MKL_LIBRARIES} )
-	endif (MKL)
-endif (UNIX)
+	endif ()
+endif ()
 
 if (OGS_FEM_CHEMAPP)
 	include_directories ( ${CMAKE_SOURCE_DIR}/EQL )
 	target_link_libraries ( FEM EQL )
-endif (OGS_FEM_CHEMAPP)
+endif ()
 
 
 if (OGS_FEM_CAP)
@@ -174,7 +174,7 @@ if (OGS_FEM_CAP)
 			ChemAppCS_64
 			EChemAppS_64
 		)
-	endif (UNIX)
-endif (OGS_FEM_CAP)
+	endif ()
+endif ()
 
 

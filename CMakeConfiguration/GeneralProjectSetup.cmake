@@ -3,9 +3,9 @@ set( EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin )
 set( LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib )
 if (MSVC)
 	set(OGS_EXECUTABLE ${EXECUTABLE_OUTPUT_PATH}/release/ogs)
-else (MSVC)
+else ()
 	set(OGS_EXECUTABLE ${EXECUTABLE_OUTPUT_PATH}/ogs)
-endif (MSVC)
+endif ()
 
 # Collect build information such as revision/commit and timestamp
 if (OGS_BUILD_INFO)
