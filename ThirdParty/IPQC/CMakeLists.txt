@@ -1,8 +1,8 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
+cmake_minimum_required(VERSION 2.8.3)
 
-PROJECT(IPhreeqc)
+project(IPhreeqc)
 
-SET(SOURCES
+set(SOURCES
 	src/IPhreeqc.cpp
 	src/IPhreeqcLib.cpp
 	src/CSelectedOutput.cpp
@@ -90,8 +90,8 @@ SET(SOURCES
 	src/phreeqcpp/UserPunch.cpp
 )
 
-IF(WIN32)
-	SET(SOURCES ${SOURCES}
+if(WIN32)
+	set(SOURCES ${SOURCES}
 		src/fwrap2.cpp
 		src/fwrap3.cpp
 		src/fwrap4.cpp
@@ -101,29 +101,29 @@ IF(WIN32)
 		src/fwrap8.cpp
 	)
 
-	ADD_DEFINITIONS(
+	add_definitions(
 		-DUSE_PHRQ_ALLOC
 		-D_CRT_SECURE_NO_DEPRECATE
 		-D_SCL_SECURE_NO_WARNINGS
 		-D_MBCS
 	)
-ENDIF()
+endif()
 
-ADD_DEFINITIONS(
+add_definitions(
 	-DSWIG_SHARED_OBJ
 	-DPHREEQC_CPP
 	-DPHREEQC_CLASS
 	-DPIC
 )
 
-INCLUDE_DIRECTORIES(
+include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 	${CMAKE_CURRENT_SOURCE_DIR}/src/phreeqcpp
 )
 
-ADD_LIBRARY( iphreeqc STATIC ${SOURCES} )
+add_library( iphreeqc STATIC ${SOURCES} )
 
-INCLUDE (CheckIncludeFiles)
+include (CheckIncludeFiles)
 CHECK_INCLUDE_FILES(sys/types.h HAVE_SYS_TYPES_H)
 CHECK_INCLUDE_FILES(sys/stat.h HAVE_SYS_STAT_H)
 CHECK_INCLUDE_FILES(stdlib.h HAVE_STDLIB_H)
@@ -138,7 +138,7 @@ CHECK_INCLUDE_FILES(float.h HAVE_FLOAT_H)
 CHECK_INCLUDE_FILES(limits.h HAVE_LIMITS_H)
 CHECK_INCLUDE_FILES(stddef.h HAVE_STDDEF_H)
 
-INCLUDE (CheckFunctionExists)
+include (CheckFunctionExists)
 CHECK_FUNCTION_EXISTS(memmove HAVE_MEMMOVE)
 CHECK_FUNCTION_EXISTS(memset HAVE_MEMSET)
 CHECK_FUNCTION_EXISTS(strchr HAVE_STRCHR)
@@ -147,7 +147,7 @@ CHECK_FUNCTION_EXISTS(strtol HAVE_STRTOL)
 CHECK_FUNCTION_EXISTS(floor HAVE_FLOOR)
 CHECK_FUNCTION_EXISTS(pow HAVE_POW)
 
-ADD_DEFINITIONS(
+add_definitions(
 	-DHAVE_SYS_TYPES_H=${HAVE_SYS_TYPES_H}
 	-DHAVE_SYS_STAT_H=${HAVE_SYS_STAT_H}
 	-DHAVE_STDLIB_H=${HAVE_STDLIB_H}

@@ -1,6 +1,6 @@
-FILE(GLOB Eigen_LU_arch_SRCS "*.h")
+file(GLOB Eigen_LU_arch_SRCS "*.h")
 
-INSTALL(FILES
+install(FILES
   ${Eigen_LU_arch_SRCS}
   DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/LU/arch COMPONENT Devel
   )

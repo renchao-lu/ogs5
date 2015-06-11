@@ -17,14 +17,14 @@ if (NOT GEMlib_FOUND)
 		find_library(GEMlib_LIBRARIES
 			NAMES libgemipm2k
 			PATHS ${CMAKE_SOURCE_DIR}/LIB/ )
-	else ( UNIX )
+	else ()
 		find_library(GEMlib_LIBRARIES
 			NAMES GEMS3_rl
 			PATHS ${CMAKE_SOURCE_DIR}/LIB/ )
 		find_library(GEMlib_LIBRARIES
 			NAMES qd
 			PATHS ${CMAKE_SOURCE_DIR}/LIB/ )
-	endif ( UNIX )
+	endif ()
 
 	# Set the include dir variables and the libraries and let libfind_process do the rest.
 	# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
@@ -32,8 +32,8 @@ if (NOT GEMlib_FOUND)
 		set(GEMlib_PROCESS_INCLUDES GEMlib_INCLUDE_DIR)
 		set(GEMlib_PROCESS_LIBS GEMlib_LIBRARIES)
 		libfind_process(GEMlib)
-	else (NOT GEMlib_LIBRARIES STREQUAL "GEMlib_LIBRARIES-NOTFOUND" AND NOT GEMlib_INCLUDE_DIR STREQUAL "GEMlib_INCLUDE_DIR-NOTFOUND")
+	else ()
 		message (STATUS "Warning: GEMlib not found!")
-	endif (NOT GEMlib_LIBRARIES STREQUAL "GEMlib_LIBRARIES-NOTFOUND" AND NOT GEMlib_INCLUDE_DIR STREQUAL "GEMlib_INCLUDE_DIR-NOTFOUND")
+	endif ()
 
-endif (NOT GEMlib_FOUND)
+endif ()

@@ -1,66 +1,66 @@
 # This script is called from AddBenchmark in Macros.cmake
 # It deletes the benchmark output files and then runs the benchmark.
-IF (WIN32)
+if (WIN32)
 
-	SEPARATE_ARGUMENTS(FILES_TO_DELETE_VARS WINDOWS_COMMAND ${FILES_TO_DELETE})
+	separate_arguments(FILES_TO_DELETE_VARS WINDOWS_COMMAND ${FILES_TO_DELETE})
 
-	EXECUTE_PROCESS (
+	execute_process (
 		COMMAND del /S /Q ${FILES_TO_DELETE_VARS}
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks)
 
-	EXECUTE_PROCESS (
+	execute_process (
 		COMMAND ${EXECUTABLE_OUTPUT_PATH}/Release/ogs ${benchmarkStrippedName}
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
 		TIMEOUT ${BENCHMARK_TIMEOUT}
 		RESULT_VARIABLE EXIT_CODE)
 
-ELSE (WIN32)
+else ()
 
-	SEPARATE_ARGUMENTS(FILES_TO_DELETE_VARS UNIX_COMMAND ${FILES_TO_DELETE})
+	separate_arguments(FILES_TO_DELETE_VARS UNIX_COMMAND ${FILES_TO_DELETE})
 
-	IF(OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC_GEMS" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_MPI")
-		SET(MPI_RUN_COMMAND "mpirun" "-np" "${NUM_PROCESSES}")
-	ELSE()
-		SET(MPI_RUN_COMMAND "")
-	ENDIF()
+	if(OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC_GEMS" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_MPI")
+		set(MPI_RUN_COMMAND "mpirun" "-np" "${NUM_PROCESSES}")
+	else()
+		set(MPI_RUN_COMMAND "")
+	endif()
 
-	EXECUTE_PROCESS (
+	execute_process (
 		COMMAND rm -f ${FILES_TO_DELETE_VARS}
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks)
-	IF(OGS_PROFILE AND NOT (OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC_GEMS" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_MPI"))
-		MESSAGE(STATUS "Profiling benchmark")
-		IF(OGS_OUTPUT_PROFILE)
-			MESSAGE(STATUS "Executing gprof2dot.py")
-			EXECUTE_PROCESS (
+	if(OGS_PROFILE AND NOT (OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_PETSC_GEMS" OR OGS_FEM_CONFIG STREQUAL "OGS_FEM_MPI"))
+		message(STATUS "Profiling benchmark")
+		if(OGS_OUTPUT_PROFILE)
+			message(STATUS "Executing gprof2dot.py")
+			execute_process (
 				COMMAND ${EXECUTABLE_OUTPUT_PATH}/ogs ${benchmarkStrippedName}
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
 				TIMEOUT ${BENCHMARK_TIMEOUT}
 				RESULT_VARIABLE EXIT_CODE)
 
 			# Run gprof2dot.py
-			EXECUTE_PROCESS (
+			execute_process (
 				COMMAND ${GPROF_PATH} ${EXECUTABLE_OUTPUT_PATH}/ogs
 				COMMAND ${PROJECT_SOURCE_DIR}/scripts/gprof2dot.py -s -n 5.0 -e 1.0
 				COMMAND ${DOT_TOOL_PATH} -Tpng -o ${PROJECT_SOURCE_DIR}/../benchmarks/results/${benchmarkStrippedName}.png
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir})
 
-		ELSE()
-			EXECUTE_PROCESS (
+		else()
+			execute_process (
 				COMMAND ${GPROF_PATH} ${EXECUTABLE_OUTPUT_PATH}/ogs ${benchmarkStrippedName}
 				WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
 				TIMEOUT ${BENCHMARK_TIMEOUT}
 				RESULT_VARIABLE EXIT_CODE)
-		ENDIF()
-	ELSE()
-		EXECUTE_PROCESS (
+		endif()
+	else()
+		execute_process (
 			COMMAND ${MPI_RUN_COMMAND} ${EXECUTABLE_OUTPUT_PATH}/ogs ${benchmarkStrippedName}
 			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/../benchmarks/${benchmarkDir}
 			TIMEOUT ${BENCHMARK_TIMEOUT}
 			RESULT_VARIABLE EXIT_CODE)
-	ENDIF()
+	endif()
 
-ENDIF (WIN32)
+endif ()
 
-IF(EXIT_CODE GREATER 0)
-	MESSAGE(FATAL_ERROR "Benchmark exited with code: ${EXIT_CODE}")
-ENDIF()
+if(EXIT_CODE GREATER 0)
+	message(FATAL_ERROR "Benchmark exited with code: ${EXIT_CODE}")
+endif()

@@ -1,8 +1,8 @@
-FILE(GLOB Eigen_LU_SRCS "*.h")
+file(GLOB Eigen_LU_SRCS "*.h")
 
-INSTALL(FILES 
+install(FILES 
   ${Eigen_LU_SRCS}
   DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/LU COMPONENT Devel
   )
 
-ADD_SUBDIRECTORY(arch)
+add_subdirectory(arch)

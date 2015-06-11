@@ -1,6 +1,6 @@
-FILE(GLOB Eigen_SVD_SRCS "*.h")
+file(GLOB Eigen_SVD_SRCS "*.h")
 
-INSTALL(FILES
+install(FILES
   ${Eigen_SVD_SRCS}
   DESTINATION ${INCLUDE_INSTALL_DIR}/Eigen/src/SVD COMPONENT Devel
   )
