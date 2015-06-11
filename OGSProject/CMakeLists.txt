@@ -1,8 +1,3 @@
-set( SOURCES
-	gs_project.cpp
-)
-
-# and include additional header
 include_directories(
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/FEM
@@ -12,8 +7,5 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/MSH
 )
 
-
-# Create the library
-add_library( OGSProject ${SOURCES} )
-
+add_library( OGSProject gs_project.h gs_project.cpp )
 target_link_libraries( OGSProject FEM )

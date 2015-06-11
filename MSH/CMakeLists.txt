@@ -1,3 +1,17 @@
+set(HEADERS
+	GridAdapter.h
+	MeshNodesAlongPolyline.h
+	msh_core.h
+	msh_edge.h
+	msh_elem.h
+	msh_faces.h
+	msh_lib.h
+	msh_mesh.h
+	msh_node.h
+	MshEditor.h
+	MSHEnums.h
+)
+
 set(SOURCES
 	GridAdapter.cpp
 	MeshNodesAlongPolyline.cpp
@@ -29,7 +43,7 @@ include_directories(
 )
 
 # Create the library
-add_library(MSH STATIC ${SOURCES})
+add_library(MSH STATIC ${HEADERS} ${SOURCES})
 
 target_link_libraries(
 	MSH

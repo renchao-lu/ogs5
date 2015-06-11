@@ -1,6 +1,7 @@
 # Source files
 set ( SOURCES
 	rf.cpp
+	ogs_display.h
 	ogs_display.cpp
 )
 

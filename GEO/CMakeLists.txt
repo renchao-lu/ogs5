@@ -1,3 +1,42 @@
+set( HEADERS
+	AxisAlignedBoundingBox.h
+	BruteForceClosestPair.h
+	ClosestPair.h
+	Color.h
+	geo_dom.h
+	geo_lib.h
+	geo_lin.h
+	geo_mathlib.h
+	geo_ply.h
+	geo_pnt.h
+	geo_sfc.h
+	geo_vol.h
+	GeoObject.h
+	GEOObjects.h
+	GeoType.h
+	Grid.h
+	Point.h
+	PointVec.h
+	PointWithID.h
+	Polygon.h
+	Polyline.h
+	PolylineVec.h
+	PolylineWithSegmentMarker.h
+	ProjectData.h
+	PropertyBounds.h
+	QuadTree.h
+	Raster.h
+	SensorData.h
+	SimplePolygonTree.h
+	Station.h
+	Surface.h
+	SurfaceGrid.h
+	SurfaceVec.h
+	TemplatePoint.h
+	TemplateVec.h
+	Triangle.h
+)
+
 set( SOURCES
 	AxisAlignedBoundingBox.cpp
 	BruteForceClosestPair.cpp
