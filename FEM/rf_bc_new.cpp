@@ -6,10 +6,12 @@
    last modified
 **************************************************************************/
 #include "makros.h"
+
 // C++ STL
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <ctime>
 #include <iostream>
 
 #include "display.h"
