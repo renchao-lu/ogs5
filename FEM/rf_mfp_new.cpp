@@ -3528,18 +3528,11 @@ double MFPGetNodeValue(long node,const string &mfp_name, int phase_number)
 **************************************************************************/
 double CFluidProperties::drhodP(double* variables)
 {
-	double a0, A, B, c, C, dvdp, fctA, fctB, fctC, beta, beta_m, p, R, T, Tr, z, z1, z2, z3, v, v_m, Trr, fct;
-	std::vector<double> roots;
-	CRFProcess* m_pcs;
-	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
-	p = variables[0];
-	T = variables[1];
-	R = GAS_CONSTANT;
-	beta_m=0.0;
-	v_m=0.0;
+	const double p = variables[0];
+	const double T = variables[1];
 
 	double arguments[2];
-	double rho1,rho2,drhodP;
+	double rho1, rho2, drhodP = 0.0;
 
 	if (p < 0)
 		return 0;
@@ -3579,11 +3572,19 @@ double CFluidProperties::drhodP(double* variables)
 	case 15: //volume translated Peng-Robinson
 		if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
 		{
+			CRFProcess* m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
+			std::vector<double> roots;
+
+			double beta_m = 0.0;
+			double v_m = 0.0;
+			const double R = GAS_CONSTANT;
+
 			for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 			{
+				double A, B, c, C, dvdp, fctA, fctB, fctC, beta, Tr, z, z1, z2, z3, v, v_m, Trr, fct;
 				therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
 				Tr = T/Tc;
-				a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
+				// double a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
 				Trr = 1.0 - pow(Tr, 0.6667);
 				fct = -0.25 + pc/p;
 				if(fluid_id == 1) fct = (1.0780 + p/6.8e8);
@@ -3611,18 +3612,19 @@ double CFluidProperties::drhodP(double* variables)
 
 			drhodP = beta_m/v_m;//beta_t=beta_g*(vg/vt)+beta_l*(vl/vt)
 		}
-
-		if(eos_name == "CONSTANT")
+		else if(eos_name == "CONSTANT") {
 			for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 			{
 				drhodP = variables[CIndex-2]*beta_p[CIndex-2];
 			}
+		}
 
 		break;
 
 	default:
 		drhodP = drho_dp;
 	}
+
 	return drhodP;
 }
 
@@ -3642,7 +3644,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 	alpha_m=0.0;
 	v_m=0.0;
 	double arguments[2];
-	double rho1,rho2,drhodT;
+	double rho1, rho2, drhodT = 0.0;
 
 	if(!drho_dT_unsaturated)     //fluid expansion (drho/dT) for unsaturated case activated?
 	{
@@ -3763,8 +3765,8 @@ double CFluidProperties::drhodX(int CIndex, double* variables)
    Programing: 09/2012 AKS
 **************************************************************************/
 double CFluidProperties::ComponentDensity(int CIndex, double* variables)
-	{
-	double a0, A, B, z, z1, z2, z3, Tr, c, C, Trr, T, p, density, R, fct;
+{
+	double A, B, z, z1, z2, z3, Tr, c, C, Trr, T, p, density, R, fct;
 	CRFProcess* m_pcs;
 	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	std::vector<double> roots;
@@ -3772,30 +3774,36 @@ double CFluidProperties::ComponentDensity(int CIndex, double* variables)
 	T = variables[1];
 	R = GAS_CONSTANT;
 
-	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL") 
+	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
 	{
-	therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
-	Tr = T/Tc;
-	a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
-	Trr = 1.0 - pow(Tr, 0.6667);
-	fct = -0.25 + pc/p;
-	if(fluid_id == 1)
-	fct = (1.0780 + p/6.8e8);  
-	c = fct*(k1 + k2*Trr + k3*Trr*Trr)*R*Tc/pc;
-	if(eos_name == "PR" ) c=0.0;
-	A = a*p*pow(R*T, -2.0);
-	B = b*p*pow(R*T, -1.0);
-	C = c*p*pow(R*T, -1.0);
-	z1 = B - 1.0 + 3.0*C;
-	z2 = (A - 3.0*B*B + 3.0*C*C + 2.0*B*C - 2.0*B - 2.0*C );
-	z3 = (B*B*B + C*C*C + B*B - C*C + B*C*C - 3.0*B*B*C - 2.0*B*C + C*A - A*B);
-	NsPol3(z1,z2,z3,&roots);
-	z = FindMax(roots);
-	if(fluid_id == 1) z = FindMin(roots);
-	if(eos_name == "IDEAL" ) z=1.0;
-	density = p*molar_mass/(z*R*T);
+		therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
+		Tr = T/Tc;
+		// double a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
+		Trr = 1.0 - pow(Tr, 0.6667);
+		fct = -0.25 + pc/p;
+		if(fluid_id == 1)
+			fct = (1.0780 + p/6.8e8);
+		c = fct*(k1 + k2*Trr + k3*Trr*Trr)*R*Tc/pc;
+		if(eos_name == "PR" ) c=0.0;
+		A = a*p*pow(R*T, -2.0);
+		B = b*p*pow(R*T, -1.0);
+		C = c*p*pow(R*T, -1.0);
+		z1 = B - 1.0 + 3.0*C;
+		z2 = (A - 3.0*B*B + 3.0*C*C + 2.0*B*C - 2.0*B - 2.0*C );
+		z3 = (B*B*B + C*C*C + B*B - C*C + B*C*C - 3.0*B*B*C - 2.0*B*C + C*A - A*B);
+		NsPol3(z1,z2,z3,&roots);
+		z = FindMax(roots);
+		if(fluid_id == 1) z = FindMin(roots);
+		if(eos_name == "IDEAL" ) z=1.0;
+		density = p*molar_mass/(z*R*T);
 	}
-	if(eos_name == "CONSTANT") density = rho[CIndex-2];
+	else if(eos_name == "CONSTANT") {
+		density = rho[CIndex-2];
+	}
+	else {
+		density = 0.0;
+	}
+
 	return density;
 }
 /**************************************************************************

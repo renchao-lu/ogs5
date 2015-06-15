@@ -5305,17 +5305,19 @@ void CRFProcess::AddFCT_CorrectionVector()
 	//Remark: Using iteration is only possible after the sparse table has been constructed.
 	for(size_t i = 0; i < node_size; i++)
 	{
+#ifdef USE_PETSC
 		const size_t i_global = FCT_GLOB_ADDRESS(i);
+#endif
 		col = &fct_f[i];
 		for(jj = col->begin(); jj != col->end(); jj++)
 		{
 			const size_t j = (*jj).first;
-			const size_t j_global = FCT_GLOB_ADDRESS(j);
 			if (i > j || i==j)
 				continue;  //do below only for upper triangle due to symmetric
 
 			// Get artificial diffusion operator D
 #ifdef USE_PETSC
+			const size_t j_global = FCT_GLOB_ADDRESS(j);
 			double d1 = (*FCT_d)(i_global, j_global);
 #else
 #if defined(NEW_EQS)
@@ -5412,11 +5414,13 @@ void CRFProcess::AddFCT_CorrectionVector()
 		// L*u^n
 		for (size_t i = 0; i < node_size; i++)
 		{
+#ifdef USE_PETSC
 			const size_t i_global = FCT_GLOB_ADDRESS(i);
+#endif
 			for (size_t j = 0; j < node_size; j++)
 			{
-				const size_t j_global = FCT_GLOB_ADDRESS(j);
 #ifdef USE_PETSC
+				const size_t j_global = FCT_GLOB_ADDRESS(j);
 				// b+=-(1-theta)*D*u^n
                 (*V)(i) += (*FCT_d)(i_global, j_global) * (*V1)(j);
 #else
@@ -6592,7 +6596,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					+ExcavBeginCoordinate)<node_coordinate[ExcavDirection]))
 				{
 					excavated = true;
-					double* tmp_ele_coor = NULL;
 					for(unsigned int j=0; j<node->getConnectedElementIDs().size(); j++)
 					{
 						elem = m_msh->ele_vector[node->getConnectedElementIDs()[j]];
@@ -10193,6 +10196,8 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 			idx[1] = GetNodeValueIndex("PERMEABILITY_Y1");
 			if (NS > 2)
 				idx[2] = GetNodeValueIndex("PERMEABILITY_Z1");
+			else
+				idx[2] = 0;
 			for (size_t i = 0; i < m_msh->GetNodesNumber(false); i++)
 				for (int k = 0; k < NS; k++)
 					SetNodeValue(i, idx[k], 0.0);
@@ -11732,7 +11737,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 		bool Use_Element;
 		vector<size_t> vecConsideredEdges;
 		vector<CNode*> vec_nodes_edge;
-		bool Edge_on_Geo, Point_on_Geo;
+		bool Edge_on_Geo = false, Point_on_Geo;
 		std::vector<size_t> nod_vector_at_geo;
 		CElem* m_ele = NULL;
 		CEdge* m_edg = NULL;
@@ -11996,7 +12001,7 @@ void CRFProcess::CalcSecondaryVariablesLiquidFlow()
 	//	double totalmass; // 2012-08 TF not used
 	//	double totalmassflux; // 2012-08 TF / unused
 		double *ConcentrationGradient (new double[3]);
-		int numberPolyline;
+		int numberPolyline = 0;
 
 		if (this->Tim->step_current == 0) {
 			this->PolylinesforOutput.push_back(NameofPolyline);
@@ -13507,13 +13512,10 @@ CRFProcess* PCSGetMass(size_t component_number)
 	void EQSDelete()
 	{
 		LINEAR_SOLVER* eqs = NULL;
-		CRFProcess* m_pcs = NULL;
 		//----------------------------------------------------------------------
 		for(size_t i = 0; i < PCS_Solver.size(); i++)
 		{
 			eqs = PCS_Solver[i];
-			FiniteElement::ProcessType pcs_type (FiniteElement::convertProcessType (eqs->pcs_type_name));
-			m_pcs = PCSGet(pcs_type);
 			if(eqs->unknown_vector_indeces)
 				eqs->unknown_vector_indeces = \
 				        (int*) Free(eqs->unknown_vector_indeces);
@@ -13524,8 +13526,6 @@ CRFProcess* PCSGetMass(size_t component_number)
 				eqs->unknown_update_methods = \
 				        (int*) Free(eqs->unknown_update_methods);
 			eqs = DestroyLinearSolver(eqs);
-			//WWif(m_pcs)
-			//	m_pcs->eqs = NULL;
 			PCS_Solver.erase((PCS_Solver.begin() + i));
 		}
 		//PCS_Solver.clear();

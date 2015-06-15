@@ -3065,11 +3065,11 @@ int CSolidProperties::StressIntegrationMOHR_Aniso(const int GPiGPj, const Elemen
 	int i, j, counter;
 	int yield = 0;
 	int Dim = 2;
-	int Size = ele_val->Stress->Rows();
+	int Size = std::min(6ul, ele_val->Stress->Rows());
 	double normdstr=0., TmpValue1, TmpValue2;
 	double LodeAngle, I1, J2, J3, sqrtJ2;
-	double AnisoParaComp, AnisoParaTens;
-	double shearsurf, tensionsurf, ep, dlamda, dlamda_0, dlamda_1; //, ddlamda, Jacob;
+	double AnisoParaComp, AnisoParaTens = 0.0;
+	double shearsurf, tensionsurf, ep, dlamda = 0.0 /*, dlamda_0, dlamda_1*/; //, ddlamda, Jacob;
 
 	//initialize all vectors
 	double dstrs[6] = {0.}, TryStress_0[6]={0.}, TryStr_buff[6] ={0.}, TmpStress[6] = {0.};
@@ -3206,13 +3206,13 @@ int CSolidProperties::StressIntegrationMOHR_Aniso(const int GPiGPj, const Elemen
 		double dsqrtJ2_dsig[6]={0.}, dlode_dsig[6]={0.};
 		double dAniso_dsig_tens[6]={0.}, dAniso_dsig_comp[6]={0.};
 		double dcsn_dsig[6] = {0.}, dtens_dsig[6] = {0.};
-		double dsig_dlamda[6]={0.}, dsig_dlamda_k1[6]={0.}, dfs_dsig[6]={0.}, dft_dsig[6]={0.}, dgs_dsig[6]={0.}, dgt_dsig[6]={0.};
+		double dsig_dlamda[6]={0.}, /*dsig_dlamda_k1[6]={0.},*/ dfs_dsig[6]={0.}, dft_dsig[6]={0.}, dgs_dsig[6]={0.}, dgt_dsig[6]={0.};
 		bool first_step;
-		double shearsurf_k1, tensionsurf_k1, local_damp, tmp_pos = 1., tmp_neg=1.; //Newton downhill
+		double shearsurf_k1, tensionsurf_k1 /*, local_damp, tmp_pos = 1., tmp_neg=1.*/; //Newton downhill
 		double lamda_pos=0., lamda_neg=0., shearsurf_pos, shearsurf_neg, tensionsurf_pos, tensionsurf_neg;
 		if(tensionsurf>MKleinsteZahl)//if tension 
 		{
-			dlamda = 0, dlamda_1=1;
+			// dlamda = 0, dlamda_1=1;
 			counter = 0;
 			first_step = true;
 			tensionsurf_k1 = tensionsurf;
@@ -3483,10 +3483,11 @@ int CSolidProperties::StressIntegrationMOHR_Aniso(const int GPiGPj, const Elemen
 
 		if(shearsurf>1e-5)
 		{
-			dlamda = 0, dlamda_1=1, dlamda_0=0.;
+			dlamda = 0; //, dlamda_1=1, dlamda_0=0.;
 			counter = 0;
 			first_step = true;
-			local_damp = 1., shearsurf_k1=shearsurf;
+			// local_damp = 1.;
+			shearsurf_k1=shearsurf;
 			for(i=0;i<Size;i++)
 			{
 				dstrs_local[i] = TmpStress[i]-TryStress_local[i];
@@ -4036,8 +4037,8 @@ int CSolidProperties::DirectStressIntegrationMOHR(const int GPiGPj, ElementValue
 	}
 	if((shearsurf > 0) || (tensionsurf > 0))
 	{
-		double P_12, P_31, P_41, P_63, P_64, P_52, P_85, P_74, P_78, P_98, P_45, P_X7;
-		double t1, t2, t1ra ,t1r1, t2ra, t2r2, t3r1, t3r2;
+		double P_12, P_31, P_41, P_63, P_64, P_52, P_85, P_74, P_78, P_98, P_45 /*, P_X7*/;
+		double t1, t2 /*, t1ra*/ ,t1r1 /*, t2ra, t2r2*/, t3r1 /*, t3r2*/;
 		double fkt1, fkt2;
 		double mm = 0.;
 
@@ -4112,11 +4113,11 @@ int CSolidProperties::DirectStressIntegrationMOHR(const int GPiGPj, ElementValue
 		t1 = CalVar_t(l1, l1g, Inv_De, prin_str, sig1R, Size);
 		t2 = CalVar_t(l2, l2g, Inv_De, prin_str, sig2R, Size);
 		t1r1 = CalVar_t(l1R, l1R, Inv_De, prin_str, sig1R, Size);
-		t1ra = CalVar_t(l1R, l1R, Inv_De, prin_str, sigaR, Size);
-		t2r2 = CalVar_t(l2R, l2R, Inv_De, prin_str, sig2R, Size);
-		t2ra = CalVar_t(l2R, l2R, Inv_De, prin_str, sigaR, Size);
+		// t1ra = CalVar_t(l1R, l1R, Inv_De, prin_str, sigaR, Size);
+		// t2r2 = CalVar_t(l2R, l2R, Inv_De, prin_str, sig2R, Size);
+		// t2ra = CalVar_t(l2R, l2R, Inv_De, prin_str, sigaR, Size);
 		t3r1 = CalVar_t(l3R, l3R, Inv_De, prin_str, sig1R, Size);
-		t3r2 = CalVar_t(l3R, l3R, Inv_De, prin_str, sig2R, Size);
+		// t3r2 = CalVar_t(l3R, l3R, Inv_De, prin_str, sig2R, Size);
 
 		P_12 = CalVarP(rsp, l1, prin_str, sig1R);
 		P_31 = CalVarP(rsp, l2, prin_str, sig2R);
@@ -4137,7 +4138,7 @@ int CSolidProperties::DirectStressIntegrationMOHR(const int GPiGPj, ElementValue
 		P_78 = CalVarP(rtp, l1R, prin_str, sig1R);
 		//P_98 = 0;
 		P_98 = CalVarP(rtp, l2R, prin_str, sig2R);
-		P_X7 = CalVarP(rtp, l2R, prin_str, sig2R);
+		// P_X7 = CalVarP(rtp, l2R, prin_str, sig2R);
 
 		if( P_12 >= 0 && P_31 <= 0 && P_41 <= 0 ) //return to fmc
 		{
@@ -4727,7 +4728,7 @@ void CSolidProperties::VecCrossProduct(double* vec1, double* vec2, double* resul
 	result_vec[2] = vec1[0] * vec2[1] + vec1[1] * vec1[0];
 }
 //calculate constitutive matrix when return to a line
-void CSolidProperties::CalDep_l(double* vecl, double* veclg, Matrix* D, Matrix* Dep_l, double fkt)
+void CSolidProperties::CalDep_l(double* vecl, double* veclg, Matrix* D, Matrix* Dep_l, double /*fkt*/)
 {
 	double TmpVec[6] = {0.};
 	double TmpVal = 0.;
@@ -4806,7 +4807,7 @@ void CSolidProperties::Cal_Inv_Matrix(int Size, Matrix* MatrixA, Matrix* xx)
 
 	for(j_col = 0; j_col < Size; j_col++)
 	{
-		for(i = 0; i < Size; i++)
+		for(i = 0; i < std::min(6, Size); i++)
 		{
 			rhs[i] = 0.;
 			if(i == j_col)
@@ -5140,7 +5141,7 @@ int CSolidProperties::CalStress_and_TangentialMatrix_SYS
         const int Update)
 {
 	const int LengthMat = 7;
-	const int LengthStrs = De->Cols();
+	const int LengthStrs = std::min(6ul, De->Cols());
 	int dim = 2;
 	const int minSub = 4;
 	const int maxSub = 1000;
