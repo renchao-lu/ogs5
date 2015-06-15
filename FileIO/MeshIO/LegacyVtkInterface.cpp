@@ -640,7 +640,7 @@ void LegacyVtkInterface::WriteVTKDataArraysPETSC(PetscViewer viewer) const
 	MPI_Comm_rank(PETSC_COMM_WORLD, &myrank);
 		for (size_t i = 0; i < (size_t)count; i++)
 		{
-			MeshLib::CElem* ele = _mesh->ele_vector[i];
+			// MeshLib::CElem* ele = _mesh->ele_vector[i];
 			ep[i]=myrank;
 //                vtk_file << ele->GetPatchIndex() << "\n";
 	}
@@ -669,7 +669,6 @@ void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
 	baseFilename = pathJoin(defaultOutputPath, pathBasename(baseFilename));
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
-	char tf_name[10];
 	cout << "Process " << myrank << " in WriteDataVTK" << "\n";
 #endif
 
