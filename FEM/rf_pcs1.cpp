@@ -725,7 +725,7 @@ void CreateEQS_LinearSolver()
             eqs_dim += nn;
 
           sparse_info[0] = max_cnct_nodes * dim;
-          sparse_info[1] = 0; //max_cnct_nodes * dim;
+          sparse_info[1] = max_cnct_nodes * dim;
           sparse_info[2] = max_cnct_nodes * dim;
           sparse_info[3] = mesh->getNumNodesLocal_Q() * dim;
           eqs = new PETScLinearSolver(eqs_dim);
@@ -737,7 +737,7 @@ void CreateEQS_LinearSolver()
               ||(pcs_type == PS_GLOBAL) )
       {
          sparse_info[0] = max_cnct_nodes * 2;
-         sparse_info[1] = 0; //max_cnct_nodes * 2;
+         sparse_info[1] = max_cnct_nodes * 2;
          sparse_info[2] = max_cnct_nodes * 2;
          sparse_info[3] = mesh->getNumNodesLocal() * 2;
 
@@ -748,7 +748,7 @@ void CreateEQS_LinearSolver()
       else if( pcs_type == TES)
       {
          sparse_info[0] = max_cnct_nodes * 3;
-         sparse_info[1] = 0; //max_cnct_nodes * 3;
+         sparse_info[1] = max_cnct_nodes * 3;
          sparse_info[2] = max_cnct_nodes * 3;
          sparse_info[3] = mesh->getNumNodesLocal() * 3;
 
@@ -760,7 +760,7 @@ void CreateEQS_LinearSolver()
       else 
       {
         sparse_info[0] = max_cnct_nodes;
-        sparse_info[1] = 0; //max_cnct_nodes;
+        sparse_info[1] = max_cnct_nodes;
         sparse_info[2] = max_cnct_nodes;
         sparse_info[3] = mesh->getNumNodesLocal();
 
