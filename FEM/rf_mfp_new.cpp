@@ -3581,7 +3581,7 @@ double CFluidProperties::drhodP(double* variables)
 
 			for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 			{
-				double A, B, c, C, dvdp, fctA, fctB, fctC, beta, Tr, z, z1, z2, z3, v, v_m, Trr, fct;
+				double A, B, c, C, dvdp, fctA, fctB, fctC, beta, Tr, z, z1, z2, z3, v, Trr, fct;
 				therm_prop(m_pcs->pcs_primary_function_name[CIndex]);
 				Tr = T/Tc;
 				// double a0 = 1.0 + m0*(1.0 - Tr) + n0*(1.0 - Tr)*(0.7 - Tr);
