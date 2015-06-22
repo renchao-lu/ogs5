@@ -1340,13 +1340,12 @@ bool CFiniteElementVec::GlobalAssembly()
 #if defined(USE_PETSC) // || defined(other parallel libs)//06.2013. WW
 void CFiniteElementVec::GlobalAssembly_Stiffness()
 {
-   int i,j;
-   double f1,f2;
+   double f1; //,f2;
    f1 = 1.0;
-   f2 = -1.0;
+   //f2 = -1.0;
 
-   double biot = 1.0;
-   biot = smat->biot_const;
+//   double biot = 1.0;
+//   biot = smat->biot_const;
 
    int m_dim, n_dim;
    int dof = ele_dim;
@@ -1373,11 +1372,11 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
       if(dynamic)
       {
          f1 = 0.5 * beta2 * dt * dt;
-         f2 = -0.5 * bbeta1 * dt;
+         //f2 = -0.5 * bbeta1 * dt;
          loc_dymass = Mass->getEntryArray();
       }
 
-      for(i = 0; i < nnodesHQ; i++)
+      for(int i = 0; i < nnodesHQ; i++)
 	{
 	  const int i_buff = MeshElement->nodes[i]->GetEquationIndex() *  dof;		
 	  for(int k=0; k<dof; k++)
@@ -1387,7 +1386,7 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
 	  // local_vec[i] = 0.;
 	}     
 
-      for( i=0; i<m_dim; i++)
+      for(int i=0; i<m_dim; i++)
 	{
 	  i_dom = i/act_nodes_h;
 	  in = i % act_nodes_h;
@@ -1417,7 +1416,7 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
       local_matrix_asy = Stiffness->getEntryArray();
       local_vec_asy = RHS->getEntryArray();
 
-      for(i = 0; i < nnodesHQ; i++)
+      for(int i = 0; i < nnodesHQ; i++)
 	{
 	  const int i_buff = MeshElement->nodes[i]->GetEquationIndex() *  dof;		
 	  for(int k=0; k<dof; k++)
@@ -1647,14 +1646,15 @@ void CFiniteElementVec::GlobalAssembly_Stiffness()
 
     07.2011. WW
  */
+#if defined(USE_PETSC) // || defined(other parallel libs)//10.3012. WW
+void CFiniteElementVec::GlobalAssembly_PressureCoupling(Matrix*,
+                                                        double,
+                                                        const int) {}
+#else
 void CFiniteElementVec::GlobalAssembly_PressureCoupling(Matrix* pCMatrix,
                                                         double fct,
                                                         const int phase)
 {
-#if defined(USE_PETSC) // || defined(other parallel libs)//10.3012. WW
-  ///
-
-#else
 #if defined(NEW_EQS)
 	CSparseMatrix* A = NULL;
 	if(m_dom)
@@ -1683,8 +1683,8 @@ void CFiniteElementVec::GlobalAssembly_PressureCoupling(Matrix* pCMatrix,
 			  }
 		}
 	}
-#endif
 }
+#endif
 
 /***************************************************************************
    GeoSys - Funktion:

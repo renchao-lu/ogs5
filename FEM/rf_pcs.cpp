@@ -6477,7 +6477,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		static long i;
 		static double bc_value, fac = 1.0, time_fac = 1.0;
 		long bc_msh_node = -1;
-		long bc_eqs_index, shift;
+#ifndef USE_PETSC
+		long bc_eqs_index;
+#endif
+		long shift;
 		int interp_method = 0;
 		int curve, valid = 0;
 		int ii, idx0 = -1;
@@ -6485,7 +6488,9 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		CBoundaryCondition* m_bc; //WW
 		CFunction* m_fct = NULL;  //OK
 		bool is_valid = false;    //OK
+#ifndef USE_PETSC
 		bool onExBoundary = false;                     //WX
+#endif
 		bool excavated = false;   //WX
 		bool onDeactiveBoundary=true;//WX:09.2011
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
@@ -6582,9 +6587,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			if(m_bc->getExcav() > 0)
 			{
 				CNode* node;
-				CElem* elem;
 				//unsigned int counter;	//void warning
+#ifndef USE_PETSC
 				onExBoundary = false;	//WX:01.2011
+#endif
 				excavated = false;
 
 				node = m_msh->nod_vector[m_bc_node->geo_node_number];
@@ -6596,9 +6602,10 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					+ExcavBeginCoordinate)<node_coordinate[ExcavDirection]))
 				{
 					excavated = true;
+#ifndef USE_PETSC
 					for(unsigned int j=0; j<node->getConnectedElementIDs().size(); j++)
 					{
-						elem = m_msh->ele_vector[node->getConnectedElementIDs()[j]];
+						CElem* elem = m_msh->ele_vector[node->getConnectedElementIDs()[j]];
 						double const* tmp_ele_coor (elem->GetGravityCenter());
 						//if(elem->GetPatchIndex()!=ExcavMaterialGroup){
 						//if(elem->GetExcavState()==-1)
@@ -6607,16 +6614,17 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 						{
 							onExBoundary = true;
 							break;
-					}
+						}
 						else if (tmp_ele_coor[ExcavDirection]-(GetCurveValue(ExcavCurve,0,aktuelle_zeit,&valid)
 							-ExcavBeginCoordinate)>-0.001)
-				   {
-				   onExBoundary = true;
-							//tmp_counter1++;
-							break;
-				   }
-				   }
-			}
+						{
+						onExBoundary = true;
+						//tmp_counter1++;
+						break;
+						}
+					}
+#endif
+				}
 			}
 
 			if((m_bc->getExcav() > 0) && !excavated) //WX:01.2011. excav bc but is not excavated jet
@@ -6827,12 +6835,14 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 					        m_bc->getPeriodePhaseShift());
 
 				//----------------------------------------------------------------
+#ifndef USE_PETSC
 				if(rank > -1)
 					bc_eqs_index = bc_msh_node;
 				else
 					//WW#
 					bc_eqs_index =
 					        m_msh->nod_vector[bc_msh_node]->GetEquationIndex();
+#endif
 				//..............................................................
 				// NEWTON WW   //Modified for JFNK. 09.2010. WW
 				if(m_num->nls_method >= 1 // 04.08.2010. WW _name.find("NEWTON")!=string::npos
@@ -9760,10 +9770,9 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 	double CRFProcess::ExecuteNonLinear(int loop_process_number, bool print_pcs)
 	{
 		double nonlinear_iteration_error = 0.0;
-		double nl_theta, damping, norm_x0, norm_b0, norm_x, norm_b, val;
+		double nl_theta, damping, norm_x0, norm_b0, norm_x, norm_b;
 		double error_x1, error_x2, error_b1, error_b2 = 0, error, last_error, percent_difference;
 		//double* eqs_x = NULL;     //
-		double* eqs_b = NULL;
 		bool converged, diverged;
 		int ii, nidx1, num_fail = 0;
 		size_t j, g_nnodes;
@@ -9781,6 +9790,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 		eqs_x = eqs_new->GetGlobalSolution();
 #endif
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
+		double* eqs_b = NULL;
 		int k;
 #ifdef NEW_EQS
 		eqs_x = eqs_new->x;
@@ -9893,7 +9903,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 						norm_b = 0.0; // must calculate this
 						for(ii = 0; ii < pcs_number_of_primary_nvals; ii++){
 							for (j = 0; j < g_nnodes; j++){
-								val = eqs_b[j + ii*g_nnodes];
+								double val = eqs_b[j + ii*g_nnodes];
 								norm_b += val*val;
 							}
 						}
@@ -10010,7 +10020,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 					const long ish = ii * g_nnodes;
 					for(j = 0; j < g_nnodes; j++){
 						k = m_msh->Eqs2Global_NodeIndex[j];
-						val = GetNodeValue(k,nidx1) + damping*eqs_x[j + ish];
+						double val = GetNodeValue(k,nidx1) + damping*eqs_x[j + ish];
 						SetNodeValue(k,nidx1,val);
 					}
 #endif
