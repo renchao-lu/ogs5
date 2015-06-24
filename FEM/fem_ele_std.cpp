@@ -10483,7 +10483,6 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 	int dm_shift = 0;
 	if(pcs->type / 10 == 4)
 		dm_shift = problem_dimension_dm;
-	int i_sh = NodeShift[ii + dm_shift];
 #endif
 	for(ii = 0; ii < 2; ii++)
 	{
@@ -10491,6 +10490,7 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii + dm_shift];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];
@@ -10832,7 +10832,6 @@ void CFiniteElementStd::Assemble_RHS_M()
 	int dm_shift = 0;
 	if(pcs->type / 10 == 4)
 		dm_shift = problem_dimension_dm;
-	int i_sh = NodeShift[ii + dm_shift];
 #endif
 
 	for(ii = 0; ii < dof_n; ii++)
@@ -10841,6 +10840,7 @@ void CFiniteElementStd::Assemble_RHS_M()
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii + dm_shift];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];
