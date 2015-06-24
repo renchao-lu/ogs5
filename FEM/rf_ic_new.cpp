@@ -1153,7 +1153,6 @@ void CInitialCondition::StoreInitialValues() {
 	string variable_name = "DELTA_" + convertPrimaryVariableToString(this->
 		getProcessPrimaryVariable());
 
-	int index = this->getProcess()->GetNodeValueIndex(variable_name);
 	for (int i = 0; i < (long)m_msh->nod_vector.size(); i++)
 	{
 
