@@ -92,15 +92,9 @@ void CGLPolyline::setID (size_t nid)
 **************************************************************************/
 CGLPolyline* GEOGetPLYByName(const std::string& name)
 {
-	std::vector<CGLPolyline*>::iterator p = polyline_vector.begin(); //CC
-	while (p != polyline_vector.end())
+	for (std::vector<CGLPolyline*>::iterator it = polyline_vector.begin(); it != polyline_vector.end(); ++it)
 	{
-		if ((*p)->getName().find(name,0) == 0)
-		{
-			return *p;
-			break;
-		}
-		++p;
+		if ((*it)->getName() == name) return *it;
 	}
 	return NULL;
 }
