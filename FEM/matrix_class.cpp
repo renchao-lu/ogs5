@@ -1069,7 +1069,7 @@ CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
 	//
 #ifdef LIS                         // PCH
 	int counter, counter_ptr = 0, counter_col_idx = 0;
-	int i,k,ii,jj,I,J,K;
+	int i,k,ii,jj,J,K;
 	int row_in_sparse_table;
 
 	ptr = new int [rows * dof + 1];
@@ -1089,7 +1089,7 @@ CSparseMatrix::CSparseMatrix(const SparseTable &sparse_table, const int dof)
 				{
 					if(row_in_sparse_table < num_column_entries[k])
 					{
-						I = ii * rows + i; // row in global matrix
+						//I = ii * rows + i; // row in global matrix
 						                   // column in global matrix
 						J = jj * rows + entry_column[counter];
 						K = (ii * DOF + jj) * size_entry_column + counter;
