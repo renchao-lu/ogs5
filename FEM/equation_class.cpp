@@ -126,6 +126,12 @@ Linear_EQS::Linear_EQS(const SparseTable &sparse_table,
 	iter = 0;
 	bNorm = 1.0;
 	error = 1.0e10;
+#ifdef LIS
+	AA = NULL;
+	bb = NULL;
+	xx = NULL;
+	solver = NULL;
+#endif
 }
 #if defined(USE_MPI)
 /**************************************************************************
@@ -222,6 +228,7 @@ void Linear_EQS::ConfigNumerics(CNumerics* m_num, const long n)
 		break;
 	case 12:
 		solver_name = "UMF";
+		break;
 	case 13:                              // 06.2010. WW
 		solver_name = "GMRES";
 		m_gmres = m_num->Get_m();
@@ -516,21 +523,21 @@ int Linear_EQS::Solver(CNumerics* num)
 		//omp_set_num_threads (1);
 		cout << "->Start calling PARDISO with " << omp_get_max_threads() << " threads" <<
 		"\n";
-		int i, iter, ierr;
 		// Assembling the matrix
 		// Establishing CRS type matrix from GeoSys Matrix data storage type
 		int nonzero = A->nnz();
 		int numOfNode = A->Size() * A->Dof();
 		double* value;
 		value = new double [nonzero];
-		ierr = A->GetCRSValue(value);
+		A->GetCRSValue(value);
 		int* ptr = NULL;
 		int* index = NULL;
 		ptr = (int*)malloc((numOfNode + 1) * sizeof( int));
 		index = (int*)malloc((nonzero) * sizeof( int));
 
 		// Reindexing ptr according to Fortran-based PARDISO
-		for(i = 0; i < numOfNode; ++i)
+		int i = 0;
+		for(int i = 0; i < numOfNode; ++i)
 			ptr[i] = A->ptr[i] + 1;
 		//ptr needs one more storage
 		ptr[i] = A->ptr[i] + 1;
@@ -547,14 +554,15 @@ int Linear_EQS::Solver(CNumerics* num)
 		void* pt[64];
 		/* Pardiso control parameters.*/
 		int iparm[64];
-		double dparm[64];
-		int maxfct, mnum, phase, error, msglvl, solver;
+		int maxfct, mnum, phase, error, msglvl;
 
 		/* Auxiliary variables.*/
 		double ddum;              /* Double dummy */
 		int idum;                 /* Integer dummy. */
 
 #ifdef _WIN32
+		double dparm[64];
+		int solver;
 		// Check the license and initialize the solver
 		{
 			//static bool done = false;
@@ -740,6 +748,8 @@ int Linear_EQS::Solver(CNumerics* num)
 
 		ierr = lis_matrix_set_crs(nonzero,A->ptr,A->col_idx, value,AA);
 		ierr = lis_matrix_assemble(AA);
+		CHKERR(ierr); // we put this here only to avoid compiler warnings.
+		              // one can also check erros after calling each lis functions.
 
 //		{
 //			std::cout << "print some lines of matrix: " << "\n";
@@ -802,7 +812,7 @@ int Linear_EQS::Solver(CNumerics* num)
 
 		ierr = lis_solver_set_option(solver_options,solver);
 		ierr = lis_solver_set_option(tol_option,solver);
-		ierr = lis_solver_set_option("-print mem",solver);
+		ierr = lis_solver_set_option((char*)"-print mem",solver);
 		ierr = lis_solve(AA,bb,xx,solver);
 		ierr = lis_solver_get_iters(solver,&iter);
 		//NW

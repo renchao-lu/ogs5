@@ -6497,7 +6497,9 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		vector<int> bc_eqs_id;
 		vector<double> bc_eqs_value;
 #else
+#if !defined(NEW_EQS)
 		double* eqs_rhs = NULL;
+#endif
 		CPARDomain* m_dom = NULL;
 #endif
 		//
@@ -6537,7 +6539,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			//TODO
 #ifdef NEW_EQS                              //WW
 			eqs_p = eqs_new;
-			eqs_rhs = eqs_new->b; //27.11.2007 WW
 #else
 			eqs_rhs = eqs->b;
 #endif
@@ -6552,10 +6553,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			if(type == 4 ) //WW
 			{
 				eqs_p = m_dom->eqsH;
-				eqs_rhs = m_dom->eqsH->b;
 			}
-			else
-				eqs_rhs = m_dom->eqs->b;
 #else
 			eqs_rhs = m_dom->eqs->b;
 #endif
@@ -7064,7 +7062,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		vector<int> bc_eqs_id;
 		vector<double> bc_eqs_value;
-#else
+#elif !defined(NEW_EQS)
 		double* eqs_rhs = NULL;
 #endif
 #ifdef NEW_EQS
@@ -7092,7 +7090,6 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 #ifdef NEW_EQS                              //WW
 			eqs_p = eqs_new;
-			eqs_rhs = eqs_new->b; //27.11.2007 WW
 #else
 			eqs_rhs = eqs->b;
 #endif
@@ -7107,10 +7104,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 			if(type == 4 ) //WW
 			{
 				eqs_p = m_dom->eqsH;
-				eqs_rhs = m_dom->eqsH->b;
 			}
-			else
-				eqs_rhs = m_dom->eqs->b;
 #else
 			eqs_rhs = m_dom->eqs->b;
 #endif
@@ -13731,7 +13725,6 @@ CRFProcess* PCSGetMass(size_t component_number)
         // CB_merge_0513
 		//int dof_DM = 1;
 		int dof_DM = 0;  //WW 02.2023. Pardiso
-		int DM_type = -1;         //03.08.2010. WW
 		CRFProcess* m_pcs = NULL;
 		CFEMesh* a_msh = NULL;
 		SparseTable* sp = NULL;
@@ -13759,7 +13752,6 @@ CRFProcess* PCSGetMass(size_t component_number)
 			{
 				dof_DM = m_pcs->GetPrimaryVNumber();
 				dof = dof_DM;
-				DM_type =  m_pcs->type; //03.08.2010. WW
 				if(m_pcs->type == 42)
 					dof = m_pcs->m_msh->GetMaxElementDim();
 			}
