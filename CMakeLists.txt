@@ -291,7 +291,6 @@ if (OGS_FEM_CAP)
 	add_subdirectory( CMP )
 endif ()
 add_subdirectory( FileIO )
-add_subdirectory( OGSProject )
 add_subdirectory( OGS )
 
 

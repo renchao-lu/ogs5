@@ -35,7 +35,6 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/GEO
 	${CMAKE_SOURCE_DIR}/MathLib
 	${CMAKE_SOURCE_DIR}/MSH
-	${CMAKE_SOURCE_DIR}/OGSProject
 	${CMAKE_SOURCE_DIR}/tests/gtest
 )
 
@@ -48,7 +47,6 @@ target_link_libraries(testrunner
 	GTest
 	MathLib
 	MSH
-	OGSProject
 )
 
 if (MSVC)

@@ -19,6 +19,5 @@ target_link_libraries( testPointInTriangle
         MathLib
        	FileIO
         Base
-       	OGSProject
 	${QT_LIBRARIES}
 )

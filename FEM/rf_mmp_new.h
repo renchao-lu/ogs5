@@ -332,7 +332,6 @@ extern std::list<std::string>mat_name_list;
 
 extern void MMPWrite(std::string);
 extern bool MMPRead(std::string);
-extern void MMPWriteTecplot(std::string);
 extern void MMPDelete();
 extern CMediumProperties* MMPGet(const std::string&);
 extern void MMP2PCSRelation(CRFProcess*);

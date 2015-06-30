@@ -32,7 +32,6 @@ target_link_libraries( ExtractMeshNodeIDs
 	GEO
 	MSH
 	MSHGEOTOOLS
-	OGSProject
 )
 
 target_link_libraries( ExtractMeshNodes
@@ -41,7 +40,6 @@ target_link_libraries( ExtractMeshNodes
 	GEO
 	MSH
 	MSHGEOTOOLS
-	OGSProject
 )
 
 
@@ -51,7 +49,6 @@ target_link_libraries( convertGLIVerticalSurfaceToPolygon
 	GEO
 	MSH
 	MSHGEOTOOLS
-	OGSProject
 )
 
 
@@ -62,7 +59,6 @@ target_link_libraries( ModifyMeshProperties
 	MathLib
 	MSH
 	MSHGEOTOOLS
-	OGSProject
 )
 
 target_link_libraries( filterMeshNodes
