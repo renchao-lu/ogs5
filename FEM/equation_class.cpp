@@ -537,7 +537,7 @@ int Linear_EQS::Solver(CNumerics* num)
 
 		// Reindexing ptr according to Fortran-based PARDISO
 		int i = 0;
-		for(int i = 0; i < numOfNode; ++i)
+		for(i = 0; i < numOfNode; ++i)
 			ptr[i] = A->ptr[i] + 1;
 		//ptr needs one more storage
 		ptr[i] = A->ptr[i] + 1;
