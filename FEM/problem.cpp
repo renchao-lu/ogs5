@@ -3779,6 +3779,10 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 		}
 		//m_pcs->m_msh = FEMGet("RICHARDS_FLOW");
 		// pcs->m_msh->RenumberNodesForGlobalAssembly(); related to Comment 1  // MB/WW
+		if (!m_pcs_local->TimeStepAccept()) {
+			m_pcs_global->accepted = false;
+			break;
+		}
 	}
 #else // ifndef USE_MPI_REGSOIL
 	num_parallel_blocks = no_richards_problems / size;
