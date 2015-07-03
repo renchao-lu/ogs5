@@ -35,7 +35,6 @@
 // FEMLib
 extern void remove_white_space(std::string*);
 //#include "problem.h"
-#include "gs_project.h"
 #include "tools.h"
 //#include "rf_node.h"
 #include "rf_bc_new.h"

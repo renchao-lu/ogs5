@@ -14,8 +14,6 @@
 #include <sstream>
 #include <vector>
 
-#include "gs_project.h"
-
 // BaseLib
 #include "memory.h"
 #include "Histogram.h"

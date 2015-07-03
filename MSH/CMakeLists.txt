@@ -39,7 +39,6 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/LIB
 	${CMAKE_SOURCE_DIR}/MathLib
 	${CMAKE_SOURCE_DIR}/MSH
-	${CMAKE_SOURCE_DIR}/OGSProject
 )
 
 # Create the library

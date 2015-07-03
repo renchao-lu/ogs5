@@ -14,7 +14,6 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/GEO
 	${CMAKE_SOURCE_DIR}/MathLib
 	${CMAKE_SOURCE_DIR}/MSH
-	${CMAKE_SOURCE_DIR}/OGSProject
 )
 
 if (LIS)
@@ -45,7 +44,6 @@ target_link_libraries( ogs
 	GEO
 	MathLib
 	MSH
-	OGSProject
 )
 
 if (OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)

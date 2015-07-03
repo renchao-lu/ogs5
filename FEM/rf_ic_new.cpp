@@ -7,7 +7,6 @@
    last modified
 **************************************************************************/
 
-#include "gs_project.h"
 #include "makros.h"
 // C++ STL
 #include <iostream>
@@ -870,34 +869,27 @@ void CInitialCondition::SetDomain(int nidx)
 				return;
 			}
 			std::ifstream rfr_file;
-			CGSProject* m_gsp = GSPGetMember("msh");
 			std::string restart_file_name;
 			restart_file_name = rfr_file_name;
-			if (m_gsp)
-				restart_file_name = m_gsp->path + rfr_file_name;
-			//---------------------------------------------------------------------
-			else          //Get absolut path of the file. 07.01.2009. WW
+			basic_string<char>::size_type indexChWin, indexChLinux;
+			indexChWin = indexChLinux = 0;
+			indexChWin = FileName.find_last_of('\\');
+			indexChLinux = FileName.find_last_of('/');
+			//
+			string funfname;
+			if (indexChWin == string::npos && indexChLinux == string::npos)
+				funfname = rfr_file_name;
+			else if (indexChWin != string::npos)
 			{
-				basic_string<char>::size_type indexChWin, indexChLinux;
-				indexChWin = indexChLinux = 0;
-				indexChWin = FileName.find_last_of('\\');
-				indexChLinux = FileName.find_last_of('/');
-				//
-				string funfname;
-				if (indexChWin == string::npos && indexChLinux == string::npos)
-					funfname = rfr_file_name;
-				else if (indexChWin != string::npos)
-				{
-					funfname = FileName.substr(0, indexChWin);
-					funfname = funfname + "\\" + rfr_file_name;
-				}
-				else if (indexChLinux != string::npos)
-				{
-					funfname = FileName.substr(0, indexChLinux);
-					funfname = funfname + "/" + rfr_file_name;
-				}
-				restart_file_name = funfname;
+				funfname = FileName.substr(0, indexChWin);
+				funfname = funfname + "\\" + rfr_file_name;
 			}
+			else if (indexChLinux != string::npos)
+			{
+				funfname = FileName.substr(0, indexChLinux);
+				funfname = funfname + "/" + rfr_file_name;
+			}
+			restart_file_name = funfname;
 			//-------------------------------------------------------------------
 			rfr_file.open(restart_file_name.c_str(), ios::in);
 			if (!rfr_file.good())
