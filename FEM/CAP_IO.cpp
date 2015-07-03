@@ -156,7 +156,6 @@ bool CAP_check_file(void)
     cout <<  locfilename<< endl;
     cout <<    locfilepath << endl;
 
-	bool is_same_file;
 	int i;
 	vector< string > ext_name0,ext_name;
 
@@ -431,7 +430,11 @@ void read_file(void)
 }
 
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqce (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
+#else
+int CAP_tqce (CHP, LI, LI, DBP, LIP)
+#endif
 {
 	CAP_count++;
 	CAP_icount++;
@@ -457,11 +460,15 @@ int CAP_tqce (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
 		read_file();
 		return 0;
 	}
-    else 
-      return -1;  
+    else
+      return -1;
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcel (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
+#else
+int CAP_tqcel (CHP, LI, LI, DBP, LIP)
+#endif
 {
 
 	CAP_count++;
@@ -492,7 +499,11 @@ int CAP_tqcel (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
       return -1; //CB should not occur
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcen (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
+#else
+int CAP_tqcen (CHP, LI, LI, DBP, LIP)
+#endif
 {
 	CAP_count++;
 	CAP_icount++;
@@ -522,7 +533,11 @@ int CAP_tqcen (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
         return -1; //CB should not occur
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcenl (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
+#else
+int CAP_tqcenl (CHP, LI, LI, DBP, LIP)
+#endif
 {
 	CAP_count++;
 	CAP_icount++;
@@ -555,7 +570,11 @@ int CAP_tqcenl (CHP OPTION, LI INDEXP, LI INDEXC, DBP VALS, LIP NOERR)
 
 
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqgetr(CHP OPTION, LI INDEXP, LI INDEX, DBP VAL, LIP NOERR)
+#else
+int CAP_tqgetr(CHP OPTION, LI INDEXP, LI INDEX, DBP VAL, LIP)
+#endif
 {
 	int i;
     if(CAP_MODE==0 || CAP_MODE==1){ //normal chemapp   or //using chemapp to create chemical state files
@@ -584,7 +603,11 @@ int CAP_tqgetr(CHP OPTION, LI INDEXP, LI INDEX, DBP VAL, LIP NOERR)
         return -1; //CB should not occur    
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqgdpc(CHP OPTION, LI INDEXP, LI INDEXC,DBP VAL, LIP NOERR)
+#else
+int CAP_tqgdpc(CHP OPTION, LI INDEXP, LI INDEXC,DBP VAL, LIP)
+#endif
 {
 	int i;
     if(CAP_MODE==0 || CAP_MODE==1){ //normal chemapp   or //using chemapp to create chemical state files
@@ -625,7 +648,11 @@ int CAP_tqini (LIP NOERR){
   }
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqvers(LIP NVERS, LIP NOERR){	
+#else
+int CAP_tqvers(LIP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqvers(NVERS, NOERR);
@@ -639,7 +666,11 @@ int CAP_tqvers(LIP NVERS, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqopna(CHP FILE, LI LUN, LIP NOERR){
+#else
+int CAP_tqopna(CHP, LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqopna(FILE, LUN, NOERR);
@@ -653,7 +684,11 @@ int CAP_tqopna(CHP FILE, LI LUN, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqopnb(CHP FILE, LI LUN, LIP NOERR){
+#else
+	int CAP_tqopnb(CHP, LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqopnb(FILE, LUN, NOERR);
@@ -667,7 +702,11 @@ int CAP_tqopnb(CHP FILE, LI LUN, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqopnt(CHP FILE, LI LUN, LIP NOERR){
+#else
+int CAP_tqopnt(CHP, LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqopnt(FILE, LUN, NOERR);
@@ -681,7 +720,11 @@ int CAP_tqopnt(CHP FILE, LI LUN, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqclos(LI LUN, LIP NOERR){
+#else
+int CAP_tqclos(LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqclos(LUN, NOERR);
@@ -751,7 +794,11 @@ int CAP_tqnosc(LIP NSCOM, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqgnsc(LI INDEXS, CHP NAME, LIP NOERR){
+#else
+int CAP_tqgnsc(LI, CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqgnsc(INDEXS, NAME, NOERR);
@@ -765,7 +812,11 @@ int CAP_tqgnsc(LI INDEXS, CHP NAME, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqnop (LIP NPHASE, LIP NOERR){
+#else
+int CAP_tqnop (LIP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqnop (NPHASE, NOERR);
@@ -779,7 +830,11 @@ int CAP_tqnop (LIP NPHASE, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqgnp (LI INDEXP, CHP NAME, LIP NOERR){
+#else
+int CAP_tqgnp (LI, CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqgnp (INDEXP, NAME, NOERR);
@@ -793,7 +848,11 @@ int CAP_tqgnp (LI INDEXP, CHP NAME, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqnopc(LI INDEXP, LIP NPCON, LIP NOERR){
+#else
+int CAP_tqnopc(LI, LIP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqnopc(INDEXP, NPCON, NOERR);
@@ -807,7 +866,11 @@ int CAP_tqnopc(LI INDEXP, LIP NPCON, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqgnpc(LI INDEXP, LI INDEXC, CHP NAME, LIP NOERR){
+#else
+int CAP_tqgnpc(LI, LI, CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqgnpc(INDEXP, INDEXC, NAME, NOERR);
@@ -859,7 +922,11 @@ int CAP_tqinpc(CHP NAME, LI INDEXP, LIP INDEXC, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcsp (LI INDEXP, CHP OPTION, LIP NOERR){
+#else
+int CAP_tqcsp (LI, CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqcsp (INDEXP, OPTION, NOERR);
@@ -873,7 +940,11 @@ int CAP_tqcsp (LI INDEXP, CHP OPTION, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcspc(LI INDEXP, LI INDEXC, CHP OPTION, LIP NOERR){
+#else
+int CAP_tqcspc(LI, LI, CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqcspc(INDEXP, INDEXC, OPTION, NOERR);
@@ -887,7 +958,11 @@ int CAP_tqcspc(LI INDEXP, LI INDEXC, CHP OPTION, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqstpc(LI INDEXP, LI INDEXC, DBP STOI, DBP WMASS, LIP NOERR){
+#else
+int CAP_tqstpc(LI, LI, DBP, DBP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqstpc(INDEXP, INDEXC, STOI, WMASS, NOERR);
@@ -901,7 +976,11 @@ int CAP_tqstpc(LI INDEXP, LI INDEXC, DBP STOI, DBP WMASS, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcsc (CHP NAME, LIP NOERR){
+#else
+int CAP_tqcsc (CHP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqcsc (NAME, NOERR);
@@ -915,7 +994,11 @@ int CAP_tqcsc (CHP NAME, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqinsc(CHP NAME, LIP INDEXS, LIP NOERR){
+#else
+int CAP_tqinsc(CHP, LIP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqinsc(NAME, INDEXS, NOERR);
@@ -929,7 +1012,11 @@ int CAP_tqinsc(CHP NAME, LIP INDEXS, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqcio (CHP OPTION, LI IVAL, LIP NOERR){
+#else
+int CAP_tqcio (CHP, LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqcio (OPTION, IVAL, NOERR);
@@ -943,7 +1030,11 @@ int CAP_tqcio (CHP OPTION, LI IVAL, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqremc(LI NUMCON, LIP NOERR){
+#else
+int CAP_tqremc(LI, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqremc(NUMCON, NOERR);
@@ -957,7 +1048,11 @@ int CAP_tqremc(LI NUMCON, LIP NOERR){
 	}
 }
 
+#ifdef OGS_FEM_CAP // CAP_REACT
 int CAP_tqsetc(CHP OPTION, LI INDEXP, LI INDEX, DB VAL, LIP NUMCON, LIP NOERR){
+#else
+int CAP_tqsetc(CHP, LI, LI, DB, LIP, LIP NOERR){
+#endif
 	if(CAP_MODE==0 || CAP_MODE==1){
 #ifdef OGS_FEM_CAP // CAP_REACT
 		return tqsetc(OPTION, INDEXP, INDEX, VAL, NUMCON, NOERR);
