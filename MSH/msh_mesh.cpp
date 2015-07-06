@@ -316,6 +316,11 @@ void CFEMesh::computeMinEdgeLength()
 	}
 }
 
+void CFEMesh::setSearchLength()
+{
+	_search_length = _min_edge_length / 2;
+}
+
 double CFEMesh::getSearchLength() const
 {
 	return _search_length;
@@ -904,8 +909,9 @@ void CFEMesh::ConstructGrid()
 	e_edgeNodes.resize(0);
 	std::cout << " done." << "\n";
 
-	computeSearchLength();
+	//computeSearchLength();
 	computeMinEdgeLength();
+	setSearchLength();
 	constructMeshGrid();
 }
 
