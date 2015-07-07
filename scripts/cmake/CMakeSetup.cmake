@@ -1,7 +1,7 @@
 
 # Set additional CMake modules path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfiguration")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/scripts/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/scripts/cmake/cmake")
 
 if(CMAKE_VERSION VERSION_GREATER 3.1)
 	cmake_policy(SET CMP0054 NEW)
@@ -21,7 +21,7 @@ include(OptionRequires)
 include(CppcheckTargets)
 
 # Adds useful macros and variables
-include( CMakeConfiguration/Macros.cmake )
+include( scripts/cmake/Macros.cmake )
 
 # Provide a way for Visual Studio Express users to turn OFF the new FOLDER
 # organization feature. Default to ON for non-Express users. Express users must
