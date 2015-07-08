@@ -31,6 +31,8 @@
 /**************************************************************************/
 #include "Configure.h"
 //#include <iostream>
+#include "display.h"
+#include "memory.h"
 //#include "makros.h"
 //#ifndef NEW_EQS //WW. 07.11.2008
 //#include "solver.h"

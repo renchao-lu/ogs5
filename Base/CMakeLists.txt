@@ -12,6 +12,8 @@ set( HEADERS
 	StringTools.h
 	swap.h
 	wait.h	
+	display.h
+	makros.h
 )
 
 set( SOURCES
@@ -20,6 +22,7 @@ set( SOURCES
 	MemWatch.cpp
 	StringTools.cpp
 	binarySearch.cpp
+	display.cpp
 )
 
 # Create the library

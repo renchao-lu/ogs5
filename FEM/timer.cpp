@@ -30,6 +30,9 @@ using namespace std;
 #include <time.h>
 #endif
 
+#include "makros.h"
+#include "memory.h"
+
 /* Zeitspeicher */
 static int max_zeitspeicher = -1;
 static long* zeit = NULL;

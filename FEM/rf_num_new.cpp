@@ -5,6 +5,8 @@
    11/2004 OK Implementation
    last modified:
 **************************************************************************/
+#include "rf_num_new.h"
+
 // There is a name conflict between stdio.h and the MPI C++ binding
 // with respect to the names SEEK_SET, SEEK_CUR, and SEEK_END.  MPI
 // wants these in the MPI namespace, but stdio.h will #define these
@@ -21,7 +23,6 @@
 //#undef SEEK_CUR
 #endif
 
-#include "makros.h"
 // C++ STL
 #include <cfloat>
 #include <cmath>
@@ -29,14 +30,16 @@
 #include <iostream>
 #include <list>
 #include <string>
-using namespace std;
+
+#include "makros.h"
+#include "memory.h"
+#include "display.h"
+
 // FEM-Makros
 #include "files0.h"
 #include "makros.h"
-extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword);
 // GeoSys-GeoLib
 // GeoSys-FEMLib
-#include "rf_num_new.h"
 #ifndef NEW_EQS                                   //WW. 06.11.2008
 #include "matrix_routines.h"
 #endif
@@ -46,6 +49,9 @@ extern ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keywor
 #include "tools.h"
 // GeoSys-MSHLib
 
+using namespace std;
+
+extern std::ios::pos_type GetNextSubKeyword(ifstream* file,string* line, bool* keyword);
 extern size_t max_dim;                            //OK411 todo
 
 //==========================================================================

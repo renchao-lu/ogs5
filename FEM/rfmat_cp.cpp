@@ -24,6 +24,7 @@ using namespace std;
 
 #include "files0.h"
 #include "makros.h"
+#include "display.h"
 #include "rf_mfp_new.h"
 #include "rf_mmp_new.h"
 #include "rf_msp_new.h"

@@ -82,6 +82,8 @@
 #define noDUMP
 
 /* Header / Andere intern benutzte Module */
+#include "memory.h"
+#include "display.h"
 #include "files0.h"
 #include "mathlib.h"
 #include "matrix_routines.h"
