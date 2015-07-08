@@ -39,6 +39,15 @@ class CFEMesh;
 
 class BoundaryCondition;
 
+/**
+ * @page parse_input_files Methods that parse input files
+ *
+ * Class CBoundaryCondition constains code that parses bc-files. See also \ref ogs_subkw_bc.
+ */
+
+/**
+ * @brief The CBoundaryCondition class
+ */
 class CBoundaryCondition :
 	public ProcessInfo,
 	public GeoInfo,
@@ -67,7 +76,6 @@ public:
 	 * valid is false if there occured an error while reading the data, else true
 	 * @return the position in the stream after the boundary condition
 	 */
-	// TF
 	std::ios::pos_type Read(std::ifstream* in,
 	                        const GEOLIB::GEOObjects& geo_obj, const std::string& unique_fname,
 	                        bool &valid);
