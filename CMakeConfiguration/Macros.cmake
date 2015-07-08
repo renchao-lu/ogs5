@@ -9,36 +9,31 @@ else( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 endif( CMAKE_SIZEOF_VOID_P EQUAL 4 )
 
 # Visual Studio detection
-if (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005"
+if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005"
 	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008"
 	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 10"
 	OR ${CMAKE_GENERATOR} STREQUAL "NMake Makefiles")
 
-	set (VS32 TRUE)
-	set (VS64 FALSE)
-	message (STATUS "Generator: Visual Studio 32 Bit")
+	set(VS32 TRUE)
+	set(VS64 FALSE)
+	message(STATUS "Generator: Visual Studio 32 Bit")
 
-endif (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005"
-	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008"
-	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 10"
-	OR ${CMAKE_GENERATOR} STREQUAL "NMake Makefiles")
+endif()
 
-if (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005 Win64"
+if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005 Win64"
 	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008 Win64"
 	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 10 Win64")
 
-	set (VS32 FALSE)
-	set (VS64 TRUE)
-	message (STATUS "Generator: Visual Studio 64 Bit")
+	set(VS32 FALSE)
+	set(VS64 TRUE)
+	message(STATUS "Generator: Visual Studio 64 Bit")
 
-endif (${CMAKE_GENERATOR} STREQUAL "Visual Studio 8 2005 Win64"
-	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 9 2008 Win64"
-	OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 10 Win64")
+endif()
 
 # Convert environment variables
-if (NOT $ENV{LIBRARIES_DIR} STREQUAL "")
+if(NOT $ENV{LIBRARIES_DIR} STREQUAL "")
 	STRING(REGEX REPLACE "\\\\" "/" LIBRARIES_DIR $ENV{LIBRARIES_DIR})
-endif (NOT $ENV{LIBRARIES_DIR} STREQUAL "")
+endif()
 
 MACRO(COPY_FILE_IF_CHANGED in_file out_file target)
 	IF(${in_file} IS_NEWER_THAN ${out_file})
@@ -49,7 +44,7 @@ MACRO(COPY_FILE_IF_CHANGED in_file out_file target)
 				COMMAND    ${CMAKE_COMMAND}
 				ARGS       -E copy ${in_file} ${out_file}
 		)
-		ENDIF(${in_file} IS_NEWER_THAN ${out_file})
+	ENDIF()
 ENDMACRO(COPY_FILE_IF_CHANGED)
 
 MACRO(COPY_FILE_INTO_DIRECTORY_IF_CHANGED in_file out_dir target)
@@ -68,7 +63,7 @@ ${out_dir} ${target})
 ENDMACRO(COPY_FILES_INTO_DIRECTORY_IF_CHANGED)
 
 MACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY in_file target)
-	IF (WIN32)
+	IF(WIN32)
 		COPY_FILE_INTO_DIRECTORY_IF_CHANGED(
 			${CMAKE_CURRENT_SOURCE_DIR}/${in_file}
 			${EXECUTABLE_OUTPUT_PATH}/Debug
@@ -79,13 +74,13 @@ MACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY in_file target)
 			${EXECUTABLE_OUTPUT_PATH}/Release
 			${target}
 		)
-	ELSE (WIN32)
+	ELSE(WIN32)
 		COPY_FILE_INTO_DIRECTORY_IF_CHANGED(
 			${CMAKE_CURRENT_SOURCE_DIR}/${in_file}
 			${EXECUTABLE_OUTPUT_PATH}
 			${target}
 		)
-	ENDIF (WIN32)
+	ENDIF(WIN32)
 ENDMACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY)
 
 # Adds a benchmark run.
@@ -96,58 +91,58 @@ ENDMACRO(COPY_FILE_INTO_EXECUTABLE_DIRECTORY)
 # Additional arguments add output files to compare
 FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 
-  SET (CONFIG_MATCH FALSE)
-  IF( "${ogsConfiguration}" STREQUAL "OGS_FEM" AND OGS_FEM )
-	SET (CONFIG_MATCH TRUE)
+  SET(CONFIG_MATCH FALSE)
+  IF("${ogsConfiguration}" STREQUAL "OGS_FEM" AND OGS_FEM )
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_SP" AND OGS_FEM_SP)
-	SET (CONFIG_MATCH TRUE)
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_GEMS" AND OGS_FEM_GEMS)
-	SET (CONFIG_MATCH TRUE)
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_BRNS" AND OGS_FEM_BRNS)
-	SET (CONFIG_MATCH TRUE)
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_PQC" AND OGS_FEM_PQC)
-	SET (CONFIG_MATCH TRUE)
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_IPQC" AND OGS_FEM_IPQC)
-	SET (CONFIG_MATCH TRUE)
+	SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF("${ogsConfiguration}" STREQUAL "OGS_FEM_CAP" AND OGS_FEM_CAP)
-    SET (CONFIG_MATCH TRUE)
+    SET(CONFIG_MATCH TRUE)
   ENDIF()
 
   IF (UNIX) # Only supported on Linux
-	IF( "${ogsConfiguration}" STREQUAL "OGS_FEM_LIS" AND OGS_FEM_LIS)
-	  SET (CONFIG_MATCH TRUE)
+	IF("${ogsConfiguration}" STREQUAL "OGS_FEM_LIS" AND OGS_FEM_LIS)
+	  SET(CONFIG_MATCH TRUE)
 	ENDIF()
-	IF( "${ogsConfiguration}" STREQUAL "OGS_FEM_MKL" AND OGS_FEM_MKL)
-	  SET (CONFIG_MATCH TRUE)
+	IF("${ogsConfiguration}" STREQUAL "OGS_FEM_MKL" AND OGS_FEM_MKL)
+	  SET(CONFIG_MATCH TRUE)
 	ENDIF()
-	IF( "${ogsConfiguration}" STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
-	  SET (CONFIG_MATCH TRUE)
+	IF("${ogsConfiguration}" STREQUAL "OGS_FEM_MPI" AND OGS_FEM_MPI)
+	  SET(CONFIG_MATCH TRUE)
 	ENDIF()
-	IF( "${ogsConfiguration}" STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
-	  SET (CONFIG_MATCH TRUE)
+	IF("${ogsConfiguration}" STREQUAL "OGS_FEM_PETSC" AND OGS_FEM_PETSC)
+	  SET(CONFIG_MATCH TRUE)
 	ENDIF()
-	IF( "${ogsConfiguration}" STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
-	  SET (CONFIG_MATCH TRUE)
+	IF("${ogsConfiguration}" STREQUAL "OGS_FEM_PETSC_GEMS" AND OGS_FEM_PETSC_GEMS)
+	  SET(CONFIG_MATCH TRUE)
 	ENDIF()
   ENDIF (UNIX)
 
   IF (CONFIG_MATCH)
-	IF (WIN32)
-	  SET (ogsExe ${EXECUTABLE_OUTPUT_PATH}/Release/ogs)
-	ELSE (WIN32)
-	  SET (ogsExe ${EXECUTABLE_OUTPUT_PATH}/ogs)
+	IF(WIN32)
+	  SET(ogsExe ${EXECUTABLE_OUTPUT_PATH}/Release/ogs)
+	ELSE(WIN32)
+	  SET(ogsExe ${EXECUTABLE_OUTPUT_PATH}/ogs)
 	ENDIF(WIN32)
 
 	# Set timeout
@@ -172,11 +167,11 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	SET (FILES_TO_DELETE "${FILES_TO_DELETE} ${entry}")
 	ENDFOREACH (entry ${ARGN})
 	IF(OGS_PROFILE)
-		SET (FILES_TO_DELETE "${FILES_TO_DELETE} gmon.out")
+		SET(FILES_TO_DELETE "${FILES_TO_DELETE} gmon.out")
 	ENDIF()
 
 	# Adds a benchmark run. This calls AddTest.cmake to execute several steps.
-	ADD_TEST (
+	ADD_TEST(
 		${authorName}_BENCHMARK_${benchmarkName}
 		${CMAKE_COMMAND}
 		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
@@ -195,12 +190,12 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 	)
 
 	# compare file differences with python script
-	IF (PYTHONINTERP_FOUND)
+	IF(PYTHONINTERP_FOUND)
 		FILE (REMOVE ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt)
 		FOREACH (entry ${ARGN})
 			FILE (APPEND ${PROJECT_SOURCE_DIR}/../benchmarks/results/temp/temp_${benchmarkNameUnderscore}.txt "${entry}\n")
 		ENDFOREACH (entry ${ARGN})
-		ADD_TEST (
+		ADD_TEST(
 			${authorName}_FILECOMPARE_${benchmarkName}
 			${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/../benchmarks/results
 			${PYTHON_EXECUTABLE}
@@ -210,16 +205,16 @@ FUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 			${authorName}_${benchmarkNameUnderscore}.html
 			../
 		)
-	ENDIF (PYTHONINTERP_FOUND)
+	ENDIF(PYTHONINTERP_FOUND)
 
   # copy benchmark output files to reference directory
-  IF (COPY_BENCHMARKS_TO_REF)
+  IF(COPY_BENCHMARKS_TO_REF)
 	FOREACH (entry ${ARGN})
 	  CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/../benchmarks/${entry} ${PROJECT_SOURCE_DIR}/../benchmarks_ref/${entry} COPYONLY)
 	ENDFOREACH (entry ${ARGN})
-  ENDIF (COPY_BENCHMARKS_TO_REF)
+  ENDIF(COPY_BENCHMARKS_TO_REF)
 
-  ENDIF (CONFIG_MATCH)
+  ENDIF(CONFIG_MATCH)
 
 ENDFUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToCompare numProcesses)
 
@@ -244,18 +239,18 @@ FUNCTION(CHECK_CONFIG)
 	SET(counter 0)
 
 	FOREACH(config ${configs})
-		IF (config)
+		IF(config)
 			MATH(EXPR counter "${counter} + 1")
-		ENDIF (config)
+		ENDIF(config)
 #		MESSAGE(STATUS "config test ${config} found total ${counter}")
 	ENDFOREACH()
-	IF (counter EQUAL 0)
+	IF(counter EQUAL 0)
 		MESSAGE(STATUS "No configuration specified. Assuming default configuration...")
 		SET(OGS_FEM ON)
                 SET(counter 1)
-	ENDIF (counter EQUAL 0)
+	ENDIF(counter EQUAL 0)
 
-	IF (counter GREATER 1)
+	IF(counter GREATER 1)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
 			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
@@ -271,7 +266,7 @@ FUNCTION(CHECK_CONFIG)
 			OGS_FEM_PETSC
 			OGS_FEM_PETSC_GEMS
 			OGS_FEM_CAP")
-	ENDIF (counter GREATER 1)
+	ENDIF(counter GREATER 1)
 
 ENDFUNCTION()
 
