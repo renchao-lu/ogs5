@@ -1050,15 +1050,17 @@ double CFluidProperties::Density(double* variables)
 			break;
 		case 26: //Dalton's law + ideal gas for use with TNEQ/TES
 		{
-			const double M0 = cp_vec[0]->molar_mass;
+			const double M0 = cp_vec[0]->molar_mass; // molar mass of component 0
 			const double M1 = cp_vec[1]->molar_mass;
 			const double p = variables[0];
 			const double T = variables[1];
-			const double x = variables[2];
+			const double x = variables[2]; // gas mass fraction of component 1
+			assert(0.0 <= x && x <= 1.0);
 
-			// TODO [CL] max is redundant if it is guaranteed that 0 <= x <= 1
-			const double m_frac_w = max(M0*x/(M0*x + M1*(1.0-x)), 0.); //mass in mole fraction
-			density = p / (phc::R_SI * T) * (M1*m_frac_w + M0*(1.0-m_frac_w)); //R_uni in mNs
+			// gas molar fraction of component 1
+			const double xn = M0*x/(M0*x + M1*(1.0-x));
+
+			density = p / (phc::R_SI * T) * (M1*xn + M0*(1.0-xn)); //R_uni in mNs
 		}
 			break;
 
