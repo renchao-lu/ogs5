@@ -3,9 +3,6 @@
 #include <math.h>
 #include <cmath>
 
-#include <iostream>
-#include <iomanip>
-
 #include "physical_constants.h"
 
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
@@ -51,7 +48,6 @@ conversion_rate::conversion_rate(double T_solid,
 		M_react = COMP_MOL_MASS_O2;
 	}
 	else if (system == FiniteElement::Z13XBF){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
-		// TODO [CL] change
 		// TODO [CL] read those values from some input file
 		rho_low = 1150.0;
 		rho_up = -1.0; //not needed
@@ -113,12 +109,6 @@ void conversion_rate::set_sorption_equilibrium()
 	const double W = characteristic_curve(A);
 	//determine equilibrium loading
 	C_eq = W * get_adsorbate_density(T_s); //kg/kg
-
-	// std::cerr << "@@@ T_S   = " << std::setprecision(15) << T_s << std::endl;
-	// std::cerr << "@@@ p_r_g = " << std::setprecision(15) << p_r_g << std::endl;
-	// std::cerr << "@@@ adsorption potential = " << std::setprecision(15) << A << std::endl;
-	// std::cerr << "@@@ occupied pore space = " << std::setprecision(15) << W << std::endl;
-	// std::cerr << "@@@ equilibrium loading = " << std::setprecision(15) << C_eq << std::endl;
 }
 
 double conversion_rate::get_mole_fraction(double xm)
@@ -358,7 +348,6 @@ double conversion_rate::characteristic_curve(const double A)
 	//parameters from least squares fit (experimental data)
 	const double c[] = {0.34102920966608297, -0.0013106032830951296, -0.00060754147575378876, 3.7843404172683339e-07, 4.0107503869519016e-07, 3.1274595098338057e-10, -7.610441241719489e-11};
 	double W = (c[0]+c[2]*A+c[4]*pow(A,2)+c[6]*pow(A,3))/(1.0+c[1]*A+c[3]*pow(A,2)+c[5]*pow(A,3)); //cm^3/g
-	// assert(W >= 0.0);
 	if (W < 0.0) {
 		W = 0.0; // TODO [CL] debug output
 	}
