@@ -605,8 +605,8 @@ void CEqlink::initEQLINK(void){
 	 for(i=0;i<this->nodenumber;i++){
 		sysT0[i] = m_pcs->GetNodeValue(i, indx0); 
         sysT[i] = m_pcs->GetNodeValue(i, indx1); 
-		if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo �C->K
-        if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo �C->K
+		if (sysT0[i] <273.15) sysT0[i] += 273.15;  //ToDo C->K
+        if (sysT[i] <273.15) sysT[i] += 273.15;  //ToDo C->K
 	 }
   }
   else {
