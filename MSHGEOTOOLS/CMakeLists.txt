@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES(
+include_directories(
 	${CMAKE_SOURCE_DIR}/Base
 	${CMAKE_SOURCE_DIR}/FEM
 	${CMAKE_SOURCE_DIR}/FileIO
@@ -9,9 +9,9 @@ INCLUDE_DIRECTORIES(
 )
 
 # create library
-ADD_LIBRARY( MSHGEOTOOLS STATIC ExtractMeshNodes.cpp )
+add_library( MSHGEOTOOLS STATIC ExtractMeshNodes.cpp )
 
-TARGET_LINK_LIBRARIES (
+target_link_libraries (
 	MSHGEOTOOLS
 	${CMAKE_THREAD_LIBS_INIT}
 	GEO
