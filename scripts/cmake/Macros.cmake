@@ -186,7 +186,7 @@ function (ADD_BENCHMARK authorName benchmarkName ogsConfiguration numProcesses)
 		-DBENCHMARK_TIMEOUT=${THIS_BENCHMARK_TIMEOUT}
 		-DOGS_FEM_CONFIG=${ogsConfiguration}
 		-DNUM_PROCESSES=${numProcesses}
-		-P ${PROJECT_SOURCE_DIR}/CMakeConfiguration/AddBenchmark.cmake
+		-P ${PROJECT_SOURCE_DIR}/scripts/cmake/AddBenchmark.cmake
 	)
 
 	# compare file differences with python script

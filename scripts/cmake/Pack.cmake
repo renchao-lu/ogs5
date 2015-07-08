@@ -1,6 +1,6 @@
 #### Packaging setup for OGS-5 ####
 
-#include(CMakeConfiguration/InstallRequiredSystemLibraries.cmake)
+#include(scripts/cmake/InstallRequiredSystemLibraries.cmake)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "OGS-5")
 set(CPACK_PACKAGE_VENDOR "OpenGeoSys Development Team")
@@ -21,7 +21,7 @@ else ()
     set(CPACK_GENERATOR NSIS)
     # There is a bug in NSI that does not handle full unix paths properly. Make
     # sure there is at least one set of four (4) backlasshes.
-    set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/CMakeConfiguration\\\\OGS_Logo_Installer.bmp")
+    set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/scripts/cmake\\\\OGS_Logo_Installer.bmp")
     #set(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
     set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
     set(CPACK_NSIS_HELP_LINK "https:\\\\\\\\geosys.ufz.de")

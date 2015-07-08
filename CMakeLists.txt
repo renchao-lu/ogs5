@@ -31,16 +31,16 @@ option(OGS_FEM_MPI "Message passing interface configuration" OFF)
 option(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
 
 ### CMake setup ###
-include(CMakeConfiguration/CMakeSetup.cmake)
+include(scripts/cmake/CMakeSetup.cmake)
 
 ### Compiler setup ###
-include(CMakeConfiguration/CompilerSetup.cmake)
+include(scripts/cmake/CompilerSetup.cmake)
 
 ### Find directories and libraries ###
-include (CMakeConfiguration/Find.cmake)
+include (scripts/cmake/Find.cmake)
 
 ### General project setup ###
-include(CMakeConfiguration/GeneralProjectSetup.cmake)
+include(scripts/cmake/GeneralProjectSetup.cmake)
 
 # Set default configuration when no other config is given
 if (NOT (OGS_FEM OR OGS_FEM_SP OR OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS OR OGS_FEM_PQC OR OGS_FEM_IPQC OR OGS_FEM_BRNS OR OGS_FEM_CHEMAPP OR OGS_FEM_LIS OR OGS_FEM_MKL OR OGS_FEM_MPI OR OGS_FEM_PETSC OR OGS_FEM_CAP))
@@ -120,7 +120,7 @@ endif()
 
 if(OGS_FEM_PETSC)
 	message (STATUS "Configuring for PETSc" )
-	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/findPETSC)
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/scripts/cmake/cmake/findPETSC)
 
 	find_package(PETSc REQUIRED QUIET)
 	if(PETSC_VERSION VERSION_GREATER 3.3)
@@ -136,7 +136,7 @@ if(OGS_FEM_PETSC_GEMS)
 	message (STATUS "Configuring for GEMS with PETSc" )
 	include_directories( ${Boost_INCLUDE_DIR} )
 	link_directories( ${Boost_LIBRARY_DIR} )
-	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/findPETSC)
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/scripts/cmake/cmake/findPETSC)
 
 	find_package(PETSc REQUIRED QUIET)
 	if(PETSC_VERSION VERSION_GREATER 3.3)
@@ -313,7 +313,7 @@ endif ()
 if (OGS_PACKAGING)
 	# Add packaging configuration
 	message (STATUS "Enabling packaging")
-	include( CMakeConfiguration/Pack.cmake)
+	include( scripts/cmake/Pack.cmake)
 endif ()
 
 if (OGS_CMAKE_DEBUG)
