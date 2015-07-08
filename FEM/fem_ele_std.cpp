@@ -9192,6 +9192,7 @@ void CFiniteElementStd::Assembly()
 #endif
 		break;
 	case EPT_THERMAL_NONEQUILIBRIUM:
+		Cal_Velocity();
 		CalcSolidDensityRate();
 		AssembleParabolicEquation();
 		//Assemble_Gravity();
@@ -9204,6 +9205,7 @@ void CFiniteElementStd::Assembly()
 #endif
 		break;
 	case EPT_TES:
+		Cal_Velocity();
 		CalcSolidDensityRate();
 		AssembleParabolicEquation();
 		//Assemble_Gravity();
