@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 
 // for getCwd
-#ifdef WINDOWS
+#ifdef WIN32
 #include <direct.h>
 #else
 #include <unistd.h>
@@ -78,7 +78,7 @@ bool HasCRInLineEnding(std::string const& strFilename)
 
 inline char getDirSep()
 {
-#ifdef WINDOWS
+#ifdef WIN32
     return '\\';
 #else
     return '/';
@@ -137,7 +137,7 @@ std::string getCwd()
 {
     char cwd[FILENAME_MAX];
 
-#ifdef WINDOWS
+#ifdef WIN32
     _getcwd(cwd, FILENAME_MAX);
 #else
     getcwd(cwd, FILENAME_MAX);
