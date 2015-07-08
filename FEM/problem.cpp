@@ -92,10 +92,6 @@ namespace process
 }
 using process::CRFProcessDeformation;
 
-//NW: moved the following variables from rf.cpp to avoid linker errors
-std::string FileName;                             //WW
-std::string FilePath;                             //23.02.2009. WW
-
 /**************************************************************************
    GeoSys - Function: Constructor
    Task:

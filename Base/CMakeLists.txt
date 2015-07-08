@@ -29,6 +29,7 @@ set( SOURCES
 	timer.cpp
 	memory.cpp
 	break.cpp
+	makros.cpp
 )
 
 # Create the library
