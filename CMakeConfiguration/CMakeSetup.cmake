@@ -3,17 +3,9 @@
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeConfiguration")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# Load addional modules
-INCLUDE(UseBackportedModules)
-INCLUDE(OptionRequires)
-INCLUDE(CppcheckTargets)
-
 IF(CMAKE_VERSION VERSION_GREATER 3.1)
 	CMAKE_POLICY(SET CMP0054 NEW)
 ENDIF()
-
-# Adds useful macros and variables
-INCLUDE( CMakeConfiguration/Macros.cmake )
 
 # Suppress warning on setting policies
 CMAKE_POLICY(SET CMP0011 OLD)
@@ -22,6 +14,14 @@ CMAKE_POLICY(SET CMP0011 OLD)
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 2.7)
 	CMAKE_POLICY(SET CMP0014 OLD)
 ENDIF ()
+
+# Load addional modules
+INCLUDE(UseBackportedModules)
+INCLUDE(OptionRequires)
+INCLUDE(CppcheckTargets)
+
+# Adds useful macros and variables
+INCLUDE( CMakeConfiguration/Macros.cmake )
 
 # Provide a way for Visual Studio Express users to turn OFF the new FOLDER
 # organization feature. Default to ON for non-Express users. Express users must
