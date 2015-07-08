@@ -504,6 +504,8 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 						{
 							*tim_file >> line_string;
 							adapt_itr_type = convertIterationType(line_string);
+							if (line_string == "COUPLED_STABLE_ERROR")	// convertIterationType() finds IterationType::COUPLED if that is part of the name... very unpractical.
+								adapt_itr_type = IterationType::COUPLED_STABLE_ERROR;
 							line.clear();
 						}
 						else if(line_string.find("STAY") !=
@@ -1302,7 +1304,8 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 				n_itr = std::max(n_itr, m_pcs->iter_lin_max);
 			} else if (adapt_itr_type==IterationType::NONLINEAR) {
 				n_itr = std::max(n_itr, m_pcs->iter_nlin_max);
-			} else if (adapt_itr_type==IterationType::COUPLED) {
+			} else if (adapt_itr_type==IterationType::COUPLED
+					|| adapt_itr_type==IterationType::COUPLED_STABLE_ERROR) {
 				n_itr = m_pcs->iter_outer_cpl + 1;
 			}
 		}
@@ -1322,6 +1325,18 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
 			break;
 		}
 	}
+
+	if (adapt_itr_type==IterationType::COUPLED_STABLE_ERROR){
+		double const inverse_error(1/m_pcs->cpl_max_relative_error);
+		if (inverse_error < 2*multiplier)
+		{
+			double const old_multiplier(multiplier);
+			multiplier = inverse_error*0.5*0.9;
+			std::cout << "Adapting multiplier to " << multiplier
+					<< " instead of " << old_multiplier << std::endl;
+		}
+	}
+
 	if (!m_pcs->accepted) {
 		multiplier = time_adapt_coe_vector.back();
 	} else if (stay_steps_after_rejection > 0 && multiplier > 1.0) {

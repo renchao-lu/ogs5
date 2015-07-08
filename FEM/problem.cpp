@@ -470,7 +470,7 @@ Problem::Problem (char* filename) :
 
 		//check maximum number of coupling iterations against maximum time step increase
 		if (m_tim->time_control_type == TimeControlType::SELF_ADAPTIVE
-				&& m_tim->adapt_itr_type == IterationType::COUPLED
+				&& (m_tim->adapt_itr_type == IterationType::COUPLED || m_tim->adapt_itr_type==IterationType::COUPLED_STABLE_ERROR)
 				&& cpl_overall_max_iterations < m_tim->time_adapt_tim_vector.back())
 			std::cout << "Warning: Maximum number of coupling iterations is smaller than maximum time step increase!!!" << std::endl;
 	}
