@@ -196,6 +196,7 @@ void PETScLinearSolver::MatrixCreate( PetscInt m, PetscInt n)
 
   MatSeqAIJSetPreallocation(A, d_nz, PETSC_NULL);
   MatMPIAIJSetPreallocation(A, d_nz, PETSC_NULL, o_nz, PETSC_NULL);
+  MatSetOption(A,MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_FALSE);
 
   MatSetUp(A);  // KG44 this seems to work with petsc 3.3 ..the commands below result in problems when assembling the matrix with version 3.3
 
