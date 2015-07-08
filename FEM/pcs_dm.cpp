@@ -2814,7 +2814,7 @@ void CRFProcessDeformation::PostExcavation()
 		for(size_t l=0; l<m_msh->ele_vector.size();l++)
 		{
 			//if((m_msh->ele_vector[l]->GetExcavState()>0)&&!(m_msh->ele_vector[l]->GetMark()))//WX:07.2011 HM excav
-			if(ExcavMaterialGroup == m_msh->ele_vector[l]->GetPatchIndex())
+		    if(ExcavMaterialGroup == static_cast<int>(m_msh->ele_vector[l]->GetPatchIndex()))
 			{
 				if((m_msh->ele_vector[l]->GetExcavState()>-1)&&m_msh->ele_vector[l]->GetMark())
 				{
@@ -2871,7 +2871,7 @@ void CRFProcessDeformation::PostExcavation()
 			done = false;
 			for(size_t i=0; i<deact_dom.size(); i++)
 			{
-				if(elem->GetPatchIndex()== deact_dom[i])
+			    if(elem->GetPatchIndex() == static_cast<std::size_t>(deact_dom[i]))
 				{
 					elem->MarkingAll(false);
 					*(eleV_DM->Stress) = 0.;
@@ -2900,7 +2900,7 @@ void CRFProcessDeformation::PostExcavation()
 			{
 				for(int i=0; i<NumDeactivated_SubDomains; i++)
 				{
-					if(elem->GetPatchIndex() == Deactivated_SubDomain[i])
+				    if(elem->GetPatchIndex() == static_cast<std::size_t>(Deactivated_SubDomain[i]))
 					{
 						elem->MarkingAll(false);
 						done = true;
@@ -2986,24 +2986,26 @@ void CRFProcessDeformation::UpdateIniStateValue()
 		CalIniTotalStress();
 	if((fem_dm->Flow_Type==0||fem_dm->Flow_Type==1||fem_dm->Flow_Type==2 )&&Neglect_H_ini==2)
 	{
-		int tmp_type, idx_p1_ini, idx_p2_ini, idx_p1_1, idx_p2_1;//,idx_sw_ini,  idx_sw_1;
+		int tmp_type;
 		CRFProcess *h_pcs=NULL;
 		h_pcs = fem_dm->h_pcs;
 		tmp_type = fem_dm->Flow_Type;
-		idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
-		idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
-		if(tmp_type==2)
+		int idx_p1_ini = h_pcs->GetNodeValueIndex("PRESSURE1_Ini");
+		int idx_p1_1 = h_pcs->GetNodeValueIndex("PRESSURE1")+1;
+		if(tmp_type==0||tmp_type==1)//LiquideFlow,RichardsFlow
 		{
-			idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
-			//idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
-			idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
-			//idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
-		}
-		for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
-		{
-			if(tmp_type==0||tmp_type==1)//LiquideFlow,RichardsFlow
+			for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
+			{
 				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
-			else if (tmp_type==2)
+			}
+		}
+		else if (tmp_type==2)
+		{
+			int idx_p2_ini = h_pcs->GetNodeValueIndex("PRESSURE2_Ini");
+			//int idx_sw_ini = h_pcs->GetNodeValueIndex("SATURATION1_Ini");
+			int idx_p2_1 = h_pcs->GetNodeValueIndex("PRESSURE2")+1;
+			//int idx_sw_1 = h_pcs->GetNodeValueIndex("SATURATION1")+1;
+			for(size_t i=0; i<m_msh->GetNodesNumber(false); i++)
 			{
 				h_pcs->SetNodeValue(i, idx_p1_ini, h_pcs->GetNodeValue(i, idx_p1_1));
 				h_pcs->SetNodeValue(i, idx_p2_ini, h_pcs->GetNodeValue(i, idx_p2_1));
