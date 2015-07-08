@@ -4227,7 +4227,7 @@ void CRFProcess::ConfigTNEQ()
    //pcs_number_of_evals++;
 
    for(size_t i=0; i<GetPrimaryVNumber(); i++)
-      Shift[i] = i*m_msh->GetNodesNumber(true);
+      Shift[i] = i*m_msh->GetNodesNumber(false);
 
    //// HS
    //// initialize the pointers for rho_s ODE calculation
@@ -4354,7 +4354,7 @@ void CRFProcess::ConfigTES()
 	//pcs_number_of_evals++;
 
 	for(size_t i=0; i<GetPrimaryVNumber(); i++)
-		Shift[i] = i*m_msh->GetNodesNumber(true);
+		Shift[i] = i*m_msh->GetNodesNumber(false);
 
 	//// HS
 	//// initialize the pointers for rho_s ODE calculation
