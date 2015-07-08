@@ -19,10 +19,6 @@
 
 /*JT: Send output message*/
 extern void ScreenMessage(const char* message);
-/* Deklarationen */
-extern void DisplayStartMsg ( void );
-/* Gibt Eroeffnungsbildschirm aus */
-extern void DisplayEndMsg ( void );
 /* Gibt Programm-Abspann aus */
 extern void DisplayMsg ( const char* s );
 /* Schreibt Zeichenkette ohne Zeilenvorschub auf Standardausgabe */
