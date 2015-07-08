@@ -321,7 +321,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
 		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
 		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
-		PcsType = EPT_V;
+		PcsType = EPT_MULTIPHASE_FLOW;
 		size_m = 40;
 		break;
 
@@ -338,7 +338,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
 		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
 		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
-		PcsType = EPT_P;
+		PcsType = EPT_PSGLOBAL;
 		size_m = 40;
 		break;
 
@@ -353,7 +353,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 		idx_vel[0] = pcs->GetNodeValueIndex("VELOCITY_X1");
 		idx_vel[1] = pcs->GetNodeValueIndex("VELOCITY_Y1");
 		idx_vel[2] = pcs->GetNodeValueIndex("VELOCITY_Z1");
-		PcsType = EPT_S;
+		PcsType = EPT_MULTI_COMPONENTIAL_FLOW;
 		size_m = 40;    
 		break;
 
@@ -380,7 +380,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	if (pcs->Memory_Type == 0)            // Do not store local matrices
 	{
 		// 04.03.2009 PCH
-		if (PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 			Mass2 = new Matrix(size_m, size_m);
 		else
 			Mass = new Matrix(size_m, size_m);
@@ -537,21 +537,21 @@ CFiniteElementStd::~CFiniteElementStd()
 void CFiniteElementStd::SetMemory()
 {
 	int Size = nnodes;
-	if(PcsType == EPT_V || PcsType == EPT_P) //4.3.2009 PCH
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL) //4.3.2009 PCH
 		Size *= 2;
-	if(PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM) Size *= pcs->dof;//AKS
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) Size *= pcs->dof;//AKS
 
 	ElementMatrix* EleMat = NULL;
 	// Prepare local matrices
 	// If local matrices are not stored, resize the matrix
 	if(pcs->Memory_Type == 0)
 	{
-		if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //04.3.2009 PCH
+		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //04.3.2009 PCH
 			Mass2->LimitSize(Size, Size);
 		else
 			Mass->LimitSize(nnodes, nnodes);  // Mass->LimitSize(nnodes); // unsymmetric in case of Upwinding
 		Laplace->LimitSize(Size, Size);
-		if(PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_GAS_FLOW || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if(PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_GAS_FLOW || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		{
 			Advection->LimitSize(Size, Size); //SB4200
 			Storage->LimitSize(Size, Size); //SB4200
@@ -572,7 +572,7 @@ void CFiniteElementStd::SetMemory()
 		Mass = EleMat->GetMass();
 		Laplace = EleMat->GetLaplace();
 		// Advection, Storage, Content SB4200
-		if(PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if(PcsType == EPT_MASS_TRANSPORT || PcsType == EPT_HEAT_TRANSPORT || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		{
 			Advection = EleMat->GetAdvection();
 			Storage = EleMat->GetStorage();
@@ -3997,7 +3997,7 @@ double CFiniteElementStd::CalCoefStrainCouping(const int phase)
 	case EPT_RICHARDS_FLOW:                               // Richard flow
 		return interpolate(NodalVal_Sat); // Water saturation
 		break;
-	case EPT_V:
+	case EPT_MULTIPHASE_FLOW:
 		if(phase == 0)
 		{
 			PG = interpolate(NodalVal1);
@@ -5274,7 +5274,7 @@ void CFiniteElementStd::CalcLaplace()
   
    
   // 03.03 2009 PCH
-  if(PcsType == EPT_V || PcsType == EPT_P)
+  if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
     dof_n = 2;
   if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
 	  dof_n = 4;
@@ -5316,9 +5316,9 @@ void CFiniteElementStd::CalcLaplace()
 		CalCoefLaplace(false,gp);
 	      else if (dof_n == 2)
 		{		  
-		  if (PcsType == EPT_V)
+		  if (PcsType == EPT_MULTIPHASE_FLOW)
 		    CalCoefLaplace2(false, ishd + jn);
-		  else if (PcsType == EPT_P)
+		  else if (PcsType == EPT_PSGLOBAL)
 		    CalCoefLaplacePSGLOBAL(false,ishd + jn);
 		}
 		else if (PcsType == EPT_THERMAL_NONEQUILIBRIUM)
@@ -6215,7 +6215,7 @@ void CFiniteElementStd::Assemble_Gravity()
 	//
 	//
 	int dof_n = 1;                        // 27.2.2007 WW
-	if(PcsType == EPT_V || PcsType == EPT_P)
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
 		dof_n = 2;
 	if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		dof_n = 4;
@@ -6279,9 +6279,9 @@ void CFiniteElementStd::Assemble_Gravity()
 
 			if(dof_n == 2)
 			{
-				if(PcsType == EPT_V)
+				if(PcsType == EPT_MULTIPHASE_FLOW)
 					CalCoefLaplace2(true, ii * dof_n + 1);
-				else if(PcsType == EPT_P)
+				else if(PcsType == EPT_PSGLOBAL)
 					CalCoefLaplacePSGLOBAL(true, ii * dof_n);
 			}
 			else if(dof_n == 4)
@@ -6434,7 +6434,7 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
 	//
 	//
 	int dof_n = 1;                        // 27.2.2007 WW
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 		dof_n = 2;
 
 	//WW 05.01.07
@@ -6762,7 +6762,7 @@ void CFiniteElementStd::Cal_Velocity()
 	int gp_r = 0, gp_s = 0, gp_t;
 	double coef = 0.0;
 	int dof_n = 1;
-	if(PcsType == EPT_V || PcsType == EPT_P)
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
 		dof_n = 2;
 	if(PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		dof_n = 4;
@@ -6811,7 +6811,7 @@ void CFiniteElementStd::Cal_Velocity()
 			NodalVal1[i] = NodalVal[i];
 		}
 	//
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 	{
 		gp_ele->Velocity_g = 0.0; //WW
 		for(int i = 0; i < nnodes; i++)
@@ -6821,7 +6821,7 @@ void CFiniteElementStd::Cal_Velocity()
 			NodalVal[i] = NodalVal2[i]  - NodalVal[i];
 		}
 	}
-	if(PcsType == EPT_P)
+	if(PcsType == EPT_PSGLOBAL)
 	{
 		gp_ele->Velocity_g = 0.0; //PCH
 		// Just get Pnw, which is the secondary variable in PS_GLOBAL
@@ -6853,9 +6853,9 @@ void CFiniteElementStd::Cal_Velocity()
 			CalCoefLaplace(true);
 		else if (dof_n==4 && PcsType==EPT_THERMAL_NONEQUILIBRIUM)
             CalCoefLaplaceTNEQ(0);
-		else if (dof_n == 2 && PcsType == EPT_V) // PCH 05.2009
+		else if (dof_n == 2 && PcsType == EPT_MULTIPHASE_FLOW) // PCH 05.2009
 			CalCoefLaplace2(true,0);
-		else if (dof_n == 2 && PcsType == EPT_P) // PCH 05.2009
+		else if (dof_n == 2 && PcsType == EPT_PSGLOBAL) // PCH 05.2009
 			CalCoefLaplacePSGLOBAL(true,0);
 		//WW/CB
 		if((PcsType == EPT_TWOPHASE_FLOW) && (pcs->pcs_type_number == 1))
@@ -6868,7 +6868,7 @@ void CFiniteElementStd::Cal_Velocity()
 				vel[i] += NodalVal[j] * dshapefct[i * nnodes + j];
 			//			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 		}
-		if(PcsType == EPT_V) {
+		if(PcsType == EPT_MULTIPHASE_FLOW) {
 			for (size_t i = 0; i < dim; i++)
 			{
 				vel_g[i] = 0.0;
@@ -6876,7 +6876,7 @@ void CFiniteElementStd::Cal_Velocity()
 					// Change   NodalVal2 to NodalVal1. 02.2010. WW
 					vel_g[i] += NodalVal2[j] * dshapefct[i * nnodes + j];
 			}
-		} else if(PcsType == EPT_P) { // PCH 05.2009
+		} else if(PcsType == EPT_PSGLOBAL) { // PCH 05.2009
 			for (size_t i = 0; i < dim; i++)
 			{
 				vel_g[i] = 0.0;
@@ -6902,12 +6902,12 @@ void CFiniteElementStd::Cal_Velocity()
 				if (dim == 3 && ele_dim == 2)
 				{
 					vel[dim - 1] += coef; //NW local permeability tensor is already transformed to global one in CalCoefLaplace()
-					if (PcsType == EPT_V || PcsType == EPT_P)
+					if (PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)
 					{
 						for (size_t i = 0; i < dim; i++)
 						for (size_t j = 0; j < ele_dim; j++)
 						{
-							if(PcsType == EPT_V)
+							if(PcsType == EPT_MULTIPHASE_FLOW)
 								vel_g[i] += rho_g *
 								            gravity_constant *
 								            (*MeshElement->
@@ -6915,7 +6915,7 @@ void CFiniteElementStd::Cal_Velocity()
 								            * (*MeshElement->
 								               transform_tensor)(2,
 								                                k);
-							if(PcsType == EPT_P) // PCH 05.2009
+							if(PcsType == EPT_PSGLOBAL) // PCH 05.2009
 								vel_g[i] += coef *
 								            GasProp->Density() /
 								            FluidProp->Density() *
@@ -6929,12 +6929,12 @@ void CFiniteElementStd::Cal_Velocity()
 				}             // To be correctted
 				else
 				{
-					if (PcsType == EPT_V)
+					if (PcsType == EPT_MULTIPHASE_FLOW)
 					{
 						vel[dim - 1] += coef;
 						vel_g[dim - 1] += gravity_constant * rho_ga;
 					}
-					else if (PcsType == EPT_P) // PCH 05.2009
+					else if (PcsType == EPT_PSGLOBAL) // PCH 05.2009
 					{
 						//vel[dim-1] -= coef;
 						// CB_merge_0513 ?? gravity term
@@ -6948,7 +6948,7 @@ void CFiniteElementStd::Cal_Velocity()
 		}
 		// end gravity term
 
-		if(PcsType == EPT_V)
+		if(PcsType == EPT_MULTIPHASE_FLOW)
 		{
 			for (size_t i = 0; i < dim; i++) // 02.2010. WW
 			{
@@ -7008,7 +7008,7 @@ void CFiniteElementStd::Cal_Velocity()
 			}
 
 		}
-		if(PcsType == EPT_P)          // PCH 05.2009
+		if(PcsType == EPT_PSGLOBAL)          // PCH 05.2009
 		{
 			// Juse use the coefficient of PSGLOBAL Pressure-based velocity (4)
 			CalCoefLaplacePSGLOBAL(true,4);
@@ -7334,7 +7334,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 	int gp_r = 0, gp_s = 0, gp_t;
 	double coef = 0.0;
 	int dof_n = 1;
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 		dof_n = 2;
 	//
 	gp_t = 0;
@@ -7375,7 +7375,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 		for(int i = 0; i < nnodes; i++)
 			NodalVal[i] = pcs->GetNodeValue(nodes[i], idx1);
 	//
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 		for(int i = 0; i < nnodes; i++)
 		{
 			NodalVal[i] -= pcs->GetNodeValue(nodes[i], idxp21);
@@ -7422,7 +7422,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 			vel[i] += NodalVal[j] * dshapefct[i * nnodes + j];
 		//			 vel[i] += fabs(NodalVal[j])*dshapefct[i*nnodes+j];
 	}
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 		for (size_t i = 0; i < dim; i++)
 		{
 			vel_g[i] = 0.0;
@@ -7440,7 +7440,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 				{
 					vel[i] += coef * (*MeshElement->transform_tensor)(i, k)
 					          * (*MeshElement->transform_tensor)(2, k);
-					if(PcsType == EPT_V)
+					if(PcsType == EPT_MULTIPHASE_FLOW)
 						vel_g[i] += rho_g * gravity_constant *
 						            (*MeshElement->transform_tensor)(i, k)
 						            * (*MeshElement->transform_tensor)(2, k);
@@ -7448,7 +7448,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 		}                         // To be correctted
 		else
 		{
-			if(PcsType == EPT_V)
+			if(PcsType == EPT_MULTIPHASE_FLOW)
 			{
 				vel[dim - 1] -= coef;
 				vel_g[dim - 1] += gravity_constant * rho_g;
@@ -7462,7 +7462,7 @@ void CFiniteElementStd::Cal_Velocity_2()
 			//            gp_ele->Velocity(i, gp) -= mat[dim*i+j]*vel[j];  // unit as that given in input file
 			gp_ele->Velocity(i, gp) -= mat[dim * i + j] * vel[j] / time_unit_factor;
 	//
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 	{
 		CalCoefLaplace2(true,3);
 		coef = rhow / rho_ga;
@@ -7889,12 +7889,12 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//----------------------------------------------------------------------
 	// Initialize.
 	// if (pcs->Memory_Type==2) skip the these initialization
-	if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		(*Mass2) = 0.0;
 	else
 		(*Mass) = 0.0;
 	(*Laplace) = 0.0;
-	if(PcsType == EPT_S)
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)
 	{
 		(*Advection) = 0.0;
 		  (*Content) = 0.0;
@@ -7912,21 +7912,21 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//----------------------------------------------------------------------
 	// Calculate matrices
 	// Mass matrix..........................................................
-	if(PcsType == EPT_V)                      //WW
+	if(PcsType == EPT_MULTIPHASE_FLOW)                      //WW
 	{
 		if(pcs->m_num->ele_mass_lumping)
 			CalcLumpedMass2();
 		else
 			CalcMass2();
 	}
-	else if(PcsType == EPT_P)                 //PCH
+	else if(PcsType == EPT_PSGLOBAL)                 //PCH
 	{
 		if(pcs->m_num->ele_mass_lumping)
 			CalcLumpedMassPSGLOBAL();
 		else
 			CalcMassPSGLOBAL();
 	}
-	else if(PcsType == EPT_S)                 //AKS
+	else if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)                 //AKS
 	{
 		if(pcs->m_num->ele_mass_lumping)
 			CalcLumpedMassMCF();
@@ -7944,11 +7944,11 @@ void CFiniteElementStd::AssembleParabolicEquation()
 			CalcMass();
 	}
 	// Laplace matrix.......................................................
-	     if (PcsType==EPT_S)
+	     if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
 		   CalcLaplaceMCF(); //AKS
 		 else
 	CalcLaplace();
-      if (PcsType==EPT_S)
+      if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW)
 	  {                             
          CalcAdvectionMCF();
          CalcContentMCF();
@@ -7981,7 +7981,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//Mass matrix
 	if(pcs->PartialPS != 1)               // PCH if not partial-pressure-based
 	{
-		if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 			*StiffMatrix    = *Mass2;
 		else
 			*StiffMatrix    = *Mass;
@@ -7996,7 +7996,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		*AuxMatrix      = *Laplace;
-		if(PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
  {
 			*AuxMatrix     += *Advection;
          *AuxMatrix += *Content;
@@ -8012,10 +8012,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	///Initialize temporal vector
 	for (i = 0; i < nnodes; i++)
 		NodalVal[i] = 0.0;
-	if(PcsType == EPT_V)                      // For DOF>1: 27.2.2007 WW
+	if(PcsType == EPT_MULTIPHASE_FLOW)                      // For DOF>1: 27.2.2007 WW
 		for (i = 0; i < nnodes; i++)
 			NodalVal[i + nnodes] = 0.0;
-	  if(PcsType==EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	  if(PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
       {
 	  for (int in = 0; in < pcs->dof; in++)
 	  {
@@ -8112,7 +8112,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	// Mass - Storage
 	if(pcs->PartialPS != 1)               // PCH if not partial-pressure-based
 	{
-		if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //PCH
+		if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) //PCH
 			*AuxMatrix1 = *Mass2;
 		else
 			*AuxMatrix1 = *Mass;
@@ -8127,7 +8127,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		*AuxMatrix      = *Laplace;
-	if(PcsType==EPT_S || PcsType==EPT_THERMAL_NONEQUILIBRIUM)
+	if(PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType==EPT_THERMAL_NONEQUILIBRIUM)
 	{
 			*AuxMatrix     += *Advection;
 	*AuxMatrix     += *Content;
@@ -8143,7 +8143,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	for (i = 0; i < nnodes; i++)
 	NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
 	
-	if(PcsType == EPT_S)// For DOF>1: 27.2.2007 WW
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)// For DOF>1: 27.2.2007 WW
 	{
 	for (int in = 0; in < pcs->dof; in++)
 	{
@@ -8170,7 +8170,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
             NodalVal[i+3*nnodes] = 0.0;
          }
       }
-	else if(PcsType == EPT_P)
+	else if(PcsType == EPT_PSGLOBAL)
 		{// For DOF>1:
 		for (i = 0; i < nnodes; i++)
 		{
@@ -8200,10 +8200,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	}
 
 	//
-	if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 		{
 		int nDF = 2;
-		if(PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
+		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
 		for(ii = 0; ii < nDF; ii++)
 		{
 			i_sh = NodeShift[ii + dm_shift];
@@ -8400,10 +8400,10 @@ void CFiniteElementStd::add2GlobalMatrixII()
 		A = pcs->eqs_new->A;
 #endif
 	// For DOF>1:
-	if(PcsType == EPT_V || PcsType == EPT_P || PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL || PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM)
 	{
 		int nDF = 2;
-		if(PcsType == EPT_S || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
+		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM) nDF=pcs->dof;
 
 		int jj_sh;
 		long j_sh = 0;
@@ -9219,7 +9219,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 
 	//----------------------------------------------------------------------
 	// Add local matrix to global matrix
-	if(PcsType == EPT_V || PcsType == EPT_P)      // For DOF>1: 03.03.2009 PCH
+	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)      // For DOF>1: 03.03.2009 PCH
 	{
 		for(int ii = 0; ii < pcs->dof; ii++)
 		{
@@ -9379,7 +9379,7 @@ void CFiniteElementStd::Config()
 		NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx00);
 		NodalVal1[i] = pcs->GetNodeValue(nodes[i],idx11);
 	}                                     //----------WW 05.01.07
-	if(PcsType == EPT_V)                      // 25.2.2007
+	if(PcsType == EPT_MULTIPHASE_FLOW)                      // 25.2.2007
 
 		for(i = 0; i < nnodes; i++)
 		{
@@ -9388,7 +9388,7 @@ void CFiniteElementStd::Config()
 			NodalVal1[i + nnodes] = pcs->GetNodeValue(nodes[i],idxp21);
 		}
 
-	if(PcsType == EPT_S)
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)
 		for(i = 0; i < nnodes; i++)
 		{
 	for(int in = 0; in < pcs->dof; in++)         NodalValue[in][i] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
@@ -9411,7 +9411,7 @@ void CFiniteElementStd::Config()
 
 	  }
 
-	if(PcsType == EPT_P)
+	if(PcsType == EPT_PSGLOBAL)
 		for(i = 0; i < nnodes; i++)
 			NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
 	//----------WW 05.01.07
@@ -9574,7 +9574,7 @@ void CFiniteElementStd::Assembly()
 		add2GlobalMatrixII();
 #endif
 		break;
-	case EPT_V:
+	case EPT_MULTIPHASE_FLOW:
 		//TEST                   dm_pcs = NULL;
 		// Multi-phase flow 24.02.2007 WW
 		AssembleParabolicEquation();
@@ -9601,7 +9601,7 @@ void CFiniteElementStd::Assembly()
 		add2GlobalMatrixII();	
 		break;
 
-	case EPT_P:                               // PS_GLOBAL for Multi-phase flow 03.03 2009 PCH
+	case EPT_PSGLOBAL:                               // PS_GLOBAL for Multi-phase flow 03.03 2009 PCH
 		AssembleParabolicEquation();
 		PrintTheSetOfElementMatrices("Laplace");
 		if(pcs->num_type_name.find("DirectPc") != string::npos)
@@ -9616,7 +9616,7 @@ void CFiniteElementStd::Assembly()
 		Assemble_RHS_T_PSGlobal();
 		add2GlobalMatrixII();
 		break;
-	case EPT_S:
+	case EPT_MULTI_COMPONENTIAL_FLOW:
 		AssembleParabolicEquation();
 		Assemble_GravityMCF();
 #if defined(USE_PETSC)
@@ -10176,10 +10176,10 @@ void CFiniteElementStd::CalcNodeMatParatemer()
 		idx11 = idxp21;
 	for(i = 0; i < nnodes; i++)
 		NodalVal1[i] = pcs->GetNodeValue(nodes[i],idx11);
-	if(PcsType == EPT_V)
+	if(PcsType == EPT_MULTIPHASE_FLOW)
 		for(i = 0; i < nnodes; i++)
 			NodalVal_p2[i] = pcs->GetNodeValue(nodes[i],idxp21);
-	if(PcsType == EPT_P)                      // 4.3.2009 PCH
+	if(PcsType == EPT_PSGLOBAL)                      // 4.3.2009 PCH
 
 		for(i = 0; i < nnodes; i++)
 			NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
