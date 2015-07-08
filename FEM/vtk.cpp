@@ -1,6 +1,5 @@
 #include "vtk.h"
 #include <fstream>
-
 #if defined(WIN32)
 #include <direct.h>
 #else
@@ -17,7 +16,6 @@
 #include "rf_mmp_new.h"
 
 using namespace std;
-
 
 const std::string INDEX_STR = "  ";
 const std::string velocity_name[3][4] =
@@ -41,15 +39,15 @@ const std::string velocity_name[3][4] =
 bool CVTK::InitializePVD(const string &file_base_name, const string &pcs_type_name, bool binary)
 {
 	//PVD
-    vec_dataset.clear();
-    pvd_file_name = defaultOutputPath + pathBasename(file_base_name);
-    // pvd_file_name = file_base_name;
+	vec_dataset.clear();
+	pvd_file_name = defaultOutputPath + pathBasename(file_base_name);
+	// pvd_file_name = file_base_name;
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
-        pvd_file_name += mrank_str;
+		pvd_file_name += mrank_str;
 #endif
 	if(pcs_type_name.size() > 0)          // PCS
-        pvd_file_name += "_" + pcs_type_name;
-    pvd_file_name += ".pvd";
+		pvd_file_name += "_" + pcs_type_name;
+	pvd_file_name += ".pvd";
 
 	/* // Make the following lines as comments by WW
 	//VTK
@@ -63,21 +61,21 @@ bool CVTK::InitializePVD(const string &file_base_name, const string &pcs_type_na
 			ibegin = is;
 		ibegin += 1;
 		this->pvd_vtk_file_name_base = file_base_name.substr(ibegin);
-        this->pvd_vtk_file_path_base = file_base_name.substr(0, ibegin);
+		this->pvd_vtk_file_path_base = file_base_name.substr(0, ibegin);
 	}
 	else
     {
 		this->pvd_vtk_file_name_base = file_base_name;
-        this->pvd_vtk_file_path_base = "";
-    }
+		this->pvd_vtk_file_path_base = "";
+	}
 	if (pcs_type_name.size() > 0)        // PCS
 		this->pvd_vtk_file_name_base += "_" + pcs_type_name;
-    */
+	*/
 	
 	//
-    pvd_vtk_file_path_base = defaultOutputPath;
-    pvd_vtk_file_name_base = pathBasename(file_base_name) + "_" + pcs_type_name; //WW
-    useBinary = binary;
+	pvd_vtk_file_path_base = defaultOutputPath;
+	pvd_vtk_file_name_base = pathBasename(file_base_name) + "_" + pcs_type_name; //WW
+	useBinary = binary;
 
 	return true;
 }
@@ -1315,7 +1313,3 @@ bool CVTK::WriteElementValue(std::fstream &fin,
 	}
 	return true;
 }
-
-
-
-

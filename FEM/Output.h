@@ -262,10 +262,4 @@ private:
 	void setDataArrayDisp();    
 #endif
 };
-
-
-
-std::string pathBasename(const std::string& path);
-
-
 #endif // OUTPUT_H
