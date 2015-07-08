@@ -19,8 +19,6 @@
 using namespace std;
 
 
-
-
 const std::string INDEX_STR = "  ";
 const std::string velocity_name[3][4] =
 {
