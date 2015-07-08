@@ -130,7 +130,6 @@ void CFiniteElementStd::CalcLumpedMassTES()
 		for(int jn = 0; jn < nDF; jn++)
 		{
 			const int jsh = jn * nnodes;
-
 			double factor = CalCoefMassTES(in * nDF + jn);
 
 			//			pcs->timebuffer = factor; // Tim Control "Neumann"
@@ -179,7 +178,6 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
-		// TODO: [CL] 1/p ???
 		val = poro/p * FluidProp->Density(eos_arg);
 		break;
 
@@ -596,11 +594,6 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 	//    case 7:
 	//        break;
 	case 8: // x x
-		// TODO [CL] why so complicated?
-		// std::cerr << "@@@ " << __FUNCTION__ << ":" << __LINE__
-		//           // << " react rate: " << gp_ele->q_R[gp]
-		//           << " poro: " << poro << " vs. poro2 " << MediaProp->Porosity(Index, theta)
-		//           << std::endl;
 		val = (MediaProp->Porosity(Index, theta) - 1.0) * gp_ele->q_R[gp];
 		break;
 	}
