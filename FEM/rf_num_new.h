@@ -28,17 +28,17 @@ private:
 	long m_cols;
 	FiniteElement::ErrorMethod _pcs_nls_error_method;
 	FiniteElement::ErrorMethod _pcs_cpl_error_method;
-        std::string lsover_name;    //WW          
-        std::string pres_name;              
+	std::string lsover_name;    //WW          
+	std::string pres_name;              
 public:
-  const char *getLinearSolverName() const
-  {
-    return lsover_name.c_str();
-  }
-  const char *getPreconditionerName() const
-  {
-    return pres_name.c_str();
-  }
+	const char *getLinearSolverName() const
+	{
+		return lsover_name.c_str();
+	}
+	const char *getPreconditionerName() const
+	{
+		return pres_name.c_str();
+	}
 
 	// method
 	std::string method_name;              //OK
