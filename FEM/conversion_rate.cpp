@@ -50,8 +50,7 @@ conversion_rate::conversion_rate(double T_solid,
 		M_carrier = Phys::MolMass::N2; //consider switch to air
 		M_react   = Phys::MolMass::Water;
 		W0 = 0.291/1.e3; //in m^3/kg
-		// p_min = .01; //in Pa
-		p_min = 0.0;
+		p_min = 0.0; //in Pa
 	}
 }
 

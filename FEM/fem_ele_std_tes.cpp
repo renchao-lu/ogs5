@@ -216,8 +216,8 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 
 		const double rhoSR = gp_ele->rho_s_curr[gp];
 		const double rhoGR = FluidProp->Density(eos_arg);
-		const double cpG = FluidProp->SpecificHeatCapacity(eos_arg);
-		const double cpS = SolidProp->Heat_Capacity(rhoSR);
+		const double cpG   = FluidProp->SpecificHeatCapacity(eos_arg);
+		const double cpS   = SolidProp->Heat_Capacity(rhoSR);
 
 		val = poro * rhoGR * cpG + (1.0-poro) * rhoSR * cpS;
 		break;
