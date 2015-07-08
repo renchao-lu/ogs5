@@ -283,7 +283,7 @@ int main ( int argc, char* argv[] )
 	}
 
 	// If no option is given, output files are placed in the same directory as the input files
-	if (defaultOutputPath == "") defaultOutputPath = pathDirname(std::string(dateiname));
+	if (defaultOutputPath.empty()) defaultOutputPath = pathDirname(std::string(dateiname));
 
 	FileName = dateiname;
 	size_t indexChWin, indexChLinux;
