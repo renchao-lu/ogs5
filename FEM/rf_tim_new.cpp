@@ -80,6 +80,8 @@ CTimeDiscretization::CTimeDiscretization(void)
 	desired_error = 0.5;
 	max_increase = 4;
 	min_increase = 0.25;
+	last_time_step_length = 0;
+	dampening = 0;
 
 }
 
@@ -568,6 +570,13 @@ std::ios::pos_type CTimeDiscretization::Read(std::ifstream* tim_file)
 						{
 							*tim_file >> line_string;
 							min_increase = strtod(line_string.data(),NULL);
+							line.clear();
+						}
+						else if (line_string.find("DAMPENING") !=
+								std::string::npos)
+						{
+							*tim_file >> line_string;
+							dampening = strtod(line_string.data(),NULL);
 							line.clear();
 						}
 						else
@@ -1341,6 +1350,9 @@ double CTimeDiscretization::StableErrorAdaptive ( void )
 		}
 	}
 
+	// update variables
+	last_time_step_length = time_step_length;
+
 	double multiplier(1);
 	if ( ( aktueller_zeitschritt == 0 ) )
 	{
@@ -1362,7 +1374,7 @@ double CTimeDiscretization::StableErrorAdaptive ( void )
 
 		//return multiplier for first time step
 		if (!repeat)
-			time_step_length = initial_step_size;
+			time_step_length = last_time_step_length = initial_step_size;
 		else
 		{
 			multiplier = min_increase;
@@ -1384,22 +1396,24 @@ double CTimeDiscretization::StableErrorAdaptive ( void )
 
 	// update the time step length
 	time_step_length *= multiplier;
+
+	// add dampening if selected, time step not repeated, and not first time step
+	if ( (dampening != 0) && !(repeat) && (aktueller_zeitschritt != 0) )
+		time_step_length = (time_step_length * dampening + last_time_step_length) / (dampening + 1);
+
+	// check limits of time step size
 	time_step_length = std::min(time_step_length, max_time_step);
 	time_step_length = std::max(time_step_length, min_time_step);
 
 	// screen output
 	std::cout << "\n" << pcs_type_name << " " << convertTimeControlTypeToString(time_control_type)
-			<< " " << ( (multiplier > 1) ? "increasing" : "decreasing") << " time step size "
-			<< "with multiplier " << multiplier << "."
+			<< " suggest " << ( (time_step_length / last_time_step_length > 1) ? "increasing" : "decreasing")
+			<< " time step size with multiplier " << time_step_length / last_time_step_length << "."
 			<< "\n";
 
 	if ( Write_tim_discrete )
 		*tim_discrete << aktueller_zeitschritt << "  " << aktuelle_zeit
 			<< "   " << time_step_length << "\n";
-
-	// update variables
-//	snd_last_time_step_length = last_time_step_length;
-//()	last_error = current_error;
 
 	return time_step_length;
 
