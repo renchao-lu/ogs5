@@ -19,11 +19,14 @@ conversion_rate::conversion_rate(double T_solid,
                                  double phi_S,
                                  double delta_t,
                                  FiniteElement::SolidReactiveSystem system)
-    :R(phc::R_SI), p_eq(1.0)
+    : R(phc::R_SI), p_eq(1.0), rho_s_0(rho_s_initial),
+      x(Eigen::VectorXd(1)),
+      tol_l (1.0e-4),
+      tol_u (1.0 - tol_l),
+      tol_rho (0.1)
 {
-	x = Eigen::VectorXd(1);
 	update_param( T_solid, T_gas, p_gas, x_reactive, rho_s_initial, phi_S, delta_t, system);
-	conversion_rate::rho_s_0 = rho_s_initial;
+
 	if (system == FiniteElement::CaOH2){ //Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
 		rho_low = 1656.0;
 		rho_up = 2200.0;
@@ -41,6 +44,8 @@ conversion_rate::conversion_rate(double T_solid,
 		M_react = COMP_MOL_MASS_O2;
 	}
 	else if (system == FiniteElement::Z13XBF){//Definition auch in void CSolidProperties::SetSolidReactiveSystemProperties()
+		// TODO [CL] change
+		// TODO [CL] read those values from some input file
 		rho_low = 1150.0;
 		rho_up = -1.0; //not needed
 		reaction_enthalpy = 0.0; //see CalcEnthalpy13XBF()
@@ -50,11 +55,6 @@ conversion_rate::conversion_rate(double T_solid,
 		W0 = 0.291/1.e3; //in m^3/kg
 		p_min = 500.; //in Pa
 	}
-
-	tol_l = 1.0e-4;
-	tol_u = 1.0 - tol_l;
-	tol_rho = 0.1;
-	
 }
 
 conversion_rate::~conversion_rate(void)
