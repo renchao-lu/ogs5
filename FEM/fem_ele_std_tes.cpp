@@ -273,7 +273,7 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 
 	const int Index = MeshElement->GetIndex();
 
-	// std::fill_n(mat, dim*dim, 0);
+
 
 	switch(dof_index)
 	{
@@ -350,6 +350,7 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 		//        break;
 
 	case 8:
+	{
 		p = ipol(p0, p1, theta, this);
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
@@ -372,6 +373,10 @@ void CFiniteElementStd::CalCoefLaplaceTES(const int dof_index)
 			mat[i] = diffusion_tensor[i]; //TN
 		}
 		break;
+	}
+
+	default:
+		std::fill_n(mat, dim*dim, 0);
 	}
 }
 
