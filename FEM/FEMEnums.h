@@ -44,8 +44,9 @@ enum ProcessType
 	/// H process, incompressible flow
 	OVERLAND_FLOW,                        //!< OVERLAND_FLOW
 	PS_GLOBAL,                            //!< PS_GLOBAL
-	MULTI_COMPONENTIAL_FLOW,                             // Fluid flow coupled with heat transport
-	TNEQ,									//reactive thermal nonequilibrium
+	MULTI_COMPONENTIAL_FLOW,              //!< Fluid flow coupled with heat transport
+	TNEQ,                                 //!< reactive thermal nonequilibrium
+	TES,                                  //!< reactive thermal equilibrium
 	RANDOM_WALK,                          //!< RANDOM_WALK
 	/// H process, incompressible flow
 	RICHARDS_FLOW,                        //!< RICHARDS_FLOW
@@ -135,8 +136,8 @@ enum PrimaryVariable
 	STRESS_ZZ,                            // IC
 	/// Heat transport
 	TEMPERATURE,                          //!< TEMPERATURE
-	TEMPERATURE1,							// for TNEQ models
-	TEMPERATURE2,							// for TNEQ models
+	TEMPERATURE1,                         //!< for TNEQ/TES models
+	TEMPERATURE2,                         //!< for TNEQ model
 	VELOCITY_DM_X,                        //!< VELOCITY_DM_X
 	VELOCITY_DM_Y,                        //!< VELOCITY_DM_Y
 	VELOCITY_DM_Z,                        //!< VELOCITY_DM_Z

@@ -642,7 +642,8 @@ public:
 	void ConfigMultiPhaseFlow();
 	void ConfigPS_Global();               // PCH
 	void ConfigMULTI_COMPONENTIAL_FLOW();                // AKS/NB
-	  void ConfigTNEQ();						//HS,TN
+	void ConfigTNEQ();						//HS,TN
+	void ConfigTES();						//HS,TN
 	// Configuration 1 - NOD
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
         void setSolver( petsc_group::PETScLinearSolver *petsc_solver );
@@ -821,10 +822,11 @@ public:
 	//WW Reomve int timelevel, bool update
 	//WW
 
-	  void CalcSecondaryVariablesTNEQ();      //HS
+	void CalcSecondaryVariablesTNEQ();      //HS
+	void CalcSecondaryVariablesTES();      //HS
 	void CalcSecondaryVariablesUnsaturatedFlow(bool initial = false);
 	void CalcSecondaryVariablesPSGLOBAL(); // PCH
-    void CalcSecondaryVariablesLiquidFlow();                                                  // PCH
+	void CalcSecondaryVariablesLiquidFlow();                                                  // PCH
 	double GetCapillaryPressureOnNodeByNeighobringElementPatches(int nodeIdx,
 	                                                             int meanOption,
 	                                                             double Sw);
