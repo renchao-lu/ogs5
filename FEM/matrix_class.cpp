@@ -221,7 +221,6 @@ void Matrix::multi(const Matrix& m, Matrix& m_result, double fac)
 	}
 #endif
     const double *m_data = m.getEntryArray();
-    const size_t mrows = m.Rows();
     const size_t mcols = m.Cols();
     double *r_data = m_result.getEntryArray();
     const size_t r_rows = m_result.Rows();
@@ -360,8 +359,6 @@ void SymMatrix::multi(const SymMatrix& m, Matrix& m_result, double fac)
 		abort();
 	}
 #endif
-    const size_t mrows = m.Rows();
-    const size_t mcols = m.Cols();
     double *r_data = m_result.getEntryArray();
     const size_t r_rows = m_result.Rows();
     const size_t r_cols = m_result.Cols();

@@ -1006,7 +1006,8 @@ double Fluid_Viscosity (double rho, double T, double p, int fluid)
 	case 5:
 		h = o2_viscosity(rho,T);		  // Oxygen
 		break;
-	default:   h = 1E-3;
+	default:
+		h = 1E-3;
 	}
 
 	return h;
@@ -3760,8 +3761,8 @@ double bip (int number, int fluid_a, int fluid_b, int i, int j, int k, double T)
 //CVirialCoefficients DuansVirialCoefficients(int Fluid, double T)
 VirialCoefficients DuansVirialCoefficients(int Fluid, double T)
 {
-	double a[15];
-	double Tc, Pc, M;
+	double a[15] = {};
+	double Tc = 0.0, Pc = 0.0, M = 0.0;
 	double R = 83.14467; // cm��?bar/(K* mol)
 	//CVirialCoefficients x;	//BG
 	VirialCoefficients x; //BG

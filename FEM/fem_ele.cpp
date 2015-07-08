@@ -428,7 +428,7 @@ void CElement::ConfigNumerics(MshElemType::type ele_type, const int nquadrature_
    06/2004 WW Implementation
    Last modified:
 **************************************************************************/
-double CElement::interpolate(double* nodalVal, const int order) const
+double CElement::interpolate(double const * const nodalVal, const int order) const
 {
 	int nn = nnodes;
 	double* inTerpo = shapefct;
@@ -1378,7 +1378,7 @@ Programming:
 
 **************************************************************************/
 
-void CElement::FaceNormalFluxIntegration(long element_index, double *NodeVal, double *NodeVal_adv,
+void CElement::FaceNormalFluxIntegration(long /*element_index*/, double *NodeVal, double *NodeVal_adv,
                                          int* /*nodesFace*/, CElem* /*face*/, CRFProcess* m_pcs, double* normal_vector)
 {
 
@@ -1387,7 +1387,7 @@ void CElement::FaceNormalFluxIntegration(long element_index, double *NodeVal, do
 	double *sf = shapefct;
 	double normal_diff_flux_interpol, normal_adv_flux_interpol;
 	double dbuff_adv[10], flux[3];
-	ElementValue* gp_ele = ele_gp_value[element_index];
+    // ElementValue* gp_ele = ele_gp_value[element_index];
 
 	setOrder(Order);
 	if (Order == 2)
