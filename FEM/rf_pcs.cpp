@@ -4665,7 +4665,7 @@ void CRFProcess::CheckMarkedElement()
 			}
 		}
 		//WX:02.2013: excav with deactivated subdomain
-		if(ExcavMaterialGroup>=0&&(size_t)ExcavMaterialGroup==elem->GetPatchIndex())
+		if(ExcavMaterialGroup==(int)elem->GetPatchIndex())
 		{
 			if(!elem->GetMark()||abs(elem->GetExcavState())<MKleinsteZahl)
 			{
