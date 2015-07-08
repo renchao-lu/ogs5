@@ -4665,7 +4665,7 @@ void CRFProcess::CheckMarkedElement()
 			}
 		}
 		//WX:02.2013: excav with deactivated subdomain
-		if(ExcavMaterialGroup>=0&&ExcavMaterialGroup==elem->GetPatchIndex())
+		if(ExcavMaterialGroup>=0&&(size_t)ExcavMaterialGroup==elem->GetPatchIndex())
 		{
 			if(!elem->GetMark()||abs(elem->GetExcavState())<MKleinsteZahl)
 			{
@@ -4720,7 +4720,7 @@ void CRFProcess::CheckExcavedElement()
 	for (l = 0; l < (long)m_msh->ele_vector.size(); l++)
 	{
 		elem = m_msh->ele_vector[l];
-		if(elem->GetPatchIndex() == ExcavMaterialGroup && elem->GetExcavState()==-1)//WX:04.2012
+		if((int)elem->GetPatchIndex() == ExcavMaterialGroup && elem->GetExcavState()==-1)//WX:04.2012
 		{
 			double const* ele_center(elem->GetGravityCenter());
 			if((GetCurveValue(ExcavCurve,0,aktuelle_zeit,
@@ -5429,7 +5429,7 @@ void CRFProcess::AddFCT_CorrectionVector()
 		}
 		for (size_t i = 0; i < node_size; i++) {
 #if defined(USE_PETSC)
-			if (i < m_msh->getNumNodesLocal()) {
+			if (i < (size_t)m_msh->getNumNodesLocal()) {
 				const size_t i_global = FCT_GLOB_ADDRESS(i);
 				eqs_new->add_bVectorEntry(i_global, - (1.0 - theta) * (*V)(i), ADD_VALUES);
 			}
@@ -5572,7 +5572,7 @@ void CRFProcess::AddFCT_CorrectionVector()
 				val = this->m_num->fct_const_alpha * f;
 
 #ifdef USE_PETSC
-			if (i < m_msh->getNumNodesLocal())
+			if (i < (size_t)m_msh->getNumNodesLocal())
 				eqs_new->add_bVectorEntry(i_global, val, ADD_VALUES);
 #else
             eqs_rhs[i] += val;

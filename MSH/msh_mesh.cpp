@@ -2738,10 +2738,10 @@ void CFEMesh::GetELEOnPLY(const GEOLIB::Polyline* ply, std::vector<size_t>& ele_
 			for (size_t k = 0; k < nodes_near_ply.size(); k++)
 			{
 				//if (edge_nodes[0]->GetIndex() == nodes_near_ply[k])
-				if (elem->GetNodeIndex(loc_edge_nidx[0]) == nodes_near_ply[k])
+				if (elem->GetNodeIndex(loc_edge_nidx[0]) == static_cast<long>(nodes_near_ply[k]))
 					selected++;
 				//if (edge_nodes[1]->GetIndex() == nodes_near_ply[k])
-				if (elem->GetNodeIndex(loc_edge_nidx[1]) == nodes_near_ply[k])
+				if (elem->GetNodeIndex(loc_edge_nidx[1]) == static_cast<long>(nodes_near_ply[k]))
 					selected++;
 			}
 			if (selected == 2)
