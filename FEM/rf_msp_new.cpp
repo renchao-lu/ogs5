@@ -3065,7 +3065,7 @@ int CSolidProperties::StressIntegrationMOHR_Aniso(const int GPiGPj, const Elemen
 	int i, j, counter;
 	int yield = 0;
 	int Dim = 2;
-	int Size = std::min(6ul, ele_val->Stress->Rows());
+	int Size = std::min(std::size_t(6ul), ele_val->Stress->Rows());
 	double normdstr=0., TmpValue1, TmpValue2;
 	double LodeAngle, I1, J2, J3, sqrtJ2;
 	double AnisoParaComp, AnisoParaTens = 0.0;
@@ -5141,7 +5141,7 @@ int CSolidProperties::CalStress_and_TangentialMatrix_SYS
         const int Update)
 {
 	const int LengthMat = 7;
-	const int LengthStrs = std::min(6ul, De->Cols());
+	const int LengthStrs = std::min(std::size_t(6ul), De->Cols());
 	int dim = 2;
 	const int minSub = 4;
 	const int maxSub = 1000;
