@@ -624,12 +624,12 @@ void CFiniteElementStd::Assemble_RHS_TES()
 
 	for(int ii=0; ii<pcs->dof; ii++)
 	{
-		const long i_sh = NodeShift[ii];
 		const int ii_sh = ii*nnodes;
 		//std::cout << ii << " " << i_sh << " " << ii_sh << "\n";
 		for (int i=0; i<nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//07~07.2014. TN
+			const long i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] += NodalVal[i+ii_sh];
 #else
 			(*RHS)[i+LocalShift+ii_sh] +=  NodalVal[i+ii_sh];

@@ -5026,9 +5026,11 @@ void CFiniteElementStd:: Assemble_DualTransfer()
 	long cshift = pcs->m_msh->GetNodesNumber(false);
 #endif
 	double fm = 1.0 / W;
+
 	//
 	if(pcs->continuum == 0)
 	{
+#if !defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 		double ff = 1.0 / (1.0 - W);
 		if(MediaProp->transfer_coefficient < 0.0) // for LBNL
 			ff = 1.0;
@@ -5036,9 +5038,6 @@ void CFiniteElementStd:: Assemble_DualTransfer()
 		{
 			for(int j = 0; j < nnodes; j++)
 			{
-#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-		    //TODO_PETSC
-#else
 #ifdef NEW_EQS
 		    (*A)(eqs_number[i], eqs_number[j] +
 			 cshift) += -fm * (*Advection)(i,j);
@@ -5048,9 +5047,9 @@ void CFiniteElementStd:: Assemble_DualTransfer()
 		    MXInc(eqs_number[i], eqs_number[j] + cshift, -fm * (*Advection)(i,j));
 		    MXInc(eqs_number[i] + cshift, eqs_number[j], -ff * (*Advection)(i,j));
 #endif
-#endif
 			}
 		}
+#endif
 	}
 	else if(MediaProp->transfer_coefficient < 0.0) // for LBNL
 		fm = 1.0;
