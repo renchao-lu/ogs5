@@ -6,10 +6,14 @@ set( SOURCES
 	BoundaryCondition.h
 	Constrained.h
 <<<<<<< HEAD
+<<<<<<< HEAD
 	conversion_rate.h
 =======
 	# conversion_rate.h
 	chem/adsorption/conversion_rate.h
+=======
+	conversion_rate.h
+>>>>>>> moved conversion rate back into place.
 	display.h
 >>>>>>> some changes
 	eos.h
