@@ -2435,7 +2435,7 @@ CNodeValue* cnodev)
 void GetCouplingNODValueNewton(double &value, CSourceTerm* m_st,
 CNodeValue* cnodev)
 {
-   double relPerm, area, condArea, gamma;
+   double relPerm, area, condArea, gamma = 0.0;
    double h_this, h_cond, z_this, z_cond, h_this_shifted, h_this_averaged;
    double epsilon = 1.e-7, value_jacobi, h_this_epsilon = 0.0,
       relPerm_epsilon, condArea_epsilon;          //OK411 epsilon as in pcs->assembleParabolicEquationNewton
@@ -2997,7 +2997,6 @@ void GetNODValue(double& value, CNodeValue* cnodev, CSourceTerm* st)
  **************************************************************************/
 void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    CRFProcess* m_pcs_this = NULL;
-   int Index;
    double poro;
 
    //Get process type
@@ -3014,8 +3013,6 @@ void GetNODHeatTransfer(double& value, CSourceTerm* st, long geo_node){
    //loop over connected elements and get average porosity
    for (size_t i=0;i<number_of_connected_elements;i++){
 	   long msh_ele = mesh->nod_vector[geo_node]->getConnectedElementIDs()[i];
-	   CElem *m_ele = mesh->ele_vector[msh_ele];
-	   Index = m_ele->GetIndex();
 	   int group = mesh->ele_vector[msh_ele]->GetPatchIndex();
 	   poro += mmp_vector[group]->porosity;
 	   geo_area += mmp_vector[group]->geo_area;
@@ -4893,5 +4890,3 @@ double z_cond, CSourceTerm* m_st)
       return factor * (h_cond - z_cond);  // Richards', two-phase flow (liquid & gas)
    }
 }
-
-

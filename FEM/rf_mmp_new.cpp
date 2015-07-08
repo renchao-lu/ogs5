@@ -2428,7 +2428,7 @@ double CMediumProperties::GetEffectiveSaturationForPerm(const double wetting_sat
 **************************************************************************/
 double CMediumProperties::PermeabilitySaturationFunction(const double wetting_saturation, int phase)
 {
-	double kr, sl, se, slr, slm, m, b;
+	double kr = 0.0, sl, se, slr, slm, m, b;
 	int model, gueltig;
 	bool phase_shift = false;
 	sl = wetting_saturation;
@@ -3267,7 +3267,7 @@ double* CMediumProperties::DispersionTensorMCF(int ip, int PCSIndex, int CIndex,
 {
 	int k;
 	double Material[9], D[9], multiplier=1.0;
-	double set, vg, fac, alpha_l,alpha_t, g[3] = {0.,0.,0.}, l_char = 0.0, theta = Fem_Ele_Std->pcs->m_num->ls_theta; 
+	double set, vg, fac = 0.0, alpha_l,alpha_t, g[3] = {0.,0.,0.}, l_char = 0.0, theta = Fem_Ele_Std->pcs->m_num->ls_theta;
 	static double tensor[9];
 	CFluidProperties* m_mfp;
 	SolidProp::CSolidProperties* m_msp = NULL;
@@ -3280,27 +3280,27 @@ double* CMediumProperties::DispersionTensorMCF(int ip, int PCSIndex, int CIndex,
 	m_mfp = mfp_vector[0];
 	porosity = this->porosity_model_values[0];
 	int Dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
-	for (k = 0; k < Dim * Dim; k++)   
-		{
+	for (k = 0; k < Dim * Dim; k++)
+	{
 		tensor[k] = 0.0;
-	  Material[k] = 0.0;
-		}
+		Material[k] = 0.0;
+	}
 	switch (PCSIndex)
 	{
-    case 0://FLOW
-	fac = permeability_tensor[0]/m_mfp->Viscosity(variables);
-	multiplier =  0.0;
-	break;
+	case 0://FLOW
+		fac = permeability_tensor[0]/m_mfp->Viscosity(variables);
+		multiplier =  0.0;
+		break;
 
 	case 1: //HEAT
-	fac = porosity*m_mfp->HeatConductivity(variables) + (1.0 - porosity)*m_msp->Heat_Conductivity(0);
-	multiplier =  m_mfp->Density(variables)* m_mfp->SpecificHeatCapacity(variables);
-	break;
+		fac = porosity*m_mfp->HeatConductivity(variables) + (1.0 - porosity)*m_msp->Heat_Conductivity(0);
+		multiplier =  m_mfp->Density(variables)* m_mfp->SpecificHeatCapacity(variables);
+		break;
 
 	case 2://MASS
-	fac = porosity*TortuosityFunction(index, g, theta)*m_mfp->EffectiveDiffusionCoef(CIndex, variables);
-	multiplier =  1.0;
-	break;
+		fac = porosity*TortuosityFunction(index, g, theta)*m_mfp->EffectiveDiffusionCoef(CIndex, variables);
+		multiplier =  1.0;
+		break;
 	}
 
 	for (k = 0; k < Dim; k++) Material[k*Dim + k] = fac;
@@ -3316,71 +3316,71 @@ double* CMediumProperties::DispersionTensorMCF(int ip, int PCSIndex, int CIndex,
 	// hard stabilization
 	if(this->lgpn > 0.0)
 	{
-	MeshLib::CElem* m_ele = NULL;
-	m_ele = m_pcs->m_msh->ele_vector[index];
-	if(eleType == 2)
-	l_char = sqrt(m_ele->GetVolume());
-	if(eleType == 4)
-	l_char = sqrt(m_ele->GetVolume());
-	// cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << endl;
-	set = 0;
-	if(alpha_l < l_char / lgpn)
-	{
-	set = 1;      //flag for output
-	alpha_l = l_char / lgpn;
-	}
-	if(alpha_t < l_char / lgpn)
-	{
-	set = 1;
-	alpha_t = l_char / lgpn;
-	}
+		MeshLib::CElem* m_ele = NULL;
+		m_ele = m_pcs->m_msh->ele_vector[index];
+		if(eleType == 2)
+			l_char = sqrt(m_ele->GetVolume());
+		if(eleType == 4)
+			l_char = sqrt(m_ele->GetVolume());
+		// cout << " Element number: " << index << ", Volume: " << m_ele->GetVolume() << ", l_char: " << l_char << endl;
+		set = 0;
+		if(alpha_l < l_char / lgpn)
+		{
+			set = 1;      //flag for output
+			alpha_l = l_char / lgpn;
+		}
+		if(alpha_t < l_char / lgpn)
+		{
+			set = 1;
+			alpha_t = l_char / lgpn;
+		}
 
-	//cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << endl;
-	if((set > 0) & (aktueller_zeitschritt == 1) & (CIndex < 2) & (ip < 1))
-	std::cout << "element " << index << " " << l_char << " " << alpha_l <<
-	" " << alpha_t <<  std::endl;
+		//cout << " alpha_L = " << alpha_l << " < l_char/Pe; setting alpha_L = " << l_char/lgpn << " for element " << index << endl;
+		if((set > 0) & (aktueller_zeitschritt == 1) & (CIndex < 2) & (ip < 1))
+			std::cout << "element " << index << " " << l_char << " " << alpha_l <<
+			             " " << alpha_t <<  std::endl;
 	}
 	//----------------------------------------------------------------------
 
 	if (abs(vg) > MKleinsteZahl && PCSIndex > 0)          //For the case of diffusive transport only.
 	{
-	switch (Dim)
-	{
-	//--------------------------------------------------------------------
-	case 1:
-	tensor[0] = Material[0] + alpha_l*vg*multiplier;
-	break;
-	//--------------------------------------------------------------------
-	case 2:
-	D[0] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[0]*velocity[0])/vg;
-	D[1] = ((alpha_l - alpha_t)*(velocity[0]*velocity[1]))/vg;
-	D[2] = ((alpha_l - alpha_t)*(velocity[1]*velocity[0]))/vg;
-	D[3] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[1]*velocity[1])/vg;
-	for (k = 0; k<Dim*Dim; k++) tensor[k] = D[k]*multiplier;
-	tensor[0] += Material[0];
-	tensor[3] += Material[3];
-	break;
-	//--------------------------------------------------------------------
-	case 3:
-	D[0] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[0] * velocity[0]) / vg;
-	D[1] = ((alpha_l - alpha_t) * (velocity[0] * velocity[1])) / vg;
-	D[2] = ((alpha_l - alpha_t) * (velocity[0] * velocity[2])) / vg;
-	D[3] = ((alpha_l - alpha_t) * (velocity[1] * velocity[0])) / vg;
-	D[4] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[1] * velocity[1]) / vg;
-	D[5] = ((alpha_l - alpha_t) * (velocity[1] * velocity[2])) / vg;
-	D[6] = ((alpha_l - alpha_t) * (velocity[2] * velocity[0])) / vg;
-	D[7] = ((alpha_l - alpha_t) * (velocity[2] * velocity[1])) / vg;
-	D[8] =(alpha_t * vg) + (alpha_l - alpha_t) * (velocity[2] * velocity[2]) / vg;
-	for (k = 0; k<Dim*Dim; k++) tensor[k] =  D[k]*multiplier;
-	tensor[0] += Material[0];
-	tensor[4] += Material[4];
-	tensor[8] += Material[8];
-	break;
-	}
+		switch (Dim)
+		{
+		//--------------------------------------------------------------------
+		case 1:
+			tensor[0] = Material[0] + alpha_l*vg*multiplier;
+			break;
+			//--------------------------------------------------------------------
+		case 2:
+			D[0] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[0]*velocity[0])/vg;
+			D[1] = ((alpha_l - alpha_t)*(velocity[0]*velocity[1]))/vg;
+			D[2] = ((alpha_l - alpha_t)*(velocity[1]*velocity[0]))/vg;
+			D[3] = (alpha_t*vg) + (alpha_l - alpha_t)*(velocity[1]*velocity[1])/vg;
+			for (k = 0; k<Dim*Dim; k++) tensor[k] = D[k]*multiplier;
+			tensor[0] += Material[0];
+			tensor[3] += Material[3];
+			break;
+			//--------------------------------------------------------------------
+		case 3:
+			D[0] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[0] * velocity[0]) / vg;
+			D[1] = ((alpha_l - alpha_t) * (velocity[0] * velocity[1])) / vg;
+			D[2] = ((alpha_l - alpha_t) * (velocity[0] * velocity[2])) / vg;
+			D[3] = ((alpha_l - alpha_t) * (velocity[1] * velocity[0])) / vg;
+			D[4] = (alpha_t * vg) + (alpha_l - alpha_t) * (velocity[1] * velocity[1]) / vg;
+			D[5] = ((alpha_l - alpha_t) * (velocity[1] * velocity[2])) / vg;
+			D[6] = ((alpha_l - alpha_t) * (velocity[2] * velocity[0])) / vg;
+			D[7] = ((alpha_l - alpha_t) * (velocity[2] * velocity[1])) / vg;
+			D[8] =(alpha_t * vg) + (alpha_l - alpha_t) * (velocity[2] * velocity[2]) / vg;
+			for (k = 0; k<Dim*Dim; k++) tensor[k] =  D[k]*multiplier;
+			tensor[0] += Material[0];
+			tensor[4] += Material[4];
+			tensor[8] += Material[8];
+			break;
+		}
 	}
 	else
 	{
-	for (k = 0; k<Dim*Dim; k++) tensor[k] = Material[k];
+		for (k = 0; k<Dim*Dim; k++) tensor[k] = Material[k];
 	}
 	return tensor;
 
@@ -3903,14 +3903,13 @@ void CMediumProperties::SetMediumPropertiesDefaultsBordenAquifer(void)
  *************************************************************************/
 double CMediumProperties::Porosity(long number,double theta)
 {
-	static int nidx0, nidx1, idx_n;
+	int nidx0, nidx1;
 	double primary_variable[PCS_NUMBER_MAX];
 	int gueltig;
 #ifdef GEM_REACT
 	int idx;
 #endif
 	double porosity_sw;
-    CRFProcess *m_pcs_flow; // AB & CB
 	CFiniteElementStd* assem = m_pcs->GetAssember();
 	string str;
 	///
@@ -3918,11 +3917,7 @@ double CMediumProperties::Porosity(long number,double theta)
 
 	// CB Get idx of porosity in elements mat vector for het porosity
 	size_t por_index (0);
-	
-	if(porosity_model==13){
-      m_pcs_flow = PCSGetFlow();
-      idx_n = m_pcs_flow->GetElementValueIndex("POROSITY");
-    }
+
 	if (porosity_model == 11)
 		for (por_index = 0; por_index
 		     < m_pcs->m_msh->mat_names_vector.size(); por_index++)
@@ -4040,11 +4035,16 @@ double CMediumProperties::Porosity(long number,double theta)
 		porosity = PorosityVolStrain(number, porosity_model_values[0], assem);
 		break;
     case 13:
+	{
+		CRFProcess *m_pcs_flow = PCSGetFlow();
+		const int idx_n = m_pcs_flow->GetElementValueIndex("POROSITY");
+
 		// porosity change through dissolution/precipitation
 		// Here, you should access porosity from the element value vector of the flow process
 		// so you have to get the index of porosity above, if porosity model = 13
 		porosity = m_pcs_flow->GetElementValue(number, idx_n+1); 
 		break;
+	}
 #ifdef GEM_REACT
 	case 15:
 		porosity = porosity_model_values[0]; // default value as backup

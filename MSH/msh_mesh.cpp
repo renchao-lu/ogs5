@@ -1628,7 +1628,12 @@ void CFEMesh::getPointsForInterpolationAlongPolyline(
 }
 
 void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
-                          std::vector<long>& msh_nod_vector, const bool for_s_term,
+                          std::vector<long>& msh_nod_vector,
+#ifdef USE_PETSC
+                          const bool for_s_term,
+#else
+                          const bool,
+#endif
                           bool automatic,
                           double search_radius)
 {
@@ -1714,7 +1719,12 @@ void CFEMesh::GetNODOnSFC(Surface* m_sfc, std::vector<long>&msh_nod_vector, cons
 **************************************************************************/
 void CFEMesh::GetNODOnSFC(const GEOLIB::Surface* sfc,
 	std::vector<size_t>& msh_nod_vector,
-	const bool for_s_term) const
+#ifdef USE_PETSC
+	const bool for_s_term
+#else
+	const bool
+#endif
+	) const
 {
 	msh_nod_vector.clear();
 
@@ -1832,7 +1842,13 @@ void CFEMesh::findNodesInPolygon(const double area_orig, const double tol,
    last modification:
 **************************************************************************/
 void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
-                              std::vector<long>&msh_nod_vector, const bool for_s_term) const
+                              std::vector<long>&msh_nod_vector,
+#ifdef USE_PETSC
+                              const bool for_s_term
+#else
+                              const bool
+#endif
+                              ) const
 {
 	long i;
 	int nPointsPly = 0;
@@ -4673,7 +4689,6 @@ void CFEMesh::GetConnectedElements(std::vector<long>&nodes_on_sfc, std::vector<l
 
 
 }
-
 
 }
 // namespace MeshLib
