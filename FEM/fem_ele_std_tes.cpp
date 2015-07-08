@@ -608,10 +608,6 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 	//        break;
 	case 8: // x x
 		// TODO [CL] why so complicated?
-		// std::cerr << "@@@ " << __FUNCTION__ << ":" << __LINE__
-		//           // << " react rate: " << gp_ele->q_R[gp]
-		//           << " poro: " << poro << " vs. poro2 " << MediaProp->Porosity(Index, theta)
-		//           << std::endl;
 		val = (MediaProp->Porosity(Index, theta) - 1.0) * gp_ele->q_R[gp];
 		break;
 	}
