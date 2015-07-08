@@ -123,11 +123,6 @@ ELSE (OGS_PRECOMPILED_LIBS_DIR_FOUND)
 ENDIF (OGS_PRECOMPILED_LIBS_DIR_FOUND)
 
 
-FIND_PACKAGE( Shapelib )
-IF(Shapelib_FOUND)
-	ADD_DEFINITIONS(-DShapelib_FOUND)
-ENDIF() # Shapelib_FOUND
-
 ## pthread ##
 SET ( CMAKE_THREAD_PREFER_PTHREAD ON CACHE BOOL "" )
 FIND_PACKAGE( Threads )
@@ -159,28 +154,6 @@ ELSE()
         MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARY_DIRS}")
         MESSAGE(STATUS "** Boost libraries: ${Boost_LIBRARIES}")
 ENDIF()
-
-## geotiff ##
-IF(NOT MSVC)
-	FIND_PACKAGE( LibTiff )
-ENDIF() # NOT MSVC
-FIND_PACKAGE( LibGeoTiff )
-IF(libgeotiff_FOUND)
-	ADD_DEFINITIONS(-Dlibgeotiff_FOUND)
-ENDIF() # libgeotiff_FOUND
-
-IF (OGS_PYTHON)
-	FIND_PACKAGE (PythonLibs 2.5 REQUIRED)
-ENDIF (OGS_PYTHON)
-
-## VRPN ##
-FIND_PACKAGE( VRPN )
-
-## VRED ##
-FIND_PATH (VRED_DIR_FOUND vrNodePtr.h ${VRED_DIR}/include/vred)
-
-## OpenSG ##
-FIND_PACKAGE( OpenSG COMPONENTS OSGBase OSGSystem)
 
 IF(OGS_FEM_MKL)
 	# Find MKLlib
