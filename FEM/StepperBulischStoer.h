@@ -9,6 +9,7 @@ template<class T>
 inline T SQR(const T a) {return a*a;}
 #endif
 
+/*
 #ifndef MAX
 template<class T>
 inline const T &MAX(const T &a, const T &b)
@@ -20,6 +21,7 @@ template<class T>
 inline const T &MIN(const T &a, const T &b)
         {return b < a ? (b) : (a);}
 #endif
+*/
 
 class StepperBase
 {
@@ -29,7 +31,9 @@ public:
 				double          &xx,
 				const double    atoll, 
 				const double    rtoll, 
-				bool            dens): x(xx), y(yy), dydx(dydxx), atol(atoll), rtol(rtoll), dense(dens), n(y.size()), neqn(n), yout(n), yerr(n) {};
+                bool            dens)
+        : x(xx), y(yy), dydx(dydxx), atol(atoll), rtol(rtoll), dense(dens), n(y.size()), neqn(n), yout(n), yerr(n)
+    {}
 
 	double          &x; 
 	double          xold; 
@@ -72,9 +76,9 @@ public:
 			cost[k+1]=cost[k]+nseq[k+1];
 		hnext=-1.0e99; // Impossible value.
 	
-		double logfact=-log10( MAX(1.0e-12,rtol) )*0.6+0.5;
+        double logfact=-log10( std::max(1.0e-12,rtol) )*0.6+0.5;
 
-		k_targ= MAX((size_t)1, MIN( KMAXX-1,(size_t)logfact) ); // Initial estimate of optimal k.
+        k_targ= std::max((size_t)1, std::min( KMAXX-1,(size_t)logfact) ); // Initial estimate of optimal k.
 
 		for ( k=0; k<IMAXX;  k++) // Coecients in equation (17.3.8).
 		{
@@ -108,9 +112,9 @@ public:
 				njadd++;		
 			ipoint[i]=ipoint[i-1]+njadd;
 		}
-	};
+    }
 	
-	~StepperBulischStoer(void){};
+    ~StepperBulischStoer(void) {}
 
 	void dy (Eigen::VectorXd &y, 
 		     const double    htot, 
@@ -170,7 +174,7 @@ public:
 	
 		for  ( i=0; i<n; i++) // Last step.
 			yend[i]=0.5*(ym[i]+yn[i]+h*yend[i]);
-	};
+    }
 
 	void step(const double htry, D *derivs_class)
 	{
@@ -181,8 +185,8 @@ public:
 		bool  reject=false;
 		bool  prev_reject=false;
 	
-        size_t  i, k;
-		double  fac, h, hnew, hopt_int, err;
+        size_t  k = 0;
+        double  fac, h, hnew, hopt_int = 0, err;
 		bool  firstk;
 	
 		Eigen::VectorXd  hopt(IMAXX),work(IMAXX);
@@ -235,13 +239,13 @@ public:
 
 			int ipt=-1; // Initialize counter for saving stu.
 
-			for (k=0; k<=k_targ+1; k++) // Evaluate the sequence of modied midpoint integrations.
+            for (k=0; k<=k_targ+1; k++) // Evaluate the sequence of modied midpoint integrations.
 			{
 				dy(ysav,h,k,yseq,ipt, derivs_class);
 				if (k == 0)
 					y=yseq;
 				else // Store result in tableau.
-					for (i=0;i<n;i++)
+                    for (size_t i=0;i<n;i++)
 						table(k-1,i)=yseq[i];
 				    // debug
 				    // std::cout << table; 
@@ -250,9 +254,9 @@ public:
 						polyextr(k,table,y); // Perform extrapolation.
 						err=0.0; // Compute normalized error estimate errk.
 					
-						for (i=0;i<n;i++)
+                        for (size_t i=0;i<n;i++)
 						{
-							scale[i]=atol+rtol*MAX(fabs(ysav[i]),fabs(y[i]));
+                            scale[i]=atol+rtol*std::max(fabs(ysav[i]),fabs(y[i]));
 							err+=SQR((y[i]-table(0,i))/scale[i]);
 						}
 					
@@ -264,8 +268,8 @@ public:
 							fac=1.0/facmin;
 						else
 						{
-							fac=STEPFAC2/pow(err/STEPFAC1,expo);
-							fac=MAX(facmin/STEPFAC4, MIN(1.0/facmin,fac));
+                            fac = STEPFAC2/pow(err/STEPFAC1,expo);
+                            fac = std::max(facmin/STEPFAC4, std::min(1.0/facmin,fac));
 						}
 					
 						hopt[k]=fabs(h*fac);
@@ -277,7 +281,7 @@ public:
 						{
 							if  (err  <=  1.0) // Converged within order window.
 								break;
-							else if (err>SQR(nseq[k_targ]*nseq[k_targ+1]/(nseq[0]*nseq[0])))
+                            else if (err > SQR(nseq[k_targ]*nseq[k_targ+1]/(nseq[0]*nseq[0])))
 							{
 								reject=true; // Criterion (17.3.17) predicts step will fail.
 								k_targ=k;
@@ -292,10 +296,10 @@ public:
 						if  (k == k_targ)  {
 							if  (err  <=  1.0)
 								break; // Converged within order window.
-							else if (err>SQR(nseq[k+1]/nseq[0])) 
+                            else if (err > SQR(nseq[k+1]/nseq[0]))
 							{
 								reject=true; // Criterion (17.3.20) predicts step will fail.
-								if  (k_targ>1  &&  work[k-1]<KFAC1*work[k])
+                                if  (k_targ>1 && work[k-1]<KFAC1*work[k])
 									k_targ--;
 								hnew=hopt[k_targ];
 								break;
@@ -324,7 +328,7 @@ public:
 		if (dense)
 		{
 			prepare_dense(h,dydxnew,ysav,scale,k,err);
-			hopt_int=h/MAX(pow(err,1.0/(2*k+3)),0.01);
+            hopt_int = h / std::max(pow(err,1.0/(2*k+3)), 0.01);
 			// Stepsize based on interpolation error. 
 			if (err > 10.0)  // Interpolation error too big, reject step.
 			{
@@ -351,7 +355,7 @@ public:
 			if  (work[k-1] <  KFAC1*work[k])
 				kopt=k-1;
 			else if (work[k]  <  KFAC2*work[k-1])
-				kopt=MIN(k+1,KMAXX-1);
+                kopt=std::min(k+1,KMAXX-1);
 		}
 		else
 		{
@@ -359,14 +363,14 @@ public:
 			if ( k > 2  &&  work[k-2] < KFAC1*work[k-1])
 				kopt=k-2;
 			if ( work[k] < KFAC2*work[kopt])
-				kopt=MIN(k,KMAXX-1);
+                kopt=std::min(k,KMAXX-1);
 		}
 	
 		if  (prev_reject) // After a rejected step neither order nor step-
 		{ 
 			// size should increase. 
-			k_targ=MIN(kopt,k);
-			hnew=MIN((double)fabs(h),(double)hopt[k_targ]);
+            k_targ=std::min(kopt,k);
+            hnew=std::min((double)fabs(h),(double)hopt[k_targ]);
 			prev_reject=false;
 		}
 		else // Stepsize control for next step.
@@ -384,13 +388,13 @@ public:
 		}
 	
 		if (dense) // Keep interpolation error small enough.
-		  hnew=MIN((double)hnew,(double)fabs(hopt_int));
+          hnew = std::min(hnew, std::fabs(hopt_int));
 
 		if (forward)
 			hnext=hnew;
 		else
 			hnext=-hnew;
-	}; 
+    }
 
 	void polyextr(const size_t k, 
 		          Eigen::MatrixXd &table, 
@@ -512,7 +516,7 @@ public:
 			error=sqrt(error/n)*errfac[mu-1];
 		}
 
-	}; 
+    }
 
 	double dense_out(const size_t i, 
 		             const double x, 
@@ -533,8 +537,8 @@ public:
 			c=dens[n*(j+3)+i]+c*theta05/j;
 		yinterp += t4*c;
 	
-	return  yinterp;
-	}; 
+        return  yinterp;
+    }
 
 	void dense_interp(const size_t n, 
 		              Eigen::VectorXd &y, 
@@ -593,12 +597,12 @@ public:
 				y[n*(im+4)+i]=a[im];
 		}
 
-	}; 
+    }
 
-	Eigen::VectorXd& get_y(void){return y;};
-	Eigen::VectorXd& get_dydx(void){return dydx;};
-	void set_y(Eigen::VectorXd& new_y){y = new_y;};
-	void set_dydx(Eigen::VectorXd& new_dydx){dydx = new_dydx;};
+    Eigen::VectorXd& get_y(void){return y;}
+    Eigen::VectorXd& get_dydx(void){return dydx;}
+    void set_y(Eigen::VectorXd& new_y){y = new_y;}
+    void set_dydx(Eigen::VectorXd& new_dydx){dydx = new_dydx;}
 
 	const size_t     KMAXX, IMAXX;   // KMAXX is the maximum number of rows used in the extrapolation
 	size_t           k_targ;         // optimal row number for convergence
