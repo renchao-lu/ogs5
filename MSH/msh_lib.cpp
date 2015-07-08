@@ -26,7 +26,6 @@
 extern void ConfigRenumberProperties(void);
 #endif
 extern int ReadRFIFile(std::string g_strFileNameBase);
-#include "gs_project.h"
 #include "rf_pcs.h"
 
 std::vector<MeshLib::CFEMesh*>fem_msh_vector;
@@ -637,10 +636,6 @@ void MSHWriteTecplot()
 	//----------------------------------------------------------------------
 	// File handling
 	std::string file_path = "MSH";
-	CGSProject* m_gsp = NULL;
-	m_gsp = GSPGetMember("msh");
-	if (m_gsp)
-		file_path = m_gsp->path + "MSH";
 	//----------------------------------------------------------------------
 	MeshLib::CFEMesh* m_msh = NULL;
 	for (int j = 0; j < (int) fem_msh_vector.size(); j++)

@@ -56,8 +56,6 @@ Kiel, 11/2008
 #include "HKF.h"
 //CB2406 #endif
 
-#include "gs_project.h" // CB
-
 using namespace std;
 /*
 #define PHREEQC

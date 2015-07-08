@@ -29,7 +29,6 @@ extern double gravity_constant;
 // this
 #include "rf_mmp_new.h"
 //#include "rf_react.h"
-#include "gs_project.h"
 // Gauss point veclocity
 #include "fem_ele_std.h"
 #include "fem_ele_vec.h"
@@ -387,10 +386,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				in >> geo_area_file;
 				// JT, Dec. 16, 2009, added lines below to correct and globalize the read of geometry area file
 				std::string file_name = geo_area_file;
-				CGSProject* m_gsp = NULL;
-				m_gsp = GSPGetMember("mmp");
-				if(m_gsp)
-					file_name = m_gsp->path + geo_area_file;
 				indexChWin = FileName.find_last_of('\\');
 				indexChLinux = FileName.find_last_of('/');
 				if(indexChWin == string::npos && indexChLinux == std::string::npos)
@@ -1769,10 +1764,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.str(GetLineFromFile1(mmp_file));
 			in >> permeability_file;
 			string file_name = permeability_file;
-			CGSProject* m_gsp = NULL;
-			m_gsp = GSPGetMember("mmp");
-			if(m_gsp)
-				file_name = m_gsp->path + permeability_file;
 			//-------WW
 			indexChWin = FileName.find_last_of('\\');
 			indexChLinux = FileName.find_last_of('/');
@@ -1811,10 +1802,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.str(GetLineFromFile1(mmp_file));
 			in >> porosity_file;
 			string file_name = porosity_file;
-			CGSProject* m_gsp = NULL;
-			m_gsp = GSPGetMember("mmp");
-			if(m_gsp)
-				file_name = m_gsp->path + porosity_file;
 			//else{ //CB this is to get the correct path in case the exe is not run from within the project folder
 			//  pos = (int)FileName.find_last_of('\\', -1) + 1;
 			//  file_name = FileName.substr(0,pos) + porosity_file;
@@ -2180,150 +2167,6 @@ void CMediumProperties::Write(std::fstream* mmp_file)
 	//----------------------------------------------------------------------
 }
 
-/**************************************************************************
-   FEMLib-Method:
-   Task:
-   Programing:
-   03/2004 OK Implementation
-   last modification:
-**************************************************************************/
-void MMPWriteTecplot(std::string msh_name)
-{
-	CMediumProperties* m_mmp = NULL;
-	int i;
-	int no_mat = (int)mmp_vector.size();
-	for(i = 0; i < no_mat; i++)
-	{
-		m_mmp = mmp_vector[i];
-		m_mmp->WriteTecplot(msh_name);
-	}
-}
-
-
-/**************************************************************************
-   FEMLib-Method:
-   Task:
-   Programing:
-   01/2005 OK Implementation
-   09/2005 OK MSH
-   10/2005 OK OO-ELE
-   last modification:
-**************************************************************************/
-void CMediumProperties::WriteTecplot(std::string msh_name)
-{
-	std::string element_type;
-	//----------------------------------------------------------------------
-	// GSP
-	CGSProject* m_gsp = NULL;
-	m_gsp = GSPGetMember("msh");
-	if(!m_gsp)
-		return;
-	//--------------------------------------------------------------------
-	// file handling
-	std::string mat_file_name = m_gsp->path + "MAT_" + name + TEC_FILE_EXTENSION;
-	std::fstream mat_file (mat_file_name.data(),ios::trunc | ios::out);
-	mat_file.setf(ios::scientific,ios::floatfield);
-	mat_file.precision(12);
-	//--------------------------------------------------------------------
-	// MSH
-	MeshLib::CElem* m_ele = NULL;
-	_mesh = FEMGet(msh_name);
-	if(!_mesh)
-		return;
-	//--------------------------------------------------------------------
-	if (!mat_file.good())
-		return;
-	mat_file.seekg(0L,std::ios::beg);
-	//--------------------------------------------------------------------
-	long j = 0;
-	for(size_t i = 0; i < _mesh->ele_vector.size(); i++)
-	{
-		m_ele = _mesh->ele_vector[i];
-		if(m_ele->GetPatchIndex() == static_cast<size_t>(number))
-			j++;
-	}
-	long no_elements = j - 1;
-	//--------------------------------------------------------------------
-	mat_file << "VARIABLES = X,Y,Z,MAT" << "\n";
-	const size_t no_nodes (_mesh->nod_vector.size());
-	mat_file << "ZONE T = " << name << ", " \
-	         << "N = " << no_nodes << ", " \
-	         << "E = " << no_elements << ", " \
-	         << "F = FEPOINT" << ", " << "ET = BRICK" << "\n";
-	for(size_t i = 0; i < no_nodes; i++)
-	{
-		double const* const pnt (_mesh->nod_vector[i]->getData());
-		mat_file << pnt[0] << " " << pnt[1] << " " << pnt[2] << " " << number << "\n";
-	}
-	j = 0;
-	for(size_t i = 0; i < _mesh->ele_vector.size(); i++)
-	{
-		m_ele = _mesh->ele_vector[i];
-		if(m_ele->GetPatchIndex() == static_cast<size_t>(number))
-		{
-			switch(m_ele->GetElementType())
-			{
-			case MshElemType::LINE:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[1] + 1 << " " << m_ele->getNodeIndices()[0] +
-				1 << "\n";
-				j++;
-				element_type = "ET = QUADRILATERAL";
-				break;
-			case MshElemType::QUAD:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << "\n";
-				j++;
-				element_type = "ET = QUADRILATERAL";
-				break;
-			case MshElemType::HEXAHEDRON:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << " " \
-				<< m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] + 1 <<
-				" " << m_ele->getNodeIndices()[6] + 1 << " " << m_ele->getNodeIndices()[7] +
-				1 << "\n";
-				j++;
-				element_type = "ET = BRICK";
-				break;
-			case MshElemType::TRIANGLE:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << "\n";
-				j++;
-				element_type = "ET = TRIANGLE";
-				break;
-			case MshElemType::TETRAHEDRON:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[1] + 1 <<
-				" " << m_ele->getNodeIndices()[2] + 1 << " " << m_ele->getNodeIndices()[3] +
-				1 << "\n";
-				j++;
-				element_type = "ET = TETRAHEDRON";
-				break;
-			case MshElemType::PRISM:
-				mat_file \
-				<< m_ele->getNodeIndices()[0] + 1 << " " << m_ele->getNodeIndices()[0] + 1 <<
-				" " << m_ele->getNodeIndices()[1] + 1 << " " << m_ele->getNodeIndices()[2] +
-				1 << " " \
-				<< m_ele->getNodeIndices()[3] + 1 << " " << m_ele->getNodeIndices()[3] + 1 <<
-				" " << m_ele->getNodeIndices()[4] + 1 << " " << m_ele->getNodeIndices()[5] +
-				1 << "\n";
-				j++;
-				element_type = "ET = BRICK";
-				break;
-			default:
-				std::cerr <<
-				"CMediumProperties::WriteTecplot MshElemType not handled" <<
-				"\n";
-			}
-		}
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////
 // Access functions
@@ -5440,10 +5283,6 @@ void GetHeterogeneousFields()
 	// File handling
 	string file_path;
 	string file_path_base_ext;
-	CGSProject* m_gsp = NULL;
-	m_gsp = GSPGetMember("mmp");
-	if(m_gsp)
-		file_path = m_gsp->path;
 
 	//----------------------------------------------------------------------
 	// Tests
@@ -5830,10 +5669,6 @@ void CMediumProperties::WriteTecplotDistributedProperties()
 	//----------------------------------------------------------------------
 	// Path
 	string path;
-	CGSProject* m_gsp = NULL;
-	m_gsp = GSPGetMember("msh");
-	if (m_gsp)
-		path = m_gsp->path;
 	//--------------------------------------------------------------------
 	// MSH
 	MeshLib::CNode* m_nod = NULL;
