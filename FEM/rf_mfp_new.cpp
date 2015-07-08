@@ -1055,7 +1055,7 @@ double CFluidProperties::Density(double* variables)
 			const double p = variables[0];
 			const double T = variables[1];
 			const double x = variables[2]; // gas mass fraction of component 1
-			assert(0.0 <= x && x <= 1.0);
+			// assert(0.0 <= x && x <= 1.0);
 
 			// gas molar fraction of component 1
 			const double xn = M0*x/(M0*x + M1*(1.0-x));
