@@ -48,12 +48,10 @@ static inline double ipol(double const * const a, double const * const b,
 namespace FiniteElement
 {
 
-/***************************************************************************
-	  GeoSys - Funktion:
-			  CFiniteElementStd:: CalcMassPTC
-	  Programming:
-	  02/2007   WW
-   **************************************************************************/
+/*************************************************************************
+  Programming:
+    07/2013 TN
+**************************************************************************/
 void CFiniteElementStd::CalcMassTNEQ()
 {
 	// ---- Gauss integral
@@ -88,12 +86,12 @@ void CFiniteElementStd::CalcMassTNEQ()
 
 
 /**************************************************************************
-FEMLib-Method:
-Task: Calculate material coefficient for mass matrix for
-Pressure-Temperature Coupled global approach
-Implementaion:
-03/2011 AKS /  NB
-07/2013 TN
+  FEMLib-Method:
+  Task: Calculate material coefficient for mass matrix
+  Implementaion:
+    03/2011 AKS /  NB
+    07/2013 TN
+    04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefMassTNEQ(const int dof_index)
 {
@@ -223,12 +221,13 @@ double CFiniteElementStd::CalCoefMassTNEQ(const int dof_index)
 
 
 /**************************************************************************
-   FEMLib-Method:
-   Task: Calculate material coefficient for Laplacian matrix for
-   Pressure-Temperature Coupled global approach
-   Implementaion:
-   03/2011 AKS /  NB
-   last modification: 07/2013 TN
+  FEMLib-Method:
+  Task: Calculate material coefficient for Laplacian matrix
+  Pressure-Temperature Coupled global approach
+  Implementaion:
+    03/2011 AKS /  NB
+    07/2013 TN
+    04/2015 CL
 **************************************************************************/
 void CFiniteElementStd::CalCoefLaplaceTNEQ(const int dof_index)
 {
@@ -427,7 +426,8 @@ void CFiniteElementStd::CalcAdvectionTNEQ()
 	03/2005 WW Heat transport
 	07/2005 WW Change for geometry element object
 	09/2005 SB
-	last modification: 07/2013 TN
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefAdvectionTNEQ(const int dof_index)
 {
@@ -556,10 +556,10 @@ void CFiniteElementStd::CalcContentTNEQ()
 
 
 /**************************************************************************
-FEMLib-Method:
-Task:
-Programing:
-last modification: 07/2013 TN
+  FEMLib-Method:
+  Programing:
+    07/2013 TN
+    04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoefContentTNEQ(const int dof_index)
 {
@@ -681,10 +681,10 @@ void CFiniteElementStd::Assemble_RHS_TNEQ()
 
 /**************************************************************************
 	FEMLib-Method:
-	Task: Calculate  coefficient of temperature induced RHS of multi-phase flow
+	Task: Calculate coefficient of RHS
 	Programing:
-	02/2007 WW Implementation
-	last modification:
+	07/2013 TN
+	04/2015 CL
 **************************************************************************/
 double CFiniteElementStd::CalCoef_RHS_TNEQ(const int dof_index)
 {
