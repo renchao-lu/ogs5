@@ -2814,7 +2814,7 @@ void CRFProcessDeformation::PostExcavation()
 		for(size_t l=0; l<m_msh->ele_vector.size();l++)
 		{
 			//if((m_msh->ele_vector[l]->GetExcavState()>0)&&!(m_msh->ele_vector[l]->GetMark()))//WX:07.2011 HM excav
-		    if(ExcavMaterialGroup == static_cast<int>(m_msh->ele_vector[l]->GetPatchIndex()))
+			if(ExcavMaterialGroup == static_cast<int>(m_msh->ele_vector[l]->GetPatchIndex()))
 			{
 				if((m_msh->ele_vector[l]->GetExcavState()>-1)&&m_msh->ele_vector[l]->GetMark())
 				{
@@ -2871,7 +2871,7 @@ void CRFProcessDeformation::PostExcavation()
 			done = false;
 			for(size_t i=0; i<deact_dom.size(); i++)
 			{
-			    if(elem->GetPatchIndex() == static_cast<std::size_t>(deact_dom[i]))
+				if(elem->GetPatchIndex() == static_cast<std::size_t>(deact_dom[i]))
 				{
 					elem->MarkingAll(false);
 					*(eleV_DM->Stress) = 0.;
@@ -2900,7 +2900,7 @@ void CRFProcessDeformation::PostExcavation()
 			{
 				for(int i=0; i<NumDeactivated_SubDomains; i++)
 				{
-				    if(elem->GetPatchIndex() == static_cast<std::size_t>(Deactivated_SubDomain[i]))
+					if(elem->GetPatchIndex() == static_cast<std::size_t>(Deactivated_SubDomain[i]))
 					{
 						elem->MarkingAll(false);
 						done = true;
@@ -3103,7 +3103,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 
 	long ActiveElements = 0;
 	MeshLib::CElem* elem = NULL;
-	for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for(std::size_t i=0; i<m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (ExcavMaterialGroup > -1)//WX:if excavation write all eles
@@ -3115,7 +3115,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 	}
 	}
 	file_stress.write((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (long i = 0; i < (long)m_msh->ele_vector.size(); i++)
+	for(std::size_t i=0; i<m_msh->ele_vector.size(); i++)
 	{
 		elem = m_msh->ele_vector[i];
 		if (elem->GetMark()||ExcavMaterialGroup > -1)      // Marked for use//WX:if excavation write all eles
@@ -3159,7 +3159,7 @@ void CRFProcessDeformation::ReadGaussPointStress()
 	file_stress.read((char*)(&ActiveElements), sizeof(ActiveElements));
 	for (long i = 0; i < ActiveElements; i++)
 	{
-        long index;
+		long index;
 		file_stress.read((char*)(&index), sizeof(index));
 		eleV_DM = ele_value_dm[index];
 		eleV_DM->Read_BIN(file_stress);
