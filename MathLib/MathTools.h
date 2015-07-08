@@ -93,6 +93,7 @@ double getAngle (const double p0[3], const double p1[3], const double p2[3]);
  * @param base basis of the expression
  * @param exp exponent of the expression
  * @return base^exp
+ * TODO [CL] this implementation is not particularly fast
  */
 template <typename T> inline
 T fastpow (T base, size_t exp)
