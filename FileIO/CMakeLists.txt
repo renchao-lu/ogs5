@@ -40,4 +40,4 @@ target_link_libraries( FileIO
 
 if (Shapelib_FOUND)
 	target_link_libraries( FileIO ${Shapelib_LIBRARIES} )
-endif (Shapelib_FOUND)
+endif ()

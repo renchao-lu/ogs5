@@ -61,8 +61,8 @@ include_directories(
 
 if (WIN32)
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIPMGEMPLUGIN")
-endif (WIN32)
+endif ()
 
 if (UNIX)
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIPMGEMPLUGIN -D__unix")
-endif (UNIX)
+endif ()

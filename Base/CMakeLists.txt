@@ -23,4 +23,4 @@ include_directories(
 if(OGS_BUILD_CORRECT_SCIENTIFIC)
 	# Create utility executable
 	add_executable( correctScientificNotation CorrectScientificNotationMain.cpp )
-endif(OGS_BUILD_CORRECT_SCIENTIFIC)
+endif()
