@@ -29,32 +29,39 @@ public:
 	
 	double get_mole_fraction(double xm);
 private:
-	// TODO remove these functions
+	// TODO [CL] remove these functions
 	void calculate_qR();
 	double get_qR();
 	void get_x(Eigen::VectorXd& output_x);
 	void set_rho_s(double new_rho_s);
 public:
 	void eval(double t, Eigen::VectorXd const& y, Eigen::VectorXd &dydx);
-	double Ca_hydration();
-	double Mn_redox();
-	void set_chemical_equilibrium();
 
 	//Adsorbate EOS
 	double get_adsorbate_density(const double Tads);
+	//Adsorbate Dubinin stuff
+	double get_enthalpy(const double Tads, const double pads);
+
+private:
+	//Adsorbate EOS
 	double get_alphaT(const double Tads);
 	double get_ps(const double Tads);
 	double get_hv(const double Tads);
-	double get_specific_heat_capacity(const double Tads);
+
+	double get_specific_heat_capacity(const double Tads); // TODO [CL] why unused?
+
 	//Adsorbate Dubinin stuff
 	double get_potential(const double Tads, double pads);
 	void set_sorption_equilibrium();
 	double Z13XBF_adsorption();
 	double characteristic_curve(const double A);
 	double get_entropy(const double Tads, const double A);
-	double get_enthalpy(const double Tads, const double pads);
 
-private: 
+	double Ca_hydration();
+	double Mn_redox();
+	void set_chemical_equilibrium();
+
+
 	//const double rho_caoh2, rho_cao; // density for Ca(OH)2 and CaO
 	const double R;  // [J/mol/K]
 	double rho_s;    // solid phase density
