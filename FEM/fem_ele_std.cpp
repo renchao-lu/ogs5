@@ -84,7 +84,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 {
 	int i;
 	// TODO [CL] what is size_m?
-      int size_m = 64;                            //25.2.2007
+	int size_m = 64;                            //25.2.2007
 	string name2;
 	char name1[MAX_ZEILE];
 	cpl_pcs = NULL;

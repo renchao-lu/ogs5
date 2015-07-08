@@ -37,7 +37,6 @@
 #include <cfloat>
 #include <iomanip>                                //WW
 #include <iostream>
-#include <sstream>
 //#include <algorithm> // header of transform. WW
 #include <set>
 
@@ -227,9 +226,7 @@ CRFProcess::CRFProcess(void) :
 #ifdef JFNK_H2M
 	JFNK_precond(false), norm_u_JFNK(NULL), array_u_JFNK(NULL), array_Fu_JFNK(NULL),
 #endif
-	ele_val_name_vector (std::vector<std::string>()),
-	Write_Matrix_Coefficients(false),
-	matrix_coeff_file(NULL)
+	ele_val_name_vector (std::vector<std::string>())
 {
 	iter_lin = 0;
 	iter_lin_max = 0;
@@ -446,13 +443,6 @@ CRFProcess::~CRFProcess(void)
 		matrix_file->close();
 		delete matrix_file;
 	}
-
-	if (matrix_coeff_file)
-	{
-		matrix_coeff_file->close();
-		delete matrix_coeff_file;
-	}
-
 	//----------------------------------------------------------------------
 	// NOD: Release memory of node values
 	for(i = 0; i < (int)nod_val_vector.size(); i++)
@@ -646,31 +636,6 @@ void CRFProcess::Create()
 			std::cout << "Warning in GlobalAssembly: Matrix files are not found"
 			          << "\n";
 	}
-
-
-	// Element matrix coefficients output. CL
-	if (Write_Matrix_Coefficients)
-	{
-		std::cout << "->Write Matrix Coefficients" << '\n';
-#ifdef USE_MPI
-		std::ostringstream sstr;
-		sstr << FileName << "_" << pcs_type_name << myrank << "_element_matrix_coeff.txt";
-		std::string m_file_name = sstr.str();
-#else
-		std::string m_file_name = FileName + "_" + pcs_type_name + "_element_matrix_coeff.txt";
-#endif
-		matrix_coeff_file = new std::ofstream(m_file_name.c_str(), ios::trunc | ios::out);
-		if (!matrix_coeff_file->good())
-		{
-			std::cout << "Warning in GlobalAssembly: Matrix coefficient file `" << m_file_name
-			          << "' could not be opened."
-			          << "\n";
-		} else {
-			// TODO [CL] get rid of hard-coded 13
-			matrix_coeff_file->precision(13);
-		}
-	}
-
 	//----------------------------------------------------------------------------
 	if (m_msh)                            //OK->MB please shift to Config()
 
@@ -2025,13 +1990,6 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		if (line_string.find("$ELEMENT_MATRIX_OUTPUT") != string::npos)
 		{
 			*pcs_file >> Write_Matrix; //WW
-			pcs_file->ignore(MAX_ZEILE, '\n');
-			continue;
-		}
-		// subkeyword found
-		if (line_string.find("$ELEMENT_MATRIX_COEFF_OUTPUT") != string::npos)
-		{
-			*pcs_file >> Write_Matrix_Coefficients; // CL
 			pcs_file->ignore(MAX_ZEILE, '\n');
 			continue;
 		}
@@ -4423,7 +4381,6 @@ void CRFProcess::ConfigTES()
 	                                        1.0,       // delta_t
 	                                        react_syst);
 
-	// TODO [CL] eliminate this, rewirte stepper bulirsch stoer
 	yy_rho_s    = Eigen::VectorXd::Zero(1);
 	dydxx_rho_s = Eigen::VectorXd::Zero(1);
 	// initial value for y
@@ -5098,13 +5055,7 @@ double CRFProcess::Execute()
 
 	}                                     // END PICARD
 #else
-    // JT: Coupling error was wrong. Now ok.
-	if (Write_Matrix_Coefficients)
-	{
-		std::cerr << "@@@ nonlin error ERNORM @@@ "
-		          << "new iteration: iter_nlin = " << iter_nlin
-		          << std::endl;
-	}
+	// JT: Coupling error was wrong. Now ok.
     if(iter_nlin > 0){	// Just getting NL error
 	  pcs_error = CalcIterationNODError(m_num->getNonLinearErrorMethod(),true,false);     //OK4105//WW4117//JT
     }
@@ -5669,7 +5620,6 @@ void CRFProcess::GlobalAssembly()
 	}
 
 	if (!fem)
-		// TODO [CL] serious problem
 		// Which process needs this?
 		// Only one instance of CFiniteElementStd is required for each process
 		// Use "new" in such way will cause memory problem.
@@ -9531,18 +9481,6 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 						//
 						unknowns_norm += val2*val2;
 						value += val1*val1;
-
-						if (Write_Matrix_Coefficients) {
-							std::cerr << "@@@ nonlin error ERNORM @@@ "
-							          << aktueller_zeitschritt << "\t"
-							          << std::setprecision(13) << aktuelle_zeit << "\t"
-							          << ii << "\t"
-							          << i << "\t"
-							          << std::setprecision(13) << unknowns_norm << "\t"
-							          << std::setprecision(13) << value << '\t'
-							          << '"' << pcs_primary_function_name[ii] << '"'
-							          << std::endl;
-						}
 					}
 				}
 			}
