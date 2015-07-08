@@ -34,7 +34,7 @@ extern double GetCurveValue(int,int,double,int*);
 using namespace std;
 
 
-#include <physical_constants.h>
+#include "physical_constants.h"
 
 
 /* Umrechnungen SI - Amerikanisches System */
@@ -1057,7 +1057,7 @@ double CFluidProperties::Density(double* variables)
 			// gas molar fraction of component 1
 			const double xn = M0*x/(M0*x + M1*(1.0-x));
 
-			density = p / (phc::R_SI * T) * (M1*xn + M0*(1.0-xn)); //R_uni in mNs
+			density = p / (phc::R * T) * (M1*xn + M0*(1.0-xn)); //R_uni in mNs
 		}
 			break;
 
@@ -1600,10 +1600,10 @@ double CFluidProperties::Viscosity(double* variables)
 
 		//reactive component
 		x[0] = M1*X/(M1*X + M2*(1.0-X)); //mass in mole fraction
-		Vs[0] = Fluid_Viscosity(M2*p/(phc::R_SI*T), T, p, cp_vec[1]->fluid_id);
+		Vs[0] = Fluid_Viscosity(M2*p/(phc::R*T), T, p, cp_vec[1]->fluid_id);
 		//inert component
 		x[1] = 1.0 - x[0];
-		Vs[1] = Fluid_Viscosity(M1*p/(phc::R_SI*T), T, p, cp_vec[0]->fluid_id);//R_uni in mNs
+		Vs[1] = Fluid_Viscosity(M1*p/(phc::R*T), T, p, cp_vec[0]->fluid_id);//R_uni in mNs
 
 		const double M1_over_M2 (M2/M1); //reactive over inert
 		const double V1_over_V2 (Vs[0]/Vs[1]);
@@ -2213,14 +2213,14 @@ double CFluidProperties::HeatConductivity(double* variables)
 		// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
 		//reactive component
 		x[0] = max(M0*X/(M0*X + M1*(1.0-X)), 0.); // convert mass to mole fraction
-		k[0] = Fluid_Heat_Conductivity(M1*p/(phc::R_SI*T), T, cp_vec[1]->fluid_id);
+		k[0] = Fluid_Heat_Conductivity(M1*p/(phc::R*T), T, cp_vec[1]->fluid_id);
 		 //inert component
 		 x[1] = 1.0 - x[0];
-		k[1] = Fluid_Heat_Conductivity(M0*p/(phc::R_SI*T), T, cp_vec[0]->fluid_id);
+		k[1] = Fluid_Heat_Conductivity(M0*p/(phc::R*T), T, cp_vec[0]->fluid_id);
 
 		const double M1_over_M2 = M1/M0; //reactive over inert
-		const double V1_over_V2 = Fluid_Viscosity(M1*p/(phc::R_SI*T), T, p, cp_vec[1]->fluid_id)
-		                        / Fluid_Viscosity(M0*p/(phc::R_SI*T), T, p, cp_vec[0]->fluid_id);
+		const double V1_over_V2 = Fluid_Viscosity(M1*p/(phc::R*T), T, p, cp_vec[1]->fluid_id)
+		                        / Fluid_Viscosity(M0*p/(phc::R*T), T, p, cp_vec[0]->fluid_id);
 		const double L1_over_L2 = V1_over_V2 / M1_over_M2;
 
 		const double phi_12 =   (1.0 + pow(L1_over_L2, 0.5) * pow(M1_over_M2, -0.25))

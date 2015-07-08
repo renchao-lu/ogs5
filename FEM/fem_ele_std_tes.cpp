@@ -200,7 +200,7 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		double dxn_dxm = M0 * M1; // 0 is inert, 1 is reactive
 		dxn_dxm /= (M0 * X + M1 * (1.0 - X)) * (M0 * X + M1 * (1.0 - X));
 
-		val = (M1-M0) * p / (phc::R_SI * T) * dxn_dxm * poro;
+		val = (M1-M0) * p / (phc::R * T) * dxn_dxm * poro;
 		break;
 	}
 

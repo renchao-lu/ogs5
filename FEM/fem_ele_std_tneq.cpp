@@ -156,9 +156,9 @@ double CFiniteElementStd::CalCoefMassTNEQ(const int dof_index)
 		dxn_dxm /= (M0 * X + M1 * (1.0 - X)) * (M0 * X + M1 * (1.0 - X));
 
 		if (GasMassForm) {
-			val = (M1-M0) * p / (phc::R_SI * T) * dxn_dxm * poro;
+			val = (M1-M0) * p / (phc::R * T) * dxn_dxm * poro;
 		} else {
-			val = (M1-M0) * p / (phc::R_SI * T) * dxn_dxm * poro
+			val = (M1-M0) * p / (phc::R * T) * dxn_dxm * poro
 			       / FluidProp->Density(eos_arg);
 		}
 		break;
