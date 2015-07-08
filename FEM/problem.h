@@ -153,6 +153,8 @@ class Problem
 	int mrank;
     /// processor number for MPI  
 	int msize;
+
+	static const size_t max_processes = 16;
 };
 
 extern bool MODCreate();                          //OK
