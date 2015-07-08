@@ -652,20 +652,21 @@ void CFiniteElementStd::Assemble_RHS_TNEQ()
 	// Loop over Gauss points
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
-		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
+		const double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
 
 		// Compute geometry
 		ComputeShapefct(1);
+		ComputeGradShapefct(1); // this is needed for CalCoef_RHS_TNEQ() !!
 
-		for(int ii=0; ii<pcs->dof; ii++)
+		for (int ii=0; ii<pcs->dof; ii++)
 		{
-			double fac = CalCoef_RHS_TNEQ(ii);
+			const double fac = CalCoef_RHS_TNEQ(ii);
 			for (int i = 0; i < nnodes; i++)
 				NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
 		}
 	}
 
-	for(int ii=0; ii<pcs->dof; ii++)
+	for (int ii=0; ii<pcs->dof; ii++)
 	{
 		const long i_sh = NodeShift[ii];
 		const int ii_sh = ii*nnodes;
@@ -682,6 +683,10 @@ void CFiniteElementStd::Assemble_RHS_TNEQ()
 /**************************************************************************
 	FEMLib-Method:
 	Task: Calculate coefficient of RHS
+
+	Precondition: The gradient of the shape function must have been computed
+	              beforehand, because it is used for certain components.
+
 	Programing:
 	07/2013 TN
 	04/2015 CL
