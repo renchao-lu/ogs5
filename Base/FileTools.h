@@ -23,6 +23,11 @@ bool HasCRInLineEnding(std::string const& strFilename);
 std::string pathBasename(const std::string& path);
 
 /**
+ * @brief computes the dirname of the given path, i.e. the component before the last diretory separator (/ or \).
+ */
+std::string pathDirname(const std::string& path);
+
+/**
  * @brief joins two paths using the correct directory separator.
  *
  * trailing and preceding (back)slashes at the join point are ignored.

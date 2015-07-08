@@ -117,8 +117,6 @@ std::string rtrim(const std::string& str, const char c)
 
 std::string pathJoin(const std::string& path1, const std::string& path2)
 {
-	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << path1 << "<@@@>" << path2 << std::endl;
-
 	if (path1.empty()) return path2;
 	if (path2.empty()) return path1;
 
@@ -126,35 +124,41 @@ std::string pathJoin(const std::string& path1, const std::string& path2)
 
 	const std::string s = rtrim(path1, dirSep) + dirSep + ltrim(path2, dirSep);
 
-	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << s << std::endl;
-
 	return s;
 }
 
 
 std::string pathBasename(const std::string& path)
 {
-	if (path.length() == 0) return path;
+	if (path.empty()) return "";
 
 	const char dirSep = getDirSep();
+	const std::string p = rtrim(path, dirSep);
 
-	// ignore trailing / or \ respectively
-	const size_t idxNsep = path.find_last_not_of(dirSep);
-	if (idxNsep == std::string::npos) {
-		// path contains only dirSep characters
-		return std::string(1, dirSep);
-	}
-
-	const size_t idx = path.find_last_of(dirSep, idxNsep);
-	std::string s;
-
-	if (idx != std::string::npos) {
-		s = path.substr(idx+1, idxNsep-idx);
+	const size_t idx = p.find_last_of(dirSep);
+	if (idx == std::string::npos) {
+		return path; // no dirSep in path
 	} else {
-		s = path.substr(0, idxNsep+1);
+		return p.substr(idx+1);
 	}
+}
 
-	return s;
+
+std::string pathDirname(const std::string& path)
+{
+	if (path.empty()) return ".";
+
+	const char dirSep = getDirSep();
+	const std::string p = rtrim(path, dirSep);
+
+	const size_t idx = p.find_last_of(dirSep);
+	if (idx == std::string::npos) {
+		return "."; // no dirSep in path
+	} else if (idx == 0) {
+		return std::string(1, dirSep); // only one dirSep at the beginning of path
+	} else {
+		return p.substr(0, idx);
+	}
 }
 
 
