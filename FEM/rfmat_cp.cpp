@@ -1004,7 +1004,7 @@ double CompProperties::CalcDiffusionCoefficientCP(long index,double theta,CRFPro
         //else
         //  return 0;
         if(temperature_average >0) 
-          Dm = pow(10, (k[0]+k[1]/temperature_average))  / 10000; //cm²/s -> m²/s;
+          Dm = pow(10, (k[0]+k[1]/temperature_average))  / 10000; //cm^2/s -> m^2/s;
         else{ 
           Dm = 0;
           DisplayMsgLn("Something wrong in diffusion model 10! T = 0.");

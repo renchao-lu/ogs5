@@ -8015,7 +8015,7 @@ double CSolidProperties::E_Function(int dim, const ElementValue_DM *ele_val, int
 	return return_value;
 }
 
-//TN - added for TNEQ process
+//TN - added for TNEQ/TEQ process
 void CSolidProperties::setSolidReactiveSystem (FiniteElement::SolidReactiveSystem reactive_system)
 {
 	_reactive_system = reactive_system;

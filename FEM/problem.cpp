@@ -833,11 +833,11 @@ void Problem::SetActiveProcesses()
 			transport_processes.push_back(m_pcs);
 		//		if (m_pcs->pcs_type_name.compare("TWO_PHASE_FLOW") == 0) //09.01.2008. WW
 		// TF
-      if ((m_pcs->getProcessType() == FiniteElement::TWO_PHASE_FLOW) || (m_pcs->getProcessType() == FiniteElement::MULTI_PHASE_FLOW)) //BG 04/2011
-         multiphase_processes.push_back(m_pcs);
+		if ((m_pcs->getProcessType() == FiniteElement::TWO_PHASE_FLOW) || (m_pcs->getProcessType() == FiniteElement::MULTI_PHASE_FLOW)) //BG 04/2011
+			multiphase_processes.push_back(m_pcs);
 
-	  if ((m_pcs->getProcessType() == FiniteElement::GROUNDWATER_FLOW) || (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW))	//BG 04/2011
-		  singlephaseflow_process.push_back(m_pcs);
+		if ((m_pcs->getProcessType() == FiniteElement::GROUNDWATER_FLOW) || (m_pcs->getProcessType() == FiniteElement::LIQUID_FLOW))	//BG 04/2011
+			singlephaseflow_process.push_back(m_pcs);
 	}
 }
 
@@ -866,12 +866,12 @@ void Problem::PCSCreate()
 {
 #if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 	if(mrank == 0)
-	{	 
+	{
 #endif
 	std::cout << "---------------------------------------------" << "\n";
 	std::cout << "Create PCS processes" << "\n";
 #if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
-    }
+	}
 #endif
 
 	size_t no_processes = pcs_vector.size();
@@ -883,7 +883,7 @@ void Problem::PCSCreate()
 	}
 
 #if defined(NEW_EQS) 
-       CreateEQS_LinearSolver();  
+	CreateEQS_LinearSolver();
 #endif
 
 	for (size_t i = 0; i < no_processes; i++)
@@ -915,7 +915,7 @@ void Problem::PCSCreate()
 
 
 #if defined(USE_PETSC) // || defined(other solver libs)//03.3012. WW
-       CreateEQS_LinearSolver();  
+	CreateEQS_LinearSolver();
 #endif
 
 	for (size_t i = 0; i < no_processes; i++)
@@ -1047,11 +1047,11 @@ void Problem::Euler_TimeDiscretize()
 	// Output zero time initial values
 #if defined(USE_MPI)  || defined(USE_MPI_KRC) 
 	if(mrank == 0)
-		{
+	{
 #endif
 	OUTData(current_time,aktueller_zeitschritt,true);
 #if defined(USE_MPI) || defined(USE_MPI_KRC) 
-		}
+	}
 #endif
 
 	// check if this is a steady state simulation
@@ -2836,7 +2836,7 @@ Modification:
 -------------------------------------------------------------------------*/
 inline double Problem::TNEQ()
 {
-   double error = 1.0e+8;
+	double error = 1.0e+8;
 	CRFProcess* m_pcs = total_processes[14];
 	if(!m_pcs->selected)
 		return error;

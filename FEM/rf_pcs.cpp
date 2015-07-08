@@ -5890,7 +5890,6 @@ void CRFProcess::Integration(vector<double> &node_velue)
 void CRFProcess::CalIntegrationPointValue()
 {
 	CElem* elem = NULL;
-	cal_integration_point_value = false;
 	continuum = 0;                        //15.02.2007/
 	//  cal_integration_point_value = true;
 	// Currently, extropolation only valid for liquid and Richards flow.
@@ -5925,17 +5924,17 @@ void CRFProcess::CalIntegrationPointValue()
 		return;
 	}
 
-   std::cout << "->Calculate velocity" << '\n';
+	std::cout << "->Calculate velocity" << '\n';
 
-   //check linear flow or not
-   bool isLinearFlow = true;
-   for (size_t i=0; i<mmp_vector.size(); i++) {
-       if (mmp_vector[i]->flowlinearity_model > 1) {
-           isLinearFlow = false;
-           break;
-       }
-   }
-   if (isLinearFlow) {
+	//check linear flow or not
+	bool isLinearFlow = true;
+	for (size_t i=0; i<mmp_vector.size(); i++) {
+		if (mmp_vector[i]->flowlinearity_model > 1) {
+			isLinearFlow = false;
+			break;
+		}
+	}
+	if (isLinearFlow) {
 	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
 	for (size_t i = 0; i < mesh_ele_vector_size; i++)
 	{
@@ -10755,26 +10754,26 @@ void CRFProcess::CalcSecondaryVariablesTNEQ()
 	CElem* elem = NULL;
 	size_t i;
 
-    // loop over all the nodes,
-    // clean the nodal reaction rate values
-    const size_t node_vector_size(m_msh->nod_vector.size());
-    const int idx_nodal_react_rate = this->GetNodeValueIndex("REACT_RATE_N");
+	// loop over all the nodes,
+	// clean the nodal reaction rate values
+	const size_t node_vector_size(m_msh->nod_vector.size());
+	const int idx_nodal_react_rate = this->GetNodeValueIndex("REACT_RATE_N");
 	const int idx_nodal_solid_density = this->GetNodeValueIndex("SOLID_DENSITY_N");
 
-    for (size_t idx_node=0; idx_node<node_vector_size; idx_node++)
-    {
-        this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
+	for (size_t idx_node=0; idx_node<node_vector_size; idx_node++)
+	{
+		this->SetNodeValue( idx_node, idx_nodal_react_rate, 0.0 );
 		this->SetNodeValue( idx_node, idx_nodal_solid_density, 0.0);
-    }
+	}
 
 	// loop over all the elements and update the rho_s values.
 	const size_t mesh_ele_vector_size(m_msh->ele_vector.size());
-    for (i = 0; i < mesh_ele_vector_size; i++)
-    {
-        elem = m_msh->ele_vector[i];
-        if (elem->GetMark())                        // Marked for use
-        {
-            fem->ConfigElement(elem, m_num->ele_gauss_points);
+	for (i = 0; i < mesh_ele_vector_size; i++)
+	{
+		elem = m_msh->ele_vector[i];
+		if (elem->GetMark())                        // Marked for use
+		{
+			fem->ConfigElement(elem, m_num->ele_gauss_points);
 			fem->UpdateSolidDensity(i);          // HS, thermal storage reactions
 			fem->ExtrapolateGauss_ReactRate_TNEQ_TES( this ); // HS added 19.02.2013
 		}
