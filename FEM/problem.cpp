@@ -3156,7 +3156,7 @@ inline double Problem::MassTrasport()
 
 		if (m_cp->OutputMassOfComponentInModel == 1) {			// 05/2012 BG
 			// TODO: Check
-			if (singlephaseflow_process.size() >= 0)
+			if (singlephaseflow_process.size() > 0)
 				OutputMassOfComponentInModel(singlephaseflow_process, m_pcs);
 			else
 				OutputMassOfComponentInModel(multiphase_processes, m_pcs);

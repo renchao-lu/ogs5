@@ -1825,6 +1825,7 @@ int RandomWalk::SolveForDerivativeOfVelocity(Particle* A)
         /// Gradient of shape  function: CElement::dshapefct
         /// Gradient of velocity:
         /// =V_i*dshapefct[i];
+        return -1; // not supported yet
     }
     else if(m_ele->GetDimension()==2)
     {

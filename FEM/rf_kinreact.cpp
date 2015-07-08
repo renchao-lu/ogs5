@@ -3957,7 +3957,7 @@ void CKinReactData::Biodegradation( double *m_Conc, long node, double eps, doubl
      newVolume = dvector(0,Number_of_blobs);
      // initialize
      for (r = 0; r < Number_of_blobs; r++)
-	      oldVolume[r] = oldMass[r] = newVolume[r] = newVolume[r] = 0.;
+	      oldVolume[r] = oldMass[r] = newVolume[r] = 0.;
      // 1) Here, calculate current Mass and old Volume of NAPL for each blob
      //    - Mass is required for computing current Csat in 2)
      //    - old Volume is required for updating Interfacial Area in postprocessing
