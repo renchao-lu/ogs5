@@ -5686,7 +5686,6 @@ void CFiniteElementStd::Assemble_Gravity()
 	int gp_r = 0, gp_s = 0, gp_t;
 	gp_t = 0;
 	double fkt, rho;               //, rich_f;
-	double k_rel_iteration;
 	// GEO
 	//NW  double geo_fac = MediaProp->geo_area;
 	if(!FluidProp->CheckGravityCalculation())
@@ -5713,8 +5712,6 @@ void CFiniteElementStd::Assemble_Gravity()
 
 	//rich_f = 1.0;
 	//if(PcsType==R) rich_f = -1.0; //WW
-
-	k_rel_iteration = 1.0;
 
 	for (i = 0; i < dof_n * nnodes; i++)
 		NodalVal[i] = 0.0;
@@ -5816,7 +5813,7 @@ void CFiniteElementStd::Assemble_Gravity()
 		{
 #if !defined(USE_PETSC) // && defined(other parallel libs)//03~04.3012. WW
 			eqs_rhs[cshift + eqs_number[i]]
-			        += k_rel_iteration * NodalVal[i + ii_sh];
+			        += NodalVal[i + ii_sh]; // *k_rel_iteration
 			//NW not necessary to multiply geo_area(geo_fac) here. It's already multiplied in ComputeJacobian() through fkt.
 			//          eqs_rhs[cshift + eqs_number[i]]
 			//                  += k_rel_iteration* geo_fac*NodalVal[i+ii_sh];
@@ -5916,9 +5913,8 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
 	int gp_r = 0, gp_s = 0, gp_t;
 	gp_t = 0;
 	double fkt, rho;                      //, rich_f;
-	double k_rel_iteration;
+	//double k_rel_iteration;
 	// GEO
-	double geo_fac = MediaProp->geo_area;
 	if(!FluidProp->CheckGravityCalculation())
 		return;
 	long cshift = 0;                      //WW
@@ -5936,7 +5932,7 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
 	//rich_f = 1.0;
 	//if(PcsType==R) rich_f = -1.0; //WW
 
-	k_rel_iteration = 1.0;
+	//k_rel_iteration = 1.0;
 
 	for (i = 0; i < dof_n * nnodes; i++)
 		NodalVal[i] = 0.0;
@@ -6044,7 +6040,7 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
 		{
 #if !defined(USE_PETSC) // && defined(other parallel libs)//03~04.3012. WW
 			eqs_rhs[cshift + eqs_number[i]]
-			        += k_rel_iteration * geo_fac * NodalVal[i + ii_sh];
+			        += MediaProp->geo_area * NodalVal[i + ii_sh]; // *k_rel_iteration
 #endif
 			(*RHS)[i + LocalShift + ii_sh] += NodalVal[i + ii_sh];
 		}
@@ -7366,9 +7362,6 @@ void CFiniteElementStd::AssembleRHS(int dimension)
 **************************************************************************/
 void CFiniteElementStd::AssembleParabolicEquation()
 {
-	int i, ii;
-	int ii_sh;
-	long i_sh;
 	double relax0, relax1, pcs_time_step, dt_inverse;
 	long dm_shift = 0, cshift = 0;        //WW 05.01.07
 
@@ -7544,10 +7537,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	//----------------------------------------------------------------------
 	// Add local matrix to global matrix
 	///Initialize temporal vector
-	for (i = 0; i < nnodes; i++)
+	for (int i = 0; i < nnodes; i++)
 		NodalVal[i] = 0.0;
 	if(PcsType == EPT_MULTIPHASE_FLOW)                      // For DOF>1: 27.2.2007 WW
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 			NodalVal[i + nnodes] = 0.0;
 
 	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
@@ -7571,18 +7564,18 @@ void CFiniteElementStd::AssembleParabolicEquation()
 			{
 				int jj_sh;
 				long j_sh = 0;
-				for(ii = 0; ii < 2; ii++)
+				for(int ii = 0; ii < 2; ii++)
 				{
-					i_sh = NodeShift[ii + dm_shift];
-					ii_sh = ii * nnodes;
-					for(jj = 0; jj < 2; jj++)
+					long i_sh = NodeShift[ii + dm_shift];
+					long ii_sh = ii * nnodes;
+					for(int jj = 0; jj < 2; jj++)
 					{
 						j_sh = NodeShift[jj + dm_shift];
 						jj_sh = jj * nnodes;
-						for(i = 0; i < nnodes; i++)
+						for(int i = 0; i < nnodes; i++)
 						{
 							kk = i_sh + eqs_number[i];
-							for(j = 0; j < nnodes; j++)
+							for(int j = 0; j < nnodes; j++)
 							{
 #ifdef _OPENMP      //13.11.2008. WW
 #pragma omp critical
@@ -7602,10 +7595,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 			else
 			{
 				cshift += NodeShift[dm_shift]; //WW 05.01.07
-				for(i = 0; i < nnodes; i++)
+				for(int i = 0; i < nnodes; i++)
 				{
 					kk = cshift + eqs_number[i];
-					for(j = 0; j < nnodes; j++)
+					for(int j = 0; j < nnodes; j++)
 					{
 #ifdef _OPENMP            //13.11.2008. WW
 #pragma omp critical
@@ -7673,14 +7666,14 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	int idx = idx0;
 	if(pcs->continuum == 1)
 	idx = idxp20;
-	for (i = 0; i < nnodes; i++)
+	for (int i = 0; i < nnodes; i++)
 		NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx);
 
 	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)// For DOF>1: 27.2.2007 WW
 	{
 		for (int in = 0; in < pcs->dof; in++)
 		{
-			for (i = 0; i < nnodes; i++)
+			for (int i = 0; i < nnodes; i++)
 			{
 				NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
 				NodalVal[i + in*nnodes] = 0.0;
@@ -7689,7 +7682,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	}
 	else if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)                              // For DOF>1: 27.2.2007 WW
 	{
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 
 			NodalVal[i] = 0.0;
@@ -7705,7 +7698,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	}
 	else if(PcsType==EPT_TES)                              // For DOF>1: 27.2.2007 WW
 	{
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 
 			NodalVal[i] = 0.0;
@@ -7718,7 +7711,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	}
 	else if(PcsType == EPT_PSGLOBAL)
 	{// For DOF>1:
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 			NodalVal[i] = 0.0;
 			NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxSn0);
@@ -7733,11 +7726,11 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	{
 		// Velocity of pressure of the previous step
 		p_n = dm_pcs->GetAuxArray();
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 			NodalVal0[i] = p_n[nodes[i] + NodeShift[dm_shift]];
 		Mass->multi(NodalVal0, NodalVal, -1.0);
 		//p_n+vp*dt
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 			NodalVal0[i] *= pcs_time_step;
 			NodalVal0[i] += pcs->GetNodeValue(nodes[i],idx_pres);
@@ -7750,13 +7743,13 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	{
 		int nDF = 2;
 		if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES) nDF=pcs->dof;
-		for(ii = 0; ii < nDF; ii++)
+		for(int ii = 0; ii < nDF; ii++)
 		{
-			i_sh = NodeShift[ii + dm_shift];
-			ii_sh = ii * nnodes;
-			for (i = 0; i < nnodes; i++)
+			int ii_sh = ii * nnodes;
+			for (int i = 0; i < nnodes; i++)
 			{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+				long i_sh = NodeShift[ii + dm_shift];
 				eqs_rhs[i_sh + eqs_number[i]] += NodalVal[i + ii_sh];
 #endif
 				(*RHS)[i + LocalShift + ii_sh] +=  NodalVal[i + ii_sh];
@@ -7766,7 +7759,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 	else
 	{
 		cshift += NodeShift[dm_shift];
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 			eqs_rhs[cshift + eqs_number[i]] += NodalVal[i];
@@ -7811,7 +7804,7 @@ void CFiniteElementStd::add2GlobalMatrixII()
       n_dim = nnodes * dof;
 
       const int dim_full = nnodes * dof;
-      int i_dom, j_dom, in, jn; 
+      int i_dom, in;
       // put the subdomain portion of local stiffness matrix to Mass 
       double *loc_m = StiffMatrix->getEntryArray();
       double *loc_v = RHS->getEntryArray();
@@ -8154,7 +8147,6 @@ void CFiniteElementStd::CalcFEM_FCT()
 **************************************************************************/
 void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 {
-	int i,j;
 	double pcs_time_step, dt_inverse;
 	ElementMatrix* EleMat = NULL;         //SB-3
 	// NUM
@@ -8273,9 +8265,9 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 		//----------------------------------------------------------------------
 		// Add local matrix to global matrix
-		for(i = 0; i < nnodes; i++)
+		for(int i = 0; i < nnodes; i++)
 		{
-			for(j = 0; j < nnodes; j++)
+			for(int j = 0; j < nnodes; j++)
 			{
 #ifdef NEW_EQS
 				//WW
@@ -8321,14 +8313,14 @@ void CFiniteElementStd::AssembleMixedHyperbolicParabolicEquation()
 		(*AuxMatrix)  *= fac_content;
 		*AuxMatrix1   += *AuxMatrix;
 
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 			NodalVal1[i] = pcs->GetNodeValue(nodes[i],idx0);
 			NodalVal[i] = 0.0;
 		}
 		AuxMatrix1->multi(NodalVal1, NodalVal); //AuxMatrix1 times vector NodalVal1 = NodalVal
 		//----------------------------------------------------------------------
-		for (i = 0; i < nnodes; i++)
+		for (int i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 			eqs_rhs[NodeShift[problem_dimension_dm] + eqs_number[i]] += NodalVal[i];
@@ -8553,12 +8545,9 @@ void CFiniteElementStd::AssembleParabolicEquationNewtonJacobian(double** jacob,
 void CFiniteElementStd::Assemble_strainCPL(const int phase)
 {
 	int i, j;
-	int shift_index;
 	double* u_n = NULL;                   // Dynamic
 	double fac;
 	int Residual = -1;
-
-	shift_index = problem_dimension_dm + phase;
 
 	fac = 1.0 / dt;
 
@@ -8652,6 +8641,7 @@ void CFiniteElementStd::Assemble_strainCPL(const int phase)
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int shift_index = problem_dimension_dm + phase;
 			eqs_rhs[NodeShift[shift_index] + eqs_number[i]]
 			        += NodalVal[i];
 #endif
@@ -8670,9 +8660,11 @@ void CFiniteElementStd::Assemble_strainCPL(const int phase)
    28.11.2011 WW
  */
 //**************************************************************************
+#if defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+void CFiniteElementStd::Assemble_strainCPL_Matrix(const double, const int) {}
+#else
 void CFiniteElementStd::Assemble_strainCPL_Matrix(const double fac, const int phase)
 {
-#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
 	  //TODO
 	int i, j;
 	int shift_index;
@@ -8711,8 +8703,8 @@ void CFiniteElementStd::Assemble_strainCPL_Matrix(const double fac, const int ph
 #endif
 		}
 	}
-#endif
 }
+#endif
 
 /**************************************************************************
    FEMLib-Method:
@@ -8770,6 +8762,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 
 	//----------------------------------------------------------------------
 	// Add local matrix to global matrix
+#if !defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
 	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL)      // For DOF>1: 03.03.2009 PCH
 	{
 		for(int ii = 0; ii < pcs->dof; ii++)
@@ -8784,9 +8777,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 				{
 					for(int j = 0; j < nnodes; j++)
 					{
-#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-	  //TODO
-#elif defined(NEW_EQS)
+#if defined(NEW_EQS)
 						(*A)(i_sh + eqs_number[i], j_sh + eqs_number[j]) += \
 						        (*Mass)(i + ii_sh,j + jj_sh);
 #else
@@ -8807,9 +8798,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 		{
 			for(int j = 0; j < nnodes; j++)
 			{
-#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-			  //TODO
-#elif defined(NEW_EQS)
+#if defined(NEW_EQS)
 				(*A)(cshift + eqs_number[i], cshift + eqs_number[j]) += \
 				        (*Mass)(i,j);
 #else
@@ -8819,6 +8808,7 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 			}
 		}
 	}
+#endif
 }
 
 /**************************************************************************
@@ -8851,30 +8841,25 @@ void CFiniteElementStd::Config()
 #endif
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-	int dof_p_node = pcs->pcs_number_of_primary_nvals;
-        if(pcs->GetContinnumType() == 1)
-	  dof_p_node = 1;
+	if (MeshElement->g_index) // ghost nodes pcs->pcs_number_of_primary_nvals
+	{
+		act_nodes = MeshElement->g_index[0];
+		act_nodes_h = MeshElement->g_index[1];
 
-	int i_buff = 0;
-        if(MeshElement->g_index) // ghost nodes pcs->pcs_number_of_primary_nvals
-	  {
-	    act_nodes = MeshElement->g_index[0];
-	    act_nodes_h = MeshElement->g_index[1];
-
-	    for(i = 0; i < act_nodes_h; i++)
-	      {
-		local_idx[i] = MeshElement->g_index[i+2];
-	      }
-	  }
+		for (i = 0; i < act_nodes_h; i++)
+		{
+			local_idx[i] = MeshElement->g_index[i + 2];
+		}
+	}
 	else
-	  {
-	    act_nodes = nnodes;
-	    act_nodes_h = nnodesHQ;
-	    for(i = 0; i < nn; i++)
-	      {
-		local_idx[i] = i;
-	      }
-	  }
+	{
+		act_nodes = nnodes;
+		act_nodes_h = nnodesHQ;
+		for (i = 0; i < nn; i++)
+		{
+			local_idx[i] = i;
+		}
+	}
 
 
 	//i_buff = nn*nn;
@@ -10439,10 +10424,6 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 	double fkt, fac;
 	// Material
 	int dof_n = 2;
-	// 02.2011 WW
-	int dm_shift = 0;
-	if(pcs->type / 10 == 4)
-		dm_shift = problem_dimension_dm;
 	//----------------------------------------------------------------------
 	for (i = 0; i < dof_n * nnodes; i++)
 		NodalVal[i] = 0.0;
@@ -10498,12 +10479,15 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 			}			        
 		}
 	}
-	int ii_sh;
-	long i_sh;
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+	int dm_shift = 0;
+	if(pcs->type / 10 == 4)
+		dm_shift = problem_dimension_dm;
+	int i_sh = NodeShift[ii + dm_shift];
+#endif
 	for(ii = 0; ii < 2; ii++)
 	{
-		i_sh = NodeShift[ii + dm_shift];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
@@ -10562,15 +10546,13 @@ void CFiniteElementStd::Assemble_RHS_T_PSGlobal()
 			}
 		}
 	}
-	int ii_sh;
-	long i_sh;
 	for(ii = 0; ii < pcs->dof; ii++)
 	{
-		i_sh = NodeShift[ii];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];
@@ -10653,15 +10635,13 @@ void CFiniteElementStd::Assemble_RHS_Pc()
 //      for(i=0; i<2*nnodes; ++i)
 //         temp[i]=NodalVal[i];
 
-	int ii_sh;
-	long i_sh;
 	for(ii = 0; ii < pcs->dof; ii++)
 	{
-		i_sh = NodeShift[ii];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] += NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] +=  NodalVal[i + ii_sh];
@@ -10681,9 +10661,6 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
     if (!isTemperatureCoupling()) return;
        if ((FluidProp->drho_dT == .0 && (FluidProp->density_model<8 || FluidProp->density_model>14))&& SolidProp->Thermal_Expansion()==.0) return;
 
-    int dm_shift = 0;
-    if(pcs->type / 10 == 4)
-        dm_shift = problem_dimension_dm;
     //----------------------------------------------------------------------
     for (int i = 0; i < nnodes; i++)
         NodalVal[i] = 0.0;
@@ -10741,15 +10718,21 @@ void CFiniteElementStd::Assemble_RHS_LIQUIDFLOW()
 #if defined(USE_PETSC) //|| defined (other parallel solver) //WW 04.2014
         for (int ia = 0; ia < act_nodes; ia++)
 	    {
-		   const int i = local_idx[ia];			    
+		   const int i = local_idx[ia];
 #else		
         for (int i = 0; i < nnodes; i++)
         {
 #endif        
             NodalVal[i] += gp_fkt * fac * shapefct[i];
-        }    
+        }
     }
+
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+    int dm_shift = 0;
+    if(pcs->type / 10 == 4)
+        dm_shift = problem_dimension_dm;
     int i_sh = NodeShift[dm_shift];
+#endif
     for (int i = 0; i < nnodes; i++)
     {
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
@@ -10773,10 +10756,6 @@ void CFiniteElementStd::Assemble_RHS_M()
 	double fkt, fac, grad_du = 0.0;
 	// Material
 	int dof_n = 2;
-	// 02.2011 WW
-	int dm_shift = 0;
-	if(pcs->type / 10 == 4)
-		dm_shift = problem_dimension_dm;
 	//----------------------------------------------------------------------
 	for (i = 0; i < dof_n * nnodes; i++)
 		NodalVal[i] = 0.0;
@@ -10849,12 +10828,16 @@ void CFiniteElementStd::Assemble_RHS_M()
 		}
 	}
 	//
-	int ii_sh;
-	long i_sh;
+#if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+	int dm_shift = 0;
+	if(pcs->type / 10 == 4)
+		dm_shift = problem_dimension_dm;
+	int i_sh = NodeShift[ii + dm_shift];
+#endif
+
 	for(ii = 0; ii < dof_n; ii++)
 	{
-		i_sh = NodeShift[ii + dm_shift];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
@@ -10954,15 +10937,13 @@ void CFiniteElementStd::Assemble_RHS_AIR_FLOW()
 			}
 		}
 	}
-	int ii_sh;
-	long i_sh;
 	for(ii = 0; ii < pcs->dof; ii++)
 	{
-		i_sh = NodeShift[ii];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (int i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];
@@ -11032,15 +11013,13 @@ void CFiniteElementStd::Assemble_RHS_HEAT_TRANSPORT()
 						                              j] * NodalValC1[j];
 		}
 	}
-	int ii_sh;
-	long i_sh;
 	for(ii = 0; ii < pcs->dof; ii++)
 	{
-		i_sh = NodeShift[ii];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];
@@ -11218,15 +11197,13 @@ void CFiniteElementStd::Assemble_RHS_HEAT_TRANSPORT2()
 					               gravity_constant * dshapefct[k * nnodes + i];
 		}
 	}
-	int ii_sh;
-	long i_sh;
 	for(ii = 0; ii < pcs->dof; ii++)
 	{
-		i_sh = NodeShift[ii];
-		ii_sh = ii * nnodes;
+		int ii_sh = ii * nnodes;
 		for (i = 0; i < nnodes; i++)
 		{
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03~04.3012. WW
+			int i_sh = NodeShift[ii];
 			eqs_rhs[i_sh + eqs_number[i]] -= NodalVal[i + ii_sh];
 #endif
 			(*RHS)[i + LocalShift + ii_sh] -=  NodalVal[i + ii_sh];

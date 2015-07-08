@@ -192,7 +192,8 @@ double CFluidMomentum::Execute(int loop_process_number)
 **************************************************************************/
 void CFluidMomentum::SolveDarcyVelocityOnNode()
 {
-	int nidx1 = 0;                        //OK411
+#if !defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
+	int nidx1 = 0;
 	long i;
 	MeshLib::CElem* elem = NULL;
 
@@ -241,9 +242,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 		{
 			/* Initializations */
 			/* System matrix */
-#if defined(USE_PETSC) // || defined(other parallel libs)//03~04.3012. WW
-		  //TODO
-#elif defined(NEW_EQS)                           //WW
+#if defined(NEW_EQS)                           //WW
 			m_pcs->EQSInitialize();
 #else
 			SetLinearSolverType(m_pcs->getEQSPointer(), m_num); //NW
@@ -263,9 +262,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			//		MXDumpGLS("rf_pcs.txt",1,m_pcs->eqs->b,m_pcs->eqs->x); //abort();
 			m_pcs->IncorporateBoundaryConditions(-1,d);
 			// Solve for velocity
-#if defined (USE_PETSC) // || defined (other parallel solver lib). 04.2012 WW
-			//TODO
-#elif defined(NEW_EQS)
+#if defined(NEW_EQS)
 
 			double* x;
 			int size = (int)m_msh->nod_vector.size(); //OK411??? long
@@ -303,9 +300,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 			else
 				abort();  // Just stop something's wrong.
 
-#if defined (USE_PETSC) // || defined (other parallel solver lib). 04.2012 WW
-			//TODO
-#elif defined(NEW_EQS)
+#if defined(NEW_EQS)
 			for(int j = 0; j < size; j++)
 				m_pcs->SetNodeValue(m_msh->Eqs2Global_NodeIndex[j],nidx1,x[j]);
 
@@ -420,6 +415,7 @@ void CFluidMomentum::SolveDarcyVelocityOnNode()
 
 	// Release memroy
 	delete fem;
+#endif
 }
 
 /**************************************************************************
