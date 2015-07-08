@@ -1387,7 +1387,7 @@ void CElement::FaceNormalFluxIntegration(long /*element_index*/, double *NodeVal
 	double *sf = shapefct;
 	double normal_diff_flux_interpol, normal_adv_flux_interpol;
 	double dbuff_adv[10], flux[3];
-    // ElementValue* gp_ele = ele_gp_value[element_index];
+	// ElementValue* gp_ele = ele_gp_value[element_index];
 
 	setOrder(Order);
 	if (Order == 2)
