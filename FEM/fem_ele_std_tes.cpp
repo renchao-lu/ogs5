@@ -49,6 +49,8 @@ void CFiniteElementStd::CalcMassTES()
 	// ---- Gauss integral
 	int gp_r=0,gp_s=0,gp_t=0;
 
+	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
+
 	// Loop over Gauss points
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
@@ -63,7 +65,10 @@ void CFiniteElementStd::CalcMassTES()
 			for (int jn=0; jn<pcs->dof; jn++)
 			{
 				// Material
-				double mat_fac = fkt*CalCoefMassTES(in*pcs->dof+jn);
+				const double coeff = CalCoefMassTES(in*pcs->dof+jn);
+				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
+
+				const double mat_fac = fkt * coeff;
 				// Calculate mass matrix
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
@@ -100,8 +105,10 @@ void CFiniteElementStd::CalcMassTES()
 void CFiniteElementStd::CalcLumpedMassTES()
 {
 	int gp_r, gp_s, gp_t;
-	const int nDF=pcs->dof;
-	double factor=0.0, vol = 0.0;
+	const int nDF = pcs->dof;
+	double vol = 0.0;
+
+	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
 
 	// Volume
 	if(axisymmetry)
@@ -128,7 +135,10 @@ void CFiniteElementStd::CalcLumpedMassTES()
 		for(int jn = 0; jn < nDF; jn++)
 		{
 			const int jsh = jn * nnodes;
-			factor = CalCoefMassTES(in * nDF + jn);
+
+			double factor = CalCoefMassTES(in * nDF + jn);
+			if (gp==0) write_mat_coeff(pcs, factor, in*nDF+jn);
+
 			//			pcs->timebuffer = factor; // Tim Control "Neumann"
 			factor *= vol;
 			for (int i = 0; i < nnodes; i++)
@@ -212,10 +222,12 @@ double CFiniteElementStd::CalCoefMassTES(const int dof_index)
 		T = ipol(T0, T1, theta, this);
 		X = ipol(X0, X1, theta, this);
 
-		const double rho_s = gp_ele->rho_s_curr[gp];
+		const double rhoSR = gp_ele->rho_s_curr[gp];
+		const double rhoGR = FluidProp->Density(eos_arg);
+		const double cpG = FluidProp->SpecificHeatCapacity(eos_arg);
+		const double cpS = SolidProp->Heat_Capacity(rhoSR);
 
-		val = poro * FluidProp->Density(eos_arg) * FluidProp->SpecificHeatCapacity(eos_arg)
-		      + (1.0-poro) * rho_s * SolidProp->Heat_Capacity(rho_s);
+		val = poro * rhoGR * cpG + (1.0-poro) * rhoSR * cpS;
 		break;
 	}
 
@@ -386,6 +398,9 @@ void CFiniteElementStd::CalcAdvectionTES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
 	ElementValue* gp_ele = ele_gp_value[Index];
+
+	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
+
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -404,7 +419,9 @@ void CFiniteElementStd::CalcAdvectionTES()
 		{
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
-				double mat_fac = fkt*CalCoefAdvectionTES(in*pcs->dof + jn);
+				const double coeff = CalCoefAdvectionTES(in*pcs->dof + jn);
+				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
+				const double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
 				const int jn_offset = jn*nnodes;
@@ -516,6 +533,9 @@ double CFiniteElementStd::CalCoefAdvectionTES(const int dof_index)
 void CFiniteElementStd::CalcContentTES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
+
+	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
+
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -525,7 +545,9 @@ void CFiniteElementStd::CalcContentTES()
 		{
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
-				double mat_fac = fkt*CalCoefContentTES(in*pcs->dof + jn);
+				const double coeff = CalCoefContentTES(in*pcs->dof + jn);
+				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
+				double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
 				const int jn_offset = jn*nnodes;
@@ -586,6 +608,10 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 	//        break;
 	case 8: // x x
 		// TODO [CL] why so complicated?
+		// std::cerr << "@@@ " << __FUNCTION__ << ":" << __LINE__
+		//           // << " react rate: " << gp_ele->q_R[gp]
+		//           << " poro: " << poro << " vs. poro2 " << MediaProp->Porosity(Index, theta)
+		//           << std::endl;
 		val = (MediaProp->Porosity(Index, theta) - 1.0) * gp_ele->q_R[gp];
 		break;
 	}
@@ -603,6 +629,9 @@ double CFiniteElementStd::CalCoefContentTES(const int dof_index)
 void CFiniteElementStd::Assemble_RHS_TES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
+
+	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
+
 	for (int i = 0; i < pcs->dof*nnodes; i++) NodalVal[i] = 0.0;
 
 	// Loop over Gauss points
@@ -615,7 +644,9 @@ void CFiniteElementStd::Assemble_RHS_TES()
 
 		for(int ii=0; ii<pcs->dof; ii++)
 		{
-			double fac = CalCoef_RHS_TES(ii);
+			const double fac = CalCoef_RHS_TES(ii);
+			if (gp==0) write_mat_coeff(pcs, fac, ii, 1);
+
 			for (int i = 0; i < nnodes; i++)
 				NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
 		}
@@ -665,7 +696,7 @@ double CFiniteElementStd::CalCoef_RHS_TES(const int dof_index)
 	const int Index = MeshElement->GetIndex();
 	poro = MediaProp->Porosity(Index, theta);
 	const ElementValue* gp_ele = ele_gp_value[Index];
-	const double q_r= gp_ele->q_R[gp];
+	const double q_r= gp_ele->q_R[gp]; // reaction rate
 
 	double val = 0.0;
 

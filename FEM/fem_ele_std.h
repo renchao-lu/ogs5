@@ -334,6 +334,7 @@ private:
 	void ComputeAdditionalJacobi_H2(); //WW
 	void ComputeAdditionalJacobi_Richards(); //WW
 
+
 	//-----------------------------------------------------
 	// Process type
 	//L: Liquid flow
@@ -398,6 +399,20 @@ private:
 	void add2GlobalMatrixII(const int block_cols = 2);            //WW. 06.2011
 #endif
 	void PrintTheSetOfElementMatrices(std::string mark);
+
+
+	template <typename Value, typename T1, typename T2>
+	inline void write_mat_coeff(CRFProcess * const pcs, Value value, T1 idx, T2 cols);
+
+	template <typename Value, typename T1>
+	inline void write_mat_coeff(CRFProcess * const pcs, Value value, T1 idx);
+
+	template <typename T>
+	inline void write_mat_coeff_cap_ele(CRFProcess * const pcs, const T ele_idx);
+
+	void write_mat_coeff_cap_mat(CRFProcess * const pcs, const std::string& str);
+
+
 	// Friend classes, 01/07, WW
 	friend class ::CMediumProperties;
 	friend class SolidProp::CSolidProperties;
@@ -468,6 +483,98 @@ private:
 	// CB _ctx_ CB_merge_0513
 	//Matrix _ctx_Gauss;
 };
+
+
+
+template <typename Value, typename T1>
+inline void
+CFiniteElementStd
+::write_mat_coeff(CRFProcess * const pcs, Value value, T1 idx)
+{
+	if (Index != 3) return;
+
+	write_mat_coeff(pcs, value, idx, pcs->dof);
+}
+
+template <typename Value, typename T1, typename T2>
+inline void
+CFiniteElementStd
+::write_mat_coeff(CRFProcess * const pcs, Value value, T1 idx, T2 cols)
+{
+	assert(idx >= 0 && cols > 0 && "wrong value for index or size argument");
+
+	if (Index != 3) return;
+
+	if (pcs->Write_Matrix_Coefficients)
+	{
+		std::ofstream& fh = *pcs->matrix_coeff_file;
+
+		if (idx % cols == 0)
+			fh << "| ";
+		else
+			fh << "\t";
+
+		fh << value;
+
+		if ((idx+1) % cols == 0) fh << " |" << std::endl;
+	}
+}
+
+
+
+namespace
+{
+
+static inline double ipol(double const * const a, double const * const b,
+                          const double theta, FiniteElement::CElement const * const obj)
+{
+	return (1.0-theta)*obj->interpolate(a) + theta*obj->interpolate(b);
+}
+
+}
+
+template <typename T>
+inline void
+CFiniteElementStd
+::write_mat_coeff_cap_ele(CRFProcess * const pcs, const T ele_idx)
+{
+	if (Index != 3) return;
+
+	if (pcs->Write_Matrix_Coefficients)
+	{
+		// std::cerr << "@@@ ele out " << __FUNCTION__ << ":" << __LINE__ << std::endl;
+
+		std::ofstream& fh = *pcs->matrix_coeff_file;
+
+		fh << std::endl << std::endl
+		   << "# element: " << ele_idx << std::endl
+		   << "# time: " << aktuelle_zeit << std::endl
+		   << "# timestep: " << aktueller_zeitschritt << std::endl
+		   << "# nonlin_iteration: " << pcs->iter_nlin
+		   << std::endl;
+
+		double const * const p0 = NodalVal0;
+		double const * const p1 = NodalVal1;
+		double const * const T0 = NodalVal_t0;
+		double const * const T1 = NodalVal_t1;
+		double const * const X0 = NodalVal_X0;
+		double const * const X1 = NodalVal_X1;
+
+		const double theta = pcs->m_num->ls_theta;
+
+		const double p = ipol(p0, p1, theta, this);
+		const double Temp = ipol(T0, T1, theta, this);
+		const double X = ipol(X0, X1, theta, this);
+
+		fh << "# pressure: " << p << std::endl
+		   << "# temperat: " << Temp << std::endl
+		   << "# concentr: " << X << std::endl
+		   << std::endl;
+
+	}
+}
+
+
 }                                                 // end namespace
 
 /*------------------------------------------------------------------

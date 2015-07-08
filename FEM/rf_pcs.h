@@ -302,6 +302,10 @@ public:
 	void Def_Variable_MultiPhaseFlow();
 	bool Write_Matrix;
 	std::fstream* matrix_file;
+
+	bool Write_Matrix_Coefficients;
+	std::ofstream* matrix_coeff_file;
+
 	// Write RHS from source or Neumann BC terms or BC to file
 	// 0: Do nothing
 	// 1: Write
