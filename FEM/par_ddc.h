@@ -212,5 +212,4 @@ extern double time_ele_paral;
 //---- MPI Parallel --------------
 #define DDC_FILE_EXTENSION ".ddc"
 extern void DOMWriteTecplot(std::string);
-extern void DDCCreate();                          //OK
 #endif
