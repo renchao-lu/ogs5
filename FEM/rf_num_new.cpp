@@ -136,9 +136,11 @@ CNumerics::CNumerics(string name)
 		ls_storage_method = 4;
 		nls_max_iterations = 25;
 	}
-	//
+
+#ifdef USE_PETSC
 	lsover_name = "bcgs";
 	pres_name = "bjacobi";
+#endif
 }
 
 /**************************************************************************
@@ -441,6 +443,7 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 		{
 			std::string str_buf = GetLineFromFile1(num_file); //WW
 			line.str(str_buf);
+#ifdef USE_PETSC
 			if(str_buf.find("petsc") != string::npos) //03.2012. WW
 			{
 				line >> str_buf 
@@ -451,6 +454,7 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 				>> ls_theta;
 			}
 			else
+#endif
 			{
 				line >> ls_method;
 				line >> ls_error_method;
