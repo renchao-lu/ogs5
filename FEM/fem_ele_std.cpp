@@ -6147,7 +6147,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 	const double theta = pcs->m_num->ls_theta;
 	
 	//Find out material group - TN
-	const long group = MeshElement->GetPatchIndex();
+	// const long group = MeshElement->GetPatchIndex();
 
 	// Get room in the memory for local matrices
 	SetMemory();
@@ -6171,7 +6171,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 		// ComputeGradShapefct(1);                  // Linear interpolation function
 
 		// get interpolated primary variable values
-		const double p_g  = time_interpolate(NodalVal0, NodalVal1, theta, this);
+		const double p_g  = time_interpolate(NodalVal0,   NodalVal1,   theta, this);
 		const double T_g  = time_interpolate(NodalVal_t0, NodalVal_t1, theta, this);
 		const double w_mf = time_interpolate(NodalVal_X0, NodalVal_X1, theta, this);
 		double T_s;
@@ -6187,9 +6187,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 		//get time step size
 		const double delta_t = pcs->Tim->time_step_length;
-
-		Eigen::VectorXd yy_rho_s    = Eigen::VectorXd::Zero(1); // rho_s
-		Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
 
 		// TODO [CL] Why?
 		// poro = mmp_vector[group]->porosity;
@@ -6208,18 +6205,21 @@ void CFiniteElementStd::CalcSolidDensityRate()
 			else {//Fuer CaOH2 im Moment
 
 				pcs->m_conversion_rate->update_param(T_s, T_g, p_g / 1.0e5, w_mf, gp_ele->rho_s_prev[gp], 1.0-poro, delta_t, SolidProp->getSolidReactiveSystem());
-				yy_rho_s(0)    = gp_ele->rho_s_prev[gp];
 
-				const double xv_NR = SolidProp->non_reactive_solid_volume_fraction;
+				const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
 				const double rho_NR = SolidProp->non_reactive_solid_density;
 
-				//TN - reactive fraction
-				yy_rho_s(0) = (yy_rho_s(0) - xv_NR * rho_NR) / (1.0-xv_NR);
+				Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1); // rho_s
+				// TN - reactive fraction
+				yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
+
+				Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
 
 				// make evaluation
 				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
 				// supply clean value
 
+				// TODO [CL] is Bulirsch-Stoer necessary here?
 				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
 				slv.set_y(yy_rho_s);
 				slv.set_dydx(dydxx_rho_s);
@@ -6239,7 +6239,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				else
 					rho_react = yy_rho_s(0);
 
-				//TN - reactive fraction
+				// TN - reactive fraction
 				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
 				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);

@@ -28,11 +28,14 @@ public:
 	                  FiniteElement::SolidReactiveSystem system);
 	
 	double get_mole_fraction(double xm);
+private:
+	// TODO remove these functions
 	void calculate_qR();
-	double get_qR(); 
+	double get_qR();
 	void get_x(Eigen::VectorXd& output_x);
 	void set_rho_s(double new_rho_s);
-	void eval(double t, Eigen::VectorXd &y, Eigen::VectorXd &dydx);
+public:
+	void eval(double t, Eigen::VectorXd const& y, Eigen::VectorXd &dydx);
 	double Ca_hydration();
 	double Mn_redox();
 	void set_chemical_equilibrium();
