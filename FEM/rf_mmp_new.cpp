@@ -3045,11 +3045,11 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	double l_char = 0.0;                  //OK411 volume=0.0;
 	double saturation = 1.0;
 	int set = 0;
-    double arg, Daq, Pec;
+	double arg, Daq, Pec;
 	ElementValue* gp_ele = ele_gp_value[index];
 	CompProperties* m_cp = cp_vec[component];
-    //CFluidProperties* m_mfp;
-    //m_mfp = Fem_Ele_Std->FluidProp;
+	//CFluidProperties* m_mfp;
+	//m_mfp = Fem_Ele_Std->FluidProp;
 	MshElemType::type eleType = m_pcs->m_msh->ele_vector[number]->GetElementType();
 	int Dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
 	//----------------------------------------------------------------------
@@ -4906,8 +4906,8 @@ double CMediumProperties::PermeabilityFunctionStrain(long index,
 			double threshold = 0.;
 			threshold = permeability_strain_model_value[0];
 
-            // TODO: Error index out of bounds
-            if(permeability_strain_model_value[3] > MKleinsteZahl)
+			// TODO: Error index out of bounds
+			if(permeability_strain_model_value[3] > MKleinsteZahl)
 				threshold = GetCurveValue(permeability_strain_model_value[3],
 		                                0,
 		                                vol_strain_temp,
