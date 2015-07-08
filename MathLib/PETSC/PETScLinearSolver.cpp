@@ -191,8 +191,8 @@ void PETScLinearSolver::MatrixCreate( PetscInt m, PetscInt n)
   MatSetSizes(A, PETSC_DECIDE, PETSC_DECIDE, m, n);
   //MatSetSizes(A, m_size_loc, PETSC_DECIDE, m,  n);
 
-  MatSetFromOptions(A);
   MatSetType(A, MATMPIAIJ);
+  MatSetFromOptions(A);
 
   MatSeqAIJSetPreallocation(A, d_nz, PETSC_NULL);
   MatMPIAIJSetPreallocation(A, d_nz, PETSC_NULL, o_nz, PETSC_NULL);
