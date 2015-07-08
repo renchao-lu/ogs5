@@ -3761,7 +3761,7 @@ double bip (int number, int fluid_a, int fluid_b, int i, int j, int k, double T)
 VirialCoefficients DuansVirialCoefficients(int Fluid, double T)
 {
 	double a[15];
-    double Tc, Pc, M;
+	double Tc, Pc, M;
 	double R = 83.14467; // cm��?bar/(K* mol)
 	//CVirialCoefficients x;	//BG
 	VirialCoefficients x; //BG
