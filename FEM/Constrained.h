@@ -15,17 +15,16 @@ struct Constrained {
 	std::vector<bool>_constrainedNodes;
 	bool _isConstrainedVelStable;
 
-	Constrained ()
-	{
-		constrainedValue=0.0;
-		constrainedProcessType = FiniteElement::INVALID_PROCESS;
-		constrainedPrimVar = FiniteElement::INVALID_PV;
-		constrainedDirection = ConstrainedType::INVALID_CONSTRAINED_TYPE;
-		constrainedVariable = ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE;
-		_isCompleteConstrained = false;
-		_completeConstrainedStateOff = false;
-		_isConstrainedVelStable = false;
-	}
+	Constrained () :
+		constrainedValue(0.0),
+		constrainedProcessType(FiniteElement::INVALID_PROCESS),
+		constrainedPrimVar(FiniteElement::INVALID_PV),
+		constrainedDirection(ConstrainedType::INVALID_CONSTRAINED_TYPE),
+		constrainedVariable(ConstrainedVariable::INVALID_CONSTRAINED_VARIABLE),
+		_isCompleteConstrained(false),
+		_completeConstrainedStateOff(false),
+		_isConstrainedVelStable(false)
+	{}
 
 };
 
