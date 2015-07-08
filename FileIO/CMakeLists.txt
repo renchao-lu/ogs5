@@ -1,10 +1,7 @@
 # Source files
 SET( SOURCES
 	Writer.cpp
-	GMSInterface.cpp
-	GocadInterface.cpp
 	OGSIOVer4.cpp
-	PetrelInterface.cpp
 	StationIO.cpp
 	readNonBlankLineFromInputStream.cpp
 	#FEMIO.cpp
@@ -21,17 +18,13 @@ SET( SOURCES
 	MeshIO/GMSHPolygonTree.cpp
 	MeshIO/LegacyVtkInterface.cpp
 	MeshIO/OGSMeshIO.cpp
-	MeshIO/TetGenInterface.cpp
 	XmlIO/RapidXMLInterface.cpp
 )
 
 # Header files
 SET( HEADERS
 	Writer.h
-	GMSInterface.h
-	GocadInterface.h
 	OGSIOVer4.h
-	PetrelInterface.h
 	StationIO.h
 	readNonBlankLineFromInputStream.h
 	#FEMIO.h
@@ -51,15 +44,8 @@ SET( HEADERS
 	MeshIO/GMSHPolygonTree.h
 	MeshIO/LegacyVtkInterface.h
 	MeshIO/OGSMeshIO.h
-	MeshIO/TetGenInterface.h
 	XmlIO/RapidXMLInterface.h
 )
-
-IF (Shapelib_FOUND)
-	SET( HEADERS ${HEADERS} SHPInterface.h )
-	SET (SOURCES ${SOURCES} SHPInterface.cpp )
-	INCLUDE_DIRECTORIES (${Shapelib_INCLUDE_DIR})
-ENDIF (Shapelib_FOUND)
 
 IF(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 	INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
