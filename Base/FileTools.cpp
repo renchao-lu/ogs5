@@ -117,9 +117,18 @@ std::string rtrim(const std::string& str, const char c)
 
 std::string pathJoin(const std::string& path1, const std::string& path2)
 {
+	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << path1 << "<@@@>" << path2 << std::endl;
+
+	if (path1.empty()) return path2;
+	if (path2.empty()) return path1;
+
 	const char dirSep = getDirSep();
 
-	return rtrim(path1, dirSep) + dirSep + ltrim(path2, dirSep);
+	const std::string s = rtrim(path1, dirSep) + dirSep + ltrim(path2, dirSep);
+
+	std::cerr << "@@@@:" << __FILE__ << ":" << __LINE__ << ":" << s << std::endl;
+
+	return s;
 }
 
 

@@ -153,20 +153,8 @@ int main ( int argc, char* argv[] )
 			}
 			std::string path = argv[++i];
 
-			if (!path.empty())
-			{
-				bool isRelative;
-#ifdef WINDOWS
-				isRelative = path.find(":\\") == std::npos;
-#else
-				isRelative = path[0] != '/';
-#endif
-				if (isRelative) {
-					path = getCwd() + "/" + path + "/";
-				} else {
-					path += "/";
-				}
-			}
+			if (! path.empty()) defaultOutputPath = path;
+
 			defaultOutputPath = path;
 			continue;
 		}

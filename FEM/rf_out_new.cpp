@@ -50,6 +50,7 @@ using namespace std;
 
 // Base
 #include "StringTools.h"
+#include "FileTools.h"
 
 extern size_t max_dim;                            //OK411 todo
 
@@ -567,7 +568,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 				std::stringstream stm;
 				stm << time_step_number;
 				pvd_vtk_file_name += stm.str() + ".vtu";
-				std::string pvd_vtk_file_path = vtk->pvd_vtk_file_path_base + pvd_vtk_file_name;
+				std::string pvd_vtk_file_path = pathJoin(vtk->pvd_vtk_file_path_base, pvd_vtk_file_name);
 
 				// Output
 				if (OutputBySteps)
