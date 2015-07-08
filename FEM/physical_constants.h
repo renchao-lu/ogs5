@@ -7,7 +7,7 @@
  * All members of this namespace should be given in SI standard units,
  * i.e. in terms of kg, m, s, K, mol, A, cd.
  */
-namespace phc
+namespace Phys
 {
 
 /**
