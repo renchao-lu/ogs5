@@ -1,6 +1,5 @@
 
 #include "conversion_rate.h"
-#include <math.h>
 #include <cmath>
 
 #include "physical_constants.h"
@@ -193,9 +192,9 @@ double conversion_rate::Ca_hydration()
 		if (X_H == tol_u || rho_s == rho_up)
 			dXdt = 0.0;
 		else if ( (T_eq-T_s) >= 50.0)
-			dXdt = 13945.0 * exp(-89486.0/R/T_s) * pow(p_r_g/p_eq - 1.0,0.83) * 3.0 * (X_D) * pow(-1.0*log(X_D),0.666);
+			dXdt = 13945.0 * exp(-89486.0/R/T_s) * std::pow(p_r_g/p_eq - 1.0,0.83) * 3.0 * (X_D) * std::pow(-1.0*log(X_D),0.666);
 		else
-			dXdt = 1.0004e-34 * exp(5.3332e4/T_s) * pow(p_r_g, 6.0) * (X_D);
+			dXdt = 1.0004e-34 * exp(5.3332e4/T_s) * std::pow(p_r_g, 6.0) * (X_D);
 #endif
 	}
 	else // dehydration
@@ -207,9 +206,9 @@ double conversion_rate::Ca_hydration()
 		if (X_D == tol_u || rho_s == rho_low)
 			dXdt = 0.0;
 		else if (X_D < 0.2)
-			dXdt = -1.9425e12 * exp( -1.8788e5/R/T_s )*pow(1.0-p_r_g/p_eq,3.0)*(X_H);
+			dXdt = -1.9425e12 * exp( -1.8788e5/R/T_s ) * std::pow(1.0-p_r_g/p_eq,3.0)*(X_H);
 		else
-			dXdt = -8.9588e9 * exp( -1.6262e5/R/T_s )*pow(1.0-p_r_g/p_eq,3.0)*2.0*pow(X_H, 0.5);
+			dXdt = -8.9588e9 * exp( -1.6262e5/R/T_s ) * std::pow(1.0-p_r_g/p_eq,3.0)*2.0 * std::pow(X_H, 0.5);
 #endif
 	}
 	return dXdt;
@@ -225,7 +224,7 @@ double conversion_rate::Mn_redox()
 			dXdt = 0.0;
 		else{
 			Avrami = 282.277 - 0.912 * T_s + 9.949e-4 * T_s * T_s - 3.620e-7 * T_s * T_s * T_s;
-			dXdt = 55271.0 * exp(-95.493e3 / (R * T_s)) * Avrami * (X_D) * pow(-1.0 * log(X_D),(Avrami - 1.0)/Avrami) * pow(1.0-T_s/T_eq,0.86);
+			dXdt = 55271.0 * exp(-95.493e3 / (R * T_s)) * Avrami * (X_D) * std::pow(-1.0 * log(X_D),(Avrami - 1.0)/Avrami) * std::pow(1.0-T_s/T_eq,0.86);
 		}
 		if (p_r_g <= 1.0e-3)
 			dXdt = 0.0;
@@ -298,13 +297,13 @@ double conversion_rate::get_hv(double Tads) //in kJ/kg
 		const double c[] = {2.50052e3,-2.1068,-3.57500e-1,1.905843e-1,-5.11041e-2,7.52511e-3,-6.14313e-4,2.59674e-5,-4.421e-7};
 		double hv = 0.;
 		for (size_t i=0; i< sizeof(c)/sizeof(c[0]);i++)
-			hv += c[i] * pow(Tads,i);
+			hv += c[i] * std::pow(Tads, static_cast<int>(i));
 		return hv;
 	} else if (Tads <= 300.){
 		const double c[] = {2.50043e3,-2.35209,1.91685e-4,-1.94824e-5,2.89539e-7,-3.51199e-9,2.06926e-11,-6.4067e-14,8.518e-17,1.558e-20,-1.122e-22};
 		double hv = 0.;
 		for (size_t i=0; i< sizeof(c)/sizeof(c[0]);i++)
-			hv += c[i] * pow(Tads,i);
+			hv += c[i] * std::pow(Tads, static_cast<int>(i));
 		return hv;
 	} else {
 		const double c[] = {2.99866e3,-3.1837e-3,-1.566964e1,-2.514e-6,2.045933e-2,1.0389e-8};
@@ -319,7 +318,7 @@ double conversion_rate::get_specific_heat_capacity(const double Tads)
 	const double c[] = {4.224,-3.716e-3,9.351e-5,-7.1786e-7,-9.1266e-9,2.69247e-10,-2.773104e-12,1.553177e-14,-4.982795e-17,8.578e-20,-6.12423e-23};
 	double cp = 0.;
 	for (unsigned i=0; i< sizeof(c)/sizeof(c[0]);i++)
-		cp += c[i] * pow(Tads,i);
+		cp += c[i] * std::pow(Tads, static_cast<int>(i));
 	return cp; //kJ/(kg*K)
 }
 
@@ -340,7 +339,7 @@ double conversion_rate::characteristic_curve(const double A)
 {
 	//parameters from least squares fit (experimental data)
 	const double c[] = {0.34102920966608297, -0.0013106032830951296, -0.00060754147575378876, 3.7843404172683339e-07, 4.0107503869519016e-07, 3.1274595098338057e-10, -7.610441241719489e-11};
-	double W = (c[0]+c[2]*A+c[4]*pow(A,2)+c[6]*pow(A,3))/(1.0+c[1]*A+c[3]*pow(A,2)+c[5]*pow(A,3)); //cm^3/g
+	double W = (c[0]+c[2]*A+c[4]*std::pow(A,2)+c[6]*std::pow(A,3))/(1.0+c[1]*A+c[3]*std::pow(A,2)+c[5]*std::pow(A,3)); //cm^3/g
 	if (W < 0.0) {
 		W = 0.0; // TODO [CL] debug output
 	}
