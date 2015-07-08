@@ -49,8 +49,6 @@ void CFiniteElementStd::CalcMassTES()
 	// ---- Gauss integral
 	int gp_r=0,gp_s=0,gp_t=0;
 
-	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
-
 	// Loop over Gauss points
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
@@ -66,7 +64,6 @@ void CFiniteElementStd::CalcMassTES()
 			{
 				// Material
 				const double coeff = CalCoefMassTES(in*pcs->dof+jn);
-				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
 
 				const double mat_fac = fkt * coeff;
 				// Calculate mass matrix
@@ -108,8 +105,6 @@ void CFiniteElementStd::CalcLumpedMassTES()
 	const int nDF = pcs->dof;
 	double vol = 0.0;
 
-	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
-
 	// Volume
 	if(axisymmetry)
 	{   // This calculation should be done in CompleteMesh.
@@ -137,7 +132,6 @@ void CFiniteElementStd::CalcLumpedMassTES()
 			const int jsh = jn * nnodes;
 
 			double factor = CalCoefMassTES(in * nDF + jn);
-			if (gp==0) write_mat_coeff(pcs, factor, in*nDF+jn);
 
 			//			pcs->timebuffer = factor; // Tim Control "Neumann"
 			factor *= vol;
@@ -400,8 +394,6 @@ void CFiniteElementStd::CalcAdvectionTES()
 	int gp_r=0, gp_s=0, gp_t=0;
 	ElementValue* gp_ele = ele_gp_value[Index];
 
-	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
-
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -421,7 +413,6 @@ void CFiniteElementStd::CalcAdvectionTES()
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
 				const double coeff = CalCoefAdvectionTES(in*pcs->dof + jn);
-				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
 				const double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
@@ -535,8 +526,6 @@ void CFiniteElementStd::CalcContentTES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
 
-	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
-
 	for (gp = 0; gp < nGaussPoints; gp++)
 	{
 		double fkt = GetGaussData(gp, gp_r, gp_s, gp_t);
@@ -547,7 +536,6 @@ void CFiniteElementStd::CalcContentTES()
 			for (int jn = 0; jn < pcs->dof; jn++)
 			{
 				const double coeff = CalCoefContentTES(in*pcs->dof + jn);
-				if (gp==0) write_mat_coeff(pcs, coeff, in*pcs->dof+jn);
 				double mat_fac = fkt * coeff;
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//08.2014. WW
@@ -631,8 +619,6 @@ void CFiniteElementStd::Assemble_RHS_TES()
 {
 	int gp_r=0, gp_s=0, gp_t=0;
 
-	write_mat_coeff_cap_mat(pcs, __FUNCTION__);
-
 	for (int i = 0; i < pcs->dof*nnodes; i++) NodalVal[i] = 0.0;
 
 	// Loop over Gauss points
@@ -646,7 +632,6 @@ void CFiniteElementStd::Assemble_RHS_TES()
 		for(int ii=0; ii<pcs->dof; ii++)
 		{
 			const double fac = CalCoef_RHS_TES(ii);
-			if (gp==0) write_mat_coeff(pcs, fac, ii, 1);
 
 			for (int i = 0; i < nnodes; i++)
 				NodalVal[i+ii*nnodes] += fac*fkt*shapefct[i];
