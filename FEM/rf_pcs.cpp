@@ -2515,8 +2515,7 @@ void CRFProcess::Config(void)
 	}
 	if (this->getProcessType() == FiniteElement::TES)        //24.02.2007 WW
 	{
-		// TODO [CL]: ???
-		type = 1414;
+		type = 1415;
 		ConfigTES();
 	}
 }
@@ -5905,6 +5904,7 @@ void CRFProcess::CalIntegrationPointValue()
 
 	switch (getProcessType())
 	{
+	case FiniteElement::LIQUID_FLOW:
 	case FiniteElement::RICHARDS_FLOW:
 	case FiniteElement::MULTI_PHASE_FLOW:
 	case FiniteElement::GROUNDWATER_FLOW:

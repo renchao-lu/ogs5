@@ -134,7 +134,7 @@ bool CPRead(std::string file_base_name)
 			DisplayMsgLn("ERROR. TNEQ requires specification of inert and reactive components in mcp file.");
 			exit(1);
 		}
-        if (pcs_vector[0]->getProcessType() == FiniteElement::TES){
+		if (pcs_vector[0]->getProcessType() == FiniteElement::TES){
 			DisplayMsgLn("ERROR. TES requires specification of inert and reactive components in mcp file.");
 			exit(1);
 		}

@@ -564,8 +564,8 @@ void CFiniteElementStd::SetMemory()
 	if(PcsType == EPT_MULTIPHASE_FLOW || PcsType == EPT_PSGLOBAL) //4.3.2009 PCH
 		Size *= 2;
 
-    if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
-        Size *= pcs->dof;//AKS
+	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
+		Size *= pcs->dof;//AKS
 
 	ElementMatrix* EleMat = NULL;
 	// Prepare local matrices
@@ -723,11 +723,11 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    // No enum item for this case
-    // case 'C':                             // Componental flow
-    //	break;
+		// No enum item for this case
+		// case 'C':                             // Componental flow
+		//	break;
 
-    case HEAT_TRANSPORT:
+	case HEAT_TRANSPORT:
 		//SB CMCD this needs to be fixed
 		cpl_pcs = PCSGet("GROUNDWATER_FLOW");
 		if(cpl_pcs)               //WW
@@ -754,12 +754,12 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 					//WW
 					idxS = cpl_pcs->GetNodeValueIndex("SATURATION1") + 1;
 			}
-            if(cpl_pcs == NULL) //CB_merge_05.13 
-            {
-               cpl_pcs = PCSGet("PS_GLOBAL");
-               if(cpl_pcs)
-                  idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1;
-            }
+			if(cpl_pcs == NULL) //CB_merge_05.13
+			{
+				cpl_pcs = PCSGet("PS_GLOBAL");
+				if(cpl_pcs)
+					idxS = cpl_pcs->GetNodeValueIndex("SATURATION1")+1;
+			}
 			
 			if(cpl_pcs == NULL) //23.02.2009 NB 4.9.05
 			{
@@ -779,7 +779,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    case MASS_TRANSPORT:
+	case MASS_TRANSPORT:
 	 if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -788,12 +788,12 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    // case 'O':                             // Liquid flow
-    case OVERLAND_FLOW:
+	 // case 'O':                             // Liquid flow
+	case OVERLAND_FLOW:
 		break;
 
-    case RICHARDS_FLOW:
-    // case 'R':                             // Richards flow
+	case RICHARDS_FLOW:
+		// case 'R':                             // Richards flow
 		if(T_Flag)                //if(PCSGet("HEAT_TRANSPORT"))
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -802,7 +802,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    case MULTI_PHASE_FLOW:
+	case MULTI_PHASE_FLOW:
 		if(T_Flag)                //if(PCSGet("HEAT_TRANSPORT"))
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -811,7 +811,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    case AIR_FLOW:
+	case AIR_FLOW:
 		if(T_Flag)                //NB 23.01.2009 4.9.05
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -820,7 +820,7 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 		}
 		break;
 
-    case PS_GLOBAL:
+	case PS_GLOBAL:
 		if(T_Flag)
 		{
 			cpl_pcs = PCSGet("HEAT_TRANSPORT");
@@ -9894,28 +9894,28 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 		Velocity_g = 0.0;
 	}
 
-	if (pcs->type == 1414)
+	if (pcs->getProcessType() == FiniteElement::TNEQ || pcs->getProcessType() == FiniteElement::TES)
 	{
-	  rho_s_prev = new double[NGPoints];
-	  rho_s_curr = new double[NGPoints];
-	  q_R = new double[NGPoints]; 
-	
+		rho_s_prev = new double[NGPoints];
+		rho_s_curr = new double[NGPoints];
+		q_R = new double[NGPoints];
 
-	  for (int i=0; i<NGPoints; i++)
-	  {
-		  long group = ele->GetPatchIndex();
-		  rho_s_prev[i] = msp_vector[group]->Density() ;
-		  rho_s_curr[i] = rho_s_prev[i];
-		  q_R[i] = 0.0;	  
-      }
+		for (int i=0; i<NGPoints; i++)
+		{
+			long group = ele->GetPatchIndex();
+			rho_s_prev[i] = msp_vector[group]->Density() ;
+			rho_s_curr[i] = rho_s_prev[i];
+			q_R[i] = 0.0;
+		}
 	}
 	
-    // CB _ctx_ CB_merge_0513
+	// CB _ctx_ CB_merge_0513
 	// SB electric field
-    //_ctx_Gauss.resize(3,NGPoints);
-    //_ctx_Gauss = 0.0;
-
+	//_ctx_Gauss.resize(3,NGPoints);
+	//_ctx_Gauss = 0.0;
 }
+
+
 //WW 08/2007
 void ElementValue::getIPvalue_vec(const int IP, double* vec)
 {
@@ -9951,21 +9951,22 @@ void ElementValue::GetEleVelocity(double* vec)
 		vec[i] /= Velocity.Cols();
 	}
 }
+
 //WW
 ElementValue::~ElementValue()
 {
-	Velocity.resize(0, 0); 
+	Velocity.resize(0, 0);
 #ifdef USE_TRANSPORT_FLUX
 	TransportFlux.resize(0, 0); // JOD 2014-11-10
 #endif
 	Velocity_g.resize(0,0);
 
-	if (pcs->type == 1414){
-	  delete [] rho_s_prev;
-	  delete [] rho_s_curr;
-	  delete [] q_R; 
+	if (pcs->getProcessType() == FiniteElement::TNEQ || pcs->getProcessType() == FiniteElement::TES) {
+		delete [] rho_s_prev;
+		delete [] rho_s_curr;
+		delete [] q_R;
+	}
 }
-   }
 
 /**************************************************************************
    FEMLib-Method:
