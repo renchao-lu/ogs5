@@ -1,11 +1,3 @@
-/**************************************************************************/
-/* ROCKFLOW - Modul: display.h
- */
-/* Aufgabe:
-   Enthaelt alle Funktionen fuer Standard Ein- und Ausgabe (Bildschirm,
-   Tastatur)
- */
-/**************************************************************************/
 
 #ifndef ogs_display_INC
 #define ogs_display_INC
