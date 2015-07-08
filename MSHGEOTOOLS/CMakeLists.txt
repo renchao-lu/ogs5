@@ -9,7 +9,7 @@ include_directories(
 )
 
 # create library
-add_library( MSHGEOTOOLS STATIC ExtractMeshNodes.cpp )
+add_library( MSHGEOTOOLS STATIC ExtractMeshNodes.h ExtractMeshNodes.cpp )
 
 target_link_libraries (
 	MSHGEOTOOLS

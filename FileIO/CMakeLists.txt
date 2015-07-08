@@ -1,3 +1,17 @@
+set( HEADERS
+	FEMIO/BoundaryConditionIO.h
+	FEMIO/GeoIO.h
+	FEMIO/ProcessIO.h
+	MathIO/CRSIO.h
+	MeshIO/LegacyVtkInterface.h
+	MeshIO/OGSMeshIO.h
+	OGSIOVer4.h
+	readNonBlankLineFromInputStream.h
+	StationIO.h
+	Writer.h
+	XmlIO/RapidXMLInterface.h
+)
+
 set( SOURCES
 	FEMIO/BoundaryConditionIO.cpp
 	FEMIO/GeoIO.cpp
@@ -16,7 +30,7 @@ if(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 endif()
 
 # Create the library
-add_library( FileIO STATIC ${SOURCES} )
+add_library( FileIO STATIC ${HEADERS} ${SOURCES} )
 
 include_directories(
 	${CMAKE_SOURCE_DIR}/Base

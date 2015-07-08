@@ -1,3 +1,23 @@
+set( HEADERS
+	binarySearch.h
+	break.h
+	Configure.h.in
+	DateTools.h
+	display.h
+	FileFinder.h
+	FileTools.h
+	makros.h
+	memory.h
+	MemWatch.h
+	printList.h
+	quicksort.h
+	StringTools.h
+	swap.h
+	timer.h
+	uniqueListInsert.h
+	wait.h
+)
+
 set( SOURCES
 	binarySearch.cpp
 	break.cpp

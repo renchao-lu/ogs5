@@ -20,7 +20,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/UTL/MSHGEOTOOLS
 )
 
-set(GIS2FEM_SOURCES main.cpp misc.cpp )
+set(GIS2FEM_SOURCES main.cpp misc.h misc.cpp )
 
 add_executable(fem_toolkits ${GIS2FEM_SOURCES})
 

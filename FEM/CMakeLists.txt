@@ -1,3 +1,56 @@
+set( HEADERS
+	BoundaryCondition.h
+	Constrained.h
+	conversion_rate.h
+	DistributionInfo.h
+	DUMUX.h
+	Eclipse.h
+	eos.h
+	fem_ele.h
+	fem_ele_std.h
+	fem_ele_vec.h
+	FEMCondition.h
+	FEMEnums.h
+	femlib.h
+	files0.h
+	GeoInfo.h
+	InitialCondition.h
+	LinearFunctionData.h
+	mathlib.h
+	matrix_class.h
+	Output.h
+	pcs_dm.h
+	physical_constants.h
+	problem.h
+	ProcessInfo.h
+	prototyp.h
+	rf_bc_new.h
+	rf_fct.h
+	rf_fluid_momentum.h
+	rf_ic_new.h
+	rf_kinreact.h
+	rf_mfp_new.h
+	rf_mmp_new.h
+	rf_msp_new.h
+	rf_node.h
+	rf_num_new.h
+	rf_out_new.h
+	rf_pcs.h
+	rf_random_walk.h
+	rf_react.h
+	rf_react_int.h
+	rf_st_new.h
+	rf_tim_new.h
+	rfmat_cp.h
+	solver.h
+	SourceTerm.h
+	SparseMatrixDOK.h
+	StepperBulischStoer.h
+	Stiff_Bulirsch-Stoer.h
+	tools.h
+	vtk.h
+)
+
 set( SOURCES
 	BoundaryCondition.cpp
 	CAP_IO.cpp
@@ -52,26 +105,26 @@ set( SOURCES
 )
 
 if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)
-	set( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.cpp)
+	set( SOURCES ${SOURCES} rf_pcs1.cpp fct_mpi.h fct_mpi.cpp)
 else()
-	set( SOURCES ${SOURCES} par_ddc.cpp)
+	set( SOURCES ${SOURCES} par_ddc.h par_ddc.cpp)
 	## New sparse class. WW
 	if(OGS_USE_NEW_EQS)
-		set( SOURCES ${SOURCES} equation_class.cpp )
+		set( SOURCES ${SOURCES} equation_class.h equation_class.cpp )
 		if(OGS_FEM_JFNK)
 			set( SOURCES ${SOURCES} rf_pcs1.cpp )
 		endif()
 	else()
-		set( SOURCES ${SOURCES} solver.cpp matrix_routines.cpp)
+		set( SOURCES ${SOURCES} solver.h matrix_routines.h solver.cpp matrix_routines.cpp)
 	endif()
 endif()
 
 if(OGS_FEM_BRNS)
-	set( SOURCES ${SOURCES} rf_REACT_BRNS.cpp )
+	set( SOURCES ${SOURCES} rf_REACT_BRNS.h rf_REACT_BRNS.cpp )
 endif()
 
 if(OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
-	set( SOURCES ${SOURCES} rf_REACT_GEM.cpp )
+	set( SOURCES ${SOURCES} rf_REACT_GEM.h rf_REACT_GEM.cpp )
 endif()
 
 
@@ -106,7 +159,7 @@ if(OGS_FEM_IPQC)
 endif ()
 
 # Create the library
-add_library( FEM STATIC ${SOURCES} )
+add_library( FEM STATIC ${HEADERS} ${SOURCES} )
 
 target_link_libraries(FEM
 	Base

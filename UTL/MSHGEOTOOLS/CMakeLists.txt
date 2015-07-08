@@ -16,7 +16,10 @@ include_directories(
 # Create executables
 add_executable( ExtractMeshNodes mainExtractMeshNodes.cpp )
 add_executable( ExtractMeshNodeIDs mainExtractMeshNodeIDs.cpp )
-add_executable( ModifyMeshProperties mainModifyMeshProperties.cpp ModifyMeshProperties.cpp )
+add_executable( ModifyMeshProperties
+	mainModifyMeshProperties.cpp
+	ModifyMeshProperties.h
+	ModifyMeshProperties.cpp )
 add_executable( filterMeshNodes filterMeshNodes.cpp )
 add_executable( convertGLIVerticalSurfaceToPolygon mainConvertGLIVerticalSurfaceToPolygon.cpp )
 

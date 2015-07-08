@@ -1,3 +1,25 @@
+set( HEADERS
+	Density.h
+	DiffAL.h
+	DiffOH.h
+	dllheader.h
+	eqbrm.h
+	export.h
+	Fluid.h
+	HKF.h
+	IAPWS-IF97.h
+	IO.h
+	logk.h
+	NR.h
+	PDE.h
+	PITZcalc.h
+	PITZdata.h
+	slop98.h
+	species.h
+	VLE.h
+	WATEQdata.h
+)
+
 set ( SOURCES
 	Density.cpp
 	DiffAL.cpp
@@ -17,7 +39,7 @@ set ( SOURCES
 )
 
 # Create the library
-add_library( GCC STATIC ${SOURCES} )
+add_library( GCC STATIC ${HEADERS} ${SOURCES} )
 include_directories( ${CMAKE_SOURCE_DIR}/GCC )
 
 if (WIN32)
