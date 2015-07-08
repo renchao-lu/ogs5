@@ -222,7 +222,6 @@ ENDFUNCTION (ADD_BENCHMARK authorName benchmarkName ogsConfiguration filesToComp
 FUNCTION(CHECK_CONFIG)
 
 	SET(configs
-		"${OGS_USE_QT}"
 		"${OGS_FEM}"
 		"${OGS_FEM_SP}"
 		"${OGS_FEM_MPI}"
@@ -252,7 +251,6 @@ FUNCTION(CHECK_CONFIG)
 
 	IF(counter GREATER 1)
 		MESSAGE(FATAL_ERROR "Error: More than one OGS configuration given (${counter}). Please use only one of the following configurations:
-			OGS_USE_QT (GUI configuration)
 			OGS_FEM (Default FEM configuration)
 			OGS_FEM_SP
 			OGS_FEM_MPI
