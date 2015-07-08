@@ -9871,6 +9871,10 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 							//
 							if(num_fail > 1) diverged = true; // require 2 consecutive failures
 							last_error = nonlinear_iteration_error;
+							if (iter_nlin + 1 == m_num->nls_max_iterations)
+							{
+								accepted = false;
+							}
 						}
 						break;
 
