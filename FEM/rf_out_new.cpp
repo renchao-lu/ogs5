@@ -78,6 +78,10 @@ using MeshLib::CFEMesh;
 //==========================================================================
 vector<COutput*>out_vector;
 
+
+std::string defaultOutputPath = ""; // CL
+
+
 /**************************************************************************
    FEMLib-Method:
    Task: OUT read function
@@ -463,7 +467,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		//--------------------------------------------------------------------
 		// vtk
 		else if (m_out->dat_type_name.compare("VTK") == 0)
-		{
+        {
 			switch (m_out->getGeoType())
 			{
 			case GEOLIB::GEODOMAIN: // domain data
@@ -477,16 +481,15 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 					                             m_out->mmp_value_vector,
 					                             m_out->msh_type_name,
 					                             m_out);
-#if defined(USE_PETSC)						
+#if defined(USE_PETSC)
 							vtkOutput.WriteDataVTKPETSC(
 							        time_step_number,
-							        m_out->_time,
-							        m_out->
-							        file_base_name);
+                                    m_out->_time,
+                                    m_out->file_base_name);
 #else
 					vtkOutput.WriteDataVTK(time_step_number,
 					                       m_out->_time,
-					                       m_out->file_base_name);
+                                           m_out->file_base_name);
 #endif
 					if (!m_out->_new_file_opened)
 						//WW
@@ -499,23 +502,18 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 						{
 							//OK
 							//m_out->WriteDataVTK(time_step_number);
-                                                        LegacyVtkInterface vtkOutput(
-							        m_msh,
-							        m_out->
-							        _nod_value_vector,
-							        m_out->
-							        _ele_value_vector,
-							        m_out->
-							        mmp_value_vector,
-							        m_out->
-							        msh_type_name,
-							        m_out);
+                            LegacyVtkInterface vtkOutput(
+                                        m_msh,
+                                        m_out->_nod_value_vector,
+                                        m_out->_ele_value_vector,
+                                        m_out->mmp_value_vector,
+                                        m_out->msh_type_name,
+                                        m_out);
 #if defined(USE_PETSC)						
 							vtkOutput.WriteDataVTKPETSC(
 							        time_step_number,
 							        m_out->_time,
-							        m_out->
-							        file_base_name);
+                                    m_out->file_base_name);
 							m_out->time_vector.erase(
 							        m_out->time_vector.begin()
 							        + j);
@@ -523,8 +521,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 							vtkOutput.WriteDataVTK(
 							        time_step_number,
 							        m_out->_time,
-							        m_out->
-							        file_base_name);
+                                    m_out->file_base_name);
 							m_out->time_vector.erase(
 							        m_out->time_vector.begin()
 							        + j);
@@ -547,33 +544,34 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		{
 			if (m_out->vtk == NULL)
 			  m_out->CreateVTKInstance(); //WW m_out->vtk = new CVTK();
-			CVTK* vtk = m_out->vtk;
+            CVTK* vtk = m_out->vtk;
 
 			bool vtk_appended = false;
 			if (m_out->dat_type_name.find("PVD_A") != string::npos)
 				vtk_appended = true;
 
-			stringstream stm;
-			string pvd_vtk_file_name, pvd_vtk_file_path;
-
 			switch (m_out->getGeoType())
 			{
 			case GEOLIB::GEODOMAIN: // domain data
+            {
 				if (time_step_number == 0)
 				{
 					std::string pcs_type ("");
 					if (m_out->getProcessType() != FiniteElement::INVALID_PROCESS)
 						pcs_type = FiniteElement::convertProcessTypeToString (
 						        m_out->getProcessType());
-					vtk->InitializePVD(m_out->file_base_name,
+                    vtk->InitializePVD(m_out->file_base_name,
 					                   pcs_type,
 					                   vtk_appended);
 				}
+
 				// Set VTU file name and path
-				pvd_vtk_file_name = vtk->pvd_vtk_file_name_base;
-				stm << time_step_number;
+                std::string pvd_vtk_file_name = vtk->pvd_vtk_file_name_base;
+                std::stringstream stm;
+                stm << time_step_number;
 				pvd_vtk_file_name += stm.str() + ".vtu";
-                pvd_vtk_file_path = vtk->pvd_vtk_file_path_base + pvd_vtk_file_name;
+                std::string pvd_vtk_file_path = vtk->pvd_vtk_file_path_base + pvd_vtk_file_name;
+
 				// Output
 				if (OutputBySteps)
 				{
@@ -606,6 +604,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 							break;
 						}
 				}
+            }
 				break;
 
 			default:

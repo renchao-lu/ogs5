@@ -71,6 +71,19 @@ double elapsed_time_mpi;
 #endif
 #endif
 
+
+#include "rf_out_new.h"
+
+
+#ifdef WINDOWS
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
+std::string getCwd();
+
+
 /* Definitionen */
 
 /**************************************************************************/
@@ -103,9 +116,10 @@ int main ( int argc, char* argv[] )
 		{
 			std::cout << "Usage: ogs [MODEL_ROOT] [OPTIONS]\n"
 			          << "Where OPTIONS are:\n"
-			          << "  -h [--help]       print this message and exit\n"
-			          << "  -b [--build-info] print build info and exit\n"
-			          << "  --version         print ogs version and exit" << "\n";
+                      << "  -h [--help]               print this message and exit\n"
+                      << "  -b [--build-info]         print build info and exit\n"
+                      << "  --output-directory DIR    put output files into DIR\n"
+                      << "  --version                 print ogs version and exit" << "\n";
 			continue;
 		}
 		if( anArg == "--build-info" || anArg == "-b" )
@@ -136,6 +150,27 @@ int main ( int argc, char* argv[] )
 			modelRoot = std::string( argv[++i] );
 			continue;
 		}
+        if (anArg == "--output-directory")
+        {
+            std::string path = argv[++i];
+
+            if (!path.empty())
+            {
+                bool isRelative;
+#ifdef WINDOWS
+                isRelative = path.find(":\\") == std::npos;
+#else
+                isRelative = path[0] != '/';
+#endif
+                if (isRelative) {
+                    path = getCwd() + "/" + path + "/";
+                } else {
+                    path += "/";
+                }
+            }
+            defaultOutputPath = path;
+            continue;
+        }
 		// anything left over must be the model root, unless already found
 		if ( modelRoot == "" )
 			modelRoot = std::string( argv[i] );
@@ -329,3 +364,19 @@ int main ( int argc, char* argv[] )
 
 	return 0;
 }
+
+
+std::string getCwd()
+{
+    char cwd[FILENAME_MAX];
+
+#ifdef WINDOWS
+#include <direct.h>
+    _getcwd(cwd, FILENAME_MAX);
+#else
+    getcwd(cwd, FILENAME_MAX);
+#endif
+
+    return cwd;
+}
+
