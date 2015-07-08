@@ -6,11 +6,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
 # Project name
 PROJECT(OGS)
 
+cmake_policy(SET CMP0054 NEW)
 
 ###############
 ### Options ###
 ###############
-
 # Configurations
 OPTION(OGS_FEM "Default configuration" OFF)
 OPTION(OGS_FEM_SP "Sparse matrix configuration" OFF)
@@ -162,13 +162,13 @@ ENDIF()
 
 IF(OGS_FEM_MPI)
 	MESSAGE (STATUS "Configuring for FEM command line with MPI" )
-	SET(PARALLEL_USE_MPI ON CACHE BOOL "Use Message Passing Interface")
+	SET(PARALLEL_USE_MPI ON BOOL "Use Message Passing Interface")
 	ADD_DEFINITIONS(-DNEW_EQS)
 ENDIF(OGS_FEM_MPI)
 
 IF(OGS_FEM_MPI_KRC)
 	ADD_DEFINITIONS(-DNEW_EQS -DUSE_MPI_KRC)
-	SET(PARALLEL_USE_MPI ON CACHE BOOL "Use Message Passing Interface")
+	SET(PARALLEL_USE_MPI ON BOOL "Use Message Passing Interface")
 ENDIF()
 
 IF(OGS_FEM_GEMS)
@@ -217,17 +217,17 @@ ENDIF(OGS_FEM_BRNS)
 IF(OGS_FEM_LIS)
 	MESSAGE (STATUS "Configuring for FEM command line with LIS" )
 	ADD_DEFINITIONS(-DNEW_EQS -DIPMGEMPLUGIN -DLIS)
-	SET(PARALLEL_USE_OPENMP ON CACHE BOOL "Use Library of Iterative Solvers")
-	SET(LIS ON CACHE BOOL "Use Library of Iterative Solvers")
+	SET(PARALLEL_USE_OPENMP ON BOOL "Use Library of Iterative Solvers")
+	SET(LIS ON BOOL "Use Library of Iterative Solvers")
 	MARK_AS_ADVANCED(PARALLEL_USE_OPENMP LIS)
 ENDIF(OGS_FEM_LIS)
 
 IF(OGS_FEM_MKL)
 	MESSAGE (STATUS	"Configuring for FEM command line with MKL" )
 	ADD_DEFINITIONS(-DNO_ERROR_CONTROL -DNEW_EQS -DMKL -DLIS)
-	SET(PARALLEL_USE_OPENMP ON CACHE BOOL "Use Library of Iterative Solvers")
-	SET(LIS ON CACHE BOOL "Use Library of Iterative Solvers")
-	SET(MKL ON CACHE BOOL "Use Math Kernel Library")
+	SET(PARALLEL_USE_OPENMP ON BOOL "Use Library of Iterative Solvers")
+	SET(LIS ON BOOL "Use Library of Iterative Solvers")
+	SET(MKL ON BOOL "Use Math Kernel Library")
 	MARK_AS_ADVANCED(PARALLEL_USE_OPENMP LIS MKL)
 ENDIF(OGS_FEM_MKL)
 
@@ -248,10 +248,18 @@ ENDIF(OGS_FEM_CAP)
 
 ### End fem configs ###
 
-
 IF(PARALLEL_USE_MPI)
 	MESSAGE(STATUS "Enablbing MPI")
 	FIND_PACKAGE(MPI REQUIRED)
+        IF(NOT MPI_CXX_FOUND)
+		message(STATUS "MPI_CXX_COMPILER is not found, set it to MPI wrapper")
+		SET(MPI_C_COMPILER mpicc)
+		SET(MPI_CXX_COMPILER mpicxx)
+        ENDIF()
+	message(STATUS "MPI_C_COMPILER = ${MPI_C_COMPILER}")
+	message(STATUS "MPI_CXX_COMPILER = ${MPI_CXX_COMPILER}")
+	SET(CMAKE_C_COMPILER ${MPI_C_COMPILER} )
+	SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER} )
 	ADD_DEFINITIONS(-DUSE_MPI)
 ENDIF()
 
