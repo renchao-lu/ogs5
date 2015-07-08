@@ -545,8 +545,6 @@ public:
 			y[2*n+i]=aspl;
 			y[3*n+i]=bspl;
 		
-			if  (imit  <  0) 
-				continue;
 			ph0=(y0+y1)*0.5+0.125*(aspl+bspl);
 			ph1=ydiff+(aspl-bspl)*0.25;
 			ph2=-(yp0-yp1);
