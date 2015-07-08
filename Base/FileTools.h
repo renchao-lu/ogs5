@@ -22,6 +22,15 @@ bool HasCRInLineEnding(std::string const& strFilename);
  */
 std::string pathBasename(const std::string& path);
 
+/**
+ * @brief joins two paths using the correct directory separator.
+ *
+ * trailing and preceding (back)slashes at the join point are ignored
+ *
+ * @returns a string: path1/path2
+ */
+std::string pathJoin(const std::string& path1, const std::string& path2);
+
 /// returns the current process working directory
 std::string getCwd();
 

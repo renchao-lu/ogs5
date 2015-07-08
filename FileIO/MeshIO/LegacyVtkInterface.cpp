@@ -30,6 +30,7 @@
 #endif
 
 #include "Output.h"
+#include "FileTools.h"
 
 using namespace std;
 
@@ -669,7 +670,7 @@ void LegacyVtkInterface::WriteVTKDataArraysPETSC(PetscViewer viewer) const
 void LegacyVtkInterface::WriteDataVTK(int number, double simulation_time,
                                       std::string baseFilename) const
 {
-	baseFilename = defaultOutputPath + pathBasename(baseFilename);
+	baseFilename = pathJoin(defaultOutputPath, pathBasename(baseFilename));
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL)
 	char tf_name[10];

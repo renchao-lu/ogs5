@@ -14,6 +14,7 @@
 #include "fem_ele_std.h"                          // for element velocity
 #include "makros.h"
 #include "rf_mmp_new.h"
+#include "FileTools.h"
 
 using namespace std;
 
@@ -40,7 +41,7 @@ bool CVTK::InitializePVD(const string &file_base_name, const string &pcs_type_na
 {
 	//PVD
 	vec_dataset.clear();
-	pvd_file_name = defaultOutputPath + pathBasename(file_base_name);
+	pvd_file_name = pathJoin(defaultOutputPath, pathBasename(file_base_name));
 	// pvd_file_name = file_base_name;
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 		pvd_file_name += mrank_str;
