@@ -18,15 +18,16 @@ public:
 
 	~conversion_rate(void);
 
-	void update_param(double T_solid, 
-		              double T_gas, 
-					  double p_gas,
-					  double w_water, 
-					  double rho_s_initial,
-					  double phi_S,
-					  double delta_t,
-					  FiniteElement::SolidReactiveSystem system); 
+	void update_param(double T_solid,
+	                  double T_gas,
+	                  double p_gas,
+	                  double w_water,
+	                  double rho_s_initial,
+	                  double phi_S,
+	                  double delta_t,
+	                  FiniteElement::SolidReactiveSystem system);
 	
+	double get_mole_fraction(double xm);
 	void calculate_qR();
 	double get_qR(); 
 	void get_x(Eigen::VectorXd& output_x);
@@ -34,6 +35,21 @@ public:
 	void eval(double t, Eigen::VectorXd &y, Eigen::VectorXd &dydx);
 	double Ca_hydration();
 	double Mn_redox();
+	void set_chemical_equilibrium();
+
+	//Adsorbate EOS
+	double get_adsorbate_density(const double Tads);
+	double get_alphaT(const double Tads);
+	double get_ps(const double Tads);
+	double get_hv(const double Tads);
+	double get_specific_heat_capacity(const double Tads);
+	//Adsorbate Dubinin stuff
+	double get_potential(const double Tads, double pads);
+	void set_sorption_equilibrium();
+	double Z13XBF_adsorption();
+	double characteristic_curve(const double A);
+	double get_entropy(const double Tads, const double A);
+	double get_enthalpy(const double Tads, const double pads);
 
 private: 
 	//const double rho_caoh2, rho_cao; // density for Ca(OH)2 and CaO
@@ -46,8 +62,7 @@ private:
 	double p_eq;     // equilibrium pressure; // unit in bar
 	double T_eq;     // equilibrium temperature; 
 	double T_s;      // solid phase temperature; 
-	double T;        // gas phase temperature; 
-	double dXdt;     // rate of (de)hydration; 
+	double T;        // gas phase temperature;
 	double qR;       // rate of solid density change; 
 	double x_react;    // mass fraction of water in gas phase; 
 	double X_D;      // mass fraction of dehydration (CaO) in the solid phase; 
@@ -59,6 +74,9 @@ private:
 	double reaction_entropy;
 	double M_carrier; //inert component molar mass
 	double M_react; //reactive component molar mass
+	double W0; //maximum specific adsorbed volume
+	double C_eq; //equilibrium loading of sorbens
+	double p_min; //minimum pressure for which we find a valid adsorption potential
 	FiniteElement::SolidReactiveSystem reaction_system;
 
 	double tol_l;
