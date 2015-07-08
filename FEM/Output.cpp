@@ -625,8 +625,8 @@ void COutput::NODWriteDOMDataTEC()
 	{
 		te = mesh_type_list[i];
 		//----------------------------------------------------------------------
-        // File name handling
-        tec_file_name = file_base_name + "_" + "domain";
+		// File name handling
+		tec_file_name = file_base_name + "_" + "domain";
 		if(msh_type_name.size() > 0) // MultiMSH
 			tec_file_name += "_" + msh_type_name;
 		if(getProcessType() != FiniteElement::INVALID_PROCESS) // PCS
@@ -1316,7 +1316,7 @@ void COutput::ELEWriteDOMDataTEC()
 	//----------------------------------------------------------------------
 	// File handling
 	//......................................................................
-    string tec_file_name = file_base_name + "_domain" + "_ele";
+	string tec_file_name = file_base_name + "_domain" + "_ele";
 	if(getProcessType () != FiniteElement::INVALID_PROCESS) // PCS
 		// 09/2010 TF msh_type_name;
 		tec_file_name += "_" + convertProcessTypeToString (getProcessType());
@@ -1518,7 +1518,7 @@ double COutput::NODWritePLYDataTEC(int number)
 	}
 
 	// File handling
-    std::string tec_file_name = file_base_name + "_ply_" + geo_name + "_t"
+	std::string tec_file_name = file_base_name + "_ply_" + geo_name + "_t"
 	                            + number2str<size_t> (_id); //OK4709
 	if (getProcessType() != FiniteElement::INVALID_PROCESS)
 		tec_file_name += "_" + convertProcessTypeToString(getProcessType());
@@ -4152,7 +4152,7 @@ Programing:
 void COutput::SetTotalFluxNodesDOM(std::vector<long>& nodes_vector)
 {
 	nodes_vector.resize(m_msh->nod_vector.size());
-    for (std::size_t i = 0; i < m_msh->nod_vector.size(); i++)
+	for (std::size_t i = 0; i < m_msh->nod_vector.size(); i++)
 		nodes_vector[i] = m_msh->nod_vector[i]->GetIndex();
 	
 
@@ -4164,28 +4164,4 @@ void COutput::setFileBaseName(const std::string& fn)
     file_base_name = defaultOutputPath + pathBasename(fn);
 }
 
-
-/**
- * @brief computes the basename of the given path, i.e. the component after the last diretory separator (/ or \).
- */
-std::string pathBasename(const std::string& path)
-{
-    char pathSep;
-#ifdef WINDOWS
-    pathSep = '\\';
-#else
-    pathSep = '/';
-#endif
-
-    size_t idx = path.find_last_of(pathSep);
-    std::string s;
-
-    if (idx != std::string::npos) {
-        s = path.substr(idx+1);
-    } else {
-        s = path;
-    }
-
-    return s;
-}
 

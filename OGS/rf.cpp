@@ -71,17 +71,8 @@ double elapsed_time_mpi;
 #endif
 #endif
 
-
+// declaration of defaultOutputPath
 #include "rf_out_new.h"
-
-
-#ifdef WINDOWS
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
-
-std::string getCwd();
 
 
 /* Definitionen */
@@ -116,10 +107,10 @@ int main ( int argc, char* argv[] )
 		{
 			std::cout << "Usage: ogs [MODEL_ROOT] [OPTIONS]\n"
 			          << "Where OPTIONS are:\n"
-                      << "  -h [--help]               print this message and exit\n"
-                      << "  -b [--build-info]         print build info and exit\n"
-                      << "  --output-directory DIR    put output files into DIR\n"
-                      << "  --version                 print ogs version and exit" << "\n";
+			          << "  -h [--help]               print this message and exit\n"
+			          << "  -b [--build-info]         print build info and exit\n"
+			          << "  --output-directory DIR    put output files into DIR\n"
+			          << "  --version                 print ogs version and exit" << "\n";
 			continue;
 		}
 		if( anArg == "--build-info" || anArg == "-b" )
@@ -364,19 +355,3 @@ int main ( int argc, char* argv[] )
 
 	return 0;
 }
-
-
-std::string getCwd()
-{
-    char cwd[FILENAME_MAX];
-
-#ifdef WINDOWS
-#include <direct.h>
-    _getcwd(cwd, FILENAME_MAX);
-#else
-    getcwd(cwd, FILENAME_MAX);
-#endif
-
-    return cwd;
-}
-
