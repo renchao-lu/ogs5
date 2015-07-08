@@ -452,16 +452,16 @@ ios::pos_type CNumerics::Read(ifstream* num_file)
 			}
 			else
 			{
-			line >> ls_method;
-			line >> ls_error_method;
-			line >> ls_error_tolerance;
-			line >> ls_max_iterations;
-			line >> ls_theta;
-			line >> ls_precond;
-			line >> ls_storage_method;
-			/// For GMRES. 06.2010. WW
-			if(ls_method == 13)
-				line >> m_cols;
+				line >> ls_method;
+				line >> ls_error_method;
+				line >> ls_error_tolerance;
+				line >> ls_max_iterations;
+				line >> ls_theta;
+				line >> ls_precond;
+				line >> ls_storage_method;
+				/// For GMRES. 06.2010. WW
+				if(ls_method == 13)
+					line >> m_cols;
 			}
 			line.clear();
 			continue;

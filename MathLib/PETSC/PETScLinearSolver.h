@@ -33,7 +33,7 @@ public:
     ~PETScLinearSolver();
 
   void Config(const PetscReal tol, const PetscInt maxits, const KSPType lsol,
-              const PCType prec_type, const std::string prefix = "");
+              const PCType prec_type, const std::string &prefix = "");
 
   void Init(const int *sparse_index = NULL);
   
