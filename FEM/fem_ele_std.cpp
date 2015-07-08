@@ -7583,7 +7583,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 							kk = i_sh + eqs_number[i];
 							for(j = 0; j < nnodes; j++)
 							{
-#ifdef USE_OPENMP      //13.11.2008. WW
+#ifdef _OPENMP      //13.11.2008. WW
 #pragma omp critical
 #endif
 								/// JFNK and Jacobi preconditioner
@@ -7606,7 +7606,7 @@ void CFiniteElementStd::AssembleParabolicEquation()
 					kk = cshift + eqs_number[i];
 					for(j = 0; j < nnodes; j++)
 					{
-#ifdef USE_OPENMP            //13.11.2008. WW
+#ifdef _OPENMP            //13.11.2008. WW
 #pragma omp critical
 #endif
 						/// JFNK and Jacobi preconditioner
