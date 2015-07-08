@@ -181,7 +181,7 @@ public:
 		bool  reject=false;
 		bool  prev_reject=false;
 	
-		size_t  i,k;
+        size_t  i, k;
 		double  fac, h, hnew, hopt_int, err;
 		bool  firstk;
 	
@@ -197,7 +197,7 @@ public:
 		else
 			forward = false;
 
-		for (i=0;i<n;i++) 
+        for (size_t i=0;i<n;i++)
 			ysav[i]=y[i]; // Save the starting values.
 
 		if (h != hnext && !first_step )

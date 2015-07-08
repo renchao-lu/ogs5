@@ -111,7 +111,7 @@ double CFluidMomentum::Execute(int loop_process_number)
 
     bool isFlow = false;
     CRFProcess *a_pcs = NULL; 
-    CRFProcess *f_pcs = NULL; 
+    // CRFProcess *f_pcs = NULL;
     for(int k=0; k<no_processes; k++ )
     {
 	   a_pcs = pcs_vector[k];

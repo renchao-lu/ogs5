@@ -979,7 +979,7 @@ int StrTestHash ( char* s, int* pos )
  */
 /**************************************************************************/
 /*MX*/
-int StrOnlyReadStr ( char* x, char* s, FILE* f, /*FctTestString func,*/ int* pos )
+int StrOnlyReadStr ( char* x, char* s, FILE* /*f*/, /*FctTestString func,*/ int* pos )
 {
 //   int test;
 
