@@ -165,7 +165,7 @@ public:
 	 * set search length to half of minimum edge length.
 	 * @set the search length
 	 */
-	void setSearchLength();
+	void setSearchLength(double len);
 
 	/**
 	 * @brief Compute the search length for geometric search algorithms.
