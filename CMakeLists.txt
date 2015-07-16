@@ -258,6 +258,7 @@ if(PARALLEL_USE_MPI)
 	message(STATUS "Enabling MPI")
 	find_package(MPI REQUIRED)
 	add_definitions(-DUSE_MPI)
+	include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
 
 if(MSVC)

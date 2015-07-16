@@ -46,6 +46,10 @@ target_link_libraries( ogs
 	MSH
 )
 
+if(PARALLEL_USE_MPI)
+	target_link_libraries(ogs ${MPI_CXX_LIBRARIES})
+endif()
+
 if (OGS_FEM_GEMS OR OGS_FEM_PETSC_GEMS)
 	target_link_libraries( ogs
 		GEM
