@@ -162,6 +162,12 @@ public:
 	double getSearchLength() const;
 
 	/**
+	 * set search length to half of minimum edge length.
+	 * @set the search length
+	 */
+	void setSearchLength(double len);
+
+	/**
 	 * @brief Compute the search length for geometric search algorithms.
 	 *
 	 * Let \f$\mu\f$ the mean value of all edge length and \f$s\f$ the
