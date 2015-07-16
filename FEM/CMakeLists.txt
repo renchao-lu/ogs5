@@ -172,6 +172,10 @@ if(OGS_FEM_PQC)
 	target_link_libraries(FEM PQC)
 endif()
 
+if(PARALLEL_USE_MPI)
+	target_link_libraries(FEM ${MPI_CXX_LIBRARIES})
+endif()
+
 if (WIN32)
 	if (OGS_FEM_GEMS)
 		target_link_libraries( FEM GEM )
