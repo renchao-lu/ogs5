@@ -3901,7 +3901,8 @@ ElementValue_DM::ElementValue_DM(CElem* ele,  const int NGP, bool HM_Staggered)
 // 01/2006 WW
 void ElementValue_DM::Write_BIN(std::fstream& os)
 {
-	Stress0->Write_BIN(os);
+//	Stress0->Write_BIN(os);
+	Stress_i->Write_BIN(os); // stress_0 = stress_i
 	Stress_i->Write_BIN(os);
 	if(pStrain)
 		pStrain->Write_BIN(os);
