@@ -8,6 +8,7 @@
 #ifndef rf_pcs_INC
 #define rf_pcs_INC
 
+#include <ctime>
 #include <valarray>
 
 #include "makros.h"
