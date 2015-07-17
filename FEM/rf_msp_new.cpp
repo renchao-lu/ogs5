@@ -30,14 +30,15 @@
 #include "files0.h"                               // GetLineFromFile1
 #include "tools.h"                                // GetLineFromFile
 
-using namespace std;
-
 vector<SolidProp::CSolidProperties*> msp_vector;
 vector<string> msp_key_word_vector;               //OK
 
-using FiniteElement::ElementValue_DM;
 namespace SolidProp
 {
+	using namespace std;
+	using FiniteElement::ElementValue_DM;
+	using Math_Group::Matrix;
+
 /**************************************************************************
    FEMLib-Method:
    Task: OBJ read function
