@@ -1,3 +1,4 @@
+add_subdirectory(Brent)
 
 if(OGS_FEM_IPQC)
 	add_subdirectory(IPQC)

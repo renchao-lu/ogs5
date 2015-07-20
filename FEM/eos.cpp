@@ -799,7 +799,7 @@ double co2_heat_conductivity (double rho, double T)
     lamda = lamda_r * Lamda_C;
 
 
-    return lamda; 
+    return lamda;
 }
 
 /**********************************************************************

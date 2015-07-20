@@ -44,6 +44,7 @@ target_link_libraries( ogs
 	GEO
 	MathLib
 	MSH
+	BrentLib
 )
 
 if(PARALLEL_USE_MPI)
