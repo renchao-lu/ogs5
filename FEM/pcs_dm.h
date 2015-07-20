@@ -94,7 +94,7 @@ public:
 	double CaclMaxiumLoadRatio();
 
 	// Write stresses
-	void WriteGaussPointStress();
+	void WriteGaussPointStress(const bool last_step = false);
 	void ReadGaussPointStress();
 	void ReadElementStress();
 

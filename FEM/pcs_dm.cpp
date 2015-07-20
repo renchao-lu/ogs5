@@ -86,6 +86,14 @@ CRFProcessDeformation()
 
 CRFProcessDeformation::~CRFProcessDeformation()
 {
+	const bool last_step = true;
+	WriteGaussPointStress(last_step);
+	if(type == 41 && (idata_type == write_all_binary || idata_type == read_write) )
+	{
+		// mono-deformation-liquid
+		WriteSolution();
+	}
+
 	if(ARRAY)
 		delete [] ARRAY;
 	if(fem_dm)
@@ -133,7 +141,9 @@ void CRFProcessDeformation::Initialization()
     //-- NW 25.10.2011
     // this section has to be executed at latest before calling InitGauss()
     // Control for reading and writing solution
-    if(reload == 1)
+	if(reload < 1)
+		idata_type = none;
+	if(reload == 1)
         idata_type = write_all_binary;
     if(reload == 2)
         idata_type = read_all_binary;
@@ -1246,7 +1256,8 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	}
 	Idx_Strain[NS] = GetNodeValueIndex("STRAIN_PLS");
 	// For excavation simulation. Moved here on 05.09.2007 WW
-	if((idata_type == write_all_binary || idata_type == none)  && reload != -1000 )
+	if (idata_type != none)
+//	if((idata_type == write_all_binary || idata_type == none)  && reload != -1000 )
 	//	if(reload < 2 && reload != -1000)
 	{
 		GravityForce = true;
@@ -1286,8 +1297,9 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	}
 #endif
 
-	if(reload == -1000)
-		reload = 1;
+	idata_type = write_all_binary;
+//	if(reload == -1000)
+//		reload = 1;
 }
 
 /*************************************************************************
@@ -3070,14 +3082,14 @@ void CRFProcessDeformation::UpdateStress()
    letzte Aenderung:
 
 **************************************************************************/
-void CRFProcessDeformation::WriteGaussPointStress()
+void CRFProcessDeformation::WriteGaussPointStress(const bool last_step)
 {
-	if(idata_type == write_all_binary || idata_type == read_write )
-	{
-		if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 )
-			return;
-	}
+	if ( !(idata_type == write_all_binary || idata_type == read_write) )
+		return;
 
+	if ( ( aktueller_zeitschritt % nwrite_restart  ) > 0 && (!last_step))
+		return;
+	
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3086,7 +3098,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 	const std::string StressFileName = FileName + ".sts";
 #endif
 
-	fstream file_stress(StressFileName.data(),ios::binary | ios::out);
+	fstream file_stress(StressFileName.data(),ios::binary | ios::out | ios::trunc);
 	ElementValue_DM* eleV_DM = NULL;
 
 	long ActiveElements = 0;
@@ -3112,7 +3124,7 @@ void CRFProcessDeformation::WriteGaussPointStress()
 			file_stress.write((char*)(&i), sizeof(i));
 			//          *eleV_DM->Stress_i += *eleV_DM->Stress0;
 			//TEST           *eleV_DM->Stress0 = 0.0;
-			eleV_DM->Write_BIN(file_stress);
+			eleV_DM->Write_BIN(file_stress, last_step);
 		}
 	}
 	//
