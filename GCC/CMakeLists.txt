@@ -40,6 +40,7 @@ set ( SOURCES
 
 # Create the library
 add_library( GCC STATIC ${HEADERS} ${SOURCES} )
+target_link_libraries( GCC BrentLib )
 include_directories( ${CMAKE_SOURCE_DIR}/GCC )
 
 if (WIN32)
