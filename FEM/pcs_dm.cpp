@@ -1257,8 +1257,6 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	Idx_Strain[NS] = GetNodeValueIndex("STRAIN_PLS");
 	// For excavation simulation. Moved here on 05.09.2007 WW
 	if (idata_type != none)
-//	if((idata_type == write_all_binary || idata_type == none)  && reload != -1000 )
-	//	if(reload < 2 && reload != -1000)
 	{
 		GravityForce = true;
 		cout << "\n ***Excavation simulation: 1. Establish initial stress profile..." <<
@@ -1297,9 +1295,8 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	}
 #endif
 
-	idata_type = write_all_binary;
-//	if(reload == -1000)
-//		reload = 1;
+	if(reload == 1)
+		idata_type = write_all_binary;
 }
 
 /*************************************************************************
