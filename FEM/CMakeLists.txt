@@ -1,5 +1,6 @@
 set( HEADERS
 	BoundaryCondition.h
+	Constants.h
 	Constrained.h
 	conversion_rate.h
 	DistributionInfo.h
@@ -54,6 +55,7 @@ set( HEADERS
 set( SOURCES
 	BoundaryCondition.cpp
 	CAP_IO.cpp
+	Constants.cpp
 	conversion_rate.cpp
 	DistributionInfo.cpp
 	DUMUX.cpp
