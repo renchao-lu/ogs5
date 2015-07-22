@@ -51,8 +51,6 @@ extern double gravity_constant;                   // TEST, must be put in input 
 #define COMP_MOL_MASS_WATER 18.016                //WW 18.016
 #define COMP_MOL_MASS_N2 28.014					  //Nitrogen
 #define GAS_CONSTANT    8314.41                   // J/(kmol*K) WW
-#define GAS_CONSTANT_V  461.5                     //WW
-//#define T_KILVIN_ZERO  273.15                     //WW
 
 #define GAS_MASS_FORM
 
@@ -1755,12 +1753,11 @@ double CFiniteElementStd::CalCoefMass()
 		{
 			//           PG = fabs(interpolate(NodalVal1));
 			TG = interpolate(NodalValC);
-			//Rv = GAS_CONSTANT;
-			humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
+			humi = exp(PG / (FluidConstant::SpecificGasConstant() * TG * rhow));
 			rhov = humi * FluidProp->vaporDensity(TG);
 			//
 			val -= poro * rhov * dSdp / rhow;
-			val += (1.0 - Sw) * poro * rhov / (rhow * rhow * GAS_CONSTANT_V * TG);
+			val += (1.0 - Sw) * poro * rhov / (rhow * rhow * FluidConstant::SpecificGasConstant() * TG);
 		}
 		break;
 	case EPT_FLUID_MOMENTUM:                               // Fluid Momentum
@@ -2584,12 +2581,12 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 			poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
 			//Rv = GAS_CONSTANT;
-			humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
+			humi = exp(PG / (FluidConstant::SpecificGasConstant() * TG * rhow));
 			//
 			Dpv = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
 				  * pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 			Dpv *= time_unit_factor * FluidProp->vaporDensity(TG) * humi /
-			       (GAS_CONSTANT_V * rhow * TG);
+			       (FluidConstant::SpecificGasConstant() * rhow * TG);
 			for(size_t i = 0; i < dim; i++)
 				mat[i * dim + i] += Dpv / rhow;
 		}
@@ -5498,13 +5495,13 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 		tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
 		beta = poro * MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * Sw;
 		//Rv = GAS_CONSTANT;
-		humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
+		humi = exp(PG / (FluidConstant::SpecificGasConstant() * TG * rhow));
 		Dv   = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
 			   * pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 		rhov = humi * FluidProp->vaporDensity(TG);
 		drdT =
 		        (FluidProp->vaporDensity_derivative(TG) * humi - rhov * PG /
-		         (GAS_CONSTANT_V * rhow * TG * TG)) / rhow;
+		         (FluidConstant::SpecificGasConstant() * rhow * TG * TG)) / rhow;
 		Dtv = time_unit_factor * Dv * drdT;
 
 		//    }
