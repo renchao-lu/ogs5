@@ -59,9 +59,3 @@ class FluidConstant
 
 }
 #endif //OGS_CONSTANTS_H
-
-/*
-FluidConstant::ComponentMolarMassAir()
-FluidConstant::ComponentMolarMassWater()
-FluidConstant::ComponentMolarMassWaterN2()
-*/

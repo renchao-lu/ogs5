@@ -47,9 +47,6 @@ using Math_Group::CSparseMatrix;
 #include "Constants.h"
 
 extern double gravity_constant;                   // TEST, must be put in input file
-#define COMP_MOL_MASS_N2 28.014					  //Nitrogen
-
-#define GAS_MASS_FORM
 
 using namespace std;
 #include "Eclipse.h"                              //BG 09/2009
