@@ -355,4 +355,10 @@ struct ConstrainedVariable
 ConstrainedVariable::type convertConstrainedVariable(const std::string &str);
 std::string convertConstrainedVariableToString(ConstrainedVariable::type constrained_variable);
 
+enum TemperatureUnit
+{
+	KILVIN,
+	CELSIUS
+};
+
 #endif                                            //FEMENUMS_H

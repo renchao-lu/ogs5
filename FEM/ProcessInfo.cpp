@@ -9,7 +9,8 @@
 #include <ProcessInfo.h>
 
 ProcessInfo::ProcessInfo() :
-	_pcs_type (FiniteElement::INVALID_PROCESS), _pcs_pv (FiniteElement::INVALID_PV), _pcs (NULL)
+	_pcs_type (FiniteElement::INVALID_PROCESS), _pcs_pv (FiniteElement::INVALID_PV), _pcs (NULL),
+	_temp_unit(KILVIN)
 {}
 
 ProcessInfo::ProcessInfo (FiniteElement::ProcessType pcs_type, FiniteElement::PrimaryVariable pcs_pv, CRFProcess* pcs) :

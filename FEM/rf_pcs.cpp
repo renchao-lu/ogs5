@@ -1765,6 +1765,7 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
 	dm_pcs->isPCSDeformation = true;
 	dm_pcs->isPCSFlow = this->isPCSFlow; //JT
 	dm_pcs->isPCSMultiFlow = this->isPCSMultiFlow; //JT
+	dm_pcs->_temp_unit = this->_temp_unit;
 	//WW
 	dm_pcs->write_boundary_condition =  write_boundary_condition;
 	if(!dm_pcs->Deactivated_SubDomain)
@@ -1937,6 +1938,19 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 		{
 			*pcs_file >> num_type_name;
 			pcs_file->ignore(MAX_ZEILE, '\n');
+			continue;
+		}
+		//....................................................................
+		// subkeyword found
+		if (line_string.find("$TEMPERATURE_UNIT") != string::npos)
+		{
+			std::string T_unit_name;
+			*pcs_file >> T_unit_name;
+			pcs_file->ignore(MAX_ZEILE, '\n');
+			if(T_unit_name.find("CELSIUS") != std::string::npos )
+				_temp_unit = CELSIUS;
+			else
+				_temp_unit = KILVIN;
 			continue;
 		}
 		//....................................................................

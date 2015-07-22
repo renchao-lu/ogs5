@@ -58,7 +58,6 @@ using FiniteElement::ElementValue_DM;
 #define GAS_CONSTANT      8314.41
 #define COMP_MOL_MASS_AIR    28.96
 #define COMP_MOL_MASS_WATER  18.016
-#define T_KILVIN_ZERO  273.15                     //AKS
 /**************************************************************************
    FEMLib-Method: CMediumProperties
    Task: constructor

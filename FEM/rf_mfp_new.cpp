@@ -46,7 +46,6 @@ using namespace std;
 #define COMP_MOL_MASS_WATER  18.016
 #define COMP_MOL_MASS_N2 28.014
 #define GAS_CONSTANT_V  461.5                     //WW
-#define T_KILVIN_ZERO  273.15                     //AKS
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
 
 //==========================================================================
@@ -2040,7 +2039,7 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 			PG = assem->interpolate(assem->NodalValC1);
 			Sw = assem->MediaProp->SaturationCapillaryPressureFunction(PG);
 			double PG2 = assem->interpolate(assem->NodalVal_p2);
-			TG = assem->interpolate(assem->NodalVal1) + T_KILVIN_ZERO;
+			TG = assem->interpolate(assem->NodalVal1);
 			rhow = assem->FluidProp->Density();
 			rho_gw = assem->FluidProp->vaporDensity(TG) * exp(
 			        -PG * COMP_MOL_MASS_WATER / (rhow * GAS_CONSTANT * TG));

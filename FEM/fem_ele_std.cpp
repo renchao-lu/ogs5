@@ -43,13 +43,16 @@ using Math_Group::CSparseMatrix;
 #endif
 
 #include "pcs_dm.h"                               // displacement coupled
+
+#include "Constants.h"
+
 extern double gravity_constant;                   // TEST, must be put in input file
 #define COMP_MOL_MASS_AIR   28.96                 // kg/kmol WW  28.96
 #define COMP_MOL_MASS_WATER 18.016                //WW 18.016
 #define COMP_MOL_MASS_N2 28.014					  //Nitrogen
 #define GAS_CONSTANT    8314.41                   // J/(kmol*K) WW
 #define GAS_CONSTANT_V  461.5                     //WW
-#define T_KILVIN_ZERO  273.15                     //WW
+//#define T_KILVIN_ZERO  273.15                     //WW
 
 #define GAS_MASS_FORM
 
@@ -69,6 +72,8 @@ static inline double time_interpolate(double const * const a, double const * con
 
 namespace FiniteElement
 {
+
+using namespace constant_group;
 //========================================================================
 // Element calculation
 //========================================================================
@@ -1749,7 +1754,7 @@ double CFiniteElementStd::CalCoefMass()
 		if(MediaProp->heat_diffusion_model == 1)
 		{
 			//           PG = fabs(interpolate(NodalVal1));
-			TG = interpolate(NodalValC) + T_KILVIN_ZERO;
+			TG = interpolate(NodalValC);
 			//Rv = GAS_CONSTANT;
 			humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
 			rhov = humi * FluidProp->vaporDensity(TG);
@@ -1803,7 +1808,7 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
 		dens_arg[0] = PG;         // Should be P_w in some cases
 		if(diffusion)
 		{
-			TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+			TG = interpolate(NodalValC1);
 			dens_arg[1] = TG;
 		}
 		Sw = MediaProp->SaturationCapillaryPressureFunction(PG);
@@ -2243,7 +2248,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		if(MediaProp->permeability_stress_mode > 1)
 		{
 			if(cpl_pcs)
-				TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+				TG = interpolate(NodalValC1);
 			else
 				TG = 296.0;
 			MediaProp->CalStressPermeabilityFactor(w, TG);
@@ -2560,7 +2565,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		if(MediaProp->permeability_stress_mode > 1)
 		{
 			if(cpl_pcs)
-				TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+				TG = interpolate(NodalValC1);
 			else
 				TG = 296.0;
 			MediaProp->CalStressPermeabilityFactor(w, TG);
@@ -2575,13 +2580,14 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 		{
 			rhow = FluidProp->Density();
 			//PG = fabs(interpolate(NodalVal1));
-			TG = interpolate(NodalValC) + T_KILVIN_ZERO;
+			TG = interpolate(NodalValC);
 			poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
 			//Rv = GAS_CONSTANT;
 			humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
 			//
-			Dpv = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8); 
+			Dpv = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
+				  * pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 			Dpv *= time_unit_factor * FluidProp->vaporDensity(TG) * humi /
 			       (GAS_CONSTANT_V * rhow * TG);
 			for(size_t i = 0; i < dim; i++)
@@ -2591,7 +2597,7 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 	//------------------------------------------------------------------
 	case EPT_GAS_FLOW:                               // Air flow
 		dens_arg[0] = interpolate(NodalVal1);
-		dens_arg[1] = interpolate(NodalValC1) + T_KILVIN_ZERO;
+		dens_arg[1] = interpolate(NodalValC1);
 		dens_arg[2] = Index;
         double vis = FluidProp->Viscosity(dens_arg);
         mat_fac = vis;
@@ -2750,7 +2756,7 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 			dens_arg[0] = PG; // Shdould be Pw in some cases
 			if(diffusion)
 			{
-				TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+				TG = interpolate(NodalValC1);
 				dens_arg[1] = TG;
 			}
 			//
@@ -2764,7 +2770,8 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 				tort = MediaProp->TortuosityFunction(Index,
 				                                     unit,
 				                                     pcs->m_num->ls_theta);
-				tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
+				tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro
+						* pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 				expfactor = COMP_MOL_MASS_WATER / (rhow * GAS_CONSTANT * TG);
 				rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
 				p_gw = rho_gw * GAS_CONSTANT * TG / COMP_MOL_MASS_WATER;
@@ -2798,7 +2805,7 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 			dens_arg[0] = PG; // Shdould be Pw in some cases
 			if(diffusion)
 			{
-				TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+				TG = interpolate(NodalValC1);
 				dens_arg[1] = TG;
 			}
 			// Liquid density
@@ -3513,7 +3520,7 @@ double CFiniteElementStd::CalCoefAdvection()
 		   cpl_pcs )
 		{
 			dens_arg[0] = interpolate(NodalValC1);
-			dens_arg[1] = interpolate(NodalVal1) + T_KILVIN_ZERO;
+			dens_arg[1] = interpolate(NodalVal1);
 			dens_arg[2] = Index;
 			val = FluidProp->SpecificHeatCapacity(dens_arg) * FluidProp->Density(dens_arg);
 		}
@@ -5260,7 +5267,7 @@ void CFiniteElementStd::CalcAdvection()
 		{
 			PG2 = interpolate(NodalVal_p2);
 			PG =  interpolate(NodalValC1);
-			TG = interpolate(NodalVal1) + T_KILVIN_ZERO;
+			TG = interpolate(NodalVal1);
 			rhow = FluidProp->Density();
 			rho_gw = FluidProp->vaporDensity(TG) *
 			         exp(-PG * COMP_MOL_MASS_WATER / (rhow * GAS_CONSTANT * TG));
@@ -5484,7 +5491,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 		ComputeShapefct(1);
 		double rhow = FluidProp->Density();
 		PG = interpolate(NodalVal1);
-		TG = interpolate(NodalValC) + T_KILVIN_ZERO;
+		TG = interpolate(NodalValC);
 		//WW
 		Sw = MediaProp->SaturationCapillaryPressureFunction(-PG);
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
@@ -5492,7 +5499,8 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 		beta = poro * MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * Sw;
 		//Rv = GAS_CONSTANT;
 		humi = exp(PG / (GAS_CONSTANT_V * TG * rhow));
-		Dv   = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
+		Dv   = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
+			   * pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 		rhov = humi * FluidProp->vaporDensity(TG);
 		drdT =
 		        (FluidProp->vaporDensity_derivative(TG) * humi - rhov * PG /
@@ -5530,7 +5538,7 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 	{
 		for (j = 0; j < nnodes; j++)
 		{
-			(*RHS)[i] -= (*Laplace)(i,j) * (NodalValC[j] + T_KILVIN_ZERO);
+			(*RHS)[i] -= (*Laplace)(i,j) * NodalValC[j];
 			(*RHS)[i] += (*Mass)(i,j) * (NodalValC1[j] - NodalValC[j]) / dt;
 		}
 		eqs_rhs[cshift + eqs_number[i]]
@@ -7545,7 +7553,10 @@ void CFiniteElementStd::AssembleParabolicEquation()
 
 	if (PcsType==EPT_MULTI_COMPONENTIAL_FLOW || PcsType == EPT_THERMAL_NONEQUILIBRIUM || PcsType == EPT_TES)
 	{
-		for (int in = 0; in < pcs->dof * nnodes; in++) { NodalVal[in] = 0.0; }
+		for (int j = 0; j < pcs->dof * nnodes; j++)
+		{
+			NodalVal[j] = 0.0;
+		}
 	}
 
 	if(pcs->m_num->nls_method > 0 && (!dynamic)) //Newton method
@@ -8819,12 +8830,11 @@ void CFiniteElementStd::AssembleMassMatrix(int option)
 **************************************************************************/
 void CFiniteElementStd::Config()
 {
-	int i, nn;
 	//----------------------------------------------------------------------
 	//OK index = m_dom->elements[e]->global_number;
 	index = Index;
 	//----------------------------------------------------------------------
-	nn = nnodes;
+	int nn = nnodes;
 	// ?2WW
 	// ?2WW
 	if(pcs->type / 10 == 4 || pcs->type == 4)
@@ -8872,15 +8882,14 @@ void CFiniteElementStd::Config()
 	if(m_dom)                             //WW
 	{
 		eqs_rhs = m_dom->eqs->b;
-		for(i = 0; i < nn; i++)
+		for(int i = 0; i < nn; i++)
 			eqs_number[i] = element_nodes_dom[i];  //WW
 		if(pcs->dof > 1)          //12.12.2007 WW
-
-			for(i = 0; i < pcs->dof; i++)
+			for(int i = 0; i < pcs->dof; i++)
 				NodeShift[i] = i * m_dom->nnodes_dom;
 	}
 	else                                  //OK4111
-		for(i = 0; i < nn; i++)
+		for(int i = 0; i < nn; i++)
 			eqs_number[i] = MeshElement->nodes[i]->GetEquationIndex();
 #endif
 	//----------------------------------------------------------------------
@@ -8897,7 +8906,7 @@ void CFiniteElementStd::Config()
 	//----------------------------------------------------------------------
 	// Initialize RHS
 	if(pcs->Memory_Type > 0)
-		for(i = LocalShift; (size_t)i < RHS->Size(); i++)
+		for(std::size_t i = LocalShift; i < RHS->Size(); i++)
 			(*RHS)[i] = 0.0;
 	else
 		(*RHS) = 0.0;
@@ -8910,70 +8919,93 @@ void CFiniteElementStd::Config()
 		idx00 = idxp20;
 		idx11 = idxp21;
 	}
-	for(i = 0; i < nnodes; i++)
+	for(int i = 0; i < nnodes; i++)
 	{
 		NodalVal0[i] = pcs->GetNodeValue(nodes[i],idx00);
 		NodalVal1[i] = pcs->GetNodeValue(nodes[i],idx11);
-	}                                     //----------WW 05.01.07
-	if(PcsType == EPT_MULTIPHASE_FLOW)                      // 25.2.2007
+	}                                   //----------WW 05.01.07
 
-		for(i = 0; i < nnodes; i++)
-		{
-			NodalVal_p2[i] = pcs->GetNodeValue(nodes[i],idxp21);
-			NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i],idxp20);
-			NodalVal1[i + nnodes] = pcs->GetNodeValue(nodes[i],idxp21);
-		}
-
-	if(PcsType == EPT_MULTI_COMPONENTIAL_FLOW)
-		for(i = 0; i < nnodes; i++)
-		{
-	for(int in = 0; in < pcs->dof; in++)         NodalValue[in][i] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
-	for(int in = 0; in < pcs->dof; in++)  NodalVal1[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in + pcs->dof]);
-	for(int in = 0; in < pcs->dof; in++)  NodalVal0[i + in*nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[in]);
-		}
-	if(PcsType==EPT_THERMAL_NONEQUILIBRIUM)
+	switch(PcsType)
 	{
-		for(i=0;i<nnodes;i++)
-		{
-			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
-			NodalVal_t2_1[i] = pcs->GetNodeValue(nodes[i],idx_t2_1);
-			NodalVal_X1[i] = pcs->GetNodeValue(nodes[i],idx_x1);
+		case EPT_MULTIPHASE_FLOW:                      // 25.2.2007
+			for (int i = 0; i < nnodes; i++)
+			{
+				NodalVal_p2[i] = pcs->GetNodeValue(nodes[i], idxp21);
+				NodalVal0[i + nnodes] = pcs->GetNodeValue(nodes[i], idxp20);
+				NodalVal1[i + nnodes] = pcs->GetNodeValue(nodes[i], idxp21);
+			}
+			break;
+		case EPT_MULTI_COMPONENTIAL_FLOW:
+			for (int i = 0; i < nnodes; i++)
+			{
+				for (int j = 0; j < pcs->dof; j++)
+				{
+					NodalValue[j][i] = pcs->GetNodeValue(nodes[i], idxMCF[j + pcs->dof]);
+					NodalVal1[i + j * nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[j + pcs->dof]);
+					NodalVal0[i + j * nnodes] = pcs->GetNodeValue(nodes[i], idxMCF[j]);
+				}
+			}
+			break;
+		case EPT_THERMAL_NONEQUILIBRIUM:
+			for (int i = 0; i < nnodes; i++)
+			{
+				NodalVal_t1[i] = pcs->GetNodeValue(nodes[i], idxt1);
+				NodalVal_t2_1[i] = pcs->GetNodeValue(nodes[i], idx_t2_1);
+				NodalVal_X1[i] = pcs->GetNodeValue(nodes[i], idx_x1);
 
-			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
-			NodalVal_t2_0[i] = pcs->GetNodeValue(nodes[i],idx_t2_0);
-			NodalVal_X0[i] = pcs->GetNodeValue(nodes[i],idx_x0);
-		}
+				NodalVal_t0[i] = pcs->GetNodeValue(nodes[i], idxt0);
+				NodalVal_t2_0[i] = pcs->GetNodeValue(nodes[i], idx_t2_0);
+				NodalVal_X0[i] = pcs->GetNodeValue(nodes[i], idx_x0);
+			}
+			break;
+		case EPT_TES:
+			for (int i = 0; i < nnodes; i++) {
+				NodalVal_t1[i] = pcs->GetNodeValue(nodes[i], idxt1);
+				NodalVal_X1[i] = pcs->GetNodeValue(nodes[i], idx_x1);
+
+				NodalVal_t0[i] = pcs->GetNodeValue(nodes[i], idxt0);
+				NodalVal_X0[i] = pcs->GetNodeValue(nodes[i], idx_x0);
+			}
+			break;
+		case EPT_PSGLOBAL:
+			for (int i = 0; i < nnodes; i++)
+				NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i], idxSn1);
+		case EPT_HEAT_TRANSPORT:
+			{
+				const double ref_temperature = (pcs->getTemperatureUnit() == CELSIUS)
+											   ? ThermalConstant::CelsiusZeroInKelvin() : 0.0;
+				for(int i = 0; i < nnodes; i++)
+				{
+					NodalVal1[i] += ref_temperature;
+				}
+			}
+			break;
+		default:
+			break;
 	}
 
-	if(PcsType==EPT_TES)
-	{
-		for(i=0;i<nnodes;i++)
-		{
-			NodalVal_t1[i] = pcs->GetNodeValue(nodes[i],idxt1);
-			NodalVal_X1[i] = pcs->GetNodeValue(nodes[i],idx_x1);
-
-			NodalVal_t0[i] = pcs->GetNodeValue(nodes[i],idxt0);
-			NodalVal_X0[i] = pcs->GetNodeValue(nodes[i],idx_x0);
-		}
-	}
-
-	if(PcsType == EPT_PSGLOBAL)
-		for(i = 0; i < nnodes; i++)
-			NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i],idxSn1);
 	//----------WW 05.01.07
 	if(cpl_pcs)                           // ?2WW: flags are necessary
-
-		for(i = 0; i < nnodes; i++)
+	{
+		double ref_val = 0.0;
+		if(cpl_pcs->getProcessType() == FiniteElement::HEAT_TRANSPORT)
 		{
-			NodalValC[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0);
-			NodalValC1[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1);
-			if(cpl_pcs->type == 1212 || cpl_pcs->type == 42)
-		{
-				NodalVal_p2[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c1 + 2);
-			NodalVal_p20[i] = cpl_pcs->GetNodeValue(nodes[i],idx_c0 + 2);
+			ref_val = (cpl_pcs->getTemperatureUnit() == CELSIUS)
+					  ? ThermalConstant::CelsiusZeroInKelvin() : 0.0;
 		}
+
+		for (int i = 0; i < nnodes; i++)
+		{
+			NodalValC[i] = ref_val + cpl_pcs->GetNodeValue(nodes[i], idx_c0);
+			NodalValC1[i] = ref_val + cpl_pcs->GetNodeValue(nodes[i], idx_c1);
+			if (cpl_pcs->type == 1212 || cpl_pcs->type == 42)
+			{
+				NodalVal_p2[i] = cpl_pcs->GetNodeValue(nodes[i], idx_c1 + 2);
+				NodalVal_p20[i] = cpl_pcs->GetNodeValue(nodes[i], idx_c0 + 2);
 			}
 		}
+	}
+}
 /**************************************************************************
    FEMLib-Method:
    Task: Assemble local matrices to the global system
@@ -9868,7 +9900,7 @@ void CFiniteElementStd::CalcNodeMatParatemer()
 			    MediaProp->permeability_stress_mode == 3)
 			{
 				if(cpl_pcs)
-					TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+					TG = interpolate(NodalValC1);
 				else
 					TG = 293.15;
 				MediaProp->CalStressPermeabilityFactor(w, TG);
@@ -10156,8 +10188,8 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 	case 0:
 		PG = interpolate(NodalVal1);
 		Sw = MediaProp->SaturationCapillaryPressureFunction(PG);
-		TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
-		TG0 = interpolate(NodalValC) + T_KILVIN_ZERO;
+		TG = interpolate(NodalValC1);
+		TG0 = interpolate(NodalValC);
 		PG2 = interpolate(NodalVal_p2);
 		rhow = FluidProp->Density();
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
@@ -10195,7 +10227,8 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		//------------------------------------------------------------------------
 		// From grad (p_gw/p_g)
 		tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
-		tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro * pow(TG / T_KILVIN_ZERO, 1.8);
+		tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro
+				* pow(TG / ThermalConstant::CelsiusZeroInKelvin(), 1.8);
 		p_gw = rho_gw * GAS_CONSTANT * TG / COMP_MOL_MASS_WATER;
 		dens_arg[0] = PG2 - p_gw;
 		dens_arg[1] = TG;
@@ -10359,8 +10392,8 @@ double CFiniteElementStd::CalCoef_RHS_AIR_FLOW(int dof_index)
 	double val = 0.0;
 	int Index = MeshElement->GetIndex();
 	PG = interpolate(NodalVal1);
-	TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
-	TG0 = interpolate(NodalValC) + T_KILVIN_ZERO;
+	TG = interpolate(NodalValC1);
+	TG0 = interpolate(NodalValC);
 	switch(dof_index)
 	{
 	case 0:
@@ -10388,11 +10421,11 @@ double CFiniteElementStd::CalCoef_RHS_HEAT_TRANSPORT(int dof_index)
 	int Index = MeshElement->GetIndex();
 	double dens_arg[3];
 	dens_arg[0] = interpolate(NodalValC1);
-	dens_arg[1] = interpolate(NodalVal1) + T_KILVIN_ZERO;
+	dens_arg[1] = interpolate(NodalVal1);
 	dens_arg[2] = Index;
 	rho_g = FluidProp->Density(dens_arg);
 	dens_arg[0] = 4.0e6;
-	dens_arg[1] = 120 + T_KILVIN_ZERO;
+	dens_arg[1] = 120 + ThermalConstant::CelsiusZeroInKelvin();
 	rho_0 = FluidProp->Density(dens_arg);
 
 	switch(dof_index)
@@ -10475,7 +10508,7 @@ void CFiniteElementStd::Assemble_RHS_T_MPhaseFlow()
 						        fac *
 						        dshapefct[k * nnodes +
 						                  i] * dshapefct[k * nnodes + j]
-						        * (NodalValC1[j] + T_KILVIN_ZERO);
+						        * NodalValC1[j];
 			}			        
 		}
 	}
@@ -10915,14 +10948,14 @@ void CFiniteElementStd::Assemble_RHS_AIR_FLOW()
 						         nnodes] += fkt * shapefct[i] * vel[k] *
 						                    dshapefct[k * nnodes +
 						                              j] *
-						                    (NodalValC1[j] + T_KILVIN_ZERO);
+						                    NodalValC1[j];
 		}
 
 		//Body force term
 		if(GravityOn)
 		{
 			dens_arg[0] = interpolate(NodalVal1);
-			dens_arg[1] = interpolate(NodalValC1) + T_KILVIN_ZERO;
+			dens_arg[1] = interpolate(NodalValC1);
 			dens_arg[2] = Index;
 			fluid_density = FluidProp->Density(dens_arg);
 			mat_fac = FluidProp->Viscosity(dens_arg);
@@ -11046,7 +11079,7 @@ double CFiniteElementStd::CalCoef_RHS_HEAT_TRANSPORT2(int dof_index)
 	ComputeShapefct(1);
 	PG = interpolate(NodalValC1);
 	PG2 = interpolate(NodalVal_p2);
-	TG = interpolate(NodalVal1) + T_KILVIN_ZERO;
+	TG = interpolate(NodalVal1);
 	PG0 = interpolate(NodalValC);
 	PG20 = interpolate(NodalVal_p20);
 	dens_arg[1] = TG;
@@ -11136,7 +11169,7 @@ void CFiniteElementStd::Assemble_RHS_HEAT_TRANSPORT2()
 		// If no gravity, then set GravityOn to be zero.
 		if((coordinate_system) % 10 != 2 && (!axisymmetry))
 			GravityOn = 0;
-		TG = interpolate(NodalVal1) + T_KILVIN_ZERO;
+		TG = interpolate(NodalVal1);
 		PG = interpolate(NodalValC1);
 		PG2 = interpolate(NodalVal_p2);
 		dens_arg[1] = TG;
@@ -11239,7 +11272,7 @@ double CFiniteElementStd::CalCoef_RHS_M_MPhase(int dof_index)
 		Sw = MediaProp->SaturationCapillaryPressureFunction(PG);
 		if(diffusion)
 		{
-			TG = interpolate(NodalValC1) + T_KILVIN_ZERO;
+			TG = interpolate(NodalValC1);
 			dens_aug[1] = TG;
 		}
 		//
