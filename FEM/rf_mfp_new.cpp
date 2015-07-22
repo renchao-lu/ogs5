@@ -35,18 +35,16 @@ using namespace std;
 
 
 #include "physical_constants.h"
-
+#include "Constants.h"
 
 /* Umrechnungen SI - Amerikanisches System */
 //WW #include "steam67.h"
 #define PSI2PA 6895.
 #define PA2PSI 1.4503263234227701232777374909355e-4
-#define GAS_CONSTANT    8314.41
-#define COMP_MOL_MASS_AIR    28.96
-#define COMP_MOL_MASS_WATER  18.016
-#define COMP_MOL_MASS_N2 28.014
-#define GAS_CONSTANT_V  461.5                     //WW
+
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
+
+using namespace constant_group;
 
 //==========================================================================
 std::vector<CFluidProperties*>mfp_vector;
@@ -94,7 +92,7 @@ CFluidProperties::CFluidProperties() :
 	mode = 0;                             // Gauss point values
 	Fem_Ele_Std = NULL;
 	// WW
-	molar_mass = COMP_MOL_MASS_AIR;
+	molar_mass = FluidConstant::ComponentMolarMassAir() ;
 
 	compressibility_model_pressure = -1;
 	specific_heat_source = 0.0;
@@ -965,7 +963,7 @@ double CFluidProperties::Density(double* variables)
 			                0.0) - p_0) + drho_dT * (max(variables[1],0.0) - T_0));
 			break;
 		case 7:                   // Pefect gas. WW
-			density = variables[0] * molar_mass / (GAS_CONSTANT * variables[1]);
+			density = variables[0] * molar_mass / (FluidConstant::GasConstant() * variables[1]);
 			break;
          case 8:                                  // M14 von JdJ // 25.1.12 Added by CB for density output AB-model
 			density = MATCalcFluidDensityMethod8(variables[0],variables[1],variables[2]);
@@ -1102,8 +1100,8 @@ double CFluidProperties::Density(double* variables)
 		case 7:                   // rho_w^l(p,T) for gas phase
 			/* //WW
 			   vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
-			   air_gas_density = (COMP_MOL_MASS_AIR * (primary_variable[1]-vapour_pressure)) / (GAS_CONSTANT*(primary_variable[0]+0.0));
-			   vapour_density = (COMP_MOL_MASS_WATER*vapour_pressure) / (GAS_CONSTANT*(primary_variable[0]+0.0));
+			   air_gas_density = (FluidConstant::ComponentMolarMassAir()  * (primary_variable[1]-vapour_pressure)) / (FluidConstant::GasConstant()*(primary_variable[0]+0.0));
+			   vapour_density = (FluidConstant::ComponentMolarMassWater()*vapour_pressure) / (FluidConstant::GasConstant()*(primary_variable[0]+0.0));
 			   density = vapour_density + air_gas_density;
 			 */
 			break;
@@ -1908,13 +1906,13 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 		    //reactive component	
 			x[0] = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
 			therm_prop("W");
-			Cp_c[0] = isochoric_heat_capacity(cp_vec[1]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1],cp_vec[1]->fluid_id);
+			Cp_c[0] = isochoric_heat_capacity(cp_vec[1]->molar_mass*variables[0]/(FluidConstant::GasConstant()/1000.0*variables[1]), variables[1],cp_vec[1]->fluid_id);
 			//inert component
 			x[1] = 1.0 - x[0];
 			therm_prop("N");
-			Cp_c[1] = isochoric_heat_capacity(cp_vec[0]->molar_mass*variables[0]/(GAS_CONSTANT/1000.0*variables[1]), variables[1],cp_vec[0]->fluid_id);
+			Cp_c[1] = isochoric_heat_capacity(cp_vec[0]->molar_mass*variables[0]/(FluidConstant::GasConstant()/1000.0*variables[1]), variables[1],cp_vec[0]->fluid_id);
 			specific_heat_capacity = Cp_c[0]*cp_vec[1]->molar_mass*x[0] + Cp_c[1]*cp_vec[0]->molar_mass*x[1]; //mixture isochoric molar heat capacities
-			specific_heat_capacity += (GAS_CONSTANT/1000.0); //isochoric in isobaric
+			specific_heat_capacity += (FluidConstant::GasConstant()/1000.0); //isochoric in isobaric
 			specific_heat_capacity /= (cp_vec[0]->molar_mass*x[1] + cp_vec[1]->molar_mass*x[0]); //molar in specific of mixture value
          break;
 		}
@@ -1994,11 +1992,11 @@ double CFluidProperties::PhaseChange()
 		T_1 = primary_variable_t1[1];
 		if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
 		{
-			humi = exp( pressure / ( GAS_CONSTANT_V * temperature_buffer * Density() ) );
+			humi = exp( pressure / ( FluidConstant::SpecificGasConstant() * temperature_buffer * Density() ) );
 			density_vapor = humi * Density();
 			drdT = ( vaporDensity_derivative( temperature_buffer ) * humi \
 			         - density_vapor * pressure /
-			         ( GAS_CONSTANT_V * Density() *
+			         ( FluidConstant::SpecificGasConstant() * Density() *
 			           (temperature_buffer * temperature_buffer) ) ) / Density();
 			H1 =  latent_heat + specific_heat_capacity *
 			     ( temperature_buffer - T_Latent1);
@@ -2042,14 +2040,14 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 			TG = assem->interpolate(assem->NodalVal1);
 			rhow = assem->FluidProp->Density();
 			rho_gw = assem->FluidProp->vaporDensity(TG) * exp(
-			        -PG * COMP_MOL_MASS_WATER / (rhow * GAS_CONSTANT * TG));
-			p_gw = rho_gw * GAS_CONSTANT * TG / COMP_MOL_MASS_WATER;
+			        -PG * FluidConstant::ComponentMolarMassWater() / (rhow * FluidConstant::GasConstant() * TG));
+			p_gw = rho_gw * FluidConstant::GasConstant() * TG / FluidConstant::ComponentMolarMassWater();
 			dens_aug[0] = PG2 - p_gw;
 			dens_aug[1] = TG;
 			m_mfp = mfp_vector[1];
 			// 2 Dec 2010 AKS
 			rho_g = rho_gw + m_mfp->Density(dens_aug);
-			//double rho_g = PG2*COMP_MOL_MASS_AIR/(GAS_CONSTANT*(assem->TG+273.15));\\WW
+			//double rho_g = PG2*FluidConstant::ComponentMolarMassAir() /(FluidConstant::GasConstant()*(assem->TG+273.15));\\WW
 			//
 			m_mfp = mfp_vector[0];
 			heat_capacity_fluids = Sw * m_mfp->Density() * m_mfp->SpecificHeatCapacity();
@@ -2349,7 +2347,7 @@ double MFPCalcVapourPressure(double temperature)
 	   double vapour_enthalpy = 2258.0; kJ/kg
 	   double potenz;
 	   potenz = ((1./temperature_ref)-(1./(*temperature))) * \
-	                  ((vapour_enthalpy*comp_mol_mass_water)/gas_constant);
+	                  ((vapour_enthalpy*FluidConstant::ComponentMolarMassWater())/FluidConstant::GasConstant());
 	   vapour_pressure = pressure_ref * exp(potenz);
 	 */
 	pressure = 1.e-3;                     /*Vorgabe eines vernueftigen Wertes*/
@@ -2403,7 +2401,7 @@ double CFluidProperties::Enthalpy(int comp,double temperature)
 
 	if((phase == 0) && (comp == 0))
 		enthalpy = 733.0 * temperature +
-		           (GAS_CONSTANT * (temperature + 0.0)) / COMP_MOL_MASS_AIR;
+		           (FluidConstant::GasConstant() * (temperature + 0.0)) / FluidConstant::ComponentMolarMassAir() ;
 	else if((phase == 0) && (comp == 1))  /* h_w^g: water species in gaseous phase */
 	{
 		pressure = 1.e-3;         /*Vorgabe eines vernuenftigen Wertes */
@@ -2555,8 +2553,8 @@ double CFluidProperties::MassFraction(long number,
 	{
 	case 0:                               /* gas phase */
 		mass_fraction_air_in_gas = \
-		        ((gas_pressure - vapour_pressure) * COMP_MOL_MASS_AIR) \
-		        / (GAS_CONSTANT * (temperature + 0.0) * gas_density);
+		        ((gas_pressure - vapour_pressure) * FluidConstant::ComponentMolarMassAir() ) \
+		        / (FluidConstant::GasConstant() * (temperature + 0.0) * gas_density);
 		mass_fraction_air_in_gas = MRange(0.0,mass_fraction_air_in_gas,1.0);
 		if(comp == 0) /* air specie */
 			mass_fraction = mass_fraction_air_in_gas;
@@ -2566,8 +2564,8 @@ double CFluidProperties::MassFraction(long number,
 	case 1:                               /* liquid phase */
 		henry_constant = MFPCalcHenryConstant(temperature);
 		mass_fraction_air_in_liquid = \
-		        COMP_MOL_MASS_AIR / (COMP_MOL_MASS_AIR \
-		                             - COMP_MOL_MASS_WATER *
+		        FluidConstant::ComponentMolarMassAir()  / (FluidConstant::ComponentMolarMassAir()  \
+		                             - FluidConstant::ComponentMolarMassWater() *
 		                             (1.0 - 1.0 /
 		                              (henry_constant * (gas_pressure - vapour_pressure))));
 		mass_fraction_air_in_liquid = MRange(0.0,mass_fraction_air_in_liquid,1.0);
@@ -2647,11 +2645,11 @@ double CFluidProperties::DensityTemperatureDependence(long number,int comp,doubl
 	//----------------------------------------------------------------------
 	// Vapour
 	vapour_pressure = MFPCalcVapourPressure(temperature);
-	dvapour_pressure_dT = COMP_MOL_MASS_WATER * Enthalpy(comp,temperature) \
-	                      / (GAS_CONSTANT * temperature * temperature) \
+	dvapour_pressure_dT = FluidConstant::ComponentMolarMassWater() * Enthalpy(comp,temperature) \
+	                      / (FluidConstant::GasConstant() * temperature * temperature) \
 	                      * vapour_pressure;
 
-	drho_dT = -1.0 * COMP_MOL_MASS_WATER / (GAS_CONSTANT * temperature) \
+	drho_dT = -1.0 * FluidConstant::ComponentMolarMassWater() / (FluidConstant::GasConstant() * temperature) \
 	          * (dvapour_pressure_dT - vapour_pressure / temperature);
 	//----------------------------------------------------------------------
 	// Test
@@ -3576,7 +3574,7 @@ double CFluidProperties::drhodP(double* variables)
 
 			double beta_m = 0.0;
 			double v_m = 0.0;
-			const double R = GAS_CONSTANT;
+			const double R = FluidConstant::GasConstant();
 
 			for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 			{
@@ -3639,7 +3637,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	p = variables[0];
 	T = variables[1];
-	R = GAS_CONSTANT;
+	R = FluidConstant::GasConstant();
 	alpha_m=0.0;
 	v_m=0.0;
 	double arguments[2];
@@ -3771,7 +3769,7 @@ double CFluidProperties::ComponentDensity(int CIndex, double* variables)
 	std::vector<double> roots;
 	p = variables[0];
 	T = variables[1];
-	R = GAS_CONSTANT;
+	R = FluidConstant::GasConstant();
 
 	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
 	{
