@@ -64,5 +64,4 @@ class FluidConstant
 FluidConstant::ComponentMolarMassAir()
 FluidConstant::ComponentMolarMassWater()
 FluidConstant::ComponentMolarMassWaterN2()
-FluidConstant::GasConstant()
 */
