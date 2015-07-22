@@ -31,11 +31,8 @@ extern double GetCurveValue(int,int,double,int*);
 #ifdef GEM_REACT
 #include "rf_REACT_GEM.h"
 #endif
-using namespace std;
 
-
-#include "physical_constants.h"
-#include "Constants.h"
+#include "PhysicalConstants.h"
 
 /* Umrechnungen SI - Amerikanisches System */
 //WW #include "steam67.h"
@@ -45,6 +42,7 @@ using namespace std;
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
 
 using namespace constant_group;
+using namespace std;
 
 //==========================================================================
 std::vector<CFluidProperties*>mfp_vector;

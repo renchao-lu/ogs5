@@ -28,9 +28,7 @@ const bool GasMassForm = true;
 const bool GasMassForm = false;
 #endif
 
-#include "physical_constants.h"
-
-
+#include "PhysicalConstants.h"
 
 namespace
 {
