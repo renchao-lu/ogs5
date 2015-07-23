@@ -28,6 +28,8 @@
 
 #ifdef LIS                                        // 07.02.2008 PCH
 #include "lis.h"
+#endif
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
@@ -521,8 +523,11 @@ int Linear_EQS::Solver(CNumerics* num)
 #ifdef MKL                               // PCH 10.03.2009: Requires the system platform where Math Kernel Library is properly configured.
 		//cout << "---------------------------------------------------" << "\n";
 		//omp_set_num_threads (1);
-		cout << "->Start calling PARDISO with " << omp_get_max_threads() << " threads" <<
-		"\n";
+#ifdef _OPENMP
+		cout << "->Start calling PARDISO with " << omp_get_max_threads() << " threads \n";
+#else
+		cout << "->Start calling PARDISO with 1 thread\n";
+#endif
 		// Assembling the matrix
 		// Establishing CRS type matrix from GeoSys Matrix data storage type
 		int nonzero = A->nnz();
