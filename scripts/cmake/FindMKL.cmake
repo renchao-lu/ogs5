@@ -11,40 +11,61 @@
 
 set(MKL_DIR "${MKL_DIR}" CACHE PATH "MKL root diretory")
 
+set(CMAKE_FIND_LIBRARY_SUFFIXES_ORG ${CMAKE_FIND_LIBRARY_SUFFIXES})
+if (UNIX)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a) # use static libs
+endif()
+
 find_path(MKL_INCLUDES NAMES mkl.h
     HINTS ${MKL_DIR} PATH_SUFFIXES include
 )
 
-# list up MKL library names
+# find architecture dependent libraries
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
 	#64 bit
-	set(MKL_LIB_NAMES mkl_intel_lp64 mkl_core)
-	set(MKL_PATH_SUFFIXES "lib/intel64" "lib/em64t")
+	set(MKL_PATH_SUFFIXES "lib" "lib/intel64" "lib/em64t")
+	find_library(MKL_INTEL_LIBRARY mkl_intel_lp64 HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+	find_library(MKL_CORE_LIBRARY mkl_core HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
 else()
 	#32 bit
-	set(MKL_LIB_NAMES mkl_core mkl_intel mkl_solver)
 	set(MKL_PATH_SUFFIXES "lib/32")
+	find_library(MKL_INTEL_LIBRARY mkl_intel HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+	find_library(MKL_CORE_LIBRARY mkl_core HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+	#find_library(MKL_CORE mkl_solver HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
 endif()
 
+list(APPEND MKL_LIBRARIES ${MKL_INTEL_LIBRARY} ${MKL_CORE_LIBRARY})
+
+# find threadding libraries
 if (PARALLEL_USE_OPENMP)
-	if(CMAKE_C_COMPILER EQUAL "icc")
-        list(APPEND MKL_LIB_NAMES mkl_intel_thread iomp5 pthread)
-	else()
-        list(APPEND MKL_LIB_NAMES mkl_gnu_thread)
-	endif()
-else()
-        list(APPEND MKL_LIB_NAMES mkl_sequential)
-endif()
-#message (STATUS "MKL_LIB_NAMES ${MKL_LIB_NAMES}")
-
-# find the libraries
-foreach (lib_name ${MKL_LIB_NAMES})
-	find_library(${lib_name}_LIBRARY ${lib_name} HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
-    if(${lib_name}_LIBRARY)
-        list(APPEND MKL_LIBRARIES ${${lib_name}_LIBRARY})
+    if (UNIX AND NOT APPLE)
+        if(CMAKE_C_COMPILER EQUAL "icc")
+            set(MKL_USE_INTEL_THREAD ON)
+        else()
+            set(MKL_USE_GNUL_THREAD ON)
+        endif()
+    else()
+        set(MKL_USE_INTEL_THREAD ON)
     endif()
-    #message (STATUS "${lib_name} - ${${lib_name}_LIBRARY}")
-endforeach()
+else()
+    set(MKL_USE_SEQ_THREAD ON)
+endif()
+
+if(MKL_USE_INTEL_THREAD)
+    find_library(MKL_INTEL_THREAD_LIBRARY mkl_intel_thread HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+    find_library(MKL_OMP5_LIBRARY iomp5 HINTS "${MKL_DIR}/../lib" PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+    list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY} ${MKL_OMP5_LIBRARY})
+elseif(MKL_USE_GNUL_THREAD)
+    set(MKL_USE_INTEL_THREAD OFF)
+    find_library(MKL_GNU_THREAD_LIBRARY mkl_gnu_thread HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+    list(APPEND MKL_LIBRARIES ${MKL_GNU_THREAD_LIBRARY})
+elseif(MKL_USE_SEQ_THREAD)
+    find_library(MKL_SEQUENTIAL_LIBRARY mkl_sequential HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
+    list(APPEND MKL_LIBRARIES ${MKL_SEQUENTIAL_LIBRARY})
+endif()
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_ORG})
+
 message (STATUS "MKL libraries found: ${MKL_LIBRARIES}")
 
 # 
