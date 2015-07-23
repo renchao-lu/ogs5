@@ -29,6 +29,7 @@ option(BLUE_G "Blue/G optimization" OFF)
 option(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 option(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
+option(PARALLEL_USE_OPENMP "Use OpenMP" OFF)
 
 ### CMake setup ###
 include(scripts/cmake/CMakeSetup.cmake)
