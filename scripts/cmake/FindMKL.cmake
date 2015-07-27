@@ -1,5 +1,5 @@
-# Find Intel Math Karnel Library
-# 
+# Find Intel Math Kernel Library
+#
 # This sets the following variables:
 #
 #   MKL_INCLUDES   - Directory containing MKL include files
@@ -19,11 +19,11 @@ find_path(MKL_INCLUDES NAMES mkl.h
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
 	#64 bit
 	set(MKL_LIB_NAMES mkl_intel_lp64 mkl_core)
-	set(MKL_PATH_SUFFIXES "lib/intel64" "lib/em64t")
+	set(MKL_PATH_SUFFIXES "lib/intel64" "lib/em64t" "64")
 else()
 	#32 bit
 	set(MKL_LIB_NAMES mkl_core mkl_intel mkl_solver)
-	set(MKL_PATH_SUFFIXES "lib/32")
+	set(MKL_PATH_SUFFIXES "lib/32" "32")
 endif()
 
 if (PARALLEL_USE_OPENMP)
@@ -47,7 +47,7 @@ foreach (lib_name ${MKL_LIB_NAMES})
 endforeach()
 message (STATUS "MKL libraries found: ${MKL_LIBRARIES}")
 
-# 
+#
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INCLUDES MKL_LIBRARIES)
 if(MKL_FOUND)
