@@ -159,6 +159,12 @@ endif()
 
 if(OGS_FEM_MKL)
 	# Find MKLlib
+	if(OGS_LIBS_DIR_FOUND AND CMAKE_SYSTEM_NAME EQUAL "Linux")
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-include.tgz
+			WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-64.tgz
+			WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
+	endif()
 	find_package( MKL REQUIRED )
 	include_directories (${MKL_INCLUDE_DIR})
 endif()
