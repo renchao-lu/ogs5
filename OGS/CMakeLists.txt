@@ -66,6 +66,15 @@ if(OGS_FEM_IPQC)
 	target_link_libraries(ogs iphreeqc)
 endif ()
 
+if(OGS_FEM_MKL)
+	target_link_libraries(ogs ${MKL_LIBRARIES})
+	 # Hack, see http://webpages.charter.net/ppluzhnikov/linker.html
+	target_link_libraries(ogs ${MKL_LIBRARIES})
+	if(NOT MKL_USE_STATIC)
+		target_link_libraries(ogs ${CMAKE_DL_LIBS})
+	endif()
+endif()
+
 ####################
 ### Installation ###
 ####################

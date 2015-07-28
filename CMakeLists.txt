@@ -29,6 +29,7 @@ option(BLUE_G "Blue/G optimization" OFF)
 option(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 option(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
+option(PARALLEL_USE_OPENMP "Use OpenMP" OFF)
 
 ### CMake setup ###
 include(scripts/cmake/CMakeSetup.cmake)
@@ -226,10 +227,9 @@ if(OGS_FEM_MKL)
 	message (STATUS	"Configuring for FEM command line with MKL" )
 	set(OGS_USE_NEW_EQS ON BOOL)
 	add_definitions(-DNO_ERROR_CONTROL -DMKL -DLIS)
-	set(PARALLEL_USE_OPENMP ON BOOL "Use Library of Iterative Solvers")
 	set(LIS ON BOOL "Use Library of Iterative Solvers")
 	set(MKL ON BOOL "Use Math Kernel Library")
-	mark_as_advanced(PARALLEL_USE_OPENMP LIS MKL)
+	mark_as_advanced(LIS MKL)
 endif()
 
 if(OGS_FEM_CHEMAPP)
