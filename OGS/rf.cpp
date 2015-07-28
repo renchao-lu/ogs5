@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************/
 /* ROCKFLOW - Modul: rf.c
  */
@@ -20,7 +29,7 @@
 #include "Configure.h"
 
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
-        defined(USE_MPI_GEMS) || defined(USE_MPI_KRC) 
+        defined(USE_MPI_GEMS) || defined(USE_MPI_KRC)
 #include "par_ddc.h"
 #include <mpi.h>
 #endif
@@ -60,7 +69,7 @@ void ShowSwitches ( void );
 // LB,string FilePath; //23.02.2009. WW
 // ------  12.09.2007 WW:
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
-        defined(USE_MPI_GEMS) || defined(USE_MPI_KRC) 
+        defined(USE_MPI_GEMS) || defined(USE_MPI_KRC)
 double elapsed_time_mpi;
 // ------
 #endif
@@ -188,7 +197,7 @@ int main ( int argc, char* argv[] )
 #endif
 /*---------- MPI Initialization ----------------------------------*/
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
-	defined(USE_MPI_GEMS) || defined(USE_MPI_KRC) 
+	defined(USE_MPI_GEMS) || defined(USE_MPI_KRC)
 	printf("Before MPI_Init\n");
 #if defined(USE_MPI_GEMS)
 	int prov;
@@ -317,7 +326,7 @@ int main ( int argc, char* argv[] )
 #if defined(USE_MPI)
      if(myrank == 0)
 #endif
-#if defined(USE_PETSC) 
+#if defined(USE_PETSC)
      if(rank == 0)
 #endif
 	std::cout << "Simulation time: " << TGetTimer(0) << "s" << "\n";
