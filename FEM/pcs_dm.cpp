@@ -3088,9 +3088,7 @@ void CRFProcessDeformation::WriteGaussPointStress(const bool last_step)
 		return;
 	
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
+	const std::string StressFileName = FileName + "_" + number2str(myrank) + ".sts";
 #else
 	const std::string StressFileName = FileName + ".sts";
 #endif
@@ -3141,9 +3139,7 @@ void CRFProcessDeformation::WriteGaussPointStress(const bool last_step)
 void CRFProcessDeformation::ReadGaussPointStress()
 {
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	const std::string StressFileName = FileName + "_" + number2str(rank) + ".sts";
+	const std::string StressFileName = FileName + "_" + number2str(myrank) + ".sts";
 #else
 	const std::string StressFileName = FileName + ".sts";
 #endif
