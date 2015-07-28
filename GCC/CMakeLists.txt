@@ -2,9 +2,7 @@ set( HEADERS
 	Density.h
 	DiffAL.h
 	DiffOH.h
-	dllheader.h
 	eqbrm.h
-	export.h
 	Fluid.h
 	HKF.h
 	IAPWS-IF97.h
@@ -14,7 +12,6 @@ set( HEADERS
 	PDE.h
 	PITZcalc.h
 	PITZdata.h
-	slop98.h
 	species.h
 	VLE.h
 	WATEQdata.h
@@ -24,8 +21,6 @@ set ( SOURCES
 	Density.cpp
 	DiffAL.cpp
 	DiffOH.cpp
-	eqbrm.cpp
-	export.cpp
 	Fluid.cpp
 	HKF.cpp
 	IAPWS-IF97.cpp
