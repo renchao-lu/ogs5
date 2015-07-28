@@ -1,4 +1,13 @@
 /**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+ /**
  * \file msh_mesh.h
  */
 
@@ -87,7 +96,7 @@ struct MeshNodes
   double z;
 };
 
-#endif 
+#endif
 
 //------------------------------------------------------------------------
 // Class definition
@@ -144,7 +153,7 @@ public:
         CNode* const* getNodes() const //WW 05.2012.
         {
 	  return &nod_vector[0];
-        }  
+        }
 	/**
 	 * do not use this method REMOVE CANDIDATE
 	 * @param val
@@ -178,8 +187,8 @@ public:
 	void computeSearchLength(double c = 2);
 
     /*!
-	   \brief Read mesh data. 
-       \param fem_file Stream for input, which has to read a line before calling this function 
+	   \brief Read mesh data.
+       \param fem_file Stream for input, which has to read a line before calling this function
 	   \return Return true if there are other mesh to be read.
 	*/
 	bool Read(std::ifstream *fem_file);
@@ -191,7 +200,7 @@ public:
 	void GenerateHighOrderNodes();
 /// For parallel computing. 03.2012. WW
 #if defined(USE_PETSC) // || defined(other parallel solver libs)
-	void ConfigHighOrderElements(); 
+	void ConfigHighOrderElements();
 
 	/*!
 	   Fill data for subdomain mesh
@@ -207,32 +216,32 @@ public:
 	*/
 	void setSubdomainElements(MyInt *header, const MyInt *elem_info, const bool inside);
 	int calMaximumConnectedNodes();
-        /// Get number of nodes of the entire mesh       
+        /// Get number of nodes of the entire mesh
         int getNumNodesGlobal() const
         {
-	   return glb_NodesNumber_Linear; 
+	   return glb_NodesNumber_Linear;
         }
-        /// Get number of nodes of the entire mesh of quadratic elements      
+        /// Get number of nodes of the entire mesh of quadratic elements
         int getNumNodesGlobal_Q() const
         {
-	   return glb_NodesNumber_Quadratic; 
+	   return glb_NodesNumber_Quadratic;
         }
-        /// Get number of nodes of the subdomain mesh       
+        /// Get number of nodes of the subdomain mesh
         int getNumNodesLocal() const
         {
-	   return loc_NodesNumber_Linear; 
+	   return loc_NodesNumber_Linear;
         }
-        /// Get number of nodes of the subdomain mesh of quadratic elements      
+        /// Get number of nodes of the subdomain mesh of quadratic elements
         int getNumNodesLocal_Q() const
         {
-	   return loc_NodesNumber_Quadratic; 
+	   return loc_NodesNumber_Quadratic;
         }
         /// Get the largest ID of active nodes for higher order interpolation
         size_t getLargestActiveNodeID_Quadratic() const
         {
-	  return static_cast<size_t> ( NodesNumber_Linear + loc_NodesNumber_Quadratic 
-                                    - loc_NodesNumber_Linear );          
-        } 
+	  return static_cast<size_t> ( NodesNumber_Linear + loc_NodesNumber_Quadratic
+                                    - loc_NodesNumber_Linear );
+        }
 #endif
 
 	//
@@ -475,7 +484,7 @@ public:
 	const {if(!quad) return sparse_graph;
 	       else return sparse_graph_H; }
 #endif
- 
+
 	std::string pcs_name;
 	std::string geo_name;                     //MB
 	std::string geo_type_name;                //OK10_4310
@@ -608,11 +617,11 @@ private:
 
 	void CreateLineElementsFromMarkedEdges(CFEMesh* m_msh_ply,
 	                                       std::vector<long> &ele_vector_at_ply); //NW
-  
+
         /// Find nodes in convex polygon
 	void findNodesInPolygon(const double area_orig, const double tol,
-				 const size_t start_id, const size_t end_id, 
-				 const CGLPolyline *ply, 
+				 const size_t start_id, const size_t end_id,
+				 const CGLPolyline *ply,
 				 std::vector<long> &node_id_vector) const;
 public:
 	void constructMeshGrid();
