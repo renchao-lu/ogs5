@@ -6,13 +6,14 @@
 #   MKL_LIBRARIES  - Path to MKL libraries
 #
 # Users may wish to set:
+#  MKL_USE_STATIC  - If ON search for static libraries
 #  MKL_DIR         - Location to start searching for MKL libraries
 #
 
 set(MKL_DIR "${MKL_DIR}" CACHE PATH "MKL root diretory")
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES_ORG ${CMAKE_FIND_LIBRARY_SUFFIXES})
-if (UNIX)
+if(MKL_USE_STATIC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a) # use static libs
 endif()
 
@@ -42,7 +43,7 @@ if (PARALLEL_USE_OPENMP)
         if(CMAKE_C_COMPILER EQUAL "icc")
             set(MKL_USE_INTEL_THREAD ON)
         else()
-            set(MKL_USE_GNUL_THREAD ON)
+            set(MKL_USE_GNU_THREAD ON)
         endif()
     else()
         set(MKL_USE_INTEL_THREAD ON)
@@ -56,7 +57,7 @@ if(MKL_USE_INTEL_THREAD)
     find_library(MKL_OMP5_LIBRARY iomp5 HINTS "${MKL_DIR}/../lib" PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
     find_library(PTHREAD_LIBRARY pthread)
     list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY} ${MKL_OMP5_LIBRARY} ${PTHREAD_LIBRARY})
-elseif(MKL_USE_GNUL_THREAD)
+elseif(MKL_USE_GNU_THREAD)
     set(MKL_USE_INTEL_THREAD OFF)
     find_library(MKL_GNU_THREAD_LIBRARY mkl_gnu_thread HINTS ${MKL_DIR} PATH_SUFFIXES ${MKL_PATH_SUFFIXES})
     list(APPEND MKL_LIBRARIES ${MKL_GNU_THREAD_LIBRARY})
