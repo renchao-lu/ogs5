@@ -36,7 +36,7 @@ endif()
 
 list(APPEND MKL_LIBRARIES ${MKL_INTEL_LIBRARY} ${MKL_CORE_LIBRARY})
 
-# find threadding libraries
+# find threading libraries
 if (PARALLEL_USE_OPENMP)
     if (UNIX AND NOT APPLE)
         if(CMAKE_C_COMPILER EQUAL "icc")
