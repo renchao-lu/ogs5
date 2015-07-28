@@ -1,3 +1,11 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
 
 #include "conversion_rate.h"
 #include <cmath>
@@ -6,7 +14,7 @@
 
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
 
-conversion_rate::conversion_rate(double T_solid, 
+conversion_rate::conversion_rate(double T_solid,
                                  double T_gas,
                                  double p_gas,
                                  double x_reactive,
@@ -57,20 +65,20 @@ conversion_rate::~conversion_rate(void)
 {
 }
 
-void conversion_rate::update_param(double T_solid, 
-	                            double T_gas,  
+void conversion_rate::update_param(double T_solid,
+	                            double T_gas,
 								double p_gas,
-								double x_reactive, 
+								double x_reactive,
 								double rho_s_initial,
 								double phi_S,
 								double delta_t,
 								FiniteElement::SolidReactiveSystem system)
 {
 	conversion_rate::T_s     = T_solid;
-	conversion_rate::T       = T_gas; 
+	conversion_rate::T       = T_gas;
 	conversion_rate::p_gas   = p_gas; // should be in unit bar
-	conversion_rate::x_react   = x_reactive; 
-	conversion_rate::rho_s   = rho_s_initial; 
+	conversion_rate::x_react   = x_reactive;
+	conversion_rate::rho_s   = rho_s_initial;
 	x(0)                  = rho_s_initial;
 	conversion_rate::phi_solid = phi_S;
 	conversion_rate::dt      = delta_t;
@@ -91,7 +99,7 @@ void conversion_rate::set_chemical_equilibrium()
 	//Alternative: Use T_s as T_eq and calculate p_eq - for Schaube kinetics
 	p_eq = exp((reaction_enthalpy/R)/T_s - (reaction_entropy/R));
 }
-	
+
 //determine equilibrium loading according to Dubinin
 void conversion_rate::set_sorption_equilibrium()
 {
@@ -151,17 +159,17 @@ void conversion_rate::calculate_qR()
 
 void conversion_rate::set_rho_s(double new_rho_s)
 {
-	rho_s = new_rho_s; 
+	rho_s = new_rho_s;
 }
 
 double conversion_rate::get_qR()
 {
-	return qR; 
+	return qR;
 }
 
 void conversion_rate::get_x(Eigen::VectorXd& output_x)
 {
-	output_x = x; 
+	output_x = x;
 }
 
 

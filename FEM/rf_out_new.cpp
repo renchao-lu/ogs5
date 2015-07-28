@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    FEMLib - Object: OUT
    Task:
@@ -110,7 +119,7 @@ bool OUTRead(const std::string& file_base_name,
     MPI_Comm_size(MPI_COMM_WORLD, &msize);
 	std::ifstream is;
 	stringstream ss (stringstream::in | stringstream::out);
-	ss.clear(); 
+	ss.clear();
 	ss.str("");
 	ss << rank;
 	rank_str = ss.str();
@@ -610,11 +619,11 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 			}
 		}
 		else if (m_out->dat_type_name.compare("TOTAL_FLUX") == 0)
-			m_out->NODWriteTotalFlux(time_current, time_step_number); // 6/2012 JOD, MW 
+			m_out->NODWriteTotalFlux(time_current, time_step_number); // 6/2012 JOD, MW
 		else if (m_out->dat_type_name.compare("COMBINE_POINTS") == 0) m_out->NODWritePointsCombined(time_current);	// 6/2012 for calibration JOD
 		else if (m_out->dat_type_name.compare("PRIMARY_VARIABLES") == 0)
 			m_out->NODWritePrimaryVariableList(time_current); //JOD 2014-11-10
-		
+
 		// ELE values, only called if ele values are defined for output, 05/2012 BG
 		if (m_out->getElementValueVector().size() > 0)
 			m_out->CalcELEFluxes();

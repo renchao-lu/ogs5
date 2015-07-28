@@ -1,4 +1,13 @@
-//-------------------------------------
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+ //-------------------------------------
 // rf_REACT_GEM.h
 // Haibing Shao 23.05.07
 // haibing.shao@ufz.de
@@ -43,8 +52,8 @@ private:
 
 public:
     REACT_GEM(void);
-    ~REACT_GEM(void);	
-    
+    ~REACT_GEM(void);
+
     //FEM
 	CFiniteElementStd* Fem_Ele_Std;
 
@@ -75,7 +84,7 @@ public:
 
     /// take the fluid density from GEMS for density driven flow
     double *m_fluid_density;
-    
+
     /// indexes, which one in the xDC vector is water, oxygen or hydrogen
     int idx_water, idx_hydrogen, idx_oxygen;
 
@@ -253,12 +262,12 @@ public:
     // this we need for kinetics
     double *omega_phase_buff, *mol_phase_buff, *dmdt_buff, *omega_components_buff;
 
-// the next two are always defined, such that it also works in serial version    
+// the next two are always defined, such that it also works in serial version
     int myrank;
     int mysize;
 
     // MPI implementation
-#if defined(USE_MPI_GEMS) 
+#if defined(USE_MPI_GEMS)
     void CleanMPIBuffer(void);
     void CopyToMPIBuffer(long in);
     void GetGEMResult_MPI(void);
@@ -266,7 +275,7 @@ public:
 
 
     double GetNodePorosityValue( long node_Index);
-    double GetNodePorosityValueInitial( long node_Index);    
+    double GetNodePorosityValueInitial( long node_Index);
     double GetNodeFluidDensityValue( long node_Index);
 
     // Name lists from DCH file!
@@ -277,19 +286,19 @@ public:
     char (*m_ICNL)[MaxICN]; // List of IC names in the system, [nIC]  of MaxICN length
     char (*m_DCNL)[MaxDCN]; // List of DC names in the system, [nDC] of MaxDCN length
     char (*m_PHNL)[MaxPHN]; // List of Phase names  [nPH]  of MaxPHN length
-#if defined(USE_PETSC)    
+#if defined(USE_PETSC)
     PetscScalar *gem_glob_buff, *gem_glob_x1 , *gem_glob_x0;
     void WriteVTKGEMValuesPETSC(PetscViewer viewer);
     // for synchronizing data
     void SynchronizeData(PetscScalar *data);
-    long GetGlobalNodeNumber_MT ( void); 
+    long GetGlobalNodeNumber_MT ( void);
     long GetLocalNodeNumber_MT(void);
     long loc_NodesNumber_Linear, NodesNumber_Linear,glob_NodesNumber_Linear;
 #endif
-    void WriteVTKGEMValues(fstream &vtk_file);    
-    // timer 
+    void WriteVTKGEMValues(fstream &vtk_file);
+    // timer
     double GetTimeOfDayDouble();
-    
+
     typedef struct
     {
         //kg44 25.11.2008 kinetics...for coupling with GEMS
@@ -324,7 +333,7 @@ public:
     boost::thread* gemThread; // the gems worker threads
     boost::mutex rwmutex; // used to lock during write or read operations..example gem init or write dbrs or cout!
     boost::mutex getnode_mutex; // used to lock during getnodeindex
-    void gems_worker(int tid, string tinit_path); 
+    void gems_worker(int tid, string tinit_path);
 };
 
 

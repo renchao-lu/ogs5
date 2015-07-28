@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /*=======================================================================
    //Class Problem: Handle the data and their functions for time stepping
 
@@ -47,7 +56,7 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 
 #include "rf_react.h"
 #include "rf_react_int.h"
-#include "rf_react_cap.h"  //CB merge CAP 0311 
+#include "rf_react_cap.h"  //CB merge CAP 0311
 
 
 #include "rf_st_new.h"
@@ -101,7 +110,7 @@ using process::CRFProcessDeformation;
    Modification:
  ***************************************************************************/
 Problem::Problem (char* filename) :
-	dt0(0.), print_result(true), _geo_obj (new GEOLIB::GEOObjects), _geo_name (filename), 
+	dt0(0.), print_result(true), _geo_obj (new GEOLIB::GEOObjects), _geo_name (filename),
     mrank(0), msize(0)
 {
 	if (filename != NULL)
@@ -225,25 +234,25 @@ Problem::Problem (char* filename) :
     //----------------------------------------------------------------------
       KRConfig(*_geo_obj, _geo_name);
 
-    // initialyse the reaction interface if  not done yet 
+    // initialyse the reaction interface if  not done yet
     if(REACTINT_vec.size()>0){
       if(REACTINT_vec[0]->unitconversion){
         CRFProcess* flow_pcs = NULL;
         flow_pcs = PCSGetFlow();
         if( flow_pcs->type==1212) // in case of mutlltiphase flow, sat water must be calculated here, required by pgc interface
-          flow_pcs->CalcSecondaryVariables(true);  
+          flow_pcs->CalcSecondaryVariables(true);
       }
       REACTINT_vec[0]->InitREACTINT();
     }
     //----------------------------------------------------------------------
     if(KinReactData_vector.size() > 0){
-      // Configure Data for Blobs (=>NAPL dissolution) 
+      // Configure Data for Blobs (=>NAPL dissolution)
       KBlobConfig(*_geo_obj, _geo_name);
       KBlobCheck();
-      // in case of Twophaseflow before the first time step 
-      if(total_processes[3] || total_processes[4]) 
-        if(KNaplDissCheck())  // 3: TWO_PHASE_FLOW. 12.12.2008. WW     
-          KNaplCalcDensity(); 	                     //PCSCalcSecondaryVariables(); 
+      // in case of Twophaseflow before the first time step
+      if(total_processes[3] || total_processes[4])
+        if(KNaplDissCheck())  // 3: TWO_PHASE_FLOW. 12.12.2008. WW
+          KNaplCalcDensity(); 	                     //PCSCalcSecondaryVariables();
       // CB _drmc_ data for microbes
       if(MicrobeData_vector.size()>0)
         MicrobeConfig();
@@ -285,7 +294,7 @@ Problem::Problem (char* filename) :
 		else // something is wrong and we stop execution
 		{
 		              cout << " GEMS: Error in Init_Nodes..check input " << "\n";
-#if defined(USE_MPI_GEMS) || defined(USE_PETSC) 
+#if defined(USE_MPI_GEMS) || defined(USE_PETSC)
             MPI_Finalize();                       //make sure MPI exits
 #endif
 
@@ -336,7 +345,7 @@ Problem::Problem (char* filename) :
 		}
 		//  delete rc;
 	}
-//CB merge CAP 0311 
+//CB merge CAP 0311
   // Initialize using ChemApp
   if(REACT_CAP_vec.size() > 0) {
 	  // SB 10/2009 do a first equilibrium calculation
@@ -487,7 +496,7 @@ Problem::Problem (char* filename) :
 				maxi_eqs_dim = m_pcs->size_unknowns;
 		}
 		buffer_array = new double[maxi_eqs_dim];
-		buffer_array1 = new double[maxi_eqs_dim];			
+		buffer_array1 = new double[maxi_eqs_dim];
 	}
 	else
 	  {
@@ -885,7 +894,7 @@ void Problem::PCSCreate()
 		pcs_vector[i]->Config();  //OK
 	}
 
-#if defined(NEW_EQS) 
+#if defined(NEW_EQS)
 	CreateEQS_LinearSolver();
 #endif
 
@@ -893,7 +902,7 @@ void Problem::PCSCreate()
 	{
 #if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
 	if(mrank == 0)
-	{	 
+	{
 #endif
 		std::cout << "............................................." << "\n";
 		FiniteElement::ProcessType pcs_type (pcs_vector[i]->getProcessType());
@@ -910,7 +919,7 @@ void Problem::PCSCreate()
 		}
 		std::cout << "\n";
 #if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)
-	}	 
+	}
 #endif
 
 		pcs_vector[i]->Create();
@@ -1048,12 +1057,12 @@ void Problem::Euler_TimeDiscretize()
 	ScreenMessage("\n\n***Start time steps\n");
 	//
 	// Output zero time initial values
-#if defined(USE_MPI)  || defined(USE_MPI_KRC) 
+#if defined(USE_MPI)  || defined(USE_MPI_KRC)
 	if(mrank == 0)
 	{
 #endif
 	OUTData(current_time,aktueller_zeitschritt,true);
-#if defined(USE_MPI) || defined(USE_MPI_KRC) 
+#if defined(USE_MPI) || defined(USE_MPI_KRC)
 	}
 #endif
 
@@ -1132,7 +1141,7 @@ void Problem::Euler_TimeDiscretize()
 					force_output = false;
 				else // JT: Make sure we printout on last time step
 					force_output = true;
-#if defined(USE_MPI) || defined(USE_MPI_KRC) 
+#if defined(USE_MPI) || defined(USE_MPI_KRC)
 				if(myrank == 0)
 				{
 #endif
@@ -1201,7 +1210,7 @@ void Problem::Euler_TimeDiscretize()
 //		// executing only one time step for profiling
 //		current_time = end_time;
 	}
-#if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)  || defined(USE_MPI_KRC) 
+#if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)  || defined(USE_MPI_KRC)
 	if(mrank == 0)
 	{
 #endif
@@ -1225,13 +1234,13 @@ void Problem::Euler_TimeDiscretize()
     std::cout<<"\n----------------------------------------------------\n";
 #if defined(USE_PETSC) ||defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || defined(USE_MPI_GEMS)  || defined(USE_MPI_KRC)
 
-#if defined(USE_PETSC) //05.2014. WW   
+#if defined(USE_PETSC) //05.2014. WW
 	for (size_t i = 0; i < out_vector.size(); i++)
 	{
 		out_vector[i]->NODDomainWriteBinary_Header();
-	}  
+	}
 #endif
- 
+
 	}
 #endif
 }
@@ -1266,7 +1275,7 @@ bool Problem::CouplingLoop()
       if(pcs_vector[i]->bc_transient_index.size() != 0)
         transient_bc = true;
    }
-   if(transient_bc) 
+   if(transient_bc)
      pcs_vector[0]->WriteBC();
 
 	for(i = 0; i < (int)total_processes.size(); i++)
@@ -1520,7 +1529,7 @@ void Problem::PostCouplingLoop()
 		if(dm_pcs->ExcavMaterialGroup>=0||doPostExcav)
 			dm_pcs->PostExcavation();//WX:07.2011
 		if(dm_pcs->UpdateIniState==1)//WX:10.2011
-			dm_pcs->UpdateIniStateValue();		
+			dm_pcs->UpdateIniStateValue();
 
 		if (H_Process && dm_pcs->type / 10 != 4) // HM partitioned scheme
 			dm_pcs->ResetTimeStep();
@@ -1532,23 +1541,23 @@ void Problem::PostCouplingLoop()
   if (REACT_CAP_vec.size() > 0) capvec = true;
 
 
-  if( (KinReactData_vector.size() > 0) || (REACT_vec.size()>0) || capvec  || prqvec ){  
+  if( (KinReactData_vector.size() > 0) || (REACT_vec.size()>0) || capvec  || prqvec ){
     // map concentrations in radial model
     if( KinReactData_vector.size() > 0)
-      if(KinReactData_vector[0]->copy_concentrations ) 
+      if(KinReactData_vector[0]->copy_concentrations )
         KinReactData_vector[0]->CopyConcentrations();
-    if(transport_processes.size()>0){ 
+    if(transport_processes.size()>0){
       if(total_processes[3] || total_processes[4])
         if(KNaplDissCheck()){   // Check if NAPLdissolution is modeled
-          // return P_new, and Phase_volumina 
-          CalcNewPhasePressure(); 
+          // return P_new, and Phase_volumina
+          CalcNewPhasePressure();
         }
     }
     // update porosities and permeabilities from reactions
     if(REACTINT_vec.size()>0)
       REACTINT_vec[0]->ReactionPostProcessing(false);
     if( KinReactData_vector.size() > 0){
-      if(KinReactData_vector[0]->NumberMineralkinetics>0) 
+      if(KinReactData_vector[0]->NumberMineralkinetics>0)
         KinReactData_vector[0]->PostprocessMinKin(); // Set Mineral surface areas for next time step based on deltaC
     }
     m_pcs = PCSGetFlow();
@@ -2833,7 +2842,7 @@ inline double Problem::MULTI_COMPONENTIAL_FLOW()
 	CRFProcess* m_pcs = total_processes[5];
 	if(!m_pcs->selected)
 		return error;
-	error = m_pcs->ExecuteNonLinear(loop_process_number); 
+	error = m_pcs->ExecuteNonLinear(loop_process_number);
 	if(m_pcs->TimeStepAccept())
 		m_pcs->CalIntegrationPointValue();
 	return error;
@@ -2852,7 +2861,7 @@ inline double Problem::TNEQ()
 	CRFProcess* m_pcs = total_processes[14];
 	if(!m_pcs->selected)
 		return error;
-	error = m_pcs->ExecuteNonLinear(loop_process_number); 
+	error = m_pcs->ExecuteNonLinear(loop_process_number);
 	if(m_pcs->TimeStepAccept())
 		m_pcs->CalIntegrationPointValue();
 	return error;
@@ -2873,7 +2882,7 @@ inline double Problem::TES()
 	CRFProcess* m_pcs = total_processes[15];
 	if(!m_pcs->selected)
 		return error;
-	error = m_pcs->ExecuteNonLinear(loop_process_number); 
+	error = m_pcs->ExecuteNonLinear(loop_process_number);
 	if(m_pcs->TimeStepAccept())
 		m_pcs->CalIntegrationPointValue();
 	return error;
@@ -3102,12 +3111,12 @@ inline double Problem::HeatTransport()
 	//  error = m_pcs->ExecuteNonLinear();
 	//else
 	//  error = m_pcs->Execute();
-   
+
    //CB This is a cheat to map a 2D horizontal heat pump distribution on a vertical model
    if(REACTINT_vec.size()>0)
      if(REACTINT_vec[0]->heatpump_2DhTO2Dv)
        REACTINT_vec[0]->Heatpump_2DhTO2Dv_Mapping(true); // Map Heat plume CL to 2D vertical
-   
+
 	return error;
 }
 
@@ -3192,10 +3201,10 @@ inline double Problem::MassTrasport()
       // Move inside iteration loop if couplingwith transport is implemented SB:todo
       // First calculate kinetic reactions
 
-      //DL --> for liquid phase only, 
+      //DL --> for liquid phase only,
       // this will provide activities and speciation for kinetics
       if(capvec && KinReactData_vector[0]->NumberMineralkinetics>0)
-        REACT_CAP_vec[0]->ExecuteReactionsChemApp(-1, -1);     
+        REACT_CAP_vec[0]->ExecuteReactionsChemApp(-1, -1);
 
       KinReactData_vector[0]->ExecuteKinReact();
       ClockTimeVec[0]->StopTime("KinReactions");  // CB time
@@ -3366,7 +3375,7 @@ inline double Problem::RandomWalker()
 		RandomWalk* rw_pcs = NULL; // By PCH
 		rw_pcs = m_msh->PT;
 		if(rw_pcs->getFlowPCS())
-	    { 
+	    {
 		    if (rw_pcs->getFlowPCS()->cal_integration_point_value) //WW
 			    rw_pcs->getFlowPCS()->Extropolation_GaussValue();
 	    }
@@ -3485,11 +3494,11 @@ inline double Problem::Deformation()
 	dm_pcs = (CRFProcessDeformation*)(m_pcs);
 	error = dm_pcs->Execute(loop_process_number);
 
-	if(   dm_pcs->pcs_type_name_vector.size()>0 
+	if(   dm_pcs->pcs_type_name_vector.size()>0
 		&&dm_pcs->pcs_type_name_vector[0].find("DYNAMIC") != std::string::npos)
 	{
        return  error;
-	} 
+	}
 	//Error
 	if (dm_pcs->type / 10 == 4)
 	{

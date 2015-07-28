@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /*
    Class element declaration
    class for finite element.
@@ -138,7 +147,7 @@ public:
 	                                    std::string phase);
 	//BG coupling to DuMux
 	std::string Cal_GP_Velocity_DuMux(int* i_ind, CRFProcess* m_pcs, int phase_index);
-	// BG, 04/2012: Provides the average element velocity over all gauss points	
+	// BG, 04/2012: Provides the average element velocity over all gauss points
 	double Get_Element_Velocity(int Index, CRFProcess* m_pcs, int phase_index, int dimension);
 	// necessary for using precalculated density and viscosity BG, 11/2010
 	double InterpolatePropertyToGausspoint(int GPIndex, CRFProcess* m_pcs, int Variableindex);
@@ -210,7 +219,7 @@ private:
 	int dof_index;                        //24.02.2007 WW
 	// Column index in the node value table
 	int idx0, idx1, idxS, idxSn0, idxSn1, idx3, idxMCF[12];
-		 int idx_t2_0, idx_t2_1, idx_x0, idx_x1; 
+		 int idx_t2_0, idx_t2_1, idx_x0, idx_x1;
 	int idxp0,idxp1, idxp20, idxp21, idxt0, idxt1;
 	int phase;
 	int comp;                             // Component

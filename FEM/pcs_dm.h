@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    ROCKFLOW - Object: Process PCS_Deformation
    Task:
@@ -35,7 +44,7 @@ namespace process
 {
 
 enum InitDataReadWriteType {none, read_write, read_all_binary, write_all_binary,
-                                  read_all_asci, write_all_asci,      
+                                  read_all_asci, write_all_asci,
                                   read_stress_binary, write_stress_binary,
                                   read_displacement, write_displacement,
                                   read_pressure, write_pressure};

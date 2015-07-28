@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    FEMLib - Object: MFP Fluid Properties
    Task:
@@ -65,7 +74,7 @@ CFluidProperties::CFluidProperties() :
 	drho_dC = 0.;
 	// Viscosity
 	viscosity_model = 1;
-	viscosity_T_shift =0.0; 
+	viscosity_T_shift =0.0;
 	my_0 = 1e-3;
 	dmy_dp = 0.;
 	dmy_dT = 0.;
@@ -85,7 +94,7 @@ CFluidProperties::CFluidProperties() :
 	C_0 = 0.;
 	Z = 1.;
 	cal_gravity = true;
-	drho_dT_unsaturated = false; //considering fluid expansion due to temperature in the unsaturated case? (Richards) 
+	drho_dT_unsaturated = false; //considering fluid expansion due to temperature in the unsaturated case? (Richards)
 	// Data
 	mode = 0;                             // Gauss point values
 	Fem_Ele_Std = NULL;
@@ -201,7 +210,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> compressibility_model_pressure; //sub_line 1 for first phase
 			if(compressibility_model_pressure == 15)// components constant density
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> beta_p[0] >> beta_p[1] >> beta_p[2] >> beta_p[3];
 			}
 			else
@@ -212,7 +221,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			in >> compressibility_model_temperature; //sub_line 2 for second phase
 			if(compressibility_model_temperature == 15)// components constant density
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> alpha_T[0] >> alpha_T[1] >> alpha_T[2] >> alpha_T[3];
 			}
 			else
@@ -269,12 +278,12 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			//WW new_subkeyword = false;
 			in.str(GetLineFromFile1(mfp_file));
 			in >> density_model;
-			
+
 			// TF - _rho_fct_name is only used for writing it back to the file
 			if(density_model == 0) // rho = f(x)
 			{         // JOD 2014-11-10
 				in >> density_curve_number;
-				density_pcs_name_vector.push_back("TEMPERATURE1"); 
+				density_pcs_name_vector.push_back("TEMPERATURE1");
 			}
 			if(density_model == 1) // rho = const
 				in >> rho_0;
@@ -350,8 +359,8 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 					arg1 = arg2;
 					arg2 = arg3;
 				}
-                }  
-				else T_0=0.0; 
+                }
+				else T_0=0.0;
 
 				if (arg1.length() == 0) // if no arguments are given use standard
 				{
@@ -368,7 +377,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			//AKS
 			if(density_model == 15)// components constant density
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> rho[0] >> rho[1] >> rho[2] >> rho[3];
 			}
 
@@ -428,7 +437,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 				viscosity_pcs_name_vector.push_back("PRESSURE1");
 			}
 			if(viscosity_model == 3) // my(T), Yaws et al. (1976)
-                        {  // optional: read reference temperature for viscosity model 
+                        {  // optional: read reference temperature for viscosity model
                            std::string arg1;
                            in >> arg1; //get one optional argument
                            if (arg1.length() > 0)
@@ -437,11 +446,11 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
                            viscosity_pcs_name_vector.push_back("PRESSURE1"); //JM dummy wird benoetigt!
 				//OK4704
 				viscosity_pcs_name_vector.push_back("TEMPERATURE1");
-                        } 
+                        }
 			if(viscosity_model == 4) // my(T), ???
 			{
-			  viscosity_pcs_name_vector.push_back("PRESSURE1"); //JM dummy wird benoetigt!                          
-			  viscosity_pcs_name_vector.push_back("TEMPERATURE1"); // added by CB 
+			  viscosity_pcs_name_vector.push_back("PRESSURE1"); //JM dummy wird benoetigt!
+			  viscosity_pcs_name_vector.push_back("TEMPERATURE1"); // added by CB
 			}
 			if(viscosity_model == 5) // my(p,T), Reichenberg (1971)
 			{
@@ -476,14 +485,14 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			//AKS
 			if(density_model == 15)// components constant viscosity
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> mu[0] >> mu[1] >> mu[2] >> mu[3];
 			}
 
 			if(viscosity_model == 18) // BG, NB calculated node viscosities from the phase transition model
 			{
 			}
-			/// Viscosity model no. 19: Extracts viscosities from GEM3K calculations (not yet implemented) 
+			/// Viscosity model no. 19: Extracts viscosities from GEM3K calculations (not yet implemented)
 			if(viscosity_model == 19) // KG44 extract viscosity from GEMS
 			{
 			}
@@ -494,7 +503,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 				viscosity_pcs_name_vector.push_back("TEMPERATURE1");
 				viscosity_pcs_name_vector.push_back("CONCENTRATION1");
 			}
-			
+
 
 			//    mfp_file->ignore(MAX_ZEILE,'\n');
 			in.clear();
@@ -546,7 +555,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			//AKS
 			if(density_model == 15)// components constant density
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> cp[0] >> cp[1] >> cp[2] >> cp[3];
 			}
 
@@ -599,7 +608,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 			//AKS
 			if(density_model == 15)// components constant density
 			{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			in >> kappa[0] >> kappa[1] >> kappa[2] >> kappa[3];
 			}
 
@@ -628,7 +637,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
             {
               in >> A_Daq >> B_Daq;                 // SP: Daq calculated after Yaws; fct(T)
               phase_diffusion_pcs_name_vector.push_back("TEMPERATURE1");
-            }				
+            }
 			in.clear();
 			continue;
 		}
@@ -637,7 +646,7 @@ std::ios::pos_type CFluidProperties::Read(std::ifstream* mfp_file)
 		{
 			in.str(GetLineFromFile1(mfp_file));
 			in >> diffusion_model; //sub_line 1 for first phase
-			if(diffusion_model == 15 && eos_name == "CONSTANT") 
+			if(diffusion_model == 15 && eos_name == "CONSTANT")
 			in >> D0[0] >> D0[1] >> D0[2] >> D0[3];
 			else
 			in >> diffusion_coef; //sub_line 1
@@ -923,9 +932,9 @@ double CFluidProperties::Density(double* variables)
 	double Rho = 0.0;
 	static double density;
 	// static double air_gas_density,vapour_density,vapour_pressure;
-	
+
 	int gueltig;
-	
+
 	//----------------------------------------------------------------------
 	if(variables)                         // This condition is added by WW
 	{
@@ -1011,14 +1020,14 @@ double CFluidProperties::Density(double* variables)
 		     //  long elem = Fem_Ele_Std->GetMeshElement()->GetIndex();
  		       density=1000.0;
 #ifdef GEM_REACT
-			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make 
+			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make
 			{
 			     density=1000.0;
 			}
 			else
 			{
  			    // elem = Fem_Ele_Std->GetMeshElement()->GetIndex(); //kg44 need element index or node index for GEMS ...currently we stick to arithmetric average of node data (even for gauss points!)
-                             density=m_vec_GEM->REACT_GEM::FluidDensity( long(variables[0]), int(variables[1])); //hand over element index and gauss point index 
+                             density=m_vec_GEM->REACT_GEM::FluidDensity( long(variables[0]), int(variables[1])); //hand over element index and gauss point index
 			     // here we can interpolate values from nodes to elemnt or to gauss points
 			}
 #endif
@@ -1038,7 +1047,7 @@ double CFluidProperties::Density(double* variables)
 
 			if (fabs(drho_dC) > 1.e-20)
 			   density *= 1. + drho_dC * (max(variables[2], 0.0) - C_0);
-			
+
 			break;
 		case 26: //Dalton's law + ideal gas for use with TNEQ/TES
 		{
@@ -1150,21 +1159,21 @@ double CFluidProperties::Density(double* variables)
 		    // Just dummy function, so density is not 0 ;
 			std::cout << " Error - Density Model 18 not implemented, usind dummy density of 1000." << "\n";
 	  	    density = 1000; // Achtung - dummy
-			
+
 
 		case 19:                // KG44 get the density from GEMS calculations
 		                       // seems complicated, as we probably have to call GEMS.....or take values from last GEMS calculation ---> update during iterations is not possible
 		     //  long elem = Fem_Ele_Std->GetMeshElement()->GetIndex();
  		       density=1000.0;
 #ifdef GEM_REACT
-			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make 
+			if (!Fem_Ele_Std) //for Richards flow (when saturation is needed initially in GEMS setup) we have to make
 			{
 			     density=1000.0;
 			}
 			else
 			{
   			    long elem = Fem_Ele_Std->GetMeshElement()->GetIndex(); //kg44 need element index or node index for GEMS ...currently we stick to arithmetric average of node data (even for gauss points!)
-                             density=m_vec_GEM->REACT_GEM::FluidDensity( elem, -1); //hand over element index and set gauss point to -1... 
+                             density=m_vec_GEM->REACT_GEM::FluidDensity( elem, -1); //hand over element index and set gauss point to -1...
 			     // Remark: Interpolation from Gauss points to element is not possible here: Fluid densities are only calculated at nodes, therefore interpolation from gauss points onto element will not work
 			}
 #endif
@@ -1172,7 +1181,7 @@ double CFluidProperties::Density(double* variables)
 		       break;
 		case 20: // rho(p,T, C) for water, range p < 100 MPa, 0 <= T <= 350 °C   Magri GFZ thesis
 			pressure = primary_variable[0] / 1e5;
-		
+
 				density =
 					9.99792877961606e+02 + 5.07605113140940e-04 * max(pressure, 0.0) - 5.28425478164183e-10 * pow(max(pressure, 0.0), 2.)
 					+ (5.13864847162196e-02 - 3.61991396354483e-06 * max(pressure, 0.0) + 7.97204102509724e-12 * pow(max(pressure, 0.0), 2.)) * max(primary_variable[1], 0.0)
@@ -1516,7 +1525,7 @@ double CFluidProperties::Viscosity(double* variables)
 			                                    "TEMPERATURE1") + 1);
 		}
 		//ToDo pcs_name
- 		if(!T_Process) 
+ 		if(!T_Process)
 		    primary_variable[1] = T_0+viscosity_T_shift;
  		else primary_variable[1]+=viscosity_T_shift; //JM if viscosity_T_shift==273 (user defined), Celsius can be used within this model
 		viscosity = LiquidViscosity_Yaws_1976(primary_variable[1]);
@@ -1584,7 +1593,7 @@ double CFluidProperties::Viscosity(double* variables)
 		break;
 	case 19: // reserved for GEMS coupling
 	        break;
-	case 26: //Wilke (see Poling, B. E.; Prausnitz, J. M.; John Paul, O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New York, 2001, 5: page 9.21) 
+	case 26: //Wilke (see Poling, B. E.; Prausnitz, J. M.; John Paul, O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New York, 2001, 5: page 9.21)
 	{
 		double x[2], Vs[2];
 
@@ -1697,7 +1706,7 @@ double CFluidProperties::LiquidViscosity_Yaws_1976(double T)
    //B =  1.9490e+03;
    //C =  2.1641e-02;
    //D = -1.5990e-05;
-   
+
 	if (T>0)
 	{
 		ln_my = A + B / T + C * T + D * T * T;
@@ -1773,7 +1782,7 @@ FEMLib-Method:
 Task: Master calc function
 Programming:
 06/2013 SP Implementation
-**************************************************************************/                                              
+**************************************************************************/
 double CFluidProperties::PhaseDiffusion(double* variables)
 {
    static double diff;
@@ -1903,7 +1912,7 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 		break;
     case 11: //mole fraction weighted average of molar isochoric specific heat capacities converted into isobaric mixture specific heat capacity (ideal conversion)
 		{
-		    //reactive component	
+		    //reactive component
 			x[0] = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
 			therm_prop("W");
 			const double R = PhysicalConstant::IdealGasConstant;
@@ -1920,7 +1929,7 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
          break;
 		}
 	  case 12: //mass fraction weighted average of isobaric specific heat capacities using a linearised model
-			//reactive component	
+			//reactive component
 			x[0] = variables[2]; //mass fraction
 			Cp_c[0] = linear_heat_capacity(variables[1],cp_vec[1]->fluid_id);
 			//inert component
@@ -1931,9 +1940,9 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 	case 15: // mixture cp= sum_i y_i*cp:: P, T, x dependent
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 	{
-		if(eos_name == "CONSTANT") 
+		if(eos_name == "CONSTANT")
 	{
-		Cp += variables[CIndex]*cp[CIndex-2]; 
+		Cp += variables[CIndex]*cp[CIndex-2];
 	}
 		else
 	{
@@ -2195,7 +2204,7 @@ double CFluidProperties::HeatConductivity(double* variables)
 		break;
 	case 3:                               // NB
 		heat_conductivity = Fluid_Heat_Conductivity (Density(),primary_variable[1],fluid_id);
-		// if (heat_conductivity<0.03) // not sure about this 
+		// if (heat_conductivity<0.03) // not sure about this
 		break;
 	case 9:
 		heat_conductivity = Fluid_Heat_Conductivity(Density(primary_variable), primary_variable[1], fluid_id);
@@ -2240,9 +2249,9 @@ double CFluidProperties::HeatConductivity(double* variables)
 
 		for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 		{
-			if(eos_name == "CONSTANT") 
+			if(eos_name == "CONSTANT")
 			{
-				Kappa += variables[CIndex]*kappa[CIndex-2]; 
+				Kappa += variables[CIndex]*kappa[CIndex-2];
 			}
 				else
 			{
@@ -3568,7 +3577,7 @@ double CFluidProperties::drhodP(double* variables)
 	case 7:                               // use of fct file
 		drhodP = 1.0/p;               // to be done
 		break;
-		
+
 
 	case 15: //volume translated Peng-Robinson
 		if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
@@ -3679,7 +3688,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 		drhodT = (rho1 - rho2) / compressibility_temperature;
 		break;
 			case 7:                               // use of fct file
-	drhodT = 1.0/T; 
+	drhodT = 1.0/T;
 		break;
 
 	case 15: //volume translated Peng-Robinson
@@ -3719,7 +3728,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 			drhodT = -alpha_m/v_m;//alpha_t=alpha_g*(vg/vt)+alpha_l*(vl/vt)
 		}
 
-	if(eos_name == "CONSTANT")  
+	if(eos_name == "CONSTANT")
 	for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 	{
 	drhodT = variables[CIndex-2]*alpha_T[CIndex-2];
@@ -3744,11 +3753,11 @@ double CFluidProperties::drhodX(int CIndex, double* variables)
 	static double drhodX;
 	switch(solutal_expansivity_model)
 	{
-	case 1:                             
+	case 1:
 	drhodX = solutal_expansivity;
 	break;
 
-	case 15: 
+	case 15:
 	if(eos_name == "CONSTANT")  drhodX = -Density(variables)/rho[CIndex-2];
 	                       else drhodX = -Density(variables)/ComponentDensity(CIndex, variables);
 	break;
@@ -3826,7 +3835,7 @@ double  CFluidProperties::EffectiveDiffusionCoef(int CIndex, double* variables)
 	break;
 
 	case 15:
-	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL") 
+	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
 	{
 	for (int i = 0; i < cmpN; i++)
 	{

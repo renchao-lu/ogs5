@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    FEMLib - Class: BC BoundaryConditions
    Task:
@@ -1110,7 +1119,7 @@ void CBoundaryConditionsGroup::Set(CRFProcess* pcs, int ShiftInNodeVector,
 			if (bc->getGeoType() == GEOLIB::POINT)
 			{
 			  //05.2012. WW
-			  long node_idx =  m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*> 
+			  long node_idx =  m_msh->GetNODOnPNT(static_cast<const GEOLIB::Point*>
 								(bc->getGeoObj()));
 			  if(node_idx<0)
 			    {

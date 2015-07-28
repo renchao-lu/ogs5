@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    Task: Linear equation
    Programing:
@@ -1083,7 +1092,7 @@ void Linear_EQS::Message()
 	cout << "      Iterations |" << " Max Iters |" << " Norm of b |" << " Error\n";
 	cout << "      " << setw(11) << iter << "|" << setw(11) << max_iter << "|"
 	     << setw(11) << bNorm << "|" << setw(11) << error << "\n";
-	if (iter == max_iter) 
+	if (iter == max_iter)
 		cout << "      WARNING: Maximum iterations reached !!! \n";
 	cout << "      ------------------------------------------------\n";
 	cout.flush();
