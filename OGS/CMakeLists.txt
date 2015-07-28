@@ -70,6 +70,7 @@ if(OGS_FEM_MKL)
 	target_link_libraries(ogs ${MKL_LIBRARIES})
 	 # Hack, see http://webpages.charter.net/ppluzhnikov/linker.html
 	target_link_libraries(ogs ${MKL_LIBRARIES})
+	target_link_libraries(ogs ${CMAKE_DL_LIBS})
 endif()
 
 ####################
