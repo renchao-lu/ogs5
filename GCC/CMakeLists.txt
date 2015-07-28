@@ -3,14 +3,11 @@ set( HEADERS
 	DiffAL.h
 	DiffOH.h
 	eqbrm.h
-	Fluid.h
 	HKF.h
 	IAPWS-IF97.h
 	IO.h
 	logk.h
 	NR.h
-	PDE.h
-	PITZcalc.h
 	PITZdata.h
 	species.h
 	VLE.h
@@ -19,16 +16,12 @@ set( HEADERS
 
 set ( SOURCES
 	Density.cpp
-	DiffAL.cpp
 	DiffOH.cpp
-	Fluid.cpp
 	HKF.cpp
 	IAPWS-IF97.cpp
 	IO.cpp
 	logk.cpp
 	NR.cpp
-	PDE.cpp
-	PITZcalc.cpp
 	PITZdata.cpp
 	VLE.cpp
 )
