@@ -157,13 +157,20 @@ else()
         message(STATUS "** Boost libraries: ${Boost_LIBRARIES}")
 endif()
 
+# Find Math Kernel Library (MKL)
 if(OGS_FEM_MKL)
-	# Find MKLlib
-	if(OGS_LIBS_DIR_FOUND AND CMAKE_SYSTEM_NAME EQUAL "Linux")
-		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-include.tgz
-			WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-64.tgz
-			WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
+	if(OGS_LIBS_DIR_FOUND AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+		if(NOT IS_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL/include)
+			message(STATUS "Extracting MKL include files...")
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-include.tgz
+				WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
+		endif()
+		if(NOT IS_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL/64)
+			message(STATUS "Extracting MKL libraries...")
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${OGS_LIBS_DIR_FOUND}/MKL/mkl-64.tgz
+				WORKING_DIRECTORY ${OGS_LIBS_DIR_FOUND}/MKL)
+		endif()
+		set(MKL_DIR ${OGS_LIBS_DIR_FOUND}/MKL)
 	endif()
 	find_package( MKL REQUIRED )
 	include_directories (${MKL_INCLUDE_DIR})
