@@ -77,11 +77,10 @@ namespace process
 CRFProcessDeformation::
 CRFProcessDeformation()
 	: CRFProcess(), fem_dm(NULL), ARRAY(NULL),
-	  counter(0), InitialNorm(0.0)
+	  counter(0), InitialNorm(0.0), idata_type(none)
 
 {
 	error_k0 = 1.0e10;
-	idata_type = none;
 }
 
 CRFProcessDeformation::~CRFProcessDeformation()
@@ -138,19 +137,15 @@ CRFProcessDeformation::~CRFProcessDeformation()
  **************************************************************************/
 void CRFProcessDeformation::Initialization()
 {
-    //-- NW 25.10.2011
-    // this section has to be executed at latest before calling InitGauss()
-    // Control for reading and writing solution
-	if(reload < 1)
-		idata_type = none;
+	//-- NW 25.10.2011
+	// this section has to be executed at latest before calling InitGauss()
+	// Control for reading and writing solution
 	if(reload == 1)
-        idata_type = write_all_binary;
-    if(reload == 2)
-        idata_type = read_all_binary;
-    if(reload == 3)
-        idata_type = read_write;
-    //--
-
+		idata_type = write_all_binary;
+	if(reload == 2)
+		idata_type = read_all_binary;
+	if(reload == 3)
+		idata_type = read_write;
 
 	// Local assembliers
 	// An instaniate of CFiniteElementVec
@@ -171,7 +166,6 @@ void CRFProcessDeformation::Initialization()
 		Tolerance_Local_Newton  = m_num->nls_plasticity_local_tolerance;
 		Tolerance_global_Newton = m_num->nls_error_tolerance[0];
 	}
-	//
 
 	//Initialize material transform tensor for tansverse isotropic elasticity
 	//UJG/WW. 25.11.2009
