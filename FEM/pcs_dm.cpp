@@ -77,7 +77,8 @@ namespace process
 CRFProcessDeformation::
 CRFProcessDeformation()
 	: CRFProcess(), fem_dm(NULL), ARRAY(NULL),
-	  counter(0), InitialNorm(0.0), idata_type(none)
+	  counter(0), InitialNorm(0.0), idata_type(none),
+	  _has_initial_stress_data(false)
 
 {
 	error_k0 = 1.0e10;
@@ -1054,7 +1055,7 @@ void CRFProcessDeformation::InitGauss(void)
 	// Initial stresses are given in .ic file, reload file is therefore disabled,
 	if(ccounter > 0)
 	{
-		idata_type = none;
+		_has_initial_stress_data = true;
 	}
 
 	for (i = 0; i < m_msh->GetNodesNumber(false); i++)
@@ -1250,7 +1251,7 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 	}
 	Idx_Strain[NS] = GetNodeValueIndex("STRAIN_PLS");
 	// For excavation simulation. Moved here on 05.09.2007 WW
-	if (idata_type != none)
+	if ( !_has_initial_stress_data )
 	{
 		GravityForce = true;
 		cout << "\n ***Excavation simulation: 1. Establish initial stress profile..." <<
@@ -1288,9 +1289,6 @@ void CRFProcessDeformation::CreateInitialState4Excavation()
 		SetBoundaryConditionSubDomain();
 	}
 #endif
-
-	if(reload == 1)
-		idata_type = write_all_binary;
 }
 
 /*************************************************************************

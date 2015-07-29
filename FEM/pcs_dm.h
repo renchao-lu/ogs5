@@ -119,6 +119,8 @@ private:
 
 	InitDataReadWriteType idata_type;
 
+	bool _has_initial_stress_data;
+
 	//
 	double error_k0;
 #if !defined(USE_PETSC) // && !defined(other parallel libs)//03.3012. WW
