@@ -15,6 +15,10 @@ last modified:
 
 #define MSP_FILE_EXTENSION ".msp"
 
+extern bool MSPRead(const std::string& given_file_base_name);
+extern void MSPWrite(const std::string& base_file_name);
+extern void MSPDelete();
+
 namespace FiniteElement
 {
 class element;
@@ -42,15 +46,9 @@ class CSolidProperties
         ~CSolidProperties();
 
         std::ios::pos_type Read(std::ifstream*);
-        //CMCD
-        FiniteElement::CFiniteElementStd *Fem_Ele_Std;
-        std::string name;
-        // IO
-        std::string file_base_name;
+
         // Output
         void Write(std::fstream*);
-        //CMCD
-        void CalPrimaryVariable(std::vector<std::string>& pcs_name_vector);
 
         //-------------------------------------------------------------
         // Access to data
@@ -61,80 +59,55 @@ class CSolidProperties
         double Heat_Capacity(double refence = 0.0);
         // Boiling model
         double Heat_Capacity(double temperature, double porosity, double Sat);
+
+        void HeatConductivityTensor(const int dim, double* tensor, int group);
+
+        double Heat_Conductivity(double refence = 0.0);
+
         int GetCapacityModel() const
         {
             return Capacity_mode;
         }
+
         int GetConductModel() const
         {
             return Conductivity_mode;
         }
-        bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
-        double Enthalpy(double temperature, const double latent_factor );
-        double Heat_Conductivity(double refence = 0.0);
-        void HeatConductivityTensor(const int dim, double* tensor, int group);
 
-#ifdef RFW_FRACTURE
-        double Youngs_Modulus(CElem* elem, double refence = 0.0);
-        //RFW, for fracture calc
-        double Get_Youngs_Min_Aperture(CElem *elem);
-#else
-        double Youngs_Modulus(double refence = 0.0);
-#endif
-        void SetYoungsModulus(const double El)
-        {
-            (*data_Youngs)(0)=El;
-        }
-        double Poisson_Ratio() const
-        {
-            return PoissonRatio;
-        }
-        void CalcYoungs_SVV(const double strain_v);
         double Thermal_Expansion() const
         {
             return ThermalExpansion;
         }
-        // 4. Plasticity
-        int Plastictity() const
-        {
-            return Plasticity_type;
-        }
-        double GetPlasticParameter(const int index)
-        {
-            return (*data_Plasticity)(index);
-        }
-        // 5. Creep
-        int CreepModel() const
-        {
-            return Creep_mode;
-        }
-        double GetCreepParameter(const int index)
-        {
-            return (*data_Creep)(index);
-        }
-        // Initilize density
-        void NullDensity();
 
-        //-------------------------------------------------------------
-        // Manipulators of data
-        //-------------------------------------------------------------
-        // 1. Elasticity
+        double Poisson_Ratio() const
+        {
+            return PoissonRatio;
+        }
+
+        // Elasticity
         void Calculate_Lame_Constant();
+
         // For thermal elastic model
         void ElasticConsitutive(const int Dimension, Math_Group::Matrix* D_e) const;
-        // For transverse isotropic linear elasticity: UJG 24.11.2009
-        void ElasticConstitutiveTransverseIsotropic(const int Dimension);
+
         Math_Group::Matrix* getD_tran() const
         {
             return D_tran;
         }
-        void CalculateTransformMatrixFromNormalVector(const int Dimension);
-        double E_Function(int dim, const FiniteElement::ElementValue_DM *ele_val, int ngp);//WX:06.2012
-        // 2. Plasticity
-        // 2.1 Drucker-Prager
-        double GetAngleCoefficent_DP(const double Angle);
-        double GetYieldCoefficent_DP(const double Angle);
-        void CalulateCoefficent_DP();
+
+        // Creep
+        int CreepModel() const
+        {
+            return Creep_mode;
+        }
+
+        // Plasticity
+        int Plastictity() const
+        {
+            return Plasticity_type;
+        }
+
+        // Drucker-Prager
         bool StressIntegrationDP(const int GPiGPj, const FiniteElement::ElementValue_DM* ele_val,
                                  double* TryStress, double& dPhi, const int Update);
         void ConsistentTangentialDP(Math_Group::Matrix* Dep, const double dPhi, const int Dim);
@@ -152,28 +125,12 @@ class CSolidProperties
         void TangentialDP2(Math_Group::Matrix* Dep); //WX
         void TangentialDPwithTension(Math_Group::Matrix* Dep, double mm); //WX
         void TangentialDPwithTensionCorner(Math_Group::Matrix* Dep, double mm); //WX
-        // 2.2 Single yield surface model
-        void dF_dNStress(double* dFdS, const double* DevS, const double* S_Invariants,
-                         const double* MatN1, const int LengthStrs);
-        void dF_dStress(double* dFdS, const double* RotV, const double* S_Invariants,
-                        const double* MatN1, const int LengthStrs);
-        void dF_dMat(double* dFdM, const double* S_Invariants, const double* MatN1);
-        void dG_dNStress(double* dGdS, const double* DevS, const double* S_Invariants,
-                         const double* MatN1, const int LengthStrs);
-        void dG__dNStress_dNStress(const double* DevS, const double* S_Invariants,
-                                   const double* MatN1, const int LengthStrs );
-        void dG__dStress_dStress(const double* DevS, const double* RotV,
-                                 const double* S_Invariants, const double* MatN1,
-                                 const int LengthStrs);
-        void dG_dSTress_dMat(const double* DevS, const double* S_Invariants,
-                             const double* MatN1, const int LengthStrs);
-        void dfun2(const double* DevS, const double* RotV, const double* S_Invariants,
-                   const double* MatN1, const int LengthStrs);
 
+        // Single yield surface model
         int CalStress_and_TangentialMatrix_SYS(const int GPiGPj, const FiniteElement::ElementValue_DM* ele_val,
                                                const Math_Group::Matrix* De,  Math_Group::Matrix* D_ep, double* dStress,
                                                const int Update);
-        // 2.2 Cam-clay model
+        // Cam-clay model
         void CalStress_and_TangentialMatrix_CC(const int GPiGPj,
                                                const FiniteElement::ElementValue_DM* ele_val,
                                                double* dStrain,
@@ -185,44 +142,8 @@ class CSolidProperties
                 double* dStrain,
                 Math_Group::Matrix* Dep,
                 const int Update);
-        // Parameter function for thermal elatic model. Last modifed on 15.03.2008 //WW
-        double TEPSwellingParameter(const double mean_stress);
-        void TEPSwellingParameter_kis(const double suction);
-        // Strain inrement by creep
-        void AddStain_by_Creep(const int ns,
-                               double* stress_n,
-                               double* dstrain,
-                               double temperature = 0.0);
-        void AddStain_by_HL_ODS(const FiniteElement::ElementValue_DM* ele_val,
-                                double* stress_n,
-                                double* dstrain,
-                                double temperature = 30);
-        void CleanTrBuffer_HL_ODS();
-        void AccumulateEtr_HL_ODS(const FiniteElement::ElementValue_DM* ele_val, const int nGS);
 
-        void CalculateCoefficent_MOHR(double ep, double scalar_comp, double scalar_tens);
-        void CalPrinStrs(double* stresses, double* prin_stresses, int Size);
-        void CalPrinDir(double* prin_str, double* stress, double* v, int Size);
         void CalPrinStrDir(double* stress, double* prin_str, double* prin_dir, int Dim);
-        void CalTransMatrixA(double* v, Math_Group::Matrix* A, int Size);
-        int DirectStressIntegrationMOHR(const int GPiGPj, FiniteElement::ElementValue_DM *ele_val,
-                                        double *TryStress, const int Update, Math_Group::Matrix *Dep, int itesteps );
-        int StressIntegrationMOHR_Aniso(const int GPiGPj, const FiniteElement::ElementValue_DM *ele_val,
-                                        double *TryStress, const int Update, Math_Group::Matrix *Dep);//WX:12.2011 aniso mohr
-        double CalAnisoPara(double *Stress, double *MicroStruTensor);//WX:12.2011 cal. aniso parameter
-        int MohrCheckFailure(double* NormStr, int &failurestate, int Size);
-        void TangentialMohrShear(Math_Group::Matrix* Dep);
-        void TangentialMohrTension(Math_Group::Matrix* Dep);
-        void Cal_Inv_Matrix(int Size, Math_Group::Matrix* MatrixA, Math_Group::Matrix* xx);
-        double CalVarP(double* vec1, double* vec2, double* sigma_B, double* sigma_l);
-        double CalVar_t(double* vecl,
-                        double* veclg,
-                        Math_Group::Matrix* D,
-                        double* sigma_B,
-                        double* sigma_l,
-                        int Size);
-        void CalDep_l(double* vecl, double* veclg, Math_Group::Matrix* D, Math_Group::Matrix* Dep_l, double fkt);
-        void VecCrossProduct(double* vec1, double* vec2, double* result_vec);
 
         bool GetBoolExcavated()
         {
@@ -235,6 +156,12 @@ class CSolidProperties
         void setSolidReactiveSystem (FiniteElement::SolidReactiveSystem reactive_system);
 
     private:
+        //CMCD
+        FiniteElement::CFiniteElementStd *Fem_Ele_Std;
+        std::string name;
+        // IO
+        std::string file_base_name;
+
         // Material parameters
         double PoissonRatio;
         int Youngs_mode;
@@ -306,14 +233,14 @@ class CSolidProperties
         double Hard_Loc;
         double tension;     //WX:08.2010 Tension strength
 
-        //4. Mohr-Coulomb	//WX: 11.2010. Mohr-Coulomb model
+        // Mohr-Coulomb	//WX: 11.2010. Mohr-Coulomb model
         double Ntheta;
         double Nphi;
         double csn;
 
         // Plasticity
         double dl2;
-        // 2. Single yield surface
+        //  Single yield surface
         Math_Group::Matrix *d2G_dSdS;
         Math_Group::Matrix *d2G_dSdM;
         Math_Group::Matrix *LocalJacobi;                     // To store local Jacobi matrix
@@ -364,7 +291,7 @@ class CSolidProperties
         bool Plasticity_Bedding;
         void CalTransMatrixMicroStru(Math_Group::Matrix *A, double *v);
 
-        //5. Hoek-Brown WX
+        // Hoek-Brown WX
         double HoekB_a;
         double HoekB_s;
         double HoekB_mb;
@@ -376,9 +303,7 @@ class CSolidProperties
                                        double* TryStress, const int Update, Math_Group::Matrix* Dep );
         void TangentialHoekBrown(Math_Group::Matrix* Dep);
 
-        //WW
         std::vector<std::string>  capacity_pcs_name_vector;
-        //WW
         std::vector<std::string>  conductivity_pcs_name_vector;
 
         // Mini linear solver
@@ -403,7 +328,90 @@ class CSolidProperties
 
         double specific_heat_source;
 
-        //-------------------------------------------------------------
+        //CMCD
+        void CalPrimaryVariable(std::vector<std::string>& pcs_name_vector);
+
+        bool CheckTemperature_in_PhaseChange(const double T0, const double T1);
+        double Enthalpy(double temperature, const double latent_factor );
+
+#ifdef RFW_FRACTURE
+        double Youngs_Modulus(CElem* elem, double refence = 0.0);
+        //RFW, for fracture calc
+        double Get_Youngs_Min_Aperture(CElem *elem);
+#else
+        double Youngs_Modulus(double refence = 0.0);
+#endif
+
+        void CalcYoungs_SVV(const double strain_v);
+
+        // For transverse isotropic linear elasticity: UJG 24.11.2009
+        void ElasticConstitutiveTransverseIsotropic(const int Dimension);
+        void CalculateTransformMatrixFromNormalVector(const int Dimension);
+        double E_Function(int dim, const FiniteElement::ElementValue_DM *ele_val, int ngp);//WX:06.2012
+
+        // Plasticity
+        // Drucker-Prager
+        double GetAngleCoefficent_DP(const double Angle);
+        double GetYieldCoefficent_DP(const double Angle);
+        void CalulateCoefficent_DP();
+
+        // for single yield surface.
+        void dF_dNStress(double* dFdS, const double* DevS, const double* S_Invariants,
+                         const double* MatN1, const int LengthStrs);
+        void dF_dStress(double* dFdS, const double* RotV, const double* S_Invariants,
+                        const double* MatN1, const int LengthStrs);
+        void dF_dMat(double* dFdM, const double* S_Invariants, const double* MatN1);
+        void dG_dNStress(double* dGdS, const double* DevS, const double* S_Invariants,
+                         const double* MatN1, const int LengthStrs);
+        void dG__dNStress_dNStress(const double* DevS, const double* S_Invariants,
+                                   const double* MatN1, const int LengthStrs );
+        void dG__dStress_dStress(const double* DevS, const double* RotV,
+                                 const double* S_Invariants, const double* MatN1,
+                                 const int LengthStrs);
+        void dG_dSTress_dMat(const double* DevS, const double* S_Invariants,
+                             const double* MatN1, const int LengthStrs);
+        void dfun2(const double* DevS, const double* RotV, const double* S_Invariants,
+                   const double* MatN1, const int LengthStrs);
+
+        // Strain increment by creep
+        void AddStain_by_Creep(const int ns,
+                               double* stress_n,
+                               double* dstrain,
+                               double temperature = 0.0);
+        void AddStain_by_HL_ODS(const FiniteElement::ElementValue_DM* ele_val,
+                                double* stress_n,
+                                double* dstrain,
+                                double temperature = 30);
+        void CleanTrBuffer_HL_ODS();
+        void AccumulateEtr_HL_ODS(const FiniteElement::ElementValue_DM* ele_val, const int nGS);
+
+        // Parameter function for thermal elatic model. Last modifed on 15.03.2008 //WW
+        double TEPSwellingParameter(const double mean_stress);
+        void TEPSwellingParameter_kis(const double suction);
+
+        void CalculateCoefficent_MOHR(double ep, double scalar_comp, double scalar_tens);
+        void CalPrinStrs(double* stresses, double* prin_stresses, int Size);
+        void CalPrinDir(double* prin_str, double* stress, double* v, int Size);
+        void CalTransMatrixA(double* v, Math_Group::Matrix* A, int Size);
+        int DirectStressIntegrationMOHR(const int GPiGPj, FiniteElement::ElementValue_DM *ele_val,
+                                        double *TryStress, const int Update, Math_Group::Matrix *Dep, int itesteps );
+        int StressIntegrationMOHR_Aniso(const int GPiGPj, const FiniteElement::ElementValue_DM *ele_val,
+                                        double *TryStress, const int Update, Math_Group::Matrix *Dep);//WX:12.2011 aniso mohr
+        double CalAnisoPara(double *Stress, double *MicroStruTensor);//WX:12.2011 cal. aniso parameter
+        int MohrCheckFailure(double* NormStr, int &failurestate, int Size);
+        void TangentialMohrShear(Math_Group::Matrix* Dep);
+        void TangentialMohrTension(Math_Group::Matrix* Dep);
+        void Cal_Inv_Matrix(int Size, Math_Group::Matrix* MatrixA, Math_Group::Matrix* xx);
+        double CalVarP(double* vec1, double* vec2, double* sigma_B, double* sigma_l);
+        double CalVar_t(double* vecl,
+                        double* veclg,
+                        Math_Group::Matrix* D,
+                        double* sigma_B,
+                        double* sigma_l,
+                        int Size);
+        void CalDep_l(double* vecl, double* veclg, Math_Group::Matrix* D, Math_Group::Matrix* Dep_l, double fkt);
+        void VecCrossProduct(double* vec1, double* vec2, double* result_vec);
+
         // Numeric
         double CalulateValue(const Math_Group::Matrix *data, const double x) const;
         double Kronecker(const int ii, const int jj);
@@ -411,11 +419,11 @@ class CSolidProperties
         //Get solid reactive system - TN
         FiniteElement::SolidReactiveSystem getSolidReactiveSystem () const;
 
-        // Friends that can access to this data explicitly
-        friend bool MSPRead(std::string file_base_name);
-        friend void MSPWrite(std::string);
-
         FiniteElement::SolidReactiveSystem _reactive_system;
+
+        // Friends that can access to this data explicitly
+        friend bool ::MSPRead(const std::string& given_file_base_name);
+        friend void MSPWrite(const std::string& base_file_name);
 
         friend class FiniteElement::CFiniteElementVec;
         friend class FiniteElement::CFiniteElementStd;
@@ -424,19 +432,11 @@ class CSolidProperties
         friend class process::CRFProcessDeformation;
         friend class CMediumProperties;
         friend class ::CRFProcess;
-
 };
 
-}                                                 // end namespace
+}  // end namespace
+
 extern std::vector<SolidProp::CSolidProperties*> msp_vector;
-extern bool MSPRead(std::string file_base_name);
-extern void MSPWrite(std::string);
-extern void MSPDelete();
-//OK
-extern std::vector<std::string> msp_key_word_vector;
-extern void MSPStandardKeywords();                //OK
-//OK
-extern SolidProp::CSolidProperties* MSPGet(std::string);
 
 extern double StressNorm(const double *s, const int Dim);
 extern double TensorMutiplication2(const double *s1, const double *s2, const int Dim);

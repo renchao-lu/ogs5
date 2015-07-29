@@ -1192,11 +1192,6 @@ double CSolidProperties::Density(double refence )
 	}
 	return val;
 }
-// Initialize density
-void CSolidProperties::NullDensity()
-{
-	(*data_Density) = 0.0;
-}
 
 /**************************************************************************
    FEMLib-Method: CSolidProperties::Heat_Capacity(const double refence = 0.0) const
@@ -8041,7 +8036,7 @@ FiniteElement::SolidReactiveSystem CSolidProperties::getSolidReactiveSystem () c
    01/2005 OK Boolean type
    01/2005 OK Destruct before read
 **************************************************************************/
-bool MSPRead(std::string file_base_name)
+bool MSPRead(const std::string& given_file_base_name)
 {
 	//----------------------------------------------------------------------
 	//OK  MSPDelete();
@@ -8053,7 +8048,7 @@ bool MSPRead(std::string file_base_name)
 	std::ios::pos_type position;
 	//========================================================================
 	// File handling
-	std::string msp_file_name = file_base_name + MSP_FILE_EXTENSION;
+	std::string msp_file_name = given_file_base_name + MSP_FILE_EXTENSION;
 	std::ifstream msp_file (msp_file_name.data(),std::ios::in);
 	if (!msp_file.good())
 		return false;
@@ -8072,7 +8067,7 @@ bool MSPRead(std::string file_base_name)
 		if(line_string.find("#SOLID_PROPERTIES") != std::string::npos)
 		{
 			m_msp = new SolidProp::CSolidProperties();
-			m_msp->file_base_name = file_base_name;
+			m_msp->file_base_name = given_file_base_name;
 			position = m_msp->Read(&msp_file);
 			msp_vector.push_back(m_msp);
 			msp_file.seekg(position,std::ios::beg);
@@ -8236,7 +8231,7 @@ void MSPDelete()
    FEMLib-Method:
    01/2006 OK Implementation
 **************************************************************************/
-void MSPWrite(std::string base_file_name)
+void MSPWrite(const std::string& base_file_name)
 {
 	SolidProp::CSolidProperties* m_msp = NULL;
 	//----------------------------------------------------------------------
@@ -8260,34 +8255,3 @@ void MSPWrite(std::string base_file_name)
 	msp_file.close();
 	//----------------------------------------------------------------------
 }
-
-/**************************************************************************
-   FEMLib-Method:
-   07/2007 OK Implementation
-**************************************************************************/
-void MSPStandardKeywords()
-{
-	msp_key_word_vector.clear();
-	string in;
-	in = "POISSON_RATIO";
-	msp_key_word_vector.push_back(in);
-	in = "YOUNGS_MODULUS";
-	msp_key_word_vector.push_back(in);
-}
-
-/**************************************************************************
-   FEMLib-Method:
-   07/2007 OK Implementation
-**************************************************************************/
-SolidProp::CSolidProperties* MSPGet(std::string mat_name)
-{
-	SolidProp::CSolidProperties* m_msp = NULL;
-	for(int i = 0; i < (int)msp_vector.size(); i++)
-	{
-		m_msp = msp_vector[i];
-		if(mat_name.compare(m_msp->name) == 0)
-			return m_msp;
-	}
-	return NULL;
-}
-
