@@ -231,9 +231,6 @@ class CSolidProperties
         //Solid Chemical Reactive System
         void SetSolidReactiveSystemProperties();
 
-        //Get solid reactive system - TN
-        FiniteElement::SolidReactiveSystem getSolidReactiveSystem () const;
-
         //Set value for solid reactive system - TN
         void setSolidReactiveSystem (FiniteElement::SolidReactiveSystem reactive_system);
 
@@ -410,6 +407,9 @@ class CSolidProperties
         // Numeric
         double CalulateValue(const Math_Group::Matrix *data, const double x) const;
         double Kronecker(const int ii, const int jj);
+
+        //Get solid reactive system - TN
+        FiniteElement::SolidReactiveSystem getSolidReactiveSystem () const;
 
         // Friends that can access to this data explicitly
         friend bool MSPRead(std::string file_base_name);

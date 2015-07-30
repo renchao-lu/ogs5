@@ -31,7 +31,7 @@
 #include "tools.h"                                // GetLineFromFile
 
 std::vector<SolidProp::CSolidProperties*> msp_vector;
-std::vector<string> msp_key_word_vector;               //OK
+std::vector<std::string> msp_key_word_vector;               //OK
 
 namespace SolidProp
 {
