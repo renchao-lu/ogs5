@@ -30,8 +30,8 @@
 #include "files0.h"                               // GetLineFromFile1
 #include "tools.h"                                // GetLineFromFile
 
-vector<SolidProp::CSolidProperties*> msp_vector;
-vector<string> msp_key_word_vector;               //OK
+std::vector<SolidProp::CSolidProperties*> msp_vector;
+std::vector<string> msp_key_word_vector;               //OK
 
 namespace SolidProp
 {
