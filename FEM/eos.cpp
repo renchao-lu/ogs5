@@ -5,6 +5,8 @@
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
  *
+ * zero()-function: Copyright Richard Brent, John Burkhardt | GNU LGPL license
+ *
  */
 
 /**********************************************************************
