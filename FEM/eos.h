@@ -67,7 +67,7 @@ double mixing_ternary (double* x,
                        double* rMM);
 
 double dpressure(double TT, double PP,std::string cs, double ds);
-double zbrent(double TT, double PP, int fluid, const double tol);
+double zero( double T, double P, int fluid, double t);
 
 double vapour_saturation_density_ch4(double T);
 double liquid_saturation_density_ch4(double T);

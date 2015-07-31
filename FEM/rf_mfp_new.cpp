@@ -997,7 +997,7 @@ double CFluidProperties::Density(double* variables)
 		case 13:                  // Helmholtz free Energy NB JUN 09
 			variables[1]+=T_0; //JM if T_0==273 (user defined), Celsius can be used within this model
 			//NB
-			density = zbrent(variables[1],variables[0],fluid_id,1e-8);
+			density = zero(variables[1],variables[0],fluid_id,1e-8);
 			break;
 		case 14: // #Exponential law#
 		density = rho_0 *exp(drho_dp * (max(variables[0],0.0) - p_0) + drho_dT * (max(variables[2], 0.0)) + drho_dC *max(variables[2], 0.0));
@@ -1145,7 +1145,7 @@ double CFluidProperties::Density(double* variables)
 				primary_variable[1] = T_0;
 			else primary_variable[1]+=T_0; //JM if T_0==273 (user defined), Celsius can be used within this model
 			//NB
-			density = zbrent(primary_variable[1],primary_variable[0],fluid_id,1e-8);
+			density = zero(primary_variable[1],primary_variable[0],fluid_id,1e-8);
 			break;
 
 		case 14: // #Exponential law#
