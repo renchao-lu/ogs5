@@ -198,7 +198,7 @@ endif ()
 
 if (UNIX)
 	if (OGS_FEM_BRNS)
-		target_link_libraries( FEM dl ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+		target_link_libraries( FEM ${CMAKE_DL_LIBS} ${LAPACK_LIBRARIES} )
 	endif ()
 
 	if (LIS)
