@@ -79,8 +79,6 @@ class CSolidProperties
         }
 
         int GetConductModel() const
-		 std::string reaction_system;
-		 double lower_solid_density_limit;
         {
             return Conductivity_mode;
         }
