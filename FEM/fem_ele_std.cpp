@@ -8842,7 +8842,7 @@ void CFiniteElementStd::Config()
 		act_nodes = MeshElement->g_index[0];
 		act_nodes_h = MeshElement->g_index[1];
 
-		for (i = 0; i < act_nodes_h; i++)
+		for (int i = 0; i < act_nodes_h; i++)
 		{
 			local_idx[i] = MeshElement->g_index[i + 2];
 		}
@@ -8851,7 +8851,7 @@ void CFiniteElementStd::Config()
 	{
 		act_nodes = nnodes;
 		act_nodes_h = nnodesHQ;
-		for (i = 0; i < nn; i++)
+		for (int i = 0; i < nn; i++)
 		{
 			local_idx[i] = i;
 		}
