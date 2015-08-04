@@ -78,10 +78,10 @@ CRFProcessDeformation::
 CRFProcessDeformation()
 	: CRFProcess(), fem_dm(NULL), ARRAY(NULL),
 	  counter(0), InitialNorm(0.0), idata_type(none),
-	  _has_initial_stress_data(false)
+	  _has_initial_stress_data(false), error_k0(1.0e10)
 
 {
-	error_k0 = 1.0e10;
+
 }
 
 CRFProcessDeformation::~CRFProcessDeformation()
