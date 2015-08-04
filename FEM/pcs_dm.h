@@ -94,7 +94,7 @@ public:
 	double CaclMaxiumLoadRatio();
 
 	// Write stresses
-	void WriteGaussPointStress();
+	void WriteGaussPointStress(const bool last_step = false);
 	void ReadGaussPointStress();
 	void ReadElementStress();
 
@@ -118,6 +118,8 @@ private:
 	double InitialNormU0;
 
 	InitDataReadWriteType idata_type;
+
+	bool _has_initial_stress_data;
 
 	//
 	double error_k0;

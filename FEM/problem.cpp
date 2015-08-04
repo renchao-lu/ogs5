@@ -1524,6 +1524,7 @@ void Problem::PostCouplingLoop()
 		if (H_Process && dm_pcs->type / 10 != 4) // HM partitioned scheme
 			dm_pcs->ResetTimeStep();
 		dm_pcs->Extropolation_GaussValue();
+		dm_pcs->WriteGaussPointStress();
 	}
 
 // Reaction postprocessing

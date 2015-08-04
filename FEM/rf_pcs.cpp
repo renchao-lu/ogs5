@@ -1761,6 +1761,7 @@ CRFProcess* CRFProcess::CopyPCStoDM_PCS()
 	dm_pcs->Memory_Type = Memory_Type;
 	dm_pcs->NumDeactivated_SubDomains = NumDeactivated_SubDomains;
 	dm_pcs->reload = reload;
+	dm_pcs->nwrite_restart = nwrite_restart;
 	dm_pcs->isPCSDeformation = true;
 	dm_pcs->isPCSFlow = this->isPCSFlow; //JT
 	dm_pcs->isPCSMultiFlow = this->isPCSMultiFlow; //JT
