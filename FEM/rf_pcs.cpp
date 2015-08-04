@@ -1950,7 +1950,7 @@ std::ios::pos_type CRFProcess::Read(std::ifstream* pcs_file)
 			if(T_unit_name.find("CELSIUS") != std::string::npos )
 				_temp_unit = CELSIUS;
 			else
-				_temp_unit = KILVIN;
+				_temp_unit = KELVIN;
 			continue;
 		}
 		//....................................................................

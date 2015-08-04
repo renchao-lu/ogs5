@@ -357,7 +357,7 @@ std::string convertConstrainedVariableToString(ConstrainedVariable::type constra
 
 enum TemperatureUnit
 {
-	KILVIN,
+	KELVIN,
 	CELSIUS
 };
 
