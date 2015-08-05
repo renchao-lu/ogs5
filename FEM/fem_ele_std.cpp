@@ -51,6 +51,15 @@
 using Math_Group::CSparseMatrix;
 #endif
 
+extern "C"
+{
+#include <cvode/cvode.h>             /* prototypes for CVODE fcts., consts. */
+#include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., macros */
+#include <cvode/cvode_dense.h>       /* prototype for CVDense */
+#include <sundials/sundials_dense.h> /* definitions DlsMat DENSE_ELEM */
+#include <sundials/sundials_types.h> /* definition of type realtype */
+}
+
 #include "pcs_dm.h"                               // displacement coupled
 
 #include "PhysicalConstant.h"
@@ -6135,6 +6144,24 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
    }
  */
 
+
+int cvRhsFn_conversion_rate(realtype t, N_Vector y, N_Vector ydot, void *user_data)
+{
+	conversion_rate& conv_rate = *(conversion_rate*) user_data;
+
+	Eigen::VectorXd y_eig = Eigen::VectorXd::Zero(1);
+	y_eig(0) = NV_Ith_S(y, 0);
+
+	Eigen::VectorXd dydx_eig = Eigen::VectorXd::Zero(1);
+
+	conv_rate.eval(t, y_eig, dydx_eig);
+
+	NV_Ith_S(ydot, 0) = dydx_eig(0);
+
+	return 0;
+}
+
+
 //HS, TN 07/2013 Calculates Reaction rate
 void CFiniteElementStd::CalcSolidDensityRate()
 {
@@ -6216,7 +6243,79 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
 				// supply clean value
 
+
+
+
+				const realtype T0 = 0.0;
+				const int NEQ = 1;
+
+				/* Create serial vector of length NEQ for I.C. and abstol */
+				N_Vector y = N_VNew_Serial(NEQ);
+				// if (check_flag((void *)y, "N_VNew_Serial", 0)) return(1);
+				N_Vector abstol = N_VNew_Serial(NEQ);
+				// if (check_flag((void *)abstol, "N_VNew_Serial", 0)) return(1);
+
+				/* Initialize y */
+				// set initial value
+				NV_Ith_S(y,0) = yy_rho_s(0);
+
+				/* Set the scalar relative tolerance */
+				realtype reltol = 1e-6;
+				/* Set the vector absolute tolerance */
+				NV_Ith_S(abstol,1) = 1e-6;
+
+				/* Call CVodeCreate to create the solver memory and specify the
+				 * Backward Differentiation Formula and the use of a Newton iteration */
+				void *cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
+				// if (check_flag((void *)cvode_mem, "CVodeCreate", 0)) return(1);
+
+				/* Call CVodeInit to initialize the integrator memory and specify the
+				 * user's right hand side function in y'=f(t,y), the inital time T0, and
+				 * the initial dependent variable vector y. */
+				int flag = CVodeInit(cvode_mem, cvRhsFn_conversion_rate, T0, y);
+				// if (check_flag(&flag, "CVodeInit", 1)) return(1);
+
+				flag = CVodeSetUserData(cvode_mem, (void*) pcs->m_conversion_rate);
+
+				/* Call CVodeSVtolerances to specify the scalar relative tolerance
+				 * and vector absolute tolerances */
+				flag = CVodeSVtolerances(cvode_mem, reltol, abstol);
+				// if (check_flag(&flag, "CVodeSVtolerances", 1)) return(1);
+
+				/* Call CVodeRootInit to specify the root function g with 2 components */
+				// flag = CVodeRootInit(cvode_mem, 2, g);
+				// if (check_flag(&flag, "CVodeRootInit", 1)) return(1);
+
+				/* Call CVDense to specify the CVDENSE dense linear solver */
+				flag = CVDense(cvode_mem, NEQ);
+				// if (check_flag(&flag, "CVDense", 1)) return(1);
+
+				/* Set the Jacobian routine to Jac (user-supplied) */
+				// flag = CVDlsSetDenseJacFn(cvode_mem, Jac);
+				// if (check_flag(&flag, "CVDlsSetDenseJacFn", 1)) return(1);
+
+				/* In loop, call CVode, print results, and test for error.
+				   Break out of loop when NOUT preset output times have been reached.  */
+				const realtype tout = delta_t;
+
+				realtype t;
+				flag = CVode(cvode_mem, tout, y, &t, CV_NORMAL);
+				std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
+				if (flag != CV_SUCCESS) {
+					std::cout << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
+				}
+
+				/* Free y and abstol vectors */
+				N_VDestroy_Serial(y);
+				N_VDestroy_Serial(abstol);
+
+				/* Free integrator memory */
+				CVodeFree(&cvode_mem);
+
+
+
 				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
+
 				slv.set_y(yy_rho_s);
 				slv.set_dydx(dydxx_rho_s);
 				// solve ODE

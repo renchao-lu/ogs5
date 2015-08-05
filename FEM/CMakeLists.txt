@@ -166,6 +166,8 @@ target_link_libraries(FEM
 	GCC
 	GEO
 	MSH
+	sundials_cvode
+	sundials_nvecserial
 )
 
 if(OGS_FEM_PQC)
