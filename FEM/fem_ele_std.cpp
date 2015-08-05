@@ -6257,7 +6257,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 				/* Initialize y */
 				// set initial value
-				NV_Ith_S(y,0) = yy_rho_s(0);
+				NV_Ith_S(y,0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
 
 				/* Set the scalar relative tolerance */
 				realtype reltol = 1e-6;
@@ -6305,15 +6305,9 @@ void CFiniteElementStd::CalcSolidDensityRate()
 					std::cout << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
 				}
 
-				/* Free y and abstol vectors */
-				N_VDestroy_Serial(y);
-				N_VDestroy_Serial(abstol);
-
-				/* Free integrator memory */
-				CVodeFree(&cvode_mem);
 
 
-
+				/*
 				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
 
 				slv.set_y(yy_rho_s);
@@ -6321,8 +6315,13 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				// solve ODE
 				// run the ODE solver
 				slv.step(delta_t, pcs->m_conversion_rate);
-				yy_rho_s = slv.get_y();
-				dydxx_rho_s = slv.get_dydx();
+				*/
+
+				N_Vector ydot = N_VNew_Serial(NEQ);
+
+				yy_rho_s(0)    = NV_Ith_S(y, 0);
+				flag = cvRhsFn_conversion_rate(tout, y, ydot, pcs->m_conversion_rate);
+				dydxx_rho_s(0) = NV_Ith_S(ydot, 0);
 
 				double rho_react;
 
@@ -6338,6 +6337,17 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
 				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);
+
+
+
+				/* Free y and abstol vectors */
+				N_VDestroy_Serial(y);
+				N_VDestroy_Serial(ydot);
+				N_VDestroy_Serial(abstol);
+
+				/* Free integrator memory */
+				CVodeFree(&cvode_mem);
+
 			}
 		}
 		else {//if not reactive solid
