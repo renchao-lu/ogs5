@@ -6233,14 +6233,13 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
 				const double rho_NR = SolidProp->non_reactive_solid_density;
 
-				Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1); // rho_s
-				// TN - reactive fraction
-				yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
+				// Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1);
+				// yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
 
-				Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
+				// Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
 
 				// make evaluation
-				pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
+				// pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
 				// supply clean value
 
 
@@ -6255,8 +6254,8 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				N_Vector abstol = N_VNew_Serial(NEQ);
 				// if (check_flag((void *)abstol, "N_VNew_Serial", 0)) return(1);
 
-				/* Initialize y */
-				// set initial value
+				// set initial condition
+				// rho_s, reactive fraction
 				NV_Ith_S(y,0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
 
 				/* Set the scalar relative tolerance */
@@ -6264,8 +6263,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				/* Set the vector absolute tolerance */
 				NV_Ith_S(abstol,1) = 1e-6;
 
-				/* Call CVodeCreate to create the solver memory and specify the
-				 * Backward Differentiation Formula and the use of a Newton iteration */
 				void *cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
 				// if (check_flag((void *)cvode_mem, "CVodeCreate", 0)) return(1);
 
@@ -6282,24 +6279,12 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				flag = CVodeSVtolerances(cvode_mem, reltol, abstol);
 				// if (check_flag(&flag, "CVodeSVtolerances", 1)) return(1);
 
-				/* Call CVodeRootInit to specify the root function g with 2 components */
-				// flag = CVodeRootInit(cvode_mem, 2, g);
-				// if (check_flag(&flag, "CVodeRootInit", 1)) return(1);
-
 				/* Call CVDense to specify the CVDENSE dense linear solver */
 				flag = CVDense(cvode_mem, NEQ);
 				// if (check_flag(&flag, "CVDense", 1)) return(1);
 
-				/* Set the Jacobian routine to Jac (user-supplied) */
-				// flag = CVDlsSetDenseJacFn(cvode_mem, Jac);
-				// if (check_flag(&flag, "CVDlsSetDenseJacFn", 1)) return(1);
-
-				/* In loop, call CVode, print results, and test for error.
-				   Break out of loop when NOUT preset output times have been reached.  */
-				const realtype tout = delta_t;
-
 				realtype t;
-				flag = CVode(cvode_mem, tout, y, &t, CV_NORMAL);
+				flag = CVode(cvode_mem, delta_t, y, &t, CV_NORMAL);
 				std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
 				if (flag != CV_SUCCESS) {
 					std::cout << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
@@ -6319,24 +6304,24 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 				N_Vector ydot = N_VNew_Serial(NEQ);
 
-				yy_rho_s(0)    = NV_Ith_S(y, 0);
-				flag = cvRhsFn_conversion_rate(tout, y, ydot, pcs->m_conversion_rate);
-				dydxx_rho_s(0) = NV_Ith_S(ydot, 0);
+				const double y_new = NV_Ith_S(y, 0);
+				flag = cvRhsFn_conversion_rate(delta_t, y, ydot, pcs->m_conversion_rate);
+				const double y_dot_new = NV_Ith_S(ydot, 0);
 
 				double rho_react;
 
 				//cut off when limits are reached
-				if ( yy_rho_s(0) < SolidProp->lower_solid_density_limit )
+				if ( y_new < SolidProp->lower_solid_density_limit )
 					rho_react = SolidProp->lower_solid_density_limit;
-				else if ( yy_rho_s(0) > SolidProp->upper_solid_density_limit ) //{
+				else if ( y_new > SolidProp->upper_solid_density_limit ) //{
 					rho_react = SolidProp->upper_solid_density_limit;
 				else
-					rho_react = yy_rho_s(0);
+					rho_react = y_new;
 
 				//TN - reactive fraction
 				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
-				gp_ele->q_R[gp] = dydxx_rho_s(0)*(1.0-xv_NR);
+				gp_ele->q_R[gp] = y_dot_new * (1.0-xv_NR);
 
 
 
