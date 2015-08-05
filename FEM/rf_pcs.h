@@ -32,8 +32,6 @@
 #include "rf_tim_new.h"
 #include "conversion_rate.h"          // HS, 10.2011
 #include "SparseMatrixDOK.h"
-//#include "Stiff_Bulirsch-Stoer.h"   // HS, 10.2011
-#include "StepperBulischStoer.h"   // HS, 10.2011
 
 #include "Eigen/Eigen"
 

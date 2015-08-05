@@ -82,7 +82,6 @@
 #include "rf_node.h"
 #include "rf_kinreact.h"
 #include "fem_ele_vec.h"//WX:08.2011
-#include "StepperBulischStoer.h"
 
 #ifdef MFC                                        //WW
 #include "rf_fluid_momentum.h"
