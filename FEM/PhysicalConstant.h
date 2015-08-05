@@ -14,12 +14,6 @@
  *              http://www.opengeosys.org/project/license
  */
 
-/*!
- *  \File PhysicalConstants.h
- *  Declear constants used in the program.
- *  Created by wenqing on 7/22/15.
-*/
-
 #ifndef OGS_PHYSICAL_CONSTANTS_H
 #define OGS_PHYSICAL_CONSTANTS_H
 
