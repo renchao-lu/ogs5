@@ -1414,11 +1414,11 @@ bool Problem::CouplingLoop()
 
 				// Reapply BCs if constrained BC
 #if defined(USE_MPI) || defined(USE_PETSC)
-				bool has_constained_bc_i = a_pcs->hasConstrainedBC();
-				bool has_constained_bc = false;
-				MPI_Allreduce(&has_constained_bc_i, &has_constained_bc, 1, MPI_INT, MPI_LOR, MPI_COMM_WORLD);
-			    	if(has_constained_bc)   
-#else                                
+				bool has_constrained_bc_i = a_pcs->hasConstrainedBC();
+				bool has_constrained_bc = false;
+				MPI_Allreduce(&has_constrained_bc_i, &has_constrained_bc, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
+				if(has_constrained_bc)
+#else
 				if(a_pcs->hasConstrainedBC())
 #endif
 				{
@@ -1427,6 +1427,7 @@ bool Problem::CouplingLoop()
 #else
 					const int rank = -1;
 #endif
+					if (rank<1) std::cout << "this process has constrained BCs. reapply BCs." << std::endl;
 					a_pcs->IncorporateBoundaryConditions(rank);
 				}
 			}
