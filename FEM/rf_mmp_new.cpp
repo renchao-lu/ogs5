@@ -48,7 +48,7 @@ vector<CMediumProperties*>mmp_vector;
 list<CMediumPropertiesGroup*>mmp_group_list;
 
 using namespace std;
-using namespace constant_group;
+using namespace PhysicalConstant;
 using FiniteElement::CElement;
 using FiniteElement::ElementValue;
 using FiniteElement::CFiniteElementStd;
@@ -2720,9 +2720,10 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 		b = 4975.9;
 		m_mfp = mfp_vector[0];
 		rhow = m_mfp->Density();
-		expfactor = FluidConstant::ComponentMolarMassWater()  / (rhow * FluidConstant::GasConstant() * TG);
+		const double Rv = SpecificGasConstant::WatarVapour;
+		expfactor = 1.0 / (rhow * Rv * TG);
 		rho_gw = m_mfp->vaporDensity(TG) * exp(-PG * expfactor);
-		p_gw = rho_gw * FluidConstant::GasConstant() * TG / FluidConstant::ComponentMolarMassWater() ;
+		p_gw = rho_gw * Rv * TG;
 		dens_arg[0] = PG2 - p_gw;
 		dens_arg[1] = TG;
 		m_mfp = mfp_vector[1];
@@ -2732,14 +2733,14 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 		mat_fac_w = PermeabilitySaturationFunction(Sw,0) / m_mfp->Viscosity();
 		m_mfp = mfp_vector[1];
 		mat_fac_g = PermeabilitySaturationFunction(Sw,1) / m_mfp->Viscosity();
-		A = b + ((PG * FluidConstant::ComponentMolarMassWater() ) / (rhow * FluidConstant::GasConstant()));
+		A = b + PG / (rhow * Rv);
 		B = a - log(p_gw / 30024.895431831395);
 		q = heatflux;
 
 		for(i = 0; i < dimen; i++)
 			Kx[i] = 0.0;
 		dPc = (q / (H_vap * 1.0e-13)) * ((1 / (rhow * mat_fac_w)) + (1 / (rho_g * mat_fac_g)));
-		dA = FluidConstant::ComponentMolarMassWater()  * dPc / (rhow * FluidConstant::GasConstant());
+		dA = dPc / (rhow * Rv);
 		dp_gw = q / (H_vap * rho_gw * mat_fac_g * 1.0e-13);
 		dB = -dp_gw / p_gw;
 		dT = (B * dA - A * dB) / ((B * B) + (0 / TG));
@@ -2748,7 +2749,7 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 		if(GravityOn)
 		{
 			dPc -= (rhow - rho_g) * gravity_constant;
-			dA = FluidConstant::ComponentMolarMassWater()  * dPc / (rhow * FluidConstant::GasConstant());
+			dA = dPc / (rhow * Rv);
 			dp_gw -= rho_g * gravity_constant;
 			dB = -dp_gw / p_gw;
 			dT = (B * dA - A * dB) / ((B * B) + (0 / TG));
@@ -6017,7 +6018,7 @@ void CMediumProperties::CalStressPermeabilityFactor2(double* kfac, const double 
 		{
 			sig[i] = (*e_valDM->Stress)(i, Fem_Ele_Std->GetGPindex());
 			b[i] = c_coefficient[2 + i]  + c_coefficient[0] * exp(
-			        c_coefficient[1] * sig[i] / (T * FluidConstant::GasConstant()));
+			        c_coefficient[1] * sig[i] / (T * PhysicalConstant::IdealGasConstant));
 			//
 		}
 	}
@@ -6028,7 +6029,7 @@ void CMediumProperties::CalStressPermeabilityFactor2(double* kfac, const double 
 			         + c_coefficient[8 + i *
 			                         4] * xyz[1] + c_coefficient[9 + i * 4] * xyz[2];
 			b[i] = c_coefficient[2 + i] + c_coefficient[0] * exp(
-			        c_coefficient[1] * sig[i] / (T * FluidConstant::GasConstant()));
+			        c_coefficient[1] * sig[i] / (T * PhysicalConstant::IdealGasConstant));
 		}
 	for(i = 0; i < 3; i++)
 	{

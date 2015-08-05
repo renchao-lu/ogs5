@@ -1,3 +1,19 @@
+/**
+ * \file PhysicalConstants.h
+ *  Define physical constants
+ *
+ * \author Christoph Lehmann
+ * \author Wenqing Wang
+ *
+ * \date 04-2015, 07-2015
+ *
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ */
+
 /*!
  *  \File PhysicalConstants.h
  *  Declear constants used in the program.
@@ -7,81 +23,29 @@
 #ifndef OGS_PHYSICAL_CONSTANTS_H
 #define OGS_PHYSICAL_CONSTANTS_H
 
-namespace constant_group
-{
-class ThermalConstant
-{
-    public:
-        static double CelsiusZeroInKelvin()
-        {
-            return _celsius_zero_in_kelvin;
-        }
-
-    private:
-        static double _celsius_zero_in_kelvin;
-};
-
-class FluidConstant
-{
-    public:
-        static double ComponentMolarMassAir()
-        {
-            return _comp_mol_mass_air;
-        }
-
-        static double ComponentMolarMassWater()
-        {
-            return _comp_mol_mass_water;
-        }
-
-        static double ComponentMolarMassWaterN2()
-        {
-            return _comp_mol_mass_n2;
-        }
-
-        static double GasConstant()
-        {
-            return _gas_constant;
-        }
-
-        static double SpecificGasConstant()
-        {
-            return _specific_gas_constant;
-        }
-
-    private:
-        static double _comp_mol_mass_air;
-        static double _comp_mol_mass_water;
-        static double _comp_mol_mass_n2;
-        static double _gas_constant;
-        static double _specific_gas_constant;
-};
-
-}
-
 /**
  * Namespace containing physical constants
- *  by Christoph Lehmann
  * All members of this namespace should be given in SI standard units,
  * i.e. in terms of kg, m, s, K, mol, A, cd.
  */
-namespace Phys
+namespace PhysicalConstant
 {
+    /// Celsius zero in Kelvin
+    const double CelsiusZeroInKelvin = 273.15;
 
-/**
-  Ideal gas constant in SI standard units (J mol^-1 K^-1)
+    /**
+      Ideal gas constant in SI standard units (J mol^-1 K^-1)
 
-  Source:               http://physics.nist.gov/cgi-bin/cuu/Value?r
-  Date visited:         2015-04-17
-  Standard uncertainty: 0.000 0075 J mol^-1 K^-1
-*/
-    const double R = 8.3144621;
+      Source:               http://physics.nist.gov/cgi-bin/cuu/Value?r
+      Date visited:         2015-04-17
+      Standard uncertainty: 0.000 0075 J mol^-1 K^-1
+    */
+    const double IdealGasConstant = 8.3144621;
 
-
-/**
- * Molar masses of certain elements and chemical compounds
- */
-    namespace MolMass
+    /**
+     * Molar masses of certain elements and chemical compounds
+     */
+    namespace MolarMass
     {
         /**
          * Water
@@ -113,7 +77,26 @@ namespace Phys
          * According to the IUPAC report the molar mass of O is in the range [15.999 03, 15.999 77] g/mol
          */
         const double O2    = 0.032;    ///< kg mol^-1
+
+        /**
+         * Air
+         *
+         * Source:       http://www.engineeringtoolbox.com/molecular-mass-air-d_679.html
+         *
+         */
+        const double Air    = 0.02897;    ///< kg mol^-1
     }
 
+    /**
+      Specific gas constant of water vapor (J/(kg K)) defined by
+      \f[
+      R_v = \frac{R}{M}
+      \f]
+      with \$M\$, the momlar mass
+    */
+    namespace SpecificGasConstant
+    {
+        const double WatarVapour = 461.504; ///< IdealGasConstant / MolarMass::Water;
+    }
 }
 #endif //OGS_CONSTANTS_H

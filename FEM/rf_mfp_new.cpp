@@ -41,7 +41,7 @@ extern double GetCurveValue(int,int,double,int*);
 
 double gravity_constant = 9.81;                   //TEST for FEBEX OK 9.81;
 
-using namespace constant_group;
+using namespace PhysicalConstant;
 using namespace std;
 
 //==========================================================================
@@ -90,7 +90,7 @@ CFluidProperties::CFluidProperties() :
 	mode = 0;                             // Gauss point values
 	Fem_Ele_Std = NULL;
 	// WW
-	molar_mass = FluidConstant::ComponentMolarMassAir() ;
+	molar_mass = MolarMass::Air;
 
 	compressibility_model_pressure = -1;
 	specific_heat_source = 0.0;
@@ -961,7 +961,7 @@ double CFluidProperties::Density(double* variables)
 			                0.0) - p_0) + drho_dT * (max(variables[1],0.0) - T_0));
 			break;
 		case 7:                   // Pefect gas. WW
-			density = variables[0] * molar_mass / (FluidConstant::GasConstant() * variables[1]);
+			density = variables[0] * molar_mass / (PhysicalConstant::IdealGasConstant * variables[1]);
 			break;
          case 8:                                  // M14 von JdJ // 25.1.12 Added by CB for density output AB-model
 			density = MATCalcFluidDensityMethod8(variables[0],variables[1],variables[2]);
@@ -1052,7 +1052,7 @@ double CFluidProperties::Density(double* variables)
 			// gas molar fraction of component 1
 			const double xn = M0*x/(M0*x + M1*(1.0-x));
 
-			density = p / (Phys::R * T) * (M1*xn + M0*(1.0-xn)); //R_uni in mNs
+			density = p / (PhysicalConstant::IdealGasConstant * T) * (M1*xn + M0*(1.0-xn)); //R_uni in mNs
 		}
 			break;
 
@@ -1595,10 +1595,10 @@ double CFluidProperties::Viscosity(double* variables)
 
 		//reactive component
 		x[0] = M1*X/(M1*X + M2*(1.0-X)); //mass in mole fraction
-		Vs[0] = Fluid_Viscosity(M2*p/(Phys::R*T), T, p, cp_vec[1]->fluid_id);
+		Vs[0] = Fluid_Viscosity(M2*p/(PhysicalConstant::IdealGasConstant * T), T, p, cp_vec[1]->fluid_id);
 		//inert component
 		x[1] = 1.0 - x[0];
-		Vs[1] = Fluid_Viscosity(M1*p/(Phys::R*T), T, p, cp_vec[0]->fluid_id);//R_uni in mNs
+		Vs[1] = Fluid_Viscosity(M1*p/(PhysicalConstant::IdealGasConstant * T), T, p, cp_vec[0]->fluid_id);//R_uni in mNs
 
 		const double M1_over_M2 (M2/M1); //reactive over inert
 		const double V1_over_V2 (Vs[0]/Vs[1]);
@@ -1904,13 +1904,16 @@ double CFluidProperties::SpecificHeatCapacity(double* variables)
 		    //reactive component	
 			x[0] = cp_vec[0]->molar_mass*variables[2]/(cp_vec[0]->molar_mass*variables[2] + cp_vec[1]->molar_mass*(1.0-variables[2])); //mass in mole fraction
 			therm_prop("W");
-			Cp_c[0] = isochoric_heat_capacity(cp_vec[1]->molar_mass*variables[0]/(FluidConstant::GasConstant()/1000.0*variables[1]), variables[1],cp_vec[1]->fluid_id);
+			const double R = PhysicalConstant::IdealGasConstant;
+			Cp_c[0] = isochoric_heat_capacity(cp_vec[1]->molar_mass*variables[0]
+			                                  /(R / 1000.0*variables[1]), variables[1],cp_vec[1]->fluid_id);
 			//inert component
 			x[1] = 1.0 - x[0];
 			therm_prop("N");
-			Cp_c[1] = isochoric_heat_capacity(cp_vec[0]->molar_mass*variables[0]/(FluidConstant::GasConstant()/1000.0*variables[1]), variables[1],cp_vec[0]->fluid_id);
+			Cp_c[1] = isochoric_heat_capacity(cp_vec[0]->molar_mass*variables[0]
+			                                  /(R/1000.0*variables[1]), variables[1],cp_vec[0]->fluid_id);
 			specific_heat_capacity = Cp_c[0]*cp_vec[1]->molar_mass*x[0] + Cp_c[1]*cp_vec[0]->molar_mass*x[1]; //mixture isochoric molar heat capacities
-			specific_heat_capacity += (FluidConstant::GasConstant()/1000.0); //isochoric in isobaric
+			specific_heat_capacity += (R/1000.0); //isochoric in isobaric
 			specific_heat_capacity /= (cp_vec[0]->molar_mass*x[1] + cp_vec[1]->molar_mass*x[0]); //molar in specific of mixture value
          break;
 		}
@@ -1990,11 +1993,11 @@ double CFluidProperties::PhaseChange()
 		T_1 = primary_variable_t1[1];
 		if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
 		{
-			humi = exp( pressure / ( FluidConstant::SpecificGasConstant() * temperature_buffer * Density() ) );
+			humi = exp( pressure / ( PhysicalConstant::SpecificGasConstant::WatarVapour * temperature_buffer * Density() ) );
 			density_vapor = humi * Density();
 			drdT = ( vaporDensity_derivative( temperature_buffer ) * humi \
 			         - density_vapor * pressure /
-			         ( FluidConstant::SpecificGasConstant() * Density() *
+			         ( PhysicalConstant::SpecificGasConstant::WatarVapour * Density() *
 			           (temperature_buffer * temperature_buffer) ) ) / Density();
 			H1 =  latent_heat + specific_heat_capacity *
 			     ( temperature_buffer - T_Latent1);
@@ -2038,8 +2041,8 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 			TG = assem->interpolate(assem->NodalVal1);
 			rhow = assem->FluidProp->Density();
 			rho_gw = assem->FluidProp->vaporDensity(TG) * exp(
-			        -PG * FluidConstant::ComponentMolarMassWater() / (rhow * FluidConstant::GasConstant() * TG));
-			p_gw = rho_gw * FluidConstant::GasConstant() * TG / FluidConstant::ComponentMolarMassWater();
+			        -PG  / (rhow * SpecificGasConstant::WatarVapour * TG));
+			p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
 			dens_aug[0] = PG2 - p_gw;
 			dens_aug[1] = TG;
 			m_mfp = mfp_vector[1];
@@ -2207,15 +2210,16 @@ double CFluidProperties::HeatConductivity(double* variables)
 
 		// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
 		//reactive component
+		const double R = PhysicalConstant::IdealGasConstant;
 		x[0] = max(M0*X/(M0*X + M1*(1.0-X)), 0.); // convert mass to mole fraction
-		k[0] = Fluid_Heat_Conductivity(M1*p/(Phys::R*T), T, cp_vec[1]->fluid_id);
+		k[0] = Fluid_Heat_Conductivity(M1*p/(R * T), T, cp_vec[1]->fluid_id);
 		 //inert component
 		 x[1] = 1.0 - x[0];
-		k[1] = Fluid_Heat_Conductivity(M0*p/(Phys::R*T), T, cp_vec[0]->fluid_id);
+		k[1] = Fluid_Heat_Conductivity(M0*p/(R * T), T, cp_vec[0]->fluid_id);
 
 		const double M1_over_M2 = M1/M0; //reactive over inert
-		const double V1_over_V2 = Fluid_Viscosity(M1*p/(Phys::R*T), T, p, cp_vec[1]->fluid_id)
-		                        / Fluid_Viscosity(M0*p/(Phys::R*T), T, p, cp_vec[0]->fluid_id);
+		const double V1_over_V2 = Fluid_Viscosity(M1*p/(R * T), T, p, cp_vec[1]->fluid_id)
+		                        / Fluid_Viscosity(M0*p/(R * T), T, p, cp_vec[0]->fluid_id);
 		const double L1_over_L2 = V1_over_V2 / M1_over_M2;
 
 		const double phi_12 =   (1.0 + pow(L1_over_L2, 0.5) * pow(M1_over_M2, -0.25))
@@ -3572,7 +3576,7 @@ double CFluidProperties::drhodP(double* variables)
 
 			double beta_m = 0.0;
 			double v_m = 0.0;
-			const double R = FluidConstant::GasConstant();
+			const double R = PhysicalConstant::IdealGasConstant;
 
 			for (int CIndex = 2; CIndex < cmpN + 2; CIndex++)
 			{
@@ -3635,7 +3639,7 @@ double a0, A, B, c, C, da0, da, alpha, alpha_m, dvdT, fctA, fctB, fctC, p, R, T,
 	m_pcs = PCSGet("MULTI_COMPONENTIAL_FLOW");
 	p = variables[0];
 	T = variables[1];
-	R = FluidConstant::GasConstant();
+	R = PhysicalConstant::IdealGasConstant;
 	alpha_m=0.0;
 	v_m=0.0;
 	double arguments[2];
@@ -3767,7 +3771,7 @@ double CFluidProperties::ComponentDensity(int CIndex, double* variables)
 	std::vector<double> roots;
 	p = variables[0];
 	T = variables[1];
-	R = FluidConstant::GasConstant();
+	R = PhysicalConstant::IdealGasConstant;
 
 	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL")
 	{
@@ -3822,9 +3826,9 @@ double  CFluidProperties::EffectiveDiffusionCoef(int CIndex, double* variables)
 	case 15:
 	if(eos_name == "VTPR" || eos_name == "PR" ||eos_name == "IDEAL") 
 	{
-	for (int in = 0; in < cmpN; in++)
+	for (int i = 0; i < cmpN; i++)
 	{
-	therm_prop(m_pcs->pcs_primary_function_name[in+2]);
+	therm_prop(m_pcs->pcs_primary_function_name[i+2]);
 	MI  += 1.0/molar_mass;
 	VdI += pow(Vd, 1.0/3.0);
 	}

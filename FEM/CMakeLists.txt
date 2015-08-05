@@ -54,7 +54,6 @@ set( HEADERS
 set( SOURCES
 	BoundaryCondition.cpp
 	CAP_IO.cpp
-	PhysicalConstants.cpp
 	conversion_rate.cpp
 	DistributionInfo.cpp
 	DUMUX.cpp
