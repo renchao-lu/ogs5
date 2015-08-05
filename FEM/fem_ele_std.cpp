@@ -6145,6 +6145,9 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
  */
 
 
+/**
+ * @brief Wrapper function to interface conversion_rate with SUNDIALS CVode solver
+ */
 int cvRhsFn_conversion_rate(realtype t, N_Vector y, N_Vector ydot, void *user_data)
 {
 	conversion_rate& conv_rate = *(conversion_rate*) user_data;
@@ -6159,6 +6162,76 @@ int cvRhsFn_conversion_rate(realtype t, N_Vector y, N_Vector ydot, void *user_da
 	NV_Ith_S(ydot, 0) = dydx_eig(0);
 
 	return 0;
+}
+
+/**
+ * @brief Solves reaction kinetics using SUNDIALS CVode solver
+ * @param y_ini      initial value y
+ * @param delta_t    time step
+ * @param conv_rate  conversion rate object that supplies the rhs of the ode
+ * @param y_fin      output parameter of y at the end of integration
+ * @param dydt_fin   output parameter of dy/dt at the end of integration
+ */
+void cvode_conversion_rate(const double y_ini, double delta_t, conversion_rate* conv_rate, double& y_fin, double& dydt_fin)
+{
+	const realtype T0 = 0.0;
+	const int NEQ = 1;
+
+	/* Create serial vector of length NEQ for I.C. and abstol */
+	N_Vector y = N_VNew_Serial(NEQ);
+	// if (check_flag((void *)y, "N_VNew_Serial", 0)) return(1);
+	N_Vector abstol = N_VNew_Serial(NEQ);
+	// if (check_flag((void *)abstol, "N_VNew_Serial", 0)) return(1);
+
+	// set initial condition
+	// rho_s, reactive fraction
+	NV_Ith_S(y,0) = y_ini;
+
+	/* Set the scalar relative tolerance */
+	realtype reltol = 1e-10;
+	/* Set the vector absolute tolerance */
+	NV_Ith_S(abstol,1) = 1e-10;
+
+	void *cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
+	// if (check_flag((void *)cvode_mem, "CVodeCreate", 0)) return(1);
+
+	/* Call CVodeInit to initialize the integrator memory and specify the
+	 * user's right hand side function in y'=f(t,y), the inital time T0, and
+	 * the initial dependent variable vector y. */
+	int flag = CVodeInit(cvode_mem, cvRhsFn_conversion_rate, T0, y);
+	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
+
+	flag = CVodeSetUserData(cvode_mem, (void*) conv_rate);
+
+	/* Call CVodeSVtolerances to specify the scalar relative tolerance
+	 * and vector absolute tolerances */
+	flag = CVodeSVtolerances(cvode_mem, reltol, abstol);
+	// if (check_flag(&flag, "CVodeSVtolerances", 1)) return(1);
+
+	/* Call CVDense to specify the CVDENSE dense linear solver */
+	flag = CVDense(cvode_mem, NEQ);
+	// if (check_flag(&flag, "CVDense", 1)) return(1);
+
+	realtype t;
+	flag = CVode(cvode_mem, delta_t, y, &t, CV_NORMAL);
+	// std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
+	if (flag != CV_SUCCESS) {
+		std::cerr << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
+	}
+
+	N_Vector ydot = N_VNew_Serial(NEQ);
+
+	y_fin = NV_Ith_S(y, 0);
+	flag = cvRhsFn_conversion_rate(delta_t, y, ydot, conv_rate);
+	dydt_fin = NV_Ith_S(ydot, 0);
+
+	/* Free y and abstol vectors */
+	N_VDestroy_Serial(y);
+	N_VDestroy_Serial(ydot);
+	N_VDestroy_Serial(abstol);
+
+	/* Free integrator memory */
+	CVodeFree(&cvode_mem);
 }
 
 
@@ -6233,80 +6306,9 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
 				const double rho_NR = SolidProp->non_reactive_solid_density;
 
-				// Eigen::VectorXd yy_rho_s = Eigen::VectorXd::Zero(1);
-				// yy_rho_s(0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
-
-				// Eigen::VectorXd dydxx_rho_s = Eigen::VectorXd::Zero(1); // d{rho_s}/dt
-
-				// make evaluation
-				// pcs->m_conversion_rate->eval(0.0, yy_rho_s, dydxx_rho_s);
-				// supply clean value
-
-
-
-
-				const realtype T0 = 0.0;
-				const int NEQ = 1;
-
-				/* Create serial vector of length NEQ for I.C. and abstol */
-				N_Vector y = N_VNew_Serial(NEQ);
-				// if (check_flag((void *)y, "N_VNew_Serial", 0)) return(1);
-				N_Vector abstol = N_VNew_Serial(NEQ);
-				// if (check_flag((void *)abstol, "N_VNew_Serial", 0)) return(1);
-
-				// set initial condition
-				// rho_s, reactive fraction
-				NV_Ith_S(y,0) = (gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR);
-
-				/* Set the scalar relative tolerance */
-				realtype reltol = 1e-6;
-				/* Set the vector absolute tolerance */
-				NV_Ith_S(abstol,1) = 1e-6;
-
-				void *cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
-				// if (check_flag((void *)cvode_mem, "CVodeCreate", 0)) return(1);
-
-				/* Call CVodeInit to initialize the integrator memory and specify the
-				 * user's right hand side function in y'=f(t,y), the inital time T0, and
-				 * the initial dependent variable vector y. */
-				int flag = CVodeInit(cvode_mem, cvRhsFn_conversion_rate, T0, y);
-				// if (check_flag(&flag, "CVodeInit", 1)) return(1);
-
-				flag = CVodeSetUserData(cvode_mem, (void*) pcs->m_conversion_rate);
-
-				/* Call CVodeSVtolerances to specify the scalar relative tolerance
-				 * and vector absolute tolerances */
-				flag = CVodeSVtolerances(cvode_mem, reltol, abstol);
-				// if (check_flag(&flag, "CVodeSVtolerances", 1)) return(1);
-
-				/* Call CVDense to specify the CVDENSE dense linear solver */
-				flag = CVDense(cvode_mem, NEQ);
-				// if (check_flag(&flag, "CVDense", 1)) return(1);
-
-				realtype t;
-				flag = CVode(cvode_mem, delta_t, y, &t, CV_NORMAL);
-				std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
-				if (flag != CV_SUCCESS) {
-					std::cout << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
-				}
-
-
-
-				/*
-				StepperBulischStoer<conversion_rate>& slv = *(pcs->m_solver);
-
-				slv.set_y(yy_rho_s);
-				slv.set_dydx(dydxx_rho_s);
-				// solve ODE
-				// run the ODE solver
-				slv.step(delta_t, pcs->m_conversion_rate);
-				*/
-
-				N_Vector ydot = N_VNew_Serial(NEQ);
-
-				const double y_new = NV_Ith_S(y, 0);
-				flag = cvRhsFn_conversion_rate(delta_t, y, ydot, pcs->m_conversion_rate);
-				const double y_dot_new = NV_Ith_S(ydot, 0);
+				double y_new, y_dot_new;
+				cvode_conversion_rate((gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR),
+				                      delta_t, pcs->m_conversion_rate, y_new, y_dot_new);
 
 				double rho_react;
 
@@ -6323,15 +6325,6 @@ void CFiniteElementStd::CalcSolidDensityRate()
 
 				gp_ele->q_R[gp] = y_dot_new * (1.0-xv_NR);
 
-
-
-				/* Free y and abstol vectors */
-				N_VDestroy_Serial(y);
-				N_VDestroy_Serial(ydot);
-				N_VDestroy_Serial(abstol);
-
-				/* Free integrator memory */
-				CVodeFree(&cvode_mem);
 
 			}
 		}

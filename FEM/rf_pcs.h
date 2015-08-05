@@ -914,10 +914,6 @@ public:
 	// HS 10.2011
 	double m_rho_s_0;
 	conversion_rate *m_conversion_rate;
-	StepperBulischStoer<conversion_rate> *m_solver;
-	Eigen::VectorXd yy_rho_s;     // rho_s
-	Eigen::VectorXd dydxx_rho_s;  // d{rho_s}/dt
-	// end of thermal storage problem
 
 #if defined(USE_PETSC) //03.3012. WW
         /// Initialize the RHS array of the system of equations with the previous solution.
