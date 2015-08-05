@@ -20,7 +20,7 @@
 using Math_Group::CSparseMatrix;
 #endif
 
-#include "PhysicalConstants.h"
+#include "PhysicalConstant.h"
 
 namespace
 {

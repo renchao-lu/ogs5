@@ -36,7 +36,7 @@ extern double gravity_constant;
 //#include "msh_lib.h"
 #include "pcs_dm.h"  //WX
 
-#include "PhysicalConstants.h"
+#include "PhysicalConstant.h"
 
 // MAT-MP data base lists
 list<string>keywd_list;

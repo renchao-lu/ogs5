@@ -1,5 +1,5 @@
 /**
- * \file PhysicalConstants.h
+ * \file PhysicalConstant.h
  *  Define physical constants
  *
  * \author Christoph Lehmann

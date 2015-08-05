@@ -32,7 +32,7 @@ extern double GetCurveValue(int,int,double,int*);
 #include "rf_REACT_GEM.h"
 #endif
 
-#include "PhysicalConstants.h"
+#include "PhysicalConstant.h"
 
 /* Umrechnungen SI - Amerikanisches System */
 //WW #include "steam67.h"

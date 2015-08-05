@@ -2,7 +2,7 @@
 #include "conversion_rate.h"
 #include <cmath>
 
-#include "PhysicalConstants.h"
+#include "PhysicalConstant.h"
 
 //#define SIMPLE_KINETICS //wenn definiert, dann einfache Kinetik, sonst Schaube
 

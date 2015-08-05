@@ -1,6 +1,6 @@
 set( HEADERS
 	BoundaryCondition.h
-	PhysicalConstants.h
+	PhysicalConstant.h
 	Constrained.h
 	conversion_rate.h
 	DistributionInfo.h

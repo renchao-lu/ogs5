@@ -44,7 +44,7 @@ using Math_Group::CSparseMatrix;
 
 #include "pcs_dm.h"                               // displacement coupled
 
-#include "PhysicalConstants.h"
+#include "PhysicalConstant.h"
 
 extern double gravity_constant;                   // TEST, must be put in input file
 
