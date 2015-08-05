@@ -1747,11 +1747,11 @@ double CFiniteElementStd::CalCoefMass()
 		{
 			//           PG = fabs(interpolate(NodalVal1));
 			TG = interpolate(NodalValC);
-			humi = exp(PG / (SpecificGasConstant::WatarVapour * TG * rhow));
+			humi = exp(PG / (SpecificGasConstant::WaterVapour * TG * rhow));
 			rhov = humi * FluidProp->vaporDensity(TG);
 			//
 			val -= poro * rhov * dSdp / rhow;
-			val += (1.0 - Sw) * poro * rhov / (rhow * rhow * SpecificGasConstant::WatarVapour * TG);
+			val += (1.0 - Sw) * poro * rhov / (rhow * rhow * SpecificGasConstant::WaterVapour * TG);
 		}
 		break;
 	case EPT_FLUID_MOMENTUM:                               // Fluid Momentum
@@ -1792,7 +1792,7 @@ double CFiniteElementStd::CalCoefMass2(int dof_index)
     tensor = MediaProp->PermeabilityTensor(Index);
     MediaProp->local_permeability = tensor[0];
 
-	const double Rv = SpecificGasConstant::WatarVapour;
+	const double Rv = SpecificGasConstant::WaterVapour;
 	switch(dof_index)
 	{
 	case 0:
@@ -2573,12 +2573,12 @@ void CFiniteElementStd::CalCoefLaplace(bool Gravity, int ip)
 			TG = interpolate(NodalValC);
 			poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 			tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
-			humi = exp(PG / (SpecificGasConstant::WatarVapour * TG * rhow));
+			humi = exp(PG / (SpecificGasConstant::WaterVapour * TG * rhow));
 			//
 			Dpv = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
 				  * pow(TG / PhysicalConstant::CelsiusZeroInKelvin, 1.8);
 			Dpv *= time_unit_factor * FluidProp->vaporDensity(TG) * humi /
-			       (SpecificGasConstant::WatarVapour * rhow * TG);
+			       (SpecificGasConstant::WaterVapour * rhow * TG);
 			for(size_t i = 0; i < dim; i++)
 				mat[i * dim + i] += Dpv / rhow;
 		}
@@ -2763,9 +2763,9 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 				                                     pcs->m_num->ls_theta);
 				tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro
 						* pow(TG / PhysicalConstant::CelsiusZeroInKelvin, 1.8);
-				expfactor = 1.0 / (rhow * SpecificGasConstant::WatarVapour * TG);
+				expfactor = 1.0 / (rhow * SpecificGasConstant::WaterVapour * TG);
 				rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
-				p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+				p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 				dens_arg[0] -= p_gw;
 			}
 			//
@@ -2802,9 +2802,9 @@ void CFiniteElementStd::CalCoefLaplace2(bool Gravity,  int dof_index)
 			rho_gw = 0.0;
 			if(diffusion)
 			{
-				expfactor = 1.0 / (rhow * SpecificGasConstant::WatarVapour * TG);
+				expfactor = 1.0 / (rhow * SpecificGasConstant::WaterVapour * TG);
 				rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
-				p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+				p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 				dens_arg[0] -= p_gw;
 			}
 			rho_ga = GasProp->Density(dens_arg);
@@ -5259,8 +5259,8 @@ void CFiniteElementStd::CalcAdvection()
 				TG = dens_aug[1];
 				rhow = FluidProp->Density();
 				rho_gw = FluidProp->vaporDensity(TG) *
-						 exp(-PG / (rhow * SpecificGasConstant::WatarVapour * TG));
-				p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+						 exp(-PG / (rhow * SpecificGasConstant::WaterVapour * TG));
+				p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 				dens_aug[0] -= p_gw;
 			}
 				// 29.05.2008. WW/ 2 Dec 2010 AKS
@@ -5483,13 +5483,13 @@ void CFiniteElementStd::CalcRHS_by_ThermalDiffusion()
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
 		tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
 		beta = poro * MediaProp->StorageFunction(Index,unit,pcs->m_num->ls_theta) * Sw;
-		humi = exp(PG / (SpecificGasConstant::WatarVapour * TG * rhow));
+		humi = exp(PG / (SpecificGasConstant::WaterVapour * TG * rhow));
 		Dv   = MediaProp->base_heat_diffusion_coefficient * tort * (1 - Sw) * poro
 			   * pow(TG / PhysicalConstant::CelsiusZeroInKelvin, 1.8);
 		rhov = humi * FluidProp->vaporDensity(TG);
 		drdT =
 		        (FluidProp->vaporDensity_derivative(TG) * humi - rhov * PG /
-		         (SpecificGasConstant::WatarVapour * rhow * TG * TG)) / rhow;
+		         (SpecificGasConstant::WaterVapour * rhow * TG * TG)) / rhow;
 		Dtv = time_unit_factor * Dv * drdT;
 
 		//    }
@@ -10179,7 +10179,7 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		PG2 = interpolate(NodalVal_p2);
 		rhow = FluidProp->Density();
 		poro = MediaProp->Porosity(Index,pcs->m_num->ls_theta);
-		expfactor = 1.0 / (rhow * SpecificGasConstant::WatarVapour * TG);
+		expfactor = 1.0 / (rhow * SpecificGasConstant::WaterVapour * TG);
 		rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
 		//
 		drho_gw_dT = (FluidProp->vaporDensity_derivative(TG)
@@ -10215,7 +10215,7 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		tort = MediaProp->TortuosityFunction(Index,unit,pcs->m_num->ls_theta);
 		tort *= MediaProp->base_heat_diffusion_coefficient * (1 - Sw) * poro
 				* pow(TG / PhysicalConstant::CelsiusZeroInKelvin, 1.8);
-		p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+		p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 		dens_arg[0] = PG2 - p_gw;
 		dens_arg[1] = TG;
 		rho_ga = GasProp->Density(dens_arg); //AKS SEP 2010  //(PG2-p_gw)*GasProp->molar_mass/(FluidConstant::GasConstant()*TG);
@@ -10223,14 +10223,14 @@ double CFiniteElementStd::CalCoef_RHS_T_MPhase(int dof_index)
 		// 1/Mg
 		M_g = (rho_gw / Mw + rho_ga / GasProp->molar_mass) / rho_g;
 		D_gw = tort * rho_g * Mw * GasProp->molar_mass * M_g * M_g / rhow;
-		val = D_gw * drho_gw_dT * SpecificGasConstant::WatarVapour * TG / PG2 * time_unit_factor;
+		val = D_gw * drho_gw_dT * SpecificGasConstant::WaterVapour * TG / PG2 * time_unit_factor;
 		break;
 	case 3:
 		//---------------------------------------------------------------
 		//
 		D_ga = tort * rho_g * Mw * GasProp->molar_mass * M_g * M_g / rhow;
 		// From grad (p_gw/p_g)
-		val = -D_ga * drho_gw_dT * SpecificGasConstant::WatarVapour * TG / PG2 * time_unit_factor;
+		val = -D_ga * drho_gw_dT * SpecificGasConstant::WaterVapour * TG / PG2 * time_unit_factor;
 
 		break;
 		//------------------------------------------------------------------
@@ -11260,9 +11260,9 @@ double CFiniteElementStd::CalCoef_RHS_M_MPhase(int dof_index)
 		//
 		if(diffusion)
 		{
-			expfactor = 1.0 / (rhow * SpecificGasConstant::WatarVapour * TG);
+			expfactor = 1.0 / (rhow * SpecificGasConstant::WaterVapour * TG);
 			rho_gw = FluidProp->vaporDensity(TG) * exp(-PG * expfactor);
-			p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+			p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 			dens_aug[0] -= p_gw;
 		}
 		rho_ga = GasProp->Density(dens_aug);

@@ -2720,7 +2720,7 @@ double* CMediumProperties::HeatConductivityTensor(int number)
 		b = 4975.9;
 		m_mfp = mfp_vector[0];
 		rhow = m_mfp->Density();
-		const double Rv = SpecificGasConstant::WatarVapour;
+		const double Rv = SpecificGasConstant::WaterVapour;
 		expfactor = 1.0 / (rhow * Rv * TG);
 		rho_gw = m_mfp->vaporDensity(TG) * exp(-PG * expfactor);
 		p_gw = rho_gw * Rv * TG;

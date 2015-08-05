@@ -14,8 +14,8 @@
  *              http://www.opengeosys.org/project/license
  */
 
-#ifndef OGS_PHYSICAL_CONSTANTS_H
-#define OGS_PHYSICAL_CONSTANTS_H
+#ifndef OGS_PHYSICAL_CONSTANT_H
+#define OGS_PHYSICAL_CONSTANT_H
 
 /**
  * Namespace containing physical constants
@@ -82,7 +82,7 @@ namespace PhysicalConstant
     }
 
     /**
-      Specific gas constant of water vapor (J/(kg K)) defined by
+      Specific gas constant (J/(kg K)) defined by
       \f[
       R_v = \frac{R}{M}
       \f]
@@ -90,7 +90,7 @@ namespace PhysicalConstant
     */
     namespace SpecificGasConstant
     {
-        const double WatarVapour = 461.504; ///< IdealGasConstant / MolarMass::Water;
+        const double WaterVapour = 461.504; ///< IdealGasConstant / MolarMass::Water;
     }
 }
 #endif //OGS_CONSTANTS_H

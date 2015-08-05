@@ -1095,13 +1095,15 @@ double CFluidProperties::Density(double* variables)
 			           (max(primary_variable[0],
 			                0.0) - p_0) + drho_dT * (max(primary_variable[1],0.0) - T_0));
 			break;
-		case 7:                   // rho_w^l(p,T) for gas phase
+		case 7: // rho_w^l(p,T) for gas phase
 			/* //WW
-			   vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
-			   air_gas_density = (FluidConstant::ComponentMolarMassAir()  * (primary_variable[1]-vapour_pressure)) / (FluidConstant::GasConstant()*(primary_variable[0]+0.0));
-			   vapour_density = (FluidConstant::ComponentMolarMassWater()*vapour_pressure) / (FluidConstant::GasConstant()*(primary_variable[0]+0.0));
-			   density = vapour_density + air_gas_density;
-			 */
+			{
+				const double vapour_pressure = MFPCalcVapourPressure(primary_variable[0]);
+				air_gas_density = (MolarMass::Air * (primary_variable[1]-vapour_pressure)) / (PhysicalConstant::IdealGasConstant*(primary_variable[0]+0.0));
+				vapour_density = (MolarMass::Water * vapour_pressure) / (PhysicalConstant::IdealGasConstant*(primary_variable[0]+0.0));
+				density = vapour_density + air_gas_density;
+			}
+			*/
 			break;
 		case 8:                   // M14 von JdJ
 			density = MATCalcFluidDensityMethod8(primary_variable[0],
@@ -1993,11 +1995,11 @@ double CFluidProperties::PhaseChange()
 		T_1 = primary_variable_t1[1];
 		if(T_1 <= T_Latent1 || T_1 >= T_Latent2)
 		{
-			humi = exp( pressure / ( PhysicalConstant::SpecificGasConstant::WatarVapour * temperature_buffer * Density() ) );
+			humi = exp( pressure / ( PhysicalConstant::SpecificGasConstant::WaterVapour * temperature_buffer * Density() ) );
 			density_vapor = humi * Density();
 			drdT = ( vaporDensity_derivative( temperature_buffer ) * humi \
 			         - density_vapor * pressure /
-			         ( PhysicalConstant::SpecificGasConstant::WatarVapour * Density() *
+			         ( PhysicalConstant::SpecificGasConstant::WaterVapour * Density() *
 			           (temperature_buffer * temperature_buffer) ) ) / Density();
 			H1 =  latent_heat + specific_heat_capacity *
 			     ( temperature_buffer - T_Latent1);
@@ -2041,8 +2043,8 @@ double MFPCalcFluidsHeatCapacity(CFiniteElementStd* assem)
 			TG = assem->interpolate(assem->NodalVal1);
 			rhow = assem->FluidProp->Density();
 			rho_gw = assem->FluidProp->vaporDensity(TG) * exp(
-			        -PG  / (rhow * SpecificGasConstant::WatarVapour * TG));
-			p_gw = rho_gw * SpecificGasConstant::WatarVapour * TG;
+			        -PG  / (rhow * SpecificGasConstant::WaterVapour * TG));
+			p_gw = rho_gw * SpecificGasConstant::WaterVapour * TG;
 			dens_aug[0] = PG2 - p_gw;
 			dens_aug[1] = TG;
 			m_mfp = mfp_vector[1];
