@@ -45,7 +45,6 @@ set( HEADERS
 	solver.h
 	SourceTerm.h
 	SparseMatrixDOK.h
-	StepperBulischStoer.h
 	Stiff_Bulirsch-Stoer.h
 	tools.h
 	vtk.h
