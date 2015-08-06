@@ -1,4 +1,5 @@
 add_subdirectory(Brent)
+add_subdirectory(cvode)
 
 if(OGS_FEM_IPQC)
 	add_subdirectory(IPQC)
