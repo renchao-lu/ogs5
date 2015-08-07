@@ -286,7 +286,9 @@ endif()
 
 # Add subdirectories with the projects
 add_subdirectory( ThirdParty )
-include_directories (SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
+include_directories (SYSTEM ${PROJECT_SOURCE_DIR}/ThirdParty)
+include_directories (SYSTEM ${PROJECT_SOURCE_DIR}/ThirdParty/cvode/include)
+include_directories (SYSTEM ${PROJECT_BINARY_DIR}/ThirdParty/cvode/include)
 
 add_subdirectory( Base )
 add_subdirectory( MathLib )
