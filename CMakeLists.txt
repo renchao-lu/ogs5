@@ -40,6 +40,11 @@ include(scripts/cmake/CompilerSetup.cmake)
 ### Find directories and libraries ###
 include (scripts/cmake/Find.cmake)
 
+### Automatically setup git submodules
+if(GIT_FOUND AND SCM_IS_GIT)
+	include(scripts/cmake/SubmoduleSetup.cmake)
+endif()
+
 ### General project setup ###
 include(scripts/cmake/GeneralProjectSetup.cmake)
 
