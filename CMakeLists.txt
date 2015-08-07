@@ -30,6 +30,7 @@ option(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 option(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
 option(PARALLEL_USE_OPENMP "Use OpenMP" OFF)
+option(OGS_USE_CVODE "Use sundials cvode for TNEQ/TES" OFF)
 
 ### CMake setup ###
 include(scripts/cmake/CMakeSetup.cmake)
@@ -287,8 +288,13 @@ endif()
 # Add subdirectories with the projects
 add_subdirectory( ThirdParty )
 include_directories (SYSTEM ${PROJECT_SOURCE_DIR}/ThirdParty)
-include_directories (SYSTEM ${PROJECT_SOURCE_DIR}/ThirdParty/cvode/include)
-include_directories (SYSTEM ${PROJECT_BINARY_DIR}/ThirdParty/cvode/include)
+if(OGS_USE_CVODE)
+	add_definitions(-DOGS_USE_CVODE)
+	include_directories (SYSTEM
+		${PROJECT_SOURCE_DIR}/ThirdParty/cvode/include
+		${PROJECT_BINARY_DIR}/ThirdParty/cvode/include
+	)
+endif()
 
 add_subdirectory( Base )
 add_subdirectory( MathLib )

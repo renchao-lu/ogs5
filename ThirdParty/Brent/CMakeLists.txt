@@ -1,1 +1,1 @@
-add_library(BrentLib brent.cpp brent.hpp)
+add_library(BrentLib STATIC brent.cpp brent.hpp)

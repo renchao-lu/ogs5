@@ -51,6 +51,7 @@
 using Math_Group::CSparseMatrix;
 #endif
 
+#ifdef OGS_USE_CVODE
 extern "C"
 {
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts., consts. */
@@ -59,6 +60,7 @@ extern "C"
 #include <sundials/sundials_dense.h> /* definitions DlsMat DENSE_ELEM */
 #include <sundials/sundials_types.h> /* definition of type realtype */
 }
+#endif
 
 #include "pcs_dm.h"                               // displacement coupled
 
@@ -6144,7 +6146,7 @@ void CFiniteElementStd::Assemble_Gravity_Multiphase()
    }
  */
 
-
+#ifdef OGS_USE_CVODE
 /**
  * @brief Wrapper function to interface conversion_rate with SUNDIALS CVode solver
  */
@@ -6233,7 +6235,7 @@ void cvode_conversion_rate(const double y_ini, double delta_t, conversion_rate* 
 	/* Free integrator memory */
 	CVodeFree(&cvode_mem);
 }
-
+#endif
 
 //HS, TN 07/2013 Calculates Reaction rate
 void CFiniteElementStd::CalcSolidDensityRate()
@@ -6306,6 +6308,7 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				const double xv_NR  = SolidProp->non_reactive_solid_volume_fraction;
 				const double rho_NR = SolidProp->non_reactive_solid_density;
 
+#ifdef OGS_USE_CVODE
 				double y_new, y_dot_new;
 				cvode_conversion_rate((gp_ele->rho_s_prev[gp] - xv_NR * rho_NR) / (1.0-xv_NR),
 				                      delta_t, pcs->m_conversion_rate, y_new, y_dot_new);
@@ -6324,8 +6327,11 @@ void CFiniteElementStd::CalcSolidDensityRate()
 				gp_ele->rho_s_curr[gp] = (1.0-xv_NR) * rho_react + xv_NR * rho_NR;
 
 				gp_ele->q_R[gp] = y_dot_new * (1.0-xv_NR);
-
-
+#else
+				std::cout << "Error: CMake option OGS_USE_CVODE needs to be set to solve this process type!"
+					<< std::endl;
+				exit(1);
+#endif
 			}
 		}
 		else {//if not reactive solid
