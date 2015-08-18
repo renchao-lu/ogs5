@@ -68,21 +68,14 @@ public:
 	 */
 	FiniteElement::PrimaryVariable getProcessPrimaryVariable () const;
 
-	/** CB
-	 * Get the comp vec index of the process.
-	 * @Return the comp vec index of the process
-	 */
-	int getProcessCompVecIndex () const;
+      /** CB
+       * Get the comp vec index of the process.
+       * @Return the comp vec index of the process
+       */
+      int getProcessCompVecIndex () const;
 
-	/**
-	 * Get the temperature unit.
-	*/
-	TemperatureUnit getTemperatureUnit() const
-	{
-		return _temp_unit;
-	}
 
-	/**
+      /**
 	 * Get a pointer to an object of type CRFProcess.
 	 * @return a pointer to an object of type CRFProcess
 	 */
@@ -104,10 +97,5 @@ protected:
 	 * pointer to the object of class CRFProcess
 	 */
 	CRFProcess* _pcs;
-
-	/**
-	 * Temperature unit
-	*/
-	TemperatureUnit _temp_unit;
 };
 #endif                                            /* PROCESSINFO_H_ */

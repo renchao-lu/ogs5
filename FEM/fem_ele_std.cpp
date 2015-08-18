@@ -8955,15 +8955,6 @@ void CFiniteElementStd::Config()
 		case EPT_PSGLOBAL:
 			for (int i = 0; i < nnodes; i++)
 				NodalVal_SatNW[i] = pcs->GetNodeValue(nodes[i], idxSn1);
-		case EPT_HEAT_TRANSPORT:
-			{
-				const double ref_temperature = (pcs->getTemperatureUnit() == CELSIUS)
-											   ? PhysicalConstant::CelsiusZeroInKelvin : 0.0;
-				for(int i = 0; i < nnodes; i++)
-				{
-					NodalVal1[i] += ref_temperature;
-				}
-			}
 			break;
 		default:
 			break;
@@ -8973,10 +8964,13 @@ void CFiniteElementStd::Config()
 	if(cpl_pcs)                           // ?2WW: flags are necessary
 	{
 		double ref_val = 0.0;
-		if(cpl_pcs->getProcessType() == FiniteElement::HEAT_TRANSPORT)
+		if(cpl_pcs->getProcessType() == FiniteElement::HEAT_TRANSPORT
+			&&	(   pcs->getProcessType() == FiniteElement::MULTI_PHASE_FLOW
+				 || pcs->getProcessType() == FiniteElement::MULTI_COMPONENTIAL_FLOW
+				 ||	pcs->getProcessType() == FiniteElement::AIR_FLOW)
+				)
 		{
-			ref_val = (cpl_pcs->getTemperatureUnit() == CELSIUS)
-					  ? PhysicalConstant::CelsiusZeroInKelvin : 0.0;
+			ref_val = PhysicalConstant::CelsiusZeroInKelvin;
 		}
 
 		for (int i = 0; i < nnodes; i++)
