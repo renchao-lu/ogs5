@@ -10386,7 +10386,7 @@ double CFiniteElementStd::CalCoef_RHS_HEAT_TRANSPORT(int dof_index)
 	dens_arg[2] = Index;
 	rho_g = FluidProp->Density(dens_arg);
 	dens_arg[0] = 4.0e6;
-	dens_arg[1] = 120 +  + PhysicalConstant::CelsiusZeroInKelvin;
+	dens_arg[1] = 120 + PhysicalConstant::CelsiusZeroInKelvin;
 	rho_0 = FluidProp->Density(dens_arg);
 
 	switch(dof_index)
