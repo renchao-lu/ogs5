@@ -1,5 +1,6 @@
 set( HEADERS
 	BoundaryCondition.h
+	PhysicalConstant.h
 	Constrained.h
 	conversion_rate.h
 	DistributionInfo.h
@@ -20,7 +21,6 @@ set( HEADERS
 	matrix_class.h
 	Output.h
 	pcs_dm.h
-	physical_constants.h
 	problem.h
 	ProcessInfo.h
 	prototyp.h

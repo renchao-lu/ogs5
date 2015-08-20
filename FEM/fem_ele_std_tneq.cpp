@@ -28,9 +28,7 @@ const bool GasMassForm = true;
 const bool GasMassForm = false;
 #endif
 
-#include "physical_constants.h"
-
-
+#include "PhysicalConstant.h"
 
 namespace
 {
@@ -156,9 +154,9 @@ double CFiniteElementStd::CalCoefMassTNEQ(const int dof_index)
 		dxn_dxm /= (M0 * X + M1 * (1.0 - X)) * (M0 * X + M1 * (1.0 - X));
 
 		if (GasMassForm) {
-			val = (M1-M0) * p / (Phys::R * T) * dxn_dxm * poro;
+			val = (M1-M0) * p / (PhysicalConstant::IdealGasConstant * T) * dxn_dxm * poro;
 		} else {
-			val = (M1-M0) * p / (Phys::R * T) * dxn_dxm * poro
+			val = (M1-M0) * p / (PhysicalConstant::IdealGasConstant * T) * dxn_dxm * poro
 			       / FluidProp->Density(eos_arg);
 		}
 		break;
