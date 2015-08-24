@@ -3088,7 +3088,7 @@ void CRFProcessDeformation::WriteGaussPointStress(const bool last_step)
 	fstream file_stress(StressFileName.data(),ios::binary | ios::out | ios::trunc);
 	ElementValue_DM* eleV_DM = NULL;
 
-	long ActiveElements = 0;
+	std::size_t ActiveElements = 0;
 	MeshLib::CElem* elem = NULL;
 	for(std::size_t i=0; i<m_msh->ele_vector.size(); i++)
 	{
@@ -3139,11 +3139,11 @@ void CRFProcessDeformation::ReadGaussPointStress()
 	fstream file_stress (StressFileName.data(),ios::binary | ios::in);
 	ElementValue_DM* eleV_DM = NULL;
 	//
-	long ActiveElements;
+	std::size_t ActiveElements;
 	file_stress.read((char*)(&ActiveElements), sizeof(ActiveElements));
-	for (long i = 0; i < ActiveElements; i++)
+	for (std::size_t i = 0; i < ActiveElements; i++)
 	{
-		long index;
+		std::size_t index;
 		file_stress.read((char*)(&index), sizeof(index));
 		eleV_DM = ele_value_dm[index];
 		eleV_DM->Read_BIN(file_stress);

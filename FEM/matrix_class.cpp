@@ -146,8 +146,7 @@ void MatrixBase::Write_BIN(std::fstream& os)
 **************************************************************************/
 void MatrixBase::Read_BIN(std::fstream& is)
 {
-	for(size_t i = 0; i < size; i++)
-		is.read((char*)(&data[i]), sizeof(data[i]));
+	is.read((char*)data, size * sizeof(double));
 }
 
 // Constructors
