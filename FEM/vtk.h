@@ -49,6 +49,7 @@ public:
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
   CVTK(const int rank, std::string rank_str)
   {
+    isInitialized = false;
     mrank = rank;
     mrank_str = rank_str;
   }
