@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    MSHLib - Object:
    Task:
@@ -1593,12 +1602,12 @@ void CElem::FaceNormal(int index0, int index1, double* face)
 **************************************************************************/
 void CElem::SetNormalVector()
 {
-	
+
 	if(!normal_vector)
 		normal_vector = new double[3];  //WW
 	if (this->GetElementType() == MshElemType::LINE) // JOD 2014-11-10
 	{
-		
+
 		double const* const p0(nodes[0]->getData());
 		double const* const p1(nodes[1]->getData());
 		double v1[3] = { p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
@@ -1737,7 +1746,7 @@ void CElem::DirectNormalVector()
 	for (int i = 0; i < 3; i++)
 	if (normal_vector[i] < 0)
 		InvertNormalVector();
-	 
+
 }
 
 /**************************************************************************

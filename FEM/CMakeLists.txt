@@ -45,7 +45,6 @@ set( HEADERS
 	solver.h
 	SourceTerm.h
 	SparseMatrixDOK.h
-	StepperBulischStoer.h
 	Stiff_Bulirsch-Stoer.h
 	tools.h
 	vtk.h
@@ -229,4 +228,9 @@ if (OGS_FEM_CAP)
 	endif ()
 endif ()
 
-
+if(OGS_USE_CVODE)
+	target_link_libraries(FEM
+		sundials_cvode_static
+		sundials_nvecserial_static
+	)
+endif()

@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************/
 /* ROCKFLOW - Modul: files0.c
  */
@@ -58,8 +67,8 @@
 #include "rf_react.h"
 #include "rf_react_int.h"
 //CB2406 #ifdef OGS_FEM_CAP // CAP_REACT
-  // CB_merge_0513 
-  #include "rf_react_cap.h"  
+  // CB_merge_0513
+  #include "rf_react_cap.h"
 
 #ifdef CHEMAPP
 #include "eqlink.h"                               //MX

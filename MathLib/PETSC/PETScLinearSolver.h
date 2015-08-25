@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /*!
    \brief Declaration of class PETScLinearSolver
 
@@ -6,7 +15,7 @@
 */
 #ifndef PETSC_LSOLVER_INC
 #define PETSC_LSOLVER_INC
- 
+
 #include <string>
 #include <vector>
 //kg needed for memcpy in petsc libs
@@ -25,10 +34,10 @@ typedef Vec PETSc_Vec;
 
 namespace petsc_group
 {
- 
+
 class PETScLinearSolver
 {
-public:    
+public:
   PETScLinearSolver (const int size);
     ~PETScLinearSolver();
 
@@ -36,7 +45,7 @@ public:
               const PCType prec_type, const std::string &prefix = "");
 
   void Init(const int *sparse_index = NULL);
-  
+
     void Solver();
     void AssembleRHS_PETSc();
     void AssembleUnkowns_PETSc();
@@ -44,30 +53,30 @@ public:
 
     void MappingSolution();
 
-    int GetLocalSolution(PetscScalar *x_l); 
+    int GetLocalSolution(PetscScalar *x_l);
     int GetLocalRHS(PetscScalar *rhs_l);
     double *GetGlobalSolution() const;
-    void  GetVecValues(const int v_type, PetscInt ni, const PetscInt ix[], 
+    void  GetVecValues(const int v_type, PetscInt ni, const PetscInt ix[],
                        PetscScalar y[]) const;
     PetscReal GetVecNormRHS(NormType  nmtype= NORM_2);
     PetscReal GetVecNormX(NormType  nmtype= NORM_2);
-  
+
     void RestoreLocalSolutionArray(PetscScalar *x_l);
     void RestoreLocalRHSArray(PetscScalar *rhs_l);
-    void getLocalRowColumnSizes(int *m, int *n); 
-    void getOwnerRange(int *start_r, int *end_r); 
+    void getLocalRowColumnSizes(int *m, int *n);
+    void getOwnerRange(int *start_r, int *end_r);
 
     int Size() const {return m_size;}
 
     void set_xVectorEntry(const int i, const double value);
     void set_bVectorEntry(const int i, const double value);
-    void setArrayValues(int arr_idx, PetscInt ni,const PetscInt ix[], 
-                        const PetscScalar y[], InsertMode iora = ADD_VALUES); 
+    void setArrayValues(int arr_idx, PetscInt ni,const PetscInt ix[],
+                        const PetscScalar y[], InsertMode iora = ADD_VALUES);
 
     void add_xVectorEntry(const int i, const double value, InsertMode mode);
     void add_bVectorEntry(const int i, const double value, InsertMode mode);
     void addMatrixEntry(const int i, const int j, const double value);
-    void addMatrixEntries(const int m,const int idxm[], const int n, 
+    void addMatrixEntries(const int m,const int idxm[], const int n,
                           const int idxn[],const PetscScalar v[]);
 
     void Initialize();
@@ -85,10 +94,10 @@ public:
     }
 
     PetscInt getStartRow() const {return i_start;}
-    PetscInt getEndRow() const {return i_end;} 
+    PetscInt getEndRow() const {return i_end;}
 
     PetscInt getMPI_Size() const {return mpi_size;}
-    PetscInt getMPI_Rank() const {return rank;} 
+    PetscInt getMPI_Rank() const {return rank;}
 
     void EQSV_Viewer(std::string file_name);
 
@@ -97,7 +106,7 @@ public:
     PETSc_Vec b;
     PETSc_Vec x;
     KSP lsolver;
-    PC prec; 
+    PC prec;
     PetscInt i_start;
     PetscInt i_end;
 
@@ -111,14 +120,14 @@ public:
 
     PetscInt m_size;
     PetscInt m_size_loc;
-    float ltolerance;  
-    // Number of nonzeros per row in DIAGONAL portion of 
-    // local submatrix (same value is used for all local rows) 
-    PetscInt d_nz; 
-    // Number of nonzeros per row in the OFF-DIAGONAL portion of 
-    // local submatrix (same value is used for all local rows). 
-    PetscInt o_nz; 	
-    // Number of nonzeros per row (same for all rows) 
+    float ltolerance;
+    // Number of nonzeros per row in DIAGONAL portion of
+    // local submatrix (same value is used for all local rows)
+    PetscInt d_nz;
+    // Number of nonzeros per row in the OFF-DIAGONAL portion of
+    // local submatrix (same value is used for all local rows).
+    PetscInt o_nz;
+    // Number of nonzeros per row (same for all rows)
     PetscInt nz;
 
     int mpi_size;
@@ -140,5 +149,5 @@ public:
 };
 
   // extern std::vector<PETScLinearSolver*> EQS_Vector;
-} // end namespace 
+} // end namespace
 #endif

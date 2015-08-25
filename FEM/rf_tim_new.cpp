@@ -1,4 +1,13 @@
-/**************************************************************************
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+ /**************************************************************************
    FEMLib - Object: TIM
    Task:
    Programing:
@@ -1663,11 +1672,11 @@ double CTimeDiscretization::SelfAdaptiveTimeControl ( void )
     // get range of local variables
     VecGetLocalSize(gtim, &count);         // reuse count
     // get local part of vectors
-    VecGetArray(gtim, &gtimp);  
+    VecGetArray(gtim, &gtimp);
     gtimp[0]=time_step_length; // assign value...as we have only one value this should work
-    VecMin(gtim,PETSC_NULL,&tresult); //get minimum value 
+    VecMin(gtim,PETSC_NULL,&tresult); //get minimum value
     time_step_length= tresult;  // assign to time step size
-#endif	
+#endif
 
 	std::cout << "Self_Adaptive time step size: " <<
 	time_step_length << " max iterations: " << n_itr << "\n";
@@ -2085,7 +2094,7 @@ double CTimeDiscretization::MaxTimeStep()
 
 	//only do if Courant number bigger than zero
 	if (dummy > DBL_EPSILON)
-		max_adv_time_step = std::min(max_diff_time_step, dummy);	
+		max_adv_time_step = std::min(max_diff_time_step, dummy);
 	// pcs for a mass transport process ...
 	this_pcs = PCSGet ( "MASS_TRANSPORT" ); // is this always the first one?
 	long nElems = ( long ) this_pcs->m_msh->ele_vector.size();
@@ -2098,7 +2107,7 @@ double CTimeDiscretization::MaxTimeStep()
 		return 0.0;
 	}
 	int pcs_no = m_pcs->pcs_number;
-	
+
 	CompProperties* m_cp = cp_vec[component];
 
 
@@ -2113,7 +2122,7 @@ double CTimeDiscretization::MaxTimeStep()
 		melem =  this_pcs->m_msh->ele_vector[i];
 		//		cout << m_mat_mp->Porosity(i,theta) << " " << melem->representative_length << "\n";
 		// KG44 attention DM needs to be multiplied with porosity!
-		Dm = m_mat_mp->TortuosityFunction(i,g,theta)* m_mat_mp->Porosity(i,theta) 
+		Dm = m_mat_mp->TortuosityFunction(i,g,theta)* m_mat_mp->Porosity(i,theta)
 		                               * m_cp->CalcDiffusionCoefficientCP(i,theta,this_pcs);
 		// now get magnitude of advective velocity to get an estimate of dispersive transport
 		gp_ele = ele_gp_value[i]; //to get gp velocities
@@ -2123,7 +2132,7 @@ double CTimeDiscretization::MaxTimeStep()
 
 		// now get magnitude of dispersion ....take alpha_longitudinal and add it to Dm
 		Dm=Dm+m_mat_mp->mass_dispersion_longitudinal*advective_velocity;
-		
+
 		// calculation of typical length
 		dummy = ( 0.5 * (melem->representative_length * melem->representative_length)) / Dm;
 		max_diff_time_step = std::min(max_diff_time_step, dummy);

@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /*!
    \brief Definition of member functions of class PETScLinearSolver
 
@@ -18,10 +27,10 @@ namespace petsc_group
  {
    ltolerance = 1.e-10;
    m_size = size;
-   time_elapsed = 0.0;   
-   d_nz = 10; 
-   o_nz = 10; 	
-   nz = 10;   
+   time_elapsed = 0.0;
+   d_nz = 10;
+   o_nz = 10;
+   nz = 10;
    m_size_loc = PETSC_DECIDE;
    mpi_size = 0;
    rank = 0;
@@ -48,11 +57,11 @@ void PETScLinearSolver::Init(const int *sparse_index)
    {
       d_nz = sparse_index[0];
       o_nz = sparse_index[1];
-      nz = sparse_index[2]; 
+      nz = sparse_index[2];
       m_size_loc = sparse_index[3];
-   }   
-    
-   VectorCreate(m_size);   
+   }
+
+   VectorCreate(m_size);
    MatrixCreate(m_size, m_size);
 
    global_x = new PetscScalar[m_size];
@@ -70,7 +79,7 @@ void PETScLinearSolver::Init(const int *sparse_index)
  KSPSTCG       "stcg"
  KSPGLTR       "gltr"
  KSPGMRES      "gmres"
- KSPFGMRES     "fgmres" 
+ KSPFGMRES     "fgmres"
  KSPLGMRES     "lgmres"
  KSPDGMRES     "dgmres"
  KSPTCQMR      "tcqmr"
@@ -144,7 +153,7 @@ void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const
 {
    ltolerance = tol;
    sol_type = lsol;
-   pc_type = prec_type; 
+   pc_type = prec_type;
 
    KSPCreate(PETSC_COMM_WORLD,&lsolver);
 
@@ -172,13 +181,13 @@ void PETScLinearSolver::Config(const PetscReal tol, const PetscInt maxits, const
 //-----------------------------------------------------------------
 void PETScLinearSolver::VectorCreate(PetscInt m)
 {
-  //PetscErrorCode ierr;  // returned value from PETSc functions 
+  //PetscErrorCode ierr;  // returned value from PETSc functions
   VecCreate(PETSC_COMM_WORLD, &b);
   ////VecCreateMPI(PETSC_COMM_WORLD,m_size_loc, m, &b);
   //VecSetSizes(b, m_size_loc, m);
   VecSetSizes(b, PETSC_DECIDE, m);
   VecSetFromOptions(b);
-  VecSetUp(b); //kg44 for PETSC 3.3 
+  VecSetUp(b); //kg44 for PETSC 3.3
   VecDuplicate(b, &x);
 
   VecGetLocalSize(x, &m_size_loc);
@@ -218,24 +227,24 @@ void  PETScLinearSolver::getOwnerRange(int *start_r, int *end_r)
 
 void PETScLinearSolver::Solver()
 {
-  
+
    //TEST
 #ifdef TEST_MEM_PETSC
    PetscLogDouble mem1, mem2;
    PetscMemoryGetCurrentUsage(&mem1);
 #endif
- 
-  /* 
+
+  /*
   //TEST
   PetscViewer viewer;
   PetscViewerASCIIOpen(PETSC_COMM_WORLD, "x.txt", &viewer);
   PetscViewerPushFormat(viewer,PETSC_VIEWER_ASCII_MATLAB);
   PetscObjectSetName((PetscObject)x,"Solution");
-  VecView(x, viewer);   
+  VecView(x, viewer);
   */
 
 
-   int its; 
+   int its;
    PetscLogDouble v1,v2;
    KSPConvergedReason reason;
 
@@ -254,7 +263,7 @@ void PETScLinearSolver::Solver()
 #endif
 
    KSPSolve(lsolver, b, x);
-  
+
    KSPGetConvergedReason(lsolver,&reason); //CHKERRQ(ierr);
    if (reason==KSP_DIVERGED_INDEFINITE_PC)
    {
@@ -265,19 +274,19 @@ void PETScLinearSolver::Solver()
    {
      PetscPrintf(PETSC_COMM_WORLD,"\nOther kind of divergence: this should not happen.\n");
    }
-   else 
+   else
    {
      const char *slv_type;
      const char *prc_type;
      KSPGetType(lsolver, &slv_type);
      PCGetType(prec, &prc_type);
 
-      PetscPrintf(PETSC_COMM_WORLD,"\n================================================");         
+      PetscPrintf(PETSC_COMM_WORLD,"\n================================================");
       PetscPrintf(PETSC_COMM_WORLD, "\nLinear solver %s with %s preconditioner",
-                                    slv_type, prc_type);         
+                                    slv_type, prc_type);
       KSPGetIterationNumber(lsolver,&its); //CHKERRQ(ierr);
       PetscPrintf(PETSC_COMM_WORLD,"\nConvergence in %d iterations.\n",(int)its);
-      PetscPrintf(PETSC_COMM_WORLD,"\n================================================");           
+      PetscPrintf(PETSC_COMM_WORLD,"\n================================================");
    }
    PetscPrintf(PETSC_COMM_WORLD,"\n");
 
@@ -293,7 +302,7 @@ void PETScLinearSolver::Solver()
 
    time_elapsed += v2-v1;
 
-   
+
 #define aTEST_OUT
 #ifdef TEST_OUT
   //TEST
@@ -305,7 +314,7 @@ void PETScLinearSolver::Solver()
    PetscObjectSetName((PetscObject)x,"Solution");
    VecView(x, viewer);
    PetscObjectSetName((PetscObject)b,"RHS");
-   VecView(b, viewer);   
+   VecView(b, viewer);
     VecDestroy(&b);
   VecDestroy(&x);
   MatDestroy(&A);
@@ -355,11 +364,11 @@ void PETScLinearSolver::UpdateSolutions(PetscScalar *u)
 
    PetscScalar *xp = NULL; //nullptr;
   VecGetArray(x, &xp);
- 
+
   gatherLocalVectors(xp, u);
 
   //MPI_Barrier(PETSC_COMM_WORLD);
- 
+
   VecRestoreArray(x, &xp);
 
   //TEST
@@ -407,14 +416,14 @@ double *PETScLinearSolver::GetGlobalSolution() const
 
   @param v_type - Indicator for vector: 0: x; 1: rhs
   @param ni 	- number of elements to get
-  @param ix 	- indices where to get them from (in global 1d numbering) 
+  @param ix 	- indices where to get them from (in global 1d numbering)
 */
-void  PETScLinearSolver::GetVecValues(const int v_type, PetscInt ni,const PetscInt ix[], 
+void  PETScLinearSolver::GetVecValues(const int v_type, PetscInt ni,const PetscInt ix[],
 				      PetscScalar y[]) const
 {
   if(v_type == 0)
     VecGetValues(x, ni, ix, y);
-  else 
+  else
     VecGetValues(b, ni, ix, y);
 }
 
@@ -423,28 +432,28 @@ void  PETScLinearSolver::GetVecValues(const int v_type, PetscInt ni,const PetscI
     @param nmtype  - norm type
                      NORM_1 denotes sum_i |x_i|
                      NORM_2 denotes sqrt(sum_i (x_i)^2)
-                     NORM_INFINITY denotes max_i |x_i| 
+                     NORM_INFINITY denotes max_i |x_i|
     06.2012. WW
 */
 PetscReal PETScLinearSolver::GetVecNormRHS(NormType  nmtype)
 {
   PetscReal norm = 0.;
-  VecNorm(b, nmtype, &norm); 
-  return norm; 
+  VecNorm(b, nmtype, &norm);
+  return norm;
 }
 /*!
     Get norm of x
     @param nmtype  - norm type
                      NORM_1 denotes sum_i |x_i|
                      NORM_2 denotes sqrt(sum_i (x_i)^2)
-                     NORM_INFINITY denotes max_i |x_i| 
+                     NORM_INFINITY denotes max_i |x_i|
     06.2012. WW
 */
 PetscReal PETScLinearSolver::GetVecNormX(NormType  nmtype)
 {
   PetscReal norm = 0.;
-  VecNorm(x, nmtype, &norm); 
-  return norm; 
+  VecNorm(x, nmtype, &norm);
+  return norm;
 }
 
 
@@ -468,13 +477,13 @@ void PETScLinearSolver::set_xVectorEntry(const int i, const double value)
   VecSetValues(x,1,&i,&value,INSERT_VALUES);
 }
 
-void  PETScLinearSolver::setArrayValues(int arr_idx, PetscInt ni, const PetscInt ix[], 
-                                       const PetscScalar y[],InsertMode iora) 
+void  PETScLinearSolver::setArrayValues(int arr_idx, PetscInt ni, const PetscInt ix[],
+                                       const PetscScalar y[],InsertMode iora)
 {
    if(arr_idx == 0)
-     VecSetValues(x, ni, ix, y, iora); 
+     VecSetValues(x, ni, ix, y, iora);
    else if(arr_idx == 1)
-     VecSetValues(b, ni, ix, y, iora); 
+     VecSetValues(b, ni, ix, y, iora);
 }
 
 
@@ -497,7 +506,7 @@ void PETScLinearSolver::Initialize( )
    VecSet(b, 0.0);
    VecSet(x, 0.0);
    MatZeroEntries(A);
-} 
+}
 
 
 
@@ -507,7 +516,7 @@ void PETScLinearSolver::addMatrixEntry(const int i, const int j, const double va
   MatSetValue(A, i, j, value, ADD_VALUES);
 }
 
-void PETScLinearSolver::addMatrixEntries(const int m,const int idxm[], const int n, 
+void PETScLinearSolver::addMatrixEntries(const int m,const int idxm[], const int n,
              const int idxn[],const PetscScalar v[])
 {
   MatSetValues(A, m, idxm, n, idxn, v, ADD_VALUES);
@@ -572,10 +581,10 @@ void PETScLinearSolver::EQSV_Viewer(std::string file_name)
   PetscObjectSetName((PetscObject)x,"Solution");
   MatView(A,viewer);
   VecView(b, viewer);
-  VecView(x, viewer);  
+  VecView(x, viewer);
 
 //#define  EXIT_TEST
-#ifdef EXIT_TEST 
+#ifdef EXIT_TEST
   VecDestroy(&b);
   VecDestroy(&x);
   MatDestroy(&A);
@@ -587,8 +596,8 @@ void PETScLinearSolver::EQSV_Viewer(std::string file_name)
     delete []  global_x1;
    PetscFinalize();
    exit(0);
-#endif 
- 
+#endif
+
 }
 
 } //end of namespace

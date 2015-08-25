@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
 
    ROCKFLOW - Modul: mathlib.c
@@ -4997,7 +5006,7 @@ void ShapeFunctionPriHQ(double* N, const double* x)
 	const double L0 = 1.0 - L1 - L2;
 	double t = x[2];
 	double tt1 = 1.0 - t * t;
-	
+
 	double v1 = 2.0 * L0 - 1;
 	double v2 = 2.0 * L1 - 1;
 	double v3 = 2.0 * L2 - 1;

@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 #ifndef VTK_INC
 #define VTK_INC
 
@@ -56,7 +65,7 @@ public:
 #else
   CVTK(void)
   {
-    isInitialized = false; 
+    isInitialized = false;
   }
 #endif
 	virtual ~CVTK(void){}

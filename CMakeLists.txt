@@ -30,6 +30,7 @@ option(OGS_FEM_MPI "Message passing interface configuration" OFF)
 # needs to be set of MPI and GEMS is used
 option(PARALLEL_USE_MPI "Message passing interface configuration also for GEMS coupling" OFF)
 option(PARALLEL_USE_OPENMP "Use OpenMP" OFF)
+option(OGS_USE_CVODE "Use sundials cvode for TNEQ/TES" OFF)
 
 ### CMake setup ###
 include(scripts/cmake/CMakeSetup.cmake)
@@ -39,6 +40,11 @@ include(scripts/cmake/CompilerSetup.cmake)
 
 ### Find directories and libraries ###
 include (scripts/cmake/Find.cmake)
+
+### Automatically setup git submodules
+if(GIT_FOUND AND SCM_IS_GIT)
+	include(scripts/cmake/SubmoduleSetup.cmake)
+endif()
 
 ### General project setup ###
 include(scripts/cmake/GeneralProjectSetup.cmake)
@@ -281,7 +287,14 @@ endif()
 
 # Add subdirectories with the projects
 add_subdirectory( ThirdParty )
-include_directories (SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty)
+include_directories (SYSTEM ${PROJECT_SOURCE_DIR}/ThirdParty)
+if(OGS_USE_CVODE)
+	add_definitions(-DOGS_USE_CVODE)
+	include_directories (SYSTEM
+		${PROJECT_SOURCE_DIR}/ThirdParty/cvode/include
+		${PROJECT_BINARY_DIR}/ThirdParty/cvode/include
+	)
+endif()
 
 add_subdirectory( Base )
 add_subdirectory( MathLib )
@@ -290,10 +303,6 @@ add_subdirectory( MSH )
 add_subdirectory( MSHGEOTOOLS )
 add_subdirectory( FEM )
 add_subdirectory( GCC )
-if(OGS_FEM_CHEMAPP)
-	add_subdirectory( EQL )
-	link_directories( ${CMAKE_SOURCE_DIR}/EQL )
-endif()
 if (OGS_FEM_CAP)
 	add_subdirectory( CMP )
 endif ()

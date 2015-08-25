@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    FEMLib-Object: MAT-MP
    Task: MediumProperties
@@ -505,7 +514,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				break;
 		    case 13: // mineral precipitation / dissolution by ABM
 		        in >> porosity_model_values[0]; // Initial porosity
-		        break;				
+		        break;
 #ifdef GEM_REACT
 			case 15:
 				in >> porosity_model_values[0]; // set a default value for GEMS calculation
@@ -1158,7 +1167,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 					in >> residual_saturation[k];			// sgr: residual saturation, this phase
 					in >> maximum_saturation[k];			// sgm: maximum saturation, this phase
 					in >> saturation_exponent[k];			// exponent (always >= 1.0) (typical might be 2.0)
-                    break;					
+                    break;
 				case 66: // Brooks/Corey					   NON-WETTING
 					// krg = pow(1.0-se,2)*(1.0-pow(se,1.0+2.0/m))
 					// Se  = (sl - slr) / (slm - slr) --> slr = 1 - sgm --> slm = 1 - sgr
@@ -1334,7 +1343,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.clear();
 			continue;
 		}
-		//AS,WX:08.2012 
+		//AS,WX:08.2012
 		if(line_string.find("$PERMEABILITY_FUNCTION_EFFSTRESS")!=std::string::npos)
 		{
 			in.str(GetLineFromFile1(mmp_file));
@@ -1406,7 +1415,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 				KC_permeability_initial = permeability_porosity_model_values[1];
 				KC_porosity_initial  =permeability_porosity_model_values[0];
 
-				
+
 				break;
 			case 4:       // HS: 11.2008, Kozeny-Carman_normalized relationship
 				// we set the tensor type first to isotropic and constant as initial value
@@ -1456,10 +1465,10 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 		        permeability_model = 8;
                 in >> permeability_porosity_updating_type_name;
                 switch(permeability_porosity_updating_type_name[0]) {
-			            case 'K': // Kozeny-Carman formulation 
+			            case 'K': // Kozeny-Carman formulation
 				            permeability_porosity_updating_type = 0;
 				            break;
-			            case 'V': // Verma-Pruess formulation 
+			            case 'V': // Verma-Pruess formulation
 				            permeability_porosity_updating_type = 1;
 				            in >> permeability_porosity_updating_values[0]; // critical porosity
 				            in >> permeability_porosity_updating_values[1]; // n: a power law exponent
@@ -1644,7 +1653,7 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			continue;
 		}
       // Chiogna et al ES&T model: Daq-dependent alpha_t
-      if(line_string.find("$COMPOUND_DEPENDENT_DT")!=std::string::npos) 
+      if(line_string.find("$COMPOUND_DEPENDENT_DT")!=std::string::npos)
 	  { //subkeyword found
         in.str(GetLineFromFile1(mmp_file));
         in >> alpha_t_model >> graindiameter >> hydraulicrad >> betaexpo ;
@@ -1683,10 +1692,10 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 		{
 			in.str(GetLineFromFile1(mmp_file));
 			in >> heat_diffusion_model;
-			if (heat_diffusion_model==1) 
-			  in >> base_heat_diffusion_coefficient; 
+			if (heat_diffusion_model==1)
+			  in >> base_heat_diffusion_coefficient;
 			else if (heat_diffusion_model==273) //JM allow old model number
-			  heat_diffusion_model=1; 
+			  heat_diffusion_model=1;
 			in.clear();
 			continue;
 		}
@@ -2403,7 +2412,7 @@ double CMediumProperties::PermeabilitySaturationFunction(const double wetting_sa
 	        kr = pow(se,(2.0+3.0*m)/m);
 	        kr = MRange(DBL_EPSILON,kr,1.);
 	      break;
-		
+
 		case 66: // 2-phase BROOKS/COREY --> NON-WETTING
 			slr = 1.0 - maximum_saturation[phase];          // slr = 1.0 - sgm
 			slm = 1.0 - residual_saturation[phase];         // slm = 1.0 - sgr
@@ -2896,7 +2905,7 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
 	// Materials
 	Daq = m_cp->CalcDiffusionCoefficientCP(index,theta, m_pcs) ;
 	molecular_diffusion_value = Daq * TortuosityFunction(index,g, theta);
-	
+
 	molecular_diffusion_value = m_cp->CalcDiffusionCoefficientCP(index,theta, m_pcs) * TortuosityFunction(index,g, theta);
 
 	molecular_diffusion_value *= Porosity(index,theta);
@@ -2986,10 +2995,10 @@ double* CMediumProperties::MassDispersionTensorNew(int ip, int tr_phase) // SB +
   // here, the dispersive part of Dmech = Dp + Ddisp is divided by vg to obtain a Daq-dependent alpha_t
   // which is used in the dispersion tensor in the usual way
   if(alpha_t_model == 1) {
-    Pec = vg*graindiameter/Daq; 
+    Pec = vg*graindiameter/Daq;
     arg = pow(Pec, 2) / (Pec + 2 + 4 * pow(graindiameter/hydraulicrad, 2));
     alpha_t = Daq * pow(arg, betaexpo); // D_disp_t (without the diffusion term)
-    alpha_t /= vg;                      // aT = D_disp_t/vg 
+    alpha_t /= vg;                      // aT = D_disp_t/vg
   }
 	// hard stabilization
 	if(this->lgpn > 0.0)
@@ -3881,7 +3890,7 @@ double CMediumProperties::Porosity(long number,double theta)
 		// porosity change through dissolution/precipitation
 		// Here, you should access porosity from the element value vector of the flow process
 		// so you have to get the index of porosity above, if porosity model = 13
-		porosity = m_pcs_flow->GetElementValue(number, idx_n+1); 
+		porosity = m_pcs_flow->GetElementValue(number, idx_n+1);
 		break;
 	}
 #ifdef GEM_REACT
@@ -4053,7 +4062,7 @@ double CMediumProperties::Porosity(CElement* assem)
     case 13:
 		 m_pcs_flow = PCSGetFlow();
 		 idx_n = m_pcs_flow->GetElementValueIndex("POROSITY");
-		 porosity = m_pcs_flow->GetElementValue(number, idx_n+1); 
+		 porosity = m_pcs_flow->GetElementValue(number, idx_n+1);
 		 break;
 #ifdef GEM_REACT
 	case 15:
@@ -4658,7 +4667,7 @@ double CMediumProperties::PermeabilityFunctionStrain(long index,
 		        h_fem->dm_pcs->m_msh->ele_vector[index]->getNodeIndices()[i],
 		        idStrainP);
 	strainp = h_fem->interpolate(strainp_nodes);
-	
+
 		double strain_temp[3] = {0}, vol_strain_temp = 0;
 		int idx_temp[3];
 		int dim = m_pcs->m_msh->GetCoordinateFlag() / 10;
@@ -4753,10 +4762,10 @@ double CMediumProperties::PermeabilityFunctionStrain(long index,
 		                                vol_strain_temp,
 		                                &gueltig);
 			if(vol_strain_temp <= threshold)
-				fac_perm_strain = 1 - permeability_strain_model_value[1] 
+				fac_perm_strain = 1 - permeability_strain_model_value[1]
 			                            * (threshold - vol_strain_temp);
 			else
-				fac_perm_strain = 1 + permeability_strain_model_value[2] 
+				fac_perm_strain = 1 + permeability_strain_model_value[2]
 			                            * (vol_strain_temp - threshold);
 			fac_perm_strain = MRange(permeability_strain_model_value[4], fac_perm_strain
 				                         ,permeability_strain_model_value[5]);
@@ -4801,7 +4810,7 @@ double CMediumProperties::PermeabilityFunctionEffStress(long index, int nnodes, 
 	switch(permeability_effstress_model)
 	{
 		//AS: case 1, permeability directly calculated from curve. 16.08.2012
-	case 1: 
+	case 1:
 		for (j=0; j<size; j++)
 		{
 			for (i=0; i<nnodes; i++)
@@ -6311,7 +6320,7 @@ double CMediumProperties::KozenyCarman_normalized(double k0, double n0, double n
 /**************************************************************************
 FEMLib-Method:
 Task: Returns the new permeability which will be calculated using
-      Kozeny-Carman formulation. It takes intial permeability& porosity 
+      Kozeny-Carman formulation. It takes intial permeability& porosity
 	  and also the new/updated porosity as an input.
 Programing:
 11.2010 AB Implementation
@@ -6335,7 +6344,7 @@ return k_t;
 /*************************************************************************************
 FEMLib-Method:
 Task: Returns the new permeability which will be calculated using
-      Verma-Pruess formulation. It takes intial permeability& porosity, 
+      Verma-Pruess formulation. It takes intial permeability& porosity,
 	  the new/updated porosity, critical porosity and a power law exponent as an input.
 Programing:
 11.2010 AB Implementation
@@ -7073,7 +7082,7 @@ double CMediumProperties::NonlinearFlowFunction(long index, int gp, double /*the
            k_rel = 1.0/(1.0+forchheimer_cf*rhog*sqrt(k[0])/vis*v_mag);
        }
     }
-	*/ 
+	*/
     if (flowlinearity_model==4) // general Forchheimer, -dp/dx = a1 q + a2 q^2
     {
        assert (gp!=-1);
@@ -7725,7 +7734,7 @@ double CMediumProperties::StorageFunctionEffStress(long index, int nnodes, CFini
 	switch(storage_effstress_model)
 	{
 		//AS: case 1, permeability directly calculated from curve. 16.08.2012
-	case 1: 
+	case 1:
 		for (j=0; j<size; j++)
 		{
 			for (i=0; i<nnodes; i++)
@@ -8491,7 +8500,7 @@ double CMediumProperties::HeatTransferCoefficient(long number,double theta, CFin
             assem->SolidProp->HeatConductivityTensor(dimen, heat_conductivity_tensor, assem->MeshElement->GetPatchIndex());
             const double lamda_s = heat_conductivity_tensor[0]; //assume isotropic
             val = 6.*(1-n)/dp*1./(1./h+dp/10.0/lamda_s); // confirmed with DLR people. typo in Schaube2011
-        } 
+        }
         break;
     default:
         break;

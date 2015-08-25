@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    ROCKFLOW - Object: Process PCS
    Task:
@@ -23,8 +32,6 @@
 #include "rf_tim_new.h"
 #include "conversion_rate.h"          // HS, 10.2011
 #include "SparseMatrixDOK.h"
-//#include "Stiff_Bulirsch-Stoer.h"   // HS, 10.2011
-#include "StepperBulischStoer.h"   // HS, 10.2011
 
 #include "Eigen/Eigen"
 
@@ -274,8 +281,8 @@ protected:                                        //WW
 	//New equation and solver objects WW
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
    petsc_group::PETScLinearSolver *eqs_new;
-  int mysize;                               
-  int myrank; 
+  int mysize;
+  int myrank;
 #elif defined(NEW_EQS)
 #ifdef LIS
 public:
@@ -733,7 +740,7 @@ public:
 	bool hasConstrainedST(){ return _hasConstrainedST; }
 	void hasConstrainedBC(const bool state){ _hasConstrainedBC = state; }
 	void hasConstrainedST(const bool state){ _hasConstrainedST = state; }
-	
+
 	void setidxVx(int index){ _idxVx = index; }
 	void setidxVy(int index){ _idxVy = index; }
 	void setidxVz(int index){ _idxVz = index; }
@@ -903,17 +910,13 @@ public:
 	}
 #endif
 	// HS 10.2011
-	double m_rho_s_0; 
+	double m_rho_s_0;
 	conversion_rate *m_conversion_rate;
-	StepperBulischStoer<conversion_rate> *m_solver;
-	Eigen::VectorXd yy_rho_s;     // rho_s
-	Eigen::VectorXd dydxx_rho_s;  // d{rho_s}/dt
-	// end of thermal storage problem 
 
 #if defined(USE_PETSC) //03.3012. WW
         /// Initialize the RHS array of the system of equations with the previous solution.
         void InitializeRHS_with_u0(const bool quad = false); //in rf_pcs1.cpp
-       
+
         /// Initialize the unknows of equations with existing solutions within a index range.
         void initializeRHS_with_u0(const int min_id, const int max_id); //in rf_pcs1.cpp
 #endif

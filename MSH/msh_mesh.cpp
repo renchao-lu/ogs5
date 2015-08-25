@@ -1,3 +1,12 @@
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
 /**************************************************************************
    MSHLib - Object:
    Task:
@@ -222,7 +231,7 @@ CFEMesh::~CFEMesh(void)
     if(PT)    //WW
 	{
        delete PT; // PCH
-	   PT = NULL; 
+	   PT = NULL;
 	}
 
 	// 1.11.2007 WW
@@ -236,7 +245,7 @@ CFEMesh::~CFEMesh(void)
     if(_mesh_grid)
 	{
        delete _mesh_grid;
-       _mesh_grid = NULL; 
+       _mesh_grid = NULL;
 	}
 }
 
@@ -353,7 +362,7 @@ void CFEMesh::computeSearchLength(double c)
 	{
 		// In case all edges have the same length
 		_search_length = 0.5 * mu;
-		return; 
+		return;
 	}
 	else
 	{
@@ -828,7 +837,7 @@ void CFEMesh::ConstructGrid()
 	for (size_t e = 0; e < nod_vector.size(); e++)
 	{
 #if defined(USE_PETSC) // ||defined(USE_OTHER Parallel solver lib) //WW 01.06.2012
-		Eqs2Global_NodeIndex.push_back(nod_vector[e]->GetEquationIndex());	 
+		Eqs2Global_NodeIndex.push_back(nod_vector[e]->GetEquationIndex());
 #else
 		nod_vector[e]->SetEquationIndex(e);
 		Eqs2Global_NodeIndex.push_back(nod_vector[e]->GetIndex());
@@ -1400,7 +1409,7 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
 {
 #if defined(USE_PETSC) // || defined (other parallel linear solver lib). //WW. 05.2012
     long node_id = -1;
-  
+
     const size_t id_act_l_max = static_cast<size_t>(getNumNodesLocal());
     const size_t id_act_h_min = GetNodesNumber(false);
     const size_t id_act_h_max = getLargestActiveNodeID_Quadratic();
@@ -1409,7 +1418,7 @@ long CFEMesh::GetNODOnPNT(const GEOLIB::Point* const pnt) const
     double distmin = getMinEdgeLength()/10.0;
     if(distmin < 0.)
        distmin = DBL_EPSILON;
-  
+
     for (size_t i = 0; i < id_act_l_max; i++)
     {
         sqr_dist = MathLib::sqrDist (nod_vector[i]->getData(), pnt->getData());
@@ -1521,7 +1530,7 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
                           bool automatic,
                           double eps)
 {
-	msh_nod_vector.clear();  
+	msh_nod_vector.clear();
 
 	// search for nodes along polyline in previous computed polylines
 	std::vector<MeshNodesAlongPolyline>::const_iterator it(
@@ -1665,14 +1674,14 @@ void CFEMesh::GetNODOnPLY(const GEOLIB::Polyline* const ply,
                 const size_t n_id = nod_vector[tmp_msh_node_vector[k]]->GetIndex();
                 if(   n_id < static_cast<size_t>(loc_NodesNumber_Linear)
 		      || ( n_id >= start_act_node_h && n_id < end_act_node_h )
-                   ) 
+                   )
                    msh_nod_vector.push_back(tmp_msh_node_vector[k]);
             }
         }
 #else
 	for (size_t k(0); k < tmp_msh_node_vector.size(); k++)
 		msh_nod_vector.push_back(tmp_msh_node_vector[k]);
-#endif 
+#endif
 }
 
 /**************************************************************************
@@ -1805,19 +1814,19 @@ void CFEMesh::findNodesInPolygon(const double area_orig, const double tol,
 				  const CGLPolyline *ply,
 				  std::vector<long> &node_id_vector) const
 {
-   double x1[3]; 
-   double x2[3]; 
-   const size_t np = ply->point_vector.size(); 
+   double x1[3];
+   double x2[3];
+   const size_t np = ply->point_vector.size();
    for (size_t j = start_id; j < end_id; j++)
    {
        double area_calculated = 0.0;
        for (size_t i = 0; i < np; i++)
        {
-          CGLPoint *point = ply->point_vector[i]; 
+          CGLPoint *point = ply->point_vector[i];
           x1[0] = point->x;
           x1[1] = point->y;
           x1[2] = point->z;
-	  
+
           size_t k = i + 1;
           if (i == np - 1)
              k = 0;
@@ -1825,7 +1834,7 @@ void CFEMesh::findNodesInPolygon(const double area_orig, const double tol,
           x2[0] = point->x;
           x2[1] = point->y;
           x2[2] = point->z;
-	  
+
           area_calculated += fabs(ComputeDetTri(x1, nod_vector[j]->getData(), x2));
        }
 
@@ -1921,10 +1930,10 @@ void CFEMesh::GetNODOnSFC_PLY(Surface const* m_sfc,
 
 			if(useQuadratic)
 			{
-				findNodesInPolygon(Area1, Tol, GetNodesNumber(false), 
+				findNodesInPolygon(Area1, Tol, GetNodesNumber(false),
 									getLargestActiveNodeID_Quadratic(),
 									m_ply, msh_nod_vector);
-			
+
 			}
 		}
 #else
@@ -4199,7 +4208,7 @@ void CFEMesh::mHM2NeumannBC()
 	indexChWin =  _geo_name->find_last_of('\\');
 	indexChLinux = _geo_name->find_last_of('/');
 	//
-    std::string file_path; 
+    std::string file_path;
 	if(indexChWin != std::string::npos)
 		file_path = _geo_name->substr(0,indexChWin) + "\\";
 	else if(indexChLinux != std::string::npos)
@@ -4439,7 +4448,7 @@ size_t CFEMesh::FindElementByPoint(const double* xyz)
    CElem *n_ele;
    double tol = 1e-9;
 
-   const size_t ne = ele_vector.size(); 		
+   const size_t ne = ele_vector.size();
    for(size_t i=0; i<ne; i++)
    {
 	 n_ele = ele_vector[i];
@@ -4525,7 +4534,7 @@ size_t CFEMesh::FindElementByPoint(const double* xyz)
      switch(n_ele->GetElementType())
      {
        case  MshElemType::LINE:
-       double d1, d2, d3;	    
+       double d1, d2, d3;
        d1 = 0.;
        d2 = 0.;
 	   d3 = 0.;
@@ -4534,7 +4543,7 @@ size_t CFEMesh::FindElementByPoint(const double* xyz)
           d1 += (x1[kk] - xyz[kk]) * (x1[kk] - xyz[kk]);
           d2 += (x2[kk] - xyz[kk]) * (x2[kk] - xyz[kk]);
           d3 += (x1[kk] - x2[kk]) * (x1[kk] - x2[kk]);
-	   }  
+	   }
        d1 = sqrt(d1);
        d2 = sqrt(d2);
        d3 = sqrt(d3);
@@ -4623,13 +4632,13 @@ size_t CFEMesh::FindElementByPoint(const double* xyz)
   	   a_sub[9] =  ComputeDetTex(x2, x5, x6, xyz);
        a_sub[10] =  ComputeDetTex(x5, x8, x6, xyz);
        a_sub[11] =  ComputeDetTex(x6, x8, x7, xyz);
-  
+
        if(fabs((a_sub[0]+a_sub[1]+a_sub[2]+a_sub[3]+a_sub[4]+a_sub[5]+a_sub[6]+a_sub[7]+a_sub[8]
   	   +a_sub[9]+a_sub[10]+a_sub[11]-a)/a)<tol)
        {
   		 return i;
        }
-  	   break;  
+  	   break;
 
 	   default:
 		 // do nothing with other elements
@@ -4676,7 +4685,7 @@ void CFEMesh::GetConnectedElements(std::vector<long>&nodes_on_sfc, std::vector<l
 	// -->PETSC
 
 
-	// init 
+	// init
 	for (i = 0; i < (long)ele_vector.size(); i++) {
 		ele_vector[i]->selected = 0; //TODO can use a new variable
 	}

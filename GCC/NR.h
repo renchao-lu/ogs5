@@ -1,13 +1,19 @@
-class NR 
+/**
+ * \copyright
+ * Copyright (c) 2015, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+class NR
 {
 private:
 
 public:
 	NR(void);
 	~NR(void);
-/* Methods */
-	static double zbrent(double func(double), const double x1, const double x2, const double tol);
-	static inline double SIGN(const double &a, const double &b);
 
 	static double dfridr (double func(double),        const double x);
 	static double dfridrX(double func(double,double), const double x, const double y);

@@ -20,6 +20,12 @@ else()
 	find_path(TESTDATA_DIR_FOUND testdata.dummy ${PROJECT_SOURCE_DIR}/../testdata)
 endif()
 
+# Check if we have a git repository
+set(SCM_IS_GIT OFF CACHE INTERNAL "")
+if(IS_DIRECTORY ${PROJECT_SOURCE_DIR}/.git)
+	set(SCM_IS_GIT ON CACHE INTERNAL "")
+endif()
+
 ######################
 ### Find tools     ###
 ######################
@@ -37,6 +43,9 @@ find_package(Git)
 if(WIN32 AND GIT_FOUND)
 	find_package(MsysGit)
 endif() # WIN32 AND GIT_FOUND
+
+# Find Bash
+find_program(BASH_TOOL_PATH bash DOC "The bash executable")
 
 # Find dot tool from graphviz
 find_program(DOT_TOOL_PATH dot DOC "Dot tool from graphviz")
