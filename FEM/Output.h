@@ -11,16 +11,17 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
-#include "DistributionInfo.h"
-#include "GeoInfo.h"
-#include "ProcessInfo.h"
-
 #include <iostream>
 #include <vector>
 
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 #include "mpi.h"
 #endif
+
+#include "makros.h"
+#include "DistributionInfo.h"
+#include "GeoInfo.h"
+#include "ProcessInfo.h"
 
 namespace MeshLib
 {class CFEMesh;
@@ -187,7 +188,7 @@ public:
 	 * @param mesh switch on/off mesh info in file name (default = on)
 	 */
 	void addInfoToFileName(std::string& fname, bool geo = true, bool process =
-	                               true, bool mesh = true) const; // 09/2010 TF
+	                               true, bool mesh = true, const std::string &ext=TEC_FILE_EXTENSION) const; // 09/2010 TF
 
 	std::vector<std::string> _nod_value_vector;
     std::vector<std::string> _alias_nod_value_vector;

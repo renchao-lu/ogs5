@@ -276,7 +276,7 @@ void OUTData(double time_current, int time_step_number, bool force_output)
 		//======================================================================
 		// TECPLOT
 		if (m_out->dat_type_name.compare("TECPLOT") == 0
-		    || m_out->dat_type_name.compare("MATLAB") == 0 || m_out->dat_type_name.compare("GNUPLOT") == 0
+		    || m_out->dat_type_name.compare("MATLAB") == 0 || m_out->dat_type_name.compare("GNUPLOT") == 0 || m_out->dat_type_name.compare("CSV") == 0
 		    || m_out->dat_type_name.compare("BINARY") == 0 // 08.2012. WW
            )
 		{
