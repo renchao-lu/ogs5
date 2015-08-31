@@ -130,7 +130,9 @@ private:
 	std::string cmpNm1, cmpNm2, cmpNm3, cmpNm4; // component name
 	int cmpN; //components number
 	// FEM
+public:
 	FiniteElement::CFiniteElementStd* Fem_Ele_Std;
+private:
 	long node;                            //OK4704
 	// Density
 	int density_model;
