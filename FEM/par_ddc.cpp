@@ -1225,7 +1225,7 @@ void DOMCreate()
 		//
 		// receive_cnt_i[]: number of subdomain inner nodes in the concatenated array
 		MPI_Allgatherv ( &inner_size, 1, MPI_INT, receive_cnt_i, receive_cnt, receive_disp,
-		                 MPI_INT, MPI_COMM_WORLD );
+		                 MPI_INT, comm_world1 );
 		inner_size = 0;
 		for(i = 0; i < mysize; i++)
 		{
@@ -1235,7 +1235,7 @@ void DOMCreate()
 #if defined(NEW_BREDUCE)
 		// receive_cnt_b[]: number of subdomain border nodes in the concatenated array
 		MPI_Allgatherv ( &border_size, 1, MPI_INT, receive_cnt_b, receive_cnt, receive_disp,
-		                 MPI_INT, MPI_COMM_WORLD );
+		                 MPI_INT, comm_world1 );
 		border_size = 0;
 		for(i = 0; i < mysize; i++)
 		{
@@ -1584,7 +1584,7 @@ void DOMCreate()
 		}
 		// Concatentate
 		MPI_Allgatherv (x_i, counter, MPI_DOUBLE, x_g, receive_cnt_i, receive_disp_i,
-		                MPI_DOUBLE, MPI_COMM_WORLD );
+		                MPI_DOUBLE, comm_world1 );
 		//
 		// Mapping to the golbal x
 		CPARDomain* a_dom;
@@ -1622,7 +1622,7 @@ void DOMCreate()
 
 #else // if defined(NEW_BREDUCE2)
 		Local2Global(local_x, x_g, n);
-		MPI_Allreduce( x_g, global_x, n, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Allreduce( x_g, global_x, n, MPI_DOUBLE,MPI_SUM,comm_world1);
 #endif
 	}
 
@@ -1661,7 +1661,7 @@ void DOMCreate()
 		}
 		// Concatentate
 		MPI_Allgatherv (x_g, counter, MPI_DOUBLE, x_cat, receive_cnt_b, receive_disp_b,
-		                MPI_DOUBLE, MPI_COMM_WORLD );
+		                MPI_DOUBLE, comm_world1 );
 		for(i = 0; i < dof * n_bc; i++)
 			x_b[i] = 0.0;
 		//
