@@ -115,8 +115,8 @@ bool OUTRead(const std::string& file_base_name,
 #if defined(USE_PETSC) || defined(USE_MPI) //|| defined(other parallel libs)//03.3012. WW
 	int rank , msize;
 	string rank_str;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &msize);
+	MPI_Comm_rank(comm_world1, &rank);
+    MPI_Comm_size(comm_world1, &msize);
 	std::ifstream is;
 	stringstream ss (stringstream::in | stringstream::out);
 	ss.clear();
