@@ -21,6 +21,7 @@
 
 #if defined (USE_MPI)
 #include <mpi.h>
+#include "par_ddc.h"//WH
 #endif
 
 
@@ -337,6 +338,7 @@ Problem::Problem (char* filename) :
 				rc->ExecuteReactionsPHREEQCNewLib();
 #else
 				rc->ExecuteReactionsPHREEQCNew();
+				//rc->ExecutePQCString();
 #endif                                //LIBPHREEQC
 				REACT_vec.clear();
 				REACT_vec.push_back(rc);
@@ -1102,7 +1104,7 @@ void Problem::Euler_TimeDiscretize()
 		SetTimeActiveProcesses(); // JT2012: Activate or deactivate processes with independent time stepping
 //
 #if defined(USE_MPI)
-		MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD); // all processes use the same time stepping (JT->WW. Must they always?)
+		MPI_Bcast(&dt, 1, MPI_DOUBLE, 0, comm_world1); // all processes use the same time stepping (JT->WW. Must they always?)
 #endif
 //
 		// Update time settings
@@ -1425,7 +1427,7 @@ bool Problem::CouplingLoop()
 #if defined(USE_MPI) || defined(USE_PETSC)
 				bool has_constrained_bc_i = a_pcs->hasConstrainedBC();
 				bool has_constrained_bc = false;
-				MPI_Allreduce(&has_constrained_bc_i, &has_constrained_bc, 1, MPI_C_BOOL, MPI_LOR, MPI_COMM_WORLD);
+				MPI_Allreduce(&has_constrained_bc_i, &has_constrained_bc, 1, MPI_C_BOOL, MPI_LOR, comm_world1);
 				if(has_constrained_bc)
 #else
 				if(a_pcs->hasConstrainedBC())
@@ -3224,6 +3226,7 @@ inline double Problem::MassTrasport()
 			REACT_vec[0]->ExecuteReactionsPHREEQCNewLib();
 #else
 			REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+			//REACT_vec[0]->ExecutePQCString();
 #endif                                   // LIBPHREEQC
 #endif                                   // REACTION_ELEMENT
 		}
@@ -3889,7 +3892,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxp,
@@ -3901,7 +3904,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxcp,
@@ -3913,7 +3916,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxS,
@@ -3926,7 +3929,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxp,
@@ -3936,7 +3939,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxcp,
@@ -3946,7 +3949,7 @@ inline void Problem::LOPExecuteRegionalRichardsFlow(CRFProcess* m_pcs_global, in
 					          no_local_nodes,
 					          MPI_DOUBLE,
 					          k,
-					          MPI_COMM_WORLD);
+					          comm_world1);
 					for(l = 0; l < no_local_nodes; l++)
 						m_pcs_global->SetNodeValue(l + rp * no_local_nodes,
 						                           idxS,
