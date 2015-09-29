@@ -38,7 +38,10 @@
 #include <omp.h>
 #endif
 
-
+#ifdef OGS_FEM_IPQC
+//#include <IPhreeqc.h>
+#include "rf_react.h"
+#endif
 
 #include "BuildInfo.h"
 
@@ -71,6 +74,11 @@ void ShowSwitches ( void );
 #if defined(USE_MPI) || defined(USE_MPI_PARPROC) || defined(USE_MPI_REGSOIL) || \
         defined(USE_MPI_GEMS) || defined(USE_MPI_KRC)
 double elapsed_time_mpi;
+MPI_Group group_base1, group_base2;
+MPI_Comm comm_world1, comm_world2;
+int myrank_RT, mysize_RT, myrank_all, mysize_all;
+int signal_master = 1;
+int signal_reaction, signal_rank;
 // ------
 #endif
 
@@ -112,7 +120,9 @@ int main ( int argc, char* argv[] )
 	/* parse command line arguments */
 	std::string anArg;
 	std::string modelRoot;
-
+#ifdef USE_MPI
+		int nb_ddc=0, nb_ddcr=0, nb_ddcpt=0;
+#endif
 	for( int i = 1; i < argc; i++ )
 	{
 		anArg = std::string( argv[i] );
@@ -169,6 +179,21 @@ int main ( int argc, char* argv[] )
 			if (! path.empty()) defaultOutputPath = path;
 			continue;
 		}
+		#ifdef USE_MPI
+		std::string decompositions;
+		if( anArg == "--domain-decomposition" || anArg == "-ddc" )
+		{
+			decompositions = std::string( argv[++i] );
+			nb_ddc = atoi(decompositions.c_str());
+			continue;
+		}
+		if( anArg == "--reaction-decomposition" || anArg == "-ddcr" )
+		{
+			decompositions = std::string( argv[++i] );
+			nb_ddcr = atoi(decompositions.c_str());
+			continue;
+		}
+		#endif
 		// anything left over must be the model root, unless already found
 		if ( modelRoot == "" )
 			modelRoot = std::string( argv[i] );
@@ -207,10 +232,92 @@ int main ( int argc, char* argv[] )
 #endif
 	MPI_Barrier (MPI_COMM_WORLD); // 12.09.2007 WW
 	elapsed_time_mpi = -MPI_Wtime(); // 12.09.2007 WW
-	MPI_Comm_size(MPI_COMM_WORLD,&mysize);
-	MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+	MPI_Group group_base, group_temp0, group_temp1;//WH
+
+	MPI_Comm comm_world;
+	comm_world = MPI_COMM_WORLD;
+	MPI_Comm_group (comm_world, &group_base); //original code, 21/10/2014
+	int np, n_world1; 
+	MPI_Comm_size(comm_world, &np);
+
+	if (nb_ddc > 0)
+	  n_world1 = nb_ddc; //number of ddc
+	else
+	  n_world1= np; //if no -ddc is specified, make ddc = np;
+
+	int world1_ranks[n_world1];
+
+	for( int k = 0; k < n_world1; k++ )
+	{
+		world1_ranks[k]= k;
+	}
+
+	int group_temp0_ranks[] = {0};
+	int n_group_temp0 = 1;
+
+	MPI_Group_incl (group_base, n_world1, world1_ranks, &group_base1); //define group flow and mass transport
+	MPI_Comm_create (comm_world, group_base1, &comm_world1);
+	
+	 //define group for Reaction, without the master rank WH
+	MPI_Group_difference (group_base, group_base1, &group_base2);
+	MPI_Comm_create (comm_world, group_base2, &comm_world2);
+	MPI_Group_size (group_base1, &mysize); //WH
+	MPI_Group_rank (group_base1, &myrank);//WH
+
+	if (myrank != MPI_UNDEFINED) //WH
 	std::cout << "After MPI_Init myrank = " << myrank << '\n';
+
 	time_ele_paral = 0.0;
+	int send_val, send_val1, send_val2, recv_val, recv_val1, recv_val2;
+		  
+	MPI_Group_rank(group_base2, &myrank_RT);
+	MPI_Group_size(group_base2, &mysize_RT);
+	MPI_Group_rank(group_base, &myrank_all);
+	MPI_Group_size(group_base, &mysize_all);
+	if (myrank_RT == MPI_UNDEFINED)
+	  std::cout << myrank_all << " myrank_RT: " << "RT_UNDEFINED" << std::endl;
+ 	else  std::cout << myrank_all << " myrank_RT: " << myrank_RT << std::endl;
+
+	if (myrank == MPI_UNDEFINED)
+	  std::cout << myrank_all << " myrank_MT: " << "MT_UNDEFINED" << std::endl;
+	else std::cout << myrank_all << " myrank_MT: " << myrank << std::endl;
+	signal_rank =  n_world1;//rank of group_RT to receive and send signal
+	MPI_Request requestNull;
+	
+	if ((myrank_RT != MPI_UNDEFINED)&&(mysize_RT > 0)){
+	  while (signal_master > 0)
+	  {
+	    int signal_MT; 
+	    MPI_Status status;
+	    MPI_Recv(&signal_MT, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
+		     &status);
+        if (signal_MT <  0)
+            break;
+    
+	    char string_MT[signal_MT+1];
+	    MPI_Recv(string_MT, signal_MT+1, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD,
+		     &status);
+	    
+	    std::stringstream input, output;	    
+	    input << string_MT;
+
+	    Call_IPQC(&input, &output);
+
+	    std::string tmp = output.str();
+	    char message[tmp.length()+1];
+	    int  strlength = tmp.length();
+	    for(int i=0; i<tmp.length(); i++)
+		message[i] = tmp[i];
+	    message[tmp.length()] = '\0';
+
+      	MPI_Send(&strlength, 1, MPI_INT, status.MPI_SOURCE, myrank_all, MPI_COMM_WORLD);
+	    MPI_Send(message, tmp.length()+1, MPI_CHAR, status.MPI_SOURCE, myrank_all, MPI_COMM_WORLD);
+	   }
+	}
+	if ((myrank_RT != MPI_UNDEFINED)&&(mysize_RT > 0)){
+	   MPI_Finalize();
+	    exit(0);
+	}
 #endif
 /*---------- MPI Initialization ----------------------------------*/
 
@@ -316,9 +423,25 @@ int main ( int argc, char* argv[] )
 	aproblem->setRankandSize(myrank, mysize);
 #endif
 
+#if defined(USE_MPI)
+	if (myrank != MPI_UNDEFINED)
+	{
+#endif
 	aproblem->Euler_TimeDiscretize();
 	delete aproblem;
 	aproblem = NULL;
+#if defined(USE_MPI)
+	  }
+#endif
+
+#if defined(USE_MPI)
+	  if ((myrank_all == 0)&&(mysize_RT > 0)){
+	    int signal_MT = -1, rank_RT;
+	    for (int i=0; i< mysize_RT; i++){
+	      rank_RT = signal_rank + i;
+	      MPI_Send(&signal_MT, 1, MPI_INT, rank_RT, 0, MPI_COMM_WORLD);}   
+ 	  }
+#endif
 	if(ClockTimeVec.size()>0)
 		ClockTimeVec[0]->PrintTimes();  //CB time
 	DestroyClockTime();
