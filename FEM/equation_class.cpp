@@ -990,7 +990,7 @@ double Linear_EQS::dot (const double* xx,  const double* yy)
 	double val_i = dom->Dot_Interior(xx,  yy);
 	val_i += dom->Dot_Border_Vec(xx,  yy);
 	//
-	MPI_Allreduce(&val_i, &val, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&val_i, &val, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 #else
 	for(i = 0; i < size_A; i++)
 		val += xx[i] * yy[i];
@@ -1043,7 +1043,7 @@ inline void Linear_EQS::MatrixMulitVec(double* xx,  double* yy)
 #else
 	dom->Local2Border(yy, border_buffer0);
 	MPI_Allreduce(border_buffer0, border_buffer1, A->Dof() * dom->BSize(),
-	              MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	              MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, yy);
 #endif
 }
@@ -1063,7 +1063,7 @@ inline void Linear_EQS::TransMatrixMulitVec(double* xx,  double* yy)
 #else
 	dom->Local2Border(yy, border_buffer0);
 	MPI_Allreduce(border_buffer0, border_buffer1, A->Dof() * dom->BSize(),
-	              MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	              MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, yy);
 #endif
 }
@@ -1800,7 +1800,7 @@ void Linear_EQS::ComputePreconditioner_Jacobi()
 #else
 	dom->Local2Border(prec_M, border_buffer0); // to buffer
 	MPI_Allreduce(border_buffer0, border_buffer1,
-	              A->Dof() * dom->BSize(), MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	              A->Dof() * dom->BSize(), MPI_DOUBLE,MPI_SUM,comm_world1);
 #endif
 	dom->Border2Local(border_buffer1, prec_M);
 }
@@ -1848,9 +1848,9 @@ int Linear_EQS::CG(double* xg, const long n)
 	//*** Norm b
 	double bNorm_new;
 	double buff_fl = dom->Dot_Interior(b, b);
-	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Local2Border(b, border_buffer0); // p_b s_b as buffer
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	// (rhs on border)
 	buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b);
 	bNorm_new = sqrt(buff_fl);
@@ -1865,7 +1865,7 @@ int Linear_EQS::CG(double* xg, const long n)
 		r[i] = b[i] - s[i];       // r = b-Ax
 	//   Collect border r
 	dom->Local2Border(r, border_buffer0); //
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, r);
 	//
 	// Preconditioning: M^{-1}r
@@ -1944,9 +1944,9 @@ int Linear_EQS::CGS(double* xg, const long n)
 	//*** Norm b
 	double bNorm_new;
 	double buff_fl = dom->Dot_Interior(b, b);
-	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Local2Border(b, border_buffer0); //
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	//  (rhs on border)
 	buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b);
 	bNorm_new = sqrt(buff_fl);
@@ -1961,7 +1961,7 @@ int Linear_EQS::CGS(double* xg, const long n)
 		r0[i] = b[i] - v[i];      // r = b-Ax
 	//   Collect border r
 	dom->Local2Border(r0, border_buffer0); //  buffer
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, r0);
 	//
 	for(i = 0; i < size; i++)
@@ -2078,9 +2078,9 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 	//*** Norm b
 	double bNorm_new;
 	double buff_fl = dom->Dot_Interior(b, b);
-	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Local2Border(b, border_buffer0); // buffer
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	// (rhs on border)
 	buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b);
 	bNorm_new = sqrt(buff_fl);
@@ -2096,7 +2096,7 @@ int Linear_EQS::BiCGStab(double* xg, const long n)
 		r0[i] = b[i] - s[i];      // r = b-Ax
 	//   Collect border r
 	dom->Local2Border(r0, border_buffer0); // buffer
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, r0);
 
 #ifdef  TEST_MPI
@@ -2330,9 +2330,9 @@ int Linear_EQS::BiCG(double* xg, const long n)
 	//*** Norm b
 	double bNorm_new;
 	double buff_fl = dom->Dot_Interior(b, b);
-	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&buff_fl, &bNorm_new, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Local2Border(b, border_buffer0); //
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	//  (rhs on border)
 	buff_fl = bNorm_new + dot(border_buffer1, border_buffer1, size_b);
 	bNorm_new = sqrt(buff_fl);
@@ -2349,7 +2349,7 @@ int Linear_EQS::BiCG(double* xg, const long n)
 		r[i] = b[i] - rt[i];      // r = b-Ax
 	//   Collect border r
 	dom->Local2Border(r, border_buffer0); //  buffer
-	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(border_buffer0, border_buffer1, size_b, MPI_DOUBLE,MPI_SUM,comm_world1);
 	dom->Border2Local(border_buffer1, r);
 	//
 	// Initial.
