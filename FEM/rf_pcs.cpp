@@ -1284,7 +1284,7 @@ void CRFProcess:: WriteSolution()
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 #if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
 	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(comm_world1, &rank);
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
 	                          + pcs_primary_function_name[0] + "_primary_value_"
 	                          + number2str(rank) + ".asc";
@@ -1334,7 +1334,7 @@ void CRFProcess:: ReadSolution()
 	std::string pcs_type_name (convertProcessTypeToString(this->getProcessType()));
 #if defined(USE_PETSC) //|| defined(other parallel libs)//03.3012. WW
 	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(comm_world1, &rank);
 	std::string m_file_name = FileName + "_" + pcs_type_name + "_"
 	                          + pcs_primary_function_name[0] + "_primary_value_"
 	                          + number2str(rank) + ".asc";
@@ -5716,7 +5716,7 @@ void CRFProcess::GlobalAssembly()
 
 		//		  MXDumpGLS("rf_pcs1.txt",1,eqs->b,eqs->x); //abort();
 #if defined(USE_PETSC)  // || defined(other parallel libs)//03~04.3012.
-		MPI_Barrier (MPI_COMM_WORLD);
+		MPI_Barrier (comm_world1); 
 		  //	eqs_new->AssembleRHS_PETSc();
 		//eqs_new->AssembleMatrixPETSc(MAT_FINAL_ASSEMBLY );
 #endif
@@ -6942,7 +6942,7 @@ void CRFProcess::DDCAssembleGlobalMatrix()
 		  }
 		MPI_Allreduce(&r_cnt[0], &r_vec[0], v_disp, MPI_INT, MPI_SUM,  PETSC_COMM_WORLD);
 
-		MPI_Barrier (MPI_COMM_WORLD);
+		MPI_Barrier (comm_world1); 
 		eqs_new->zeroRows_in_Matrix(v_disp, &r_vec[0]);
 #endif //  petsc_zero_row_test
 		eqs_new->AssembleUnkowns_PETSc();
@@ -9632,7 +9632,7 @@ double CRFProcess::CalcIterationNODError(FiniteElement::ErrorMethod method, bool
 	{
 	    double val_temp = pcs_absolute_error[ii];
 	    pcs_absolute_error[ii] = 0.;
-	    MPI_Allreduce(&val_temp, &pcs_absolute_error[ii], 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	    MPI_Allreduce(&val_temp, &pcs_absolute_error[ii], 1, MPI_DOUBLE, MPI_MAX, comm_world1);
 	}
 #endif
 
@@ -13993,8 +13993,8 @@ CRFProcess* PCSGetMass(size_t component_number)
 				}
 			}
 #if defined(USE_MPI)
-			MPI_Allreduce(&norm_e_rank, &norm_e, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&norm_en_rank, &norm_en, 1, MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&norm_e_rank, &norm_e, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
+			MPI_Allreduce(&norm_en_rank, &norm_en, 1, MPI_DOUBLE,MPI_SUM,comm_world1);
 #else                                    //USE_MPI
 			norm_e += norm_e_rank;
 			norm_en += norm_en_rank;
@@ -14083,9 +14083,9 @@ CRFProcess* PCSGetMass(size_t component_number)
 
 #if defined(USE_PETSC) // || defined(other parallel libs)//04.3012. WW
 		double err_l = err;
-		MPI_Allreduce(&err_l, &err, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(&err_l, &err, 1, MPI_DOUBLE, MPI_SUM, comm_world1);
 		long size_xloc = size_x;
-		MPI_Allreduce(&size_xloc, &size_x, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD);
+		MPI_Allreduce(&size_xloc, &size_x, 1, MPI_LONG, MPI_SUM, comm_world1);
 #endif
 		err = sqrt(err / (double)size_x);
 #endif
