@@ -337,8 +337,8 @@ Problem::Problem (char* filename) :
 #ifdef LIBPHREEQC                     // MDL: new functions with built-in phreeqc
 				rc->ExecuteReactionsPHREEQCNewLib();
 #else
-				rc->ExecuteReactionsPHREEQCNew();
-				//rc->ExecutePQCString();
+				//rc->ExecuteReactionsPHREEQCNew();
+				rc->ExecutePQCString();
 #endif                                //LIBPHREEQC
 				REACT_vec.clear();
 				REACT_vec.push_back(rc);
@@ -3225,8 +3225,8 @@ inline double Problem::MassTrasport()
 			// MDL: built-in phreeqc
 			REACT_vec[0]->ExecuteReactionsPHREEQCNewLib();
 #else
-			REACT_vec[0]->ExecuteReactionsPHREEQCNew();
-			//REACT_vec[0]->ExecutePQCString();
+			//REACT_vec[0]->ExecuteReactionsPHREEQCNew();
+			REACT_vec[0]->ExecutePQCString();
 #endif                                   // LIBPHREEQC
 #endif                                   // REACTION_ELEMENT
 		}

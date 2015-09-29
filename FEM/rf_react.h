@@ -37,6 +37,8 @@ public:
 	long elenumber;                       //number of elements
 	/* hier später arrays of reactions reinhängen ?*/
 
+	int myrank;
+	int mysize;
 	// rcml moved here
 	int rcml_number_of_master_species;    /* number of master species (inorgan. equilibrium) */
 	int rcml_number_of_equi_phases;       /* number of phases (in equilibrium) */
@@ -55,6 +57,7 @@ public:
       std::string file_name_database;             // Name of pqc database file in GeoSys project (*.pqc)
 	std::string outfile_name;
 	std::string results_file_name;
+	std::string results_file_name_new;
 	std::vector < std::string > pqc_names; // species names in *-pqc input file
 	std::vector < int > pqc_index;        // index in process array
 	std::vector < int > pqc_process;      // process number in pcs_vector
@@ -67,6 +70,8 @@ public:
 	void InitREACT(void);
 	void ExecuteReactionsPHREEQC(void);
 	void ExecuteReactionsPHREEQCNew(void);
+	void ExecutePQCString(void); //WH
+	int  WriteInputPQCString(long, std::stringstream*, bool); //WH
 	void TestPHREEQC(std::string);
 	int  Call_Phreeqc(void);
 	void GetTransportResults(void);
@@ -77,6 +82,7 @@ public:
 	int  WriteInputPhreeqc(long, /*ifstream*,*/ std::ofstream*);
 	int  ReadOutputPhreeqc(char* fout);
 	int  ReadOutputPhreeqcNew(void);
+	int  ReadOutputIPQC(std::vector<int> ranknodelist, std::stringstream*, double *m_Conc);
 	void ResetpHpe(void);
 	void CalculateReactionRates(void);
 	void SetConcentrationResults(void);
@@ -105,6 +111,7 @@ extern void RCRead(std::string);
 extern double MATCalcIonicStrengthNew(long index);
 extern void REACTInit();                          //OK
 
+extern 	int  Call_IPQC(std::stringstream*, std::stringstream*);
 //Water moles per kg of water
 //#define MOLH2OPERKG 55.50843506
 
