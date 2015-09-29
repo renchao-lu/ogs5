@@ -219,5 +219,24 @@ extern char t_fname[3];
 extern double time_ele_paral;
 #endif
 //---- MPI Parallel --------------
+//---- MPI-IPQC Parallel --------------
+//WH
+#if defined(USE_MPI) || defined(USE_MPI_KRC) && defined(OGS_FEM_IPQC)  
+#include <mpi.h> 
+extern MPI_Group group_base1;
+extern MPI_Comm comm_world1;
+
+extern MPI_Group group_base2;
+extern MPI_Comm comm_world2;
+
+extern int myrank_RT;
+extern int mysize_RT;
+extern int myrank_all;
+extern int mysize_all;
+extern int signal_master;
+extern int signal_reaction;
+extern int signal_rank;
+#endif
+//---- MPI-IPQC Parallel --------------
 #define DDC_FILE_EXTENSION ".ddc"
 #endif
