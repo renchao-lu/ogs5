@@ -4857,7 +4857,7 @@ int REACT::CheckNoReactionNodes(void)
 
 	cout << " CheckNoReactionNodes " << "\n";
 
-	if(aktueller_zeitschritt < 2)         //do not in the very first calculation before first time step and in the first time step
+	if(aktueller_zeitschritt < 0)         //do not in the very first calculation before first time step and in the first time step
 
 		this->check_no_reaction_nodes = false;
 	else
@@ -4878,7 +4878,7 @@ int REACT::CheckNoReactionNodes(void)
 			}
 			// Initialize vector is_a_CCBC
 			// node 1 needed for phreeqc-input
-			for(l = 1; l < (long)m_msh->nod_vector.size(); l++)
+			for(l = 0; l < (long)m_msh->nod_vector.size(); l++)
 				// rateflag == 0 means no reactions calculated
 				if(m_krd->is_a_CCBC[l] == true)
 					this->rateflag[l] = 0;
