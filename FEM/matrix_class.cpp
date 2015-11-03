@@ -313,6 +313,23 @@ void Matrix::LimitSize(size_t nRows, size_t nCols)
 	size = nrows * ncols;
 }
 
+
+void Matrix::Write_ASCII(std::ostream& os) const
+{
+    os << Rows() << " " << Cols() << " ";
+    for (size_t i=0; i<Rows(); i++)
+        for (size_t j=0; j<Cols(); j++)
+            os << (*this)(i,j) << " ";
+}
+
+void Matrix::Read_ASCII(std::istream& is)
+{
+    is >> nrows >> ncols;
+    resize(nrows, ncols);
+    for (size_t i=0; i<size; i++)
+        is >> data[i];
+}
+
 //-----------------------------------------------------
 // Symmetrical matrix
 SymMatrix::SymMatrix(size_t dim) :

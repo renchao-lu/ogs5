@@ -235,6 +235,9 @@ public:
 	// Access to members
 	virtual double& operator() (const size_t i, const size_t j = 0) const;
 	void LimitSize(size_t nRows, size_t nCols = 1);
+
+	void Write_ASCII(std::ostream& os) const;
+	void Read_ASCII(std::istream& is);
 };
 
 // Symmetrical matrix. 12-01-2005. WW
