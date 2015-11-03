@@ -1342,7 +1342,6 @@ bool CVTK::WriteElementValue(std::fstream &fin,
                 if (!this->useBinary)
                 {
                     fin << "          ";
-                    int gp_r, gp_s, gp_t;
                     for(long i_e = 0; i_e < (long)msh->ele_vector.size(); i_e++)
                     {
                         ele = msh->ele_vector[i_e];
@@ -1357,7 +1356,6 @@ bool CVTK::WriteElementValue(std::fstream &fin,
                     write_value_binary<unsigned int>(fin, sizeof(int) * (long)msh->ele_vector.size());
                     for (long i_e = 0; i_e < (long)msh->ele_vector.size(); i_e++) {
                         ele = msh->ele_vector[i_e];
-                        CMediumProperties* mmp = mmp_vector[ele->GetPatchIndex()];
                         double mat_value = getElementMMP(mmp_id, ele, m_pcs);
                         write_value_binary(fin, mat_value);
                     }
