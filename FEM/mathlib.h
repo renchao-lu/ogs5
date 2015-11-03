@@ -318,6 +318,7 @@ double NormalizeVector(double* x, size_t n);
 //extern double MVectorlength(double dx, double dy, double dz);
 extern double PointProduction(double* x, double* y);
 extern void VCopy(double* x, const double* y, const int n);
+extern void VSet(double* x, const size_t n, const double v);
 
 //NW
 extern double MLangevin(double v);

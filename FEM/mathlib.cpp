@@ -5559,6 +5559,18 @@ void VCopy(double* x, const double* y, const int n)
 
 /**************************************************************************
    MSHLib-Method:
+   Task: Vector initialize
+   Programing:
+   20.03.2013 NW Implementation
+**************************************************************************/
+void VSet(double* x, const size_t n, const double v)
+{
+    for (size_t i=0; i<n; i++)
+        x[i] = v;
+}
+
+/**************************************************************************
+   MSHLib-Method:
    Task: Flux limiter function: minmod
    Programing:
    04/2010 NW Implementation
