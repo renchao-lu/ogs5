@@ -1115,8 +1115,8 @@ bool CVTK::WriteElementValue(std::fstream &fin,
 			{
 				fin << "          ";
 				for (long j = 0; j < (long) msh->ele_vector.size(); j++)
-					fin << m_pcs->GetElementValue(j, ele_value_index_vector[i])
-					    << " ";
+					if (ele_value_index_vector[i]>=0)
+						fin << m_pcs->GetElementValue(j, ele_value_index_vector[i]) << " ";
 				fin << "\n";
 			}
 			else
