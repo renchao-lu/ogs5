@@ -934,6 +934,10 @@ private:
 	bool checkConstrainedBC(CBoundaryCondition const & bc, CBoundaryConditionNode const & bc_node, double & bc_value);
 	std::valarray<double> getNodeVelocityVector(const long node_id);
 
+private:
+    int _pcs_constant_model;
+    double _pcs_constant_value;
+    int _pcs_constant_curve;
 };
 
 //========================================================================
