@@ -2589,6 +2589,14 @@ int REACT::Call_Phreeqc(void)
   int returnCode = 1;
   int pqcId = CreateIPhreeqc(); // create IPQC instance
 
+  // enable log file output when KNOBS -logfile is given
+  SetLogFileName(pqcId, "phreeqc.log");
+  SetLogFileOn(pqcId, 1);
+#ifdef ENABLE_IPQC_OUTPUTFILE
+  // here is another output with more information. but cannot be activated via an input file
+  SetOutputFileOn(pqcId, 1);
+#endif
+
   if(this->file_name_database.size()==0)
     ipqc_database = "phreeqc.dat";
   else
