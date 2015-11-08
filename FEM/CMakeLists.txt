@@ -101,6 +101,8 @@ set( SOURCES
 	Stiff_Bulirsch-Stoer.cpp
 	tools.cpp
 	vtk.cpp
+	fem_ele_std_C1.cpp
+	C1_Common.cpp
 )
 
 if(OGS_FEM_PETSC OR OGS_FEM_PETSC_GEMS)

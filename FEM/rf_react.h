@@ -58,6 +58,7 @@ public:
 	std::vector < std::string > pqc_names; // species names in *-pqc input file
 	std::vector < int > pqc_index;        // index in process array
 	std::vector < int > pqc_process;      // process number in pcs_vector
+	std::vector < int > id_pqc_dmdt;      // reaction rate index
 	double gamma_Hplus;                   //activity coefficent of H+ ion
       std::vector < std::string > additional_punches;
 

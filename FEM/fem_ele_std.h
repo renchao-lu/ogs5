@@ -252,6 +252,7 @@ private:
 	SolidProp::CSolidProperties* SolidProp1;         // Matrix for the dual model. YD/WW
 	CRFProcess* pcs;
 	::CRFProcess* cpl_pcs;                // Pointer to coupled process. WW
+	CRFProcess* pcsHeat;
 	process::CRFProcessDeformation* dm_pcs;
 	bool flag_cpl_pcs;                    //OK
 	//-------------------------------------------------------
@@ -440,11 +441,17 @@ protected:
 	double *NodalVal_t2_1;                   // for TEMPERATURE2 current time step
 	double *NodalVal_X0;                     // for CONCENTRATION previous time step
 	double *NodalVal_X1;                     // for CONCENTRATION current time step
+	double *NodalVal_dCdt;
 	//
 	double* weight_func;                  //NW
 	void CalcFEM_FCT();                   //NW
 	//
 	friend class ::CRFProcess;
+
+public:
+	void CalculateAperture();
+	void CalculateMassTransferRate();
+	void ConvertGPValuesToEleValues();
 };
 
 // Vector for storing element values WW
@@ -467,6 +474,20 @@ public:
 #ifdef USE_TRANSPORT_FLUX
 	Matrix TransportFlux;  // Fick or Fourier law  with dispersion      JOD 2014-11-10
 #endif
+
+    // Task C1 stuff
+    std::vector<double> b0;
+    std::vector<double> b1;
+    std::vector<double> db;
+    std::vector<double> Rc0;
+    std::vector<double> Rc1;
+    std::vector<std::vector<double> > dm_fd;
+    std::vector<std::vector<double> > dmdt_fd;
+    std::vector<std::vector<double> > dm_ps;
+    std::vector<std::vector<double> > dmdt_ps;
+    double db_fd;
+    double db_ps;
+
 private:
 	// Friend class
 	friend class ::CRFProcess;

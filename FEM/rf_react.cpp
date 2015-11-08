@@ -35,6 +35,7 @@
 #include <vector>
 #include <sstream>
 
+#include "StringTools.h"
 // Elem object
 #include "fem_ele_std.h"
 #ifdef CHEMAPP
@@ -1031,6 +1032,7 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 	/* zeilenweise lesen */
 	while(std::getline(*pqc_infile, line_string))
 	{
+		if(line_string.empty()) continue;
 		if(line_string.find("#STOP") != string::npos)
 			break;
 		
@@ -1062,7 +1064,8 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 						in.str(line_string);
 						in >> speciesname;
 						//m_pcs = PCSGet("MASS_TRANSPORT",speciesname);// CB HS update
-						m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
+						const int cp_idx = cp_name_2_idx[speciesname];
+						m_pcs = cp_vec[cp_idx]->getProcess();
 						if(m_pcs == NULL)
 						{
 							cout <<
@@ -1079,6 +1082,7 @@ int REACT::ReadReactionModelNew( ifstream* pqc_infile)
 						// store process name in vector processes
 						pqc_process.push_back(m_pcs->pcs_number);
 						pqc_index.push_back(idx);
+						id_pqc_dmdt.push_back(m_pcs->GetNodeValueIndex(speciesname+"_dmdt"));
 						/*                    if(speciesname.compare("H+") == 0){
 						 Hplus_found = 1;
 						 cout << "H+ found in GeoSys species" << "\n";
@@ -2761,262 +2765,284 @@ int REACT::ReadOutputPhreeqc(char* fout)
  ************************************************************************************************/
 int REACT::ReadOutputPhreeqcNew(void)
 {
-int ok = 0;
-int ntot;
-int index, j, ii, zeilenlaenge=10000, anz, idx;
-char str[4000];
-double dval, dval1;
-string speciesname;
-//WW CRFProcess* m_pcs = NULL;
-int n1, n2, n3, n4, n5, n6, dix=0;
-CTimeDiscretization* m_tim = NULL;
-double unitfactor_l = 1, unitfactor_s = 1;
-  bool initial = false;
-
-//CB 19.1.2011
-// Get the reaction interface data
-REACTINT *m_rei = NULL;
-if(REACTINT_vec.size()>0)
-  m_rei = REACTINT_vec[0];
-
-// Get time step number
-// CB dix is no longer required, as we now do all reactions on new TL
-// and copy to old TL before first time step
-if(time_vector.size()>0){
-  m_tim = time_vector[0];
-  if(m_tim->step_current == 0) // instead, do not update values for solid species in initial pqc computation
-    initial = true; //dix = -1;
-}
-
-ifstream ein (this->results_file_name.data(),ios::in);
-if (!ein)
-{
-	cout << "The selected output file doesn't exist!!!" << "\n";
-	return 0;
-}
-n1 = this->rcml_number_of_master_species;
-n2 = this->rcml_number_of_equi_phases;
-n3 = this->rcml_number_of_ion_exchanges;
-n4 = this->rcml_number_of_gas_species;
-  n5 = this->rcml_number_of_kinetics;
-  n6 = this->rcml_number_of_secondary_species;
-// get total number of species in PHREEQC output file
-  ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges
-  + rcml_number_of_gas_species + rcml_number_of_kinetics + rcml_number_of_secondary_species;
-/* get lines to skip */
-anz = this->rcml_number_of_pqcsteps;
-
-ein.getline(str,zeilenlaenge);        /* lies header-Zeile */
-
-for (index = 0; index < this->nodenumber; index++)
-{
-	if(this->rateflag[index] > 0)
-    {
-//CB 19.1.2011
-      // calculate unit conversion factors for phreeqc molarity-->molality
-      if(m_rei) {
-        if(m_rei->unitconversion){
-          m_rei->CalcUnitConversionFactors(index, &unitfactor_l, &unitfactor_s, true);
-          //unitfactor_l =  MOLH2OPERKG / m_rei->water_conc[index];
-          //unitfactor_s = (1 - m_rei->node_porosity[index]) * MOLH2OPERKG / (m_rei->water_conc[index] * m_rei->node_porosity[index] * m_rei->GetWaterSaturation(index));
-          //if(unitfactor_s ==0) unitfactor_s = (1 - m_rei->node_porosity[index]) * MOLH2OPERKG / (m_rei->water_conc[index] * m_rei->node_porosity[index] * 1);
-        }
-      }
-		/* skip one line, if keyword steps larger than 1 even more lines */
-		for(j = 0; j < anz; j++)
-			for(ii = 0; ii < ntot; ii++)
-				ein >> dval;
-		//		if(1 == 1){
-		/*-----------Read the concentration of all master species and pH pe values-------*/
-		for (j = 0; j < n1; j++)
-        {
-			if(ein >> dval)
-            {
-                //					this->val_out[j][i] = dval;
-				//                    speciesname = pqc_names[j];
-				//                    m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
-				//                      idx = m_pcs->GetNodeValueIndex(speciesname)+1;
-				//                              m_pcs->SetNodeValue(index,idx,dval);
-//CB 19.1.2011
-        // convert molality -> molarity
-        if(m_rei) {
-          if(m_rei->unitconversion){
-            idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
-            //mi,w = Ci,w * n *55.5 / CH2O
-            //mi,s = Ci,w * (1-n) *55.5 / CH2O
-            if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-              dval /= unitfactor_l;
-            else if(cp_vec[idx]->transport_phase==1)  {            // solid phase
-              dval /= unitfactor_s;
-              cout << " phreeqc concentration " << dval << " " << unitfactor_s << "\n";
-            }
-          }
-        }
-        pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-        //					if(index <2) cout << " Read aqu. for " << pqc_names[j] << " " << dval << "\n";
-
-
-            }
-
-        }
-
-
-
-/* Read pH and pe */
-if(ein >> dval) // read pH
-{
-	j = n1;
-	pcs_vector[pqc_process[j]]->SetNodeValue(index,
-	                                         pqc_index[j] + dix,
-	                                         dval);
-	//				if(index <2) cout << " Read for pH: " << dval << ", ";
-}
-if(ein >> dval) // read H+
-{
-	j++;
-//CB 19.1.2011
-      // convert molality -> molarity
-      if(m_rei)
-        if(m_rei->unitconversion)
-          dval /= unitfactor_l; // H+ mol/kg --> mol/m³l
-      if(this->gamma_Hplus > 0){
-        //m_pcs = pcs_vector[pqc_process[j]];
-        //if(index<2) cout << " H+: " <<  dval << ", ";
-        pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-      }
-}
-if(ein >> dval) // read pe
-{
-		j++;
-		//WW m_pcs = pcs_vector[pqc_process[j]];
-		//				if(index <2) cout << " pe: " <<  dval << "\n";
-		pcs_vector[pqc_process[j]]->SetNodeValue(index,
-		                                         pqc_index[j] + dix,
-		                                         dval);
-}
-/*--------------------Read the concentration of all equilibrium phases -------*/
-for (j = n1 + 3; j < n1 + 3 + n2; j++)
-{
-  if(ein >> dval){
-		          //speciesname = pqc_names[j];
-		          ////m_pcs = PCSGet("MASS_TRANSPORT",speciesname);// CB HS update
-              //m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
-		          //idx = m_pcs->GetNodeValueIndex(speciesname)+1;
-		          //m_pcs->SetNodeValue(index,idx,dval);
-		//CB 19.1.2011
-		          // convert molality -> molarity, equilibrium species = solid phase species
-		          if(m_rei){
-		            if(m_rei->unitconversion){
-		              idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
-		              //mi,w = Ci,w * n *55.5 / CH2O
-		              //mi,s = Ci,w * (1-n) *55.5 / CH2O
-		              if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-		                dval /= unitfactor_l;
-		              else if(cp_vec[idx]->transport_phase==1)              // solid phase
-		                dval /= unitfactor_s;
-		            }
-		          }
-           if(initial==false)
-             pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-           //				if(index <2)  cout << " Read equi. for " << pqc_names[j] << " " << dval << "\n";
-          }
-}
-
-/*--------------------Read the concentration of all ion exchangers -------*/
-for (j = n1 + 3 + n2; j < n1 + 3 + n2 + n3; j++){
-  if(ein >> dval)
-					/*                speciesname = pqc_names[j];
-					                m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
-					                  idx = m_pcs->GetNodeValueIndex(speciesname)+1;
-					               m_pcs->SetNodeValue(index,idx,dval);
-					 */
-if(initial==false)
-  pcs_vector[pqc_process[j]]->SetNodeValue(index,
-    pqc_index[j] + dix,
-	dval);
-			//                cout << " Read ex. for " << pqc_names[j] << " " << dval << "\n";
-}
-/*--------------------Read the concentration of all gas phase species -------*/
- for (j=n1+3+n2+n3; j<n1+3+n2+n3+n4; j++){
-   if(ein >> dval){
-//CB 19.1.2011
-// we should probably do something about gas species concentration unit conversion...
-      pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-      if(index <2) cout << " Read gas phase for " << pqc_names[j] << " " << dval << "\n";
-   }
- }
-/*--------------------Read the concentration of all (exclusively) kinetic species -------*/
-for (j=n1+3+n2+n3+n4; j<n1+3+n2+n3+n4+n5; j++){
-      if(ein >> dval){
-
-//CB 19.1.2011
-        // convert molality -> molarity
-        if(m_rei) {
-          if(m_rei->unitconversion){
-            idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
-            //mi,w = Ci,w * n *55.5 / CH2O
-            //mi,s = Ci,w * (1-n) *55.5 / CH2O
-            if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-              dval /= unitfactor_l;
-            else if(cp_vec[idx]->transport_phase==1)              // solid phase
-              dval /= unitfactor_s;
-          }
-        }
-        if(initial==false)
-          pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-          //if(index <2) cout << " Read kinetic for " << pqc_names[j] << " " << dval << "\n";
-      }
-}
-
-/*--------------------Read the concentration of all (additional) secondary species -------*/
-for (j=n1+3+n2+n3+n4+n5; j<n1+3+n2+n3+n4+n5+n6; j++){
-   if(ein >> dval){
-
-//CB 19.1.2011
-          // convert molality -> molarity
-          if((additional_punches[j-(n1+3+n2+n3+n4+n5)].find(" MOL")!=string::npos) ||
-             (additional_punches[j-(n1+3+n2+n3+n4+n5)].find(" ACT")!=string::npos)){
-            if(m_rei) {
-              if(m_rei->unitconversion){
-                idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
-                //mi,w = Ci,w * n *55.5 / CH2O
-                //mi,s = Ci,w * (1-n) *55.5 / CH2O
-                if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-                  dval /= unitfactor_l;
-                else if(cp_vec[idx]->transport_phase==1)              // solid phase
-                  dval /= unitfactor_s;
-              }
-            }
-          }
-          if(initial==false)
-            pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
-          //if(index <2) cout << " Read kinetic for " << pqc_names[j] << " " << dval << "\n";
-        }
-      }
-    }//if rateflag
-
-
-    // Determine new gamma_Hplus
-    if (gamma_Hplus > 0)
-    {
-//CB 19.1.2011
-      // Calculate new gamma_Hplus
-      // node value is in units of molarity: mol/m³
-      dval =  pcs_vector[pqc_process[n1+1]]->GetNodeValue(index,pqc_index[n1+1]+dix); // molarity H+
-      if(m_rei)
-        if(m_rei->unitconversion){
-         dval *= unitfactor_l; // mol/m³l --> mol/kg H2o
-         dval1 = pcs_vector[pqc_process[n1]]->GetNodeValue(index,pqc_index[n1]+dix);
-         dval1 = pow(10.0,-dval1);                // activity H+ from pH
-         this->gamma_Hplus = dval1/dval;
-         //        cout << " New gamma_Hplus: " << gamma_Hplus << "\n";
-      }
-
-    }                                             // end for(index...
-}
+	int ok = 0;
+	int ntot;
+	int index, j, ii, zeilenlaenge=10000, anz, idx;
+	char str[4000];
+	double dval, dval1;
+	string speciesname;
+	//WW CRFProcess* m_pcs = NULL;
+	int n1, n2, n3, n4, n5, n6, dix=0;
+	CTimeDiscretization* m_tim = NULL;
+	double unitfactor_l = 1, unitfactor_s = 1;
+	bool initial = false;
+	
+	//CB 19.1.2011
+	// Get the reaction interface data
+	REACTINT *m_rei = NULL;
+	if(REACTINT_vec.size()>0)
+	m_rei = REACTINT_vec[0];
+	
+	// Get time step number
+	// CB dix is no longer required, as we now do all reactions on new TL
+	// and copy to old TL before first time step
+	if(time_vector.size()>0){
+		m_tim = time_vector[0];
+		if(m_tim->step_current == 0) // instead, do not update values for solid species in initial pqc computation
+			initial = true; //dix = -1;
+	}
+	assert(m_tim!=NULL);
+	const double dt = m_tim->CalcTimeStep();
+	
+	ifstream ein (this->results_file_name.data(),ios::in);
+	if (!ein)
+	{
+		cout << "The selected output file doesn't exist!!!" << "\n";
+		return 0;
+	}
+	n1 = this->rcml_number_of_master_species;
+	n2 = this->rcml_number_of_equi_phases;
+	n3 = this->rcml_number_of_ion_exchanges;
+	n4 = this->rcml_number_of_gas_species;
+	n5 = this->rcml_number_of_kinetics;
+	n6 = this->rcml_number_of_secondary_species;
+	// get total number of species in PHREEQC output file
+	ntot = rcml_number_of_master_species + 3 + rcml_number_of_equi_phases + rcml_number_of_ion_exchanges
+	+ rcml_number_of_gas_species + rcml_number_of_kinetics + rcml_number_of_secondary_species;
+	/* get lines to skip */
+	anz = this->rcml_number_of_pqcsteps;
+	
+	ein.getline(str,zeilenlaenge);        /* lies header-Zeile */
+	
+	for (index = 0; index < this->nodenumber; index++)
+	{
+		if(this->rateflag[index] > 0)
+		{
+			//CB 19.1.2011
+			// calculate unit conversion factors for phreeqc molarity-->molality
+			if(m_rei) {
+				if(m_rei->unitconversion){
+					m_rei->CalcUnitConversionFactors(index, &unitfactor_l, &unitfactor_s, true);
+					//unitfactor_l =  MOLH2OPERKG / m_rei->water_conc[index];
+					//unitfactor_s = (1 - m_rei->node_porosity[index]) * MOLH2OPERKG / (m_rei->water_conc[index] * m_rei->node_porosity[index] * m_rei->GetWaterSaturation(index));
+					//if(unitfactor_s ==0) unitfactor_s = (1 - m_rei->node_porosity[index]) * MOLH2OPERKG / (m_rei->water_conc[index] * m_rei->node_porosity[index] * 1);
+				}
+			}
+			/* skip one line, if keyword steps larger than 1 even more lines */
+			for(j = 0; j < anz; j++)
+				for(ii = 0; ii < ntot; ii++)
+					ein >> dval;
+			//		if(1 == 1){
+			/*-----------Read the concentration of all master species and pH pe values-------*/
+			for (j = 0; j < n1; j++)
+			{
+				if(ein >> dval)
+				{
+					//					this->val_out[j][i] = dval;
+					//                    speciesname = pqc_names[j];
+					//                    m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+					//                      idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+					//                              m_pcs->SetNodeValue(index,idx,dval);
+					//CB 19.1.2011
+					// convert molality -> molarity
+					if(m_rei) {
+						if(m_rei->unitconversion){
+							idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
+							//mi,w = Ci,w * n *55.5 / CH2O
+							//mi,s = Ci,w * (1-n) *55.5 / CH2O
+							if(cp_vec[idx]->transport_phase==0)                   // liquid phase
+								dval /= unitfactor_l;
+							else if(cp_vec[idx]->transport_phase==1)  {            // solid phase
+								dval /= unitfactor_s;
+								cout << " phreeqc concentration " << dval << " " << unitfactor_s << "\n";
+							}
+						}
+					}
+					double old_value = pcs_vector[pqc_process[j]]->GetNodeValue(index,pqc_index[j]+dix);
+					double dmdt = (dval - old_value) / dt; // mol/kgw/s
+#ifdef PQC_FIX_INFLOW_C
+					if (index==0) //TODO node id whose concentration is fixed
+						dval = old_value;
+#endif
+					pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+					//					if(index <2) cout << " Read aqu. for " << pqc_names[j] << " " << dval << "\n";
+					pcs_vector[pqc_process[j]]->SetNodeValue(index,id_pqc_dmdt[j]+dix,dmdt);
+				}
+				
+			}
+			
+			
+			
+			/* Read pH and pe */
+			if(ein >> dval) // read pH
+			{
+				j = n1;
+				pcs_vector[pqc_process[j]]->SetNodeValue(index,
+														 pqc_index[j] + dix,
+														 dval);
+				//				if(index <2) cout << " Read for pH: " << dval << ", ";
+			}
+			if(ein >> dval) // read H+
+			{
+				j++;
+				//CB 19.1.2011
+				// convert molality -> molarity
+				if(m_rei)
+					if(m_rei->unitconversion)
+						dval /= unitfactor_l; // H+ mol/kg --> mol/m³l
+				if(this->gamma_Hplus > 0){
+					//m_pcs = pcs_vector[pqc_process[j]];
+					//if(index<2) cout << " H+: " <<  dval << ", ";
+					pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+				}
+			}
+			if(ein >> dval) // read pe
+			{
+				j++;
+				//WW m_pcs = pcs_vector[pqc_process[j]];
+				//				if(index <2) cout << " pe: " <<  dval << "\n";
+				pcs_vector[pqc_process[j]]->SetNodeValue(index,
+														 pqc_index[j] + dix,
+														 dval);
+			}
+			/*--------------------Read the concentration of all equilibrium phases -------*/
+			for (j = n1 + 3; j < n1 + 3 + n2; j++)
+			{
+				if(ein >> dval){
+					//speciesname = pqc_names[j];
+					////m_pcs = PCSGet("MASS_TRANSPORT",speciesname);// CB HS update
+					//m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
+					//idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+					//m_pcs->SetNodeValue(index,idx,dval);
+					//CB 19.1.2011
+					// convert molality -> molarity, equilibrium species = solid phase species
+					if(m_rei){
+						if(m_rei->unitconversion){
+							idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
+							//mi,w = Ci,w * n *55.5 / CH2O
+							//mi,s = Ci,w * (1-n) *55.5 / CH2O
+							if(cp_vec[idx]->transport_phase==0)                   // liquid phase
+								dval /= unitfactor_l;
+							else if(cp_vec[idx]->transport_phase==1)              // solid phase
+								dval /= unitfactor_s;
+						}
+					}
+					if(initial==false)
+						pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+					//				if(index <2)  cout << " Read equi. for " << pqc_names[j] << " " << dval << "\n";
+				}
+			}
+			
+			/*--------------------Read the concentration of all ion exchangers -------*/
+			for (j = n1 + 3 + n2; j < n1 + 3 + n2 + n3; j++){
+				if(ein >> dval)
+				/*                speciesname = pqc_names[j];
+				 m_pcs = PCSGet("MASS_TRANSPORT",speciesname);
+				 idx = m_pcs->GetNodeValueIndex(speciesname)+1;
+				 m_pcs->SetNodeValue(index,idx,dval);
+				 */
+					if(initial==false)
+						pcs_vector[pqc_process[j]]->SetNodeValue(index,
+																 pqc_index[j] + dix,
+																 dval);
+				//                cout << " Read ex. for " << pqc_names[j] << " " << dval << "\n";
+			}
+			/*--------------------Read the concentration of all gas phase species -------*/
+			for (j=n1+3+n2+n3; j<n1+3+n2+n3+n4; j++){
+				if(ein >> dval){
+					//CB 19.1.2011
+					// we should probably do something about gas species concentration unit conversion...
+					pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+					if(index <2) cout << " Read gas phase for " << pqc_names[j] << " " << dval << "\n";
+				}
+			}
+			/*--------------------Read the concentration of all (exclusively) kinetic species -------*/
+			for (j=n1+3+n2+n3+n4; j<n1+3+n2+n3+n4+n5; j++){
+				if(ein >> dval){
+					
+					//CB 19.1.2011
+					// convert molality -> molarity
+					if(m_rei) {
+						if(m_rei->unitconversion){
+							idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
+							//mi,w = Ci,w * n *55.5 / CH2O
+							//mi,s = Ci,w * (1-n) *55.5 / CH2O
+							if(cp_vec[idx]->transport_phase==0)                   // liquid phase
+								dval /= unitfactor_l;
+							else if(cp_vec[idx]->transport_phase==1)              // solid phase
+								dval /= unitfactor_s;
+						}
+					}
+					if(initial==false)
+						pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+					//if(index <2) cout << " Read kinetic for " << pqc_names[j] << " " << dval << "\n";
+				}
+			}
+			
+			/*--------------------Read the concentration of all (additional) secondary species -------*/
+			for (j=n1+3+n2+n3+n4+n5; j<n1+3+n2+n3+n4+n5+n6; j++){
+				if(ein >> dval){
+					
+					//CB 19.1.2011
+					// convert molality -> molarity
+					if((additional_punches[j-(n1+3+n2+n3+n4+n5)].find(" MOL")!=string::npos) ||
+					   (additional_punches[j-(n1+3+n2+n3+n4+n5)].find(" ACT")!=string::npos)){
+						if(m_rei) {
+							if(m_rei->unitconversion){
+								idx = pcs_vector[pqc_process[j]]->GetProcessComponentNumber();
+								//mi,w = Ci,w * n *55.5 / CH2O
+								//mi,s = Ci,w * (1-n) *55.5 / CH2O
+								if(cp_vec[idx]->transport_phase==0)                   // liquid phase
+									dval /= unitfactor_l;
+								else if(cp_vec[idx]->transport_phase==1)              // solid phase
+									dval /= unitfactor_s;
+							}
+						}
+					}
+					if(initial==false)
+						pcs_vector[pqc_process[j]]->SetNodeValue(index,pqc_index[j]+dix,dval);
+					//if(index <2) cout << " Read kinetic for " << pqc_names[j] << " " << dval << "\n";
+				}
+			}
+		}//if rateflag
+		
+		
+		// Determine new gamma_Hplus
+		if (gamma_Hplus > 0)
+		{
+			//CB 19.1.2011
+			// Calculate new gamma_Hplus
+			// node value is in units of molarity: mol/m³
+			dval =  pcs_vector[pqc_process[n1+1]]->GetNodeValue(index,pqc_index[n1+1]+dix); // molarity H+
+			if(m_rei)
+				if(m_rei->unitconversion){
+					dval *= unitfactor_l; // mol/m³l --> mol/kg H2o
+					dval1 = pcs_vector[pqc_process[n1]]->GetNodeValue(index,pqc_index[n1]+dix);
+					dval1 = pow(10.0,-dval1);                // activity H+ from pH
+					this->gamma_Hplus = dval1/dval;
+					//        cout << " New gamma_Hplus: " << gamma_Hplus << "\n";
+				}
+			
+		}                                             // end for(index...
+		CRFProcess* m_pcs = NULL;
+//#define PQC_FIX_pH
+//#define PQC_FIX_PE
+#ifdef PQC_FIX_pH
+		speciesname = "pH";
+		m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
+		idx = m_pcs->GetNodeValueIndex(speciesname) + 1;
+		m_pcs->SetNodeValue(index, idx, 7.);
+#endif
+#ifdef PQC_FIX_PE
+		speciesname = "pe";
+		m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
+		idx = m_pcs->GetNodeValueIndex(speciesname) + 1;
+		m_pcs->SetNodeValue(index, idx,4.0);
+#endif
+	}
 	ok = 1;
 	ein.close();
-  // additional_punches.clear();
+	// additional_punches.clear();
 	return ok;
 }
 

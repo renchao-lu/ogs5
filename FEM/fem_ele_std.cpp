@@ -65,6 +65,7 @@ extern "C"
 #include "pcs_dm.h"                               // displacement coupled
 
 #include "PhysicalConstant.h"
+#include "C1_Common.h"
 
 extern double gravity_constant;                   // TEST, must be put in input file
 
@@ -97,7 +98,7 @@ using namespace PhysicalConstant;
 CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, const int order)
 	: CElement(C_Sys_Flad, order), phase(0), comp(0), SolidProp(NULL),
 	  FluidProp(NULL), MediaProp(NULL),
-	  pcs(Pcs), dm_pcs(NULL), HEAD_Flag(false)
+	  pcs(Pcs), pcsHeat(NULL), dm_pcs(NULL), HEAD_Flag(false)
 {
 	int i;
 	int size_m = 64;                            //25.2.2007
@@ -143,6 +144,7 @@ CFiniteElementStd:: CFiniteElementStd(CRFProcess* Pcs, const int C_Sys_Flad, con
 	NodalVal_t2_1 = new double[size_m];                   // for TEMPERATURE2 current time step
 	NodalVal_X0 = new double[size_m];                     // for CONCENTRATION previous time step
 	NodalVal_X1 = new double[size_m];
+	NodalVal_dCdt = new double[size_m];
 	//NW
 	switch (C_Sys_Flad / 10)
 	{
@@ -573,6 +575,7 @@ CFiniteElementStd::~CFiniteElementStd()
 	delete [] NodalVal_t2_1;
     delete [] NodalVal_X0;
 	delete [] NodalVal_X1;
+	delete [] NodalVal_dCdt;
 	if(idx_vel_disp)
 		delete [] idx_vel_disp;
 	delete [] idx_vel;              //AKS
@@ -860,6 +863,12 @@ void CFiniteElementStd::ConfigureCoupling(CRFProcess* pcs, const int* Shift, boo
 			idx_c1 = idx_c0 + 1;
 		}
 		break;
+	}
+	if (T_Flag && pcs->getProcessType()!=HEAT_TRANSPORT)
+	{
+		pcsHeat = PCSGet("HEAT_TRANSPORT");
+		idxt0 = pcsHeat->GetNodeValueIndex("TEMPERATURE1");
+		idxt1 = idxt0 + 1;
 	}
 }
 
@@ -9085,6 +9094,49 @@ void CFiniteElementStd::Config()
 			}
 		}
 	}
+
+	// Task C1 stuff
+	if (T_Flag && PcsType != EPT_HEAT_TRANSPORT)
+	{
+		assert(pcsHeat!=NULL);
+		for(int i = 0; i < nnodes; i++)
+		{
+			NodalVal_t0[i] = pcsHeat->GetNodeValue(nodes[i],idxt0);
+			NodalVal_t1[i] = pcsHeat->GetNodeValue(nodes[i],idxt1);
+		}
+	}
+	if (PcsType == EPT_MASS_TRANSPORT)
+	{
+		if (isDissolutionActive())
+		{
+			if (ele_gp_value[Index]->dmdt_fd.empty())
+			{
+				ele_gp_value[Index]->dm_fd.resize(vec_mineral_cp.size());
+				ele_gp_value[Index]->dmdt_fd.resize(vec_mineral_cp.size());
+				for (size_t im=0; im<vec_mineral_cp.size(); im++) {
+					ele_gp_value[Index]->dm_fd[im].resize(nGaussPoints, .0);
+					ele_gp_value[Index]->dmdt_fd[im].resize(nGaussPoints, .0);
+				}
+				ele_gp_value[Index]->dm_ps.resize(vec_mineral_cp.size());
+				ele_gp_value[Index]->dmdt_ps.resize(vec_mineral_cp.size());
+				for (size_t im=0; im<vec_mineral_cp.size(); im++) {
+					ele_gp_value[Index]->dm_ps[im].resize(nGaussPoints, .0);
+					ele_gp_value[Index]->dmdt_ps[im].resize(nGaussPoints, .0);
+				}
+			}
+		}
+		if (MediaProp->isFractureApertureVariable())
+		{
+			if (ele_gp_value[Index]->b0.empty())
+			{
+				ele_gp_value[Index]->b0.resize(nGaussPoints, MediaProp->FractureAperture(Index));
+				ele_gp_value[Index]->b1.resize(nGaussPoints, MediaProp->FractureAperture(Index));
+				ele_gp_value[Index]->db.resize(nGaussPoints, 0.0);
+				ele_gp_value[Index]->Rc0.resize(nGaussPoints, MediaProp->FractureContactAreaRatio(Index));
+				ele_gp_value[Index]->Rc1.resize(nGaussPoints, MediaProp->FractureContactAreaRatio(Index));
+			}
+		}
+	}
 }
 /**************************************************************************
    FEMLib-Method:
@@ -10128,6 +10180,8 @@ ElementValue::ElementValue(CRFProcess* m_pcs, CElem* ele) : pcs(m_pcs)
 	// SB electric field
 	//_ctx_Gauss.resize(3,NGPoints);
 	//_ctx_Gauss = 0.0;
+
+    db_fd = db_ps = .0;
 }
 
 

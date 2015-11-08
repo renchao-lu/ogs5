@@ -93,6 +93,8 @@ extern int ReadData(char*, GEOLIB::GEOObjects& geo_obj, std::string& unique_name
 #endif
 #include "rf_kinreact.h"
 
+#include "C1_Common.h"
+
 #if defined(USE_PETSC) // || defined(other parallel libs)//03.3012. WW
 #include "PETSC/PETScLinearSolver.h"
 #endif
@@ -336,13 +338,26 @@ Problem::Problem (char* filename) :
 #ifdef LIBPHREEQC                     // MDL: new functions with built-in phreeqc
 				rc->ExecuteReactionsPHREEQCNewLib();
 #else
+//#define DISABLE_PQC_INITIAL_RUN
+#ifndef DISABLE_PQC_INITIAL_RUN
 				rc->ExecuteReactionsPHREEQCNew();
+#endif
 #endif                                //LIBPHREEQC
 				REACT_vec.clear();
 				REACT_vec.push_back(rc);
 #endif                                // REACTION_ELEMENT
 			}
 		}
+		if (isApertureUpdateActive()) {
+			setupFracturePropertyDistribution(fem_msh_vector[0]);
+		}
+		// initialization for pressure solution
+		if (isDissolutionActive()) {
+			CRFProcess* pcs = transport_processes[0];
+			initializeGpFractureProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
+			updateElementProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
+		}
+
 		//  delete rc;
 	}
 //CB merge CAP 0311
@@ -3226,6 +3241,14 @@ inline double Problem::MassTrasport()
 			REACT_vec[0]->ExecuteReactionsPHREEQCNew();
 #endif                                   // LIBPHREEQC
 #endif                                   // REACTION_ELEMENT
+
+			if (isDissolutionActive()) {
+				CRFProcess* pcs = transport_processes[0];
+				calculateMassTransferRate(fem_msh_vector[0], pcs->fem, pcs->m_num);
+				if (isApertureUpdateActive())
+					calculateApertureChanges(fem_msh_vector[0], pcs->fem, pcs->m_num);
+				updateElementProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
+			}
 		}
 	}
 
