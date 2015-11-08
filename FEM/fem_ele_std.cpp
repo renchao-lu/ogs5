@@ -3693,6 +3693,7 @@ void CFiniteElementStd::CalcMass()
 		mat_fac *= fkt;
 		// ElementVolumeMultiplyer
 		mat_fac *= MediaProp->ElementVolumeMultiplyer;
+		mat_fac *= MediaProp->GeometricPoreSpaceFactor(Index, gp);
 		// Calculate mass matrix
 		if(PcsType == EPT_TWOPHASE_FLOW)
 		  {
@@ -4878,6 +4879,12 @@ void CFiniteElementStd::CalcLaplace()
 				water_depth += (pcs->GetNodeValue(nodes[i],idx1) - Z[i]) * shapefct[i];
 			fkt *= water_depth;
 		}
+		if (MediaProp->isFracture()) {
+			if (PcsType == EPT_LIQUID_FLOW)
+				fkt *= MediaProp->FractureHydraulicAperture(Index, gp); // cubic law
+			else
+				fkt *= MediaProp->FractureAperture(Index, gp);
+		}
 		//---------------------------------------------------------
 
 		for (size_t in = 0; in < dof_n; in++)
@@ -5248,6 +5255,8 @@ void CFiniteElementStd::CalcAdvection()
 		ComputeGradShapefct(1);   // Linear interpolation function....dNJ-1....var dshapefct
 		ComputeShapefct(1);       // Linear interpolation N....var shapefct
 		//---------------------------------------------------------
+		if (MediaProp->isFracture())
+			fkt *= MediaProp->FractureAperture(Index, gp);
         mat_factor = CalCoefAdvection(); // this should be called after calculating shape functions. NW
 		//Velocity
 		vel[0] = mat_factor * gp_ele->Velocity(0, gp);
