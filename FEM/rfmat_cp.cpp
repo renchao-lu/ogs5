@@ -54,6 +54,7 @@ using SolidProp::CSolidProperties;
 // do not need this anymore, use global map structure instead.
 std::map <int, CompProperties*> cp_vec;
 std::map <std::string, int> cp_name_2_idx;
+std::vector<CompProperties*> vec_mineral_cp;
 
 /*========================================================================*/
 /* Component Properties                                                  */
@@ -104,6 +105,8 @@ CompProperties::CompProperties(/* int n // HS we do not need this. */)
 	this->setProcessPrimaryVariable( FiniteElement::CONCENTRATION );
 
 	OutputMassOfComponentInModel = 0;						// 05/2012 BG
+	isMineral = false;
+	pqc_kinetic_mode = 0;
 }
 
 /**************************************************************************
@@ -174,6 +177,8 @@ bool CPRead(std::string file_base_name)
 			m_cp->idx = cp_vec.size();
 			cp_name_2_idx[m_cp->compname] = m_cp->idx;
 			cp_vec[m_cp->idx] = m_cp;
+			if (m_cp->isMineral)
+				vec_mineral_cp.push_back(m_cp);
 			m_cp = NULL;
 			cp_file.seekg(position,ios::beg);
 		}                         // keyword found
@@ -627,6 +632,23 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
 	    //a_zero = 0.0;
 	  }
  }
+		if(line_string.find("$MINERAL") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(rfd_file));
+			int dummy = 0;
+			in >> dummy;
+			isMineral = (dummy == 1);
+			in.clear();
+		}
+		if(line_string.find("$PQC_KINETIC_MODE") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(rfd_file));
+			in >> pqc_kinetic_mode; // 0 no kinetic, 1 free-face dissolution, 2 pressure solution
+			if (pqc_kinetic_mode>0)
+				in >> pqc_kinetic_product_name;
+			std::cout << "-> PQC_KINETIC_MODE is set to" << pqc_kinetic_mode << std::endl;
+			in.clear();
+		}
 	}                                     //end while
 	return position;
 }

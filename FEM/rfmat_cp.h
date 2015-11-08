@@ -60,6 +60,9 @@ public:
 	double Vm;                // Vm [m3/kmol]: Molar volume used in interation parameter calculation
 	double Vd;                 //[cm3/mol] diffusion volume
 	int OutputMassOfComponentInModel;		// 05/2012 BG
+	bool isMineral;
+	int pqc_kinetic_mode; // 0 no kinetic reaction, 1 free-face dissolution, 2 pressure solution
+	std::string pqc_kinetic_product_name;
 
 	/* Diffusionsmodelle und zugehoerige Beschreibungswerte */
 	int diffusion_model;                  /* Zerfallsmodell in geloester Phase */
@@ -153,6 +156,9 @@ extern std::map <std::string, int> cp_name_2_idx;
  * Here is a straight forward example:
  * cp_vec[cp_name_2_idx["O2"]];
  */
+
+/// a vector of pointers to mineral compound objects
+extern std::vector<CompProperties*> vec_mineral_cp;
 
 /* ----------------------------------------------------------------------- */
 /* Read all Component Properties instance by instance from input file *.cp */
