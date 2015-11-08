@@ -3040,6 +3040,26 @@ void CRFProcess::ConfigMassTransport()
 	/* SB: immer solver properties der ersten Komponente nehmen */
 	//SB ??
 	pcs_sol_name = "LINEAR_SOLVER_PROPERTIES_CONCENTRATION1";
+
+	const CompProperties* cp = cp_vec[pcs_component_number];
+	pcs_secondary_function_name[pcs_number_of_secondary_nvals] = new char[80];
+	strncpy((char*)pcs_secondary_function_name[pcs_number_of_secondary_nvals], (cp->compname + "_dmdt").c_str(), 80);
+	pcs_secondary_function_unit[pcs_number_of_secondary_nvals] = "mol/m2/s";
+	pcs_secondary_function_timelevel[pcs_number_of_secondary_nvals] = 0;
+	pcs_number_of_secondary_nvals++;
+
+	if (cp->pqc_kinetic_mode > 0)
+	{
+		pcs_eval_name[pcs_number_of_evals] = new char[80];
+		strncpy((char*)pcs_eval_name[pcs_number_of_evals], (cp->compname + "_dmdt_fd").c_str(), 80);
+		pcs_eval_unit[pcs_number_of_evals] = "mol/m2/s";
+		pcs_number_of_evals++;
+		pcs_eval_name[pcs_number_of_evals] = new char[80];
+		strncpy((char*)pcs_eval_name[pcs_number_of_evals], (cp->compname + "_dmdt_ps").c_str(), 80);
+		pcs_eval_unit[pcs_number_of_evals] = "mol/m2/s";
+		pcs_number_of_evals++;
+	}
+
 }
 
 
