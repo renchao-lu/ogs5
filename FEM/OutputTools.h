@@ -26,6 +26,12 @@ struct ELEMENT_MMP_VALUES
 		case 2:
 			mat_value = mmp->StorageFunction(i_e, gp, theta);
 			break;
+		case 3:
+			mat_value = mmp->FractureAperture(i_e);
+			break;
+		case 4:
+			mat_value = mmp->FractureContactAreaRatio(i_e);
+			break;
 		default:
 			cout << "ELEMENT_MMP_VALUES::getValue(): no MMP values specified" << endl;
 			break;
@@ -47,6 +53,14 @@ struct ELEMENT_MMP_VALUES
 		else if (mmp_name.compare("STORAGE") == 0)
 		{
 			mmp_id = 2;
+		}
+		else if (mmp_name.compare("APERTURE") == 0)
+		{
+			mmp_id = 3;
+		}
+		else if (mmp_name.compare("CONTACT_RATIO") == 0)
+		{
+			mmp_id = 4;
 		}
 		else
 		{
