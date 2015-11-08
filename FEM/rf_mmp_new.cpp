@@ -147,6 +147,19 @@ CMediumProperties::CMediumProperties() :
 	storage_effstress_model = 0;
 	permeability_effstress_model = 0;
 	evaporation = -1;
+
+	f_aperture_mode = 1;
+	f_aperture_curve = 0;
+	permeability_aperture_model = 0;
+	f_aperture_data.push_back(1.0);
+	is_fracture = false;
+	f_aperture_dynamic_mode = 0;
+	f_Rc_mode = 1;
+	f_Rc = .0;
+	f_hydraulic_aperture_model = 1;
+	f_porevolume_model = 1;
+	f_contact_reactive_surface_area_fac = 1;
+
 }
 
 /**************************************************************************
@@ -1914,6 +1927,193 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 		  std::cout << " Setting ElementVolumeMultiplyer to " << ElementVolumeMultiplyer << "- times the grid value \n";
 	  }
 
+		//------------------------------------------------------------------------
+		// Task C1 stuff
+		//------------------------------------------------------------------------
+		if(line_string.find("$APERTURE") != std::string::npos)
+		{
+			is_fracture = true;
+			if (line_string.find("_DISTRIBUTION") != std::string::npos) {
+				in.str(GetLineFromFile1(mmp_file));
+				in >> f_aperture_file;
+				std::string file_name = f_aperture_file;
+				//-------WW
+				size_t indexChWin = FileName.find_last_of('\\');
+				size_t indexChLinux = FileName.find_last_of('/');
+				std::string funfname;
+				if(indexChWin == string::npos && indexChLinux == std::string::npos)
+					funfname = file_name;
+				else if(indexChWin != string::npos)
+				{
+					funfname = FileName.substr(0,indexChWin);
+					funfname = funfname + "\\" + file_name;
+				}
+				else if(indexChLinux != string::npos)
+				{
+					funfname = FileName.substr(0,indexChLinux);
+					funfname = funfname + "/" + file_name;
+				}
+				f_aperture_file = funfname;
+				//--------------------------------------
+				//WW
+				std::ifstream mmp_file(funfname.data(),std::ios::in);
+				if (!mmp_file.good())
+					std::cout <<
+					"Fatal error in MMPRead: no APERTURE_DISTRIBUTION file" <<
+					std::endl;
+				mmp_file.close();
+				f_aperture_mode = 2;
+				in.clear();
+				continue;
+			} else {
+				in.str(GetLineFromFile1(mmp_file));
+				in >> f_aperture_mode;
+				switch(f_aperture_mode)
+				{
+				case 0:       // n=f(t)
+					in >> f_aperture_curve;
+					break;
+				case 1:       // n=const
+					f_aperture_data.resize(1);
+					in >> f_aperture_data[0];
+					break;
+				case 2:       // n=heterogeneous
+					f_aperture_data.resize(1);
+					in >> f_aperture_data[0];
+					break;
+				default:
+					std::cerr << "Error in MMPRead: no valid aperture model" <<
+						std::endl;
+					break;
+				}
+				in.clear();
+				continue;
+			}
+		}
+
+		if(line_string.find("$DYNAMIC_APERTURE") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_aperture_dynamic_mode; // 0 constant, 1 dynamic
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$PERMEABILITY_FUNCTION_APERTURE") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> permeability_aperture_model;
+			switch(permeability_aperture_model)
+			{
+			case 0:       // k=f(x)
+				break;
+			case 1:       // cubic law
+				break;
+			//case 2:       // Permebility is a function of effective stress
+			//    in >> permeability_pressure_model_values[0];
+			//    in >> permeability_pressure_model_values[1];
+			//    in >> permeability_pressure_model_values[2];
+			//    in >> permeability_pressure_model_values[3];
+			//    pcs_name_vector.push_back("PRESSURE1");
+			//    break;
+			default:
+				std::cout << "Error in MMPRead: no valid permeability-aperture model" <<
+					std::endl;
+				break;
+			}
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$HYDRAULIC_APERTURE") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_hydraulic_aperture_model;
+			std::cout << "-> set hydraulic aperture model = " << f_hydraulic_aperture_model << "\n";
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$FRACTURE_CONTACT_RATIO") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_Rc_mode;
+			switch(f_Rc_mode)
+			{
+			case 0:       // k=f(x)
+				break;
+			case 1:
+				in >> f_Rc;
+				std::cout << "-> set Rc = " << f_Rc << std::endl;
+				break;
+			case 2: // hetero
+			case 3: // Rc=f(b)
+				break;
+			default:
+				std::cout << "Error in MMPRead: no valid $FRACTURE_CONTACT_RATIO model" <<
+					std::endl;
+				break;
+			}
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$FUNCTION_APERTURE_CONTACT_RATIO") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			int b_rc_model = 0;
+			in >> b_rc_model;
+			if (b_rc_model==1) {
+				double a1, a2, a3, Rc0;
+				in >> a1 >> a2 >> a3 >> Rc0;
+				_f_b_rc_model = new ApertureRcYasuhara2006(a1, a2, a3, Rc0);
+			}
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$PORE_VOLUME") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_porevolume_model;
+			std::cout << "-> set pore volume model = " << f_porevolume_model << "\n";
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$PORE_REACTIVE_AREA_FACTOR") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_pore_reactive_surface_area_fac_mode;
+			if (f_pore_reactive_surface_area_fac_mode==1) {
+				f_pore_reactive_surface_area_fac.resize(1);
+				in >> f_pore_reactive_surface_area_fac[0];
+				if (in.fail()) {
+					std::cout << "***WARN: the second parameter not found in $PORE_REACTIVE_AREA_FACTOR. we set it 1.\n";
+					f_pore_reactive_surface_area_fac[0] = 1;
+				}
+				std::cout << "-> set a pore reactive surface area factor " << f_pore_reactive_surface_area_fac[0] << "\n";
+			} else if (f_pore_reactive_surface_area_fac_mode==2) {
+				f_pore_reactive_surface_area_fac.resize(4);
+				for (size_t i=0; i<f_pore_reactive_surface_area_fac.size(); i++)
+					in >> f_pore_reactive_surface_area_fac[i];
+				std::cout << "-> set a pore reactive surface area factor f(T): ";
+				for (int i=0; i<4; i++)
+					std::cout << f_pore_reactive_surface_area_fac[i] << ", ";
+				std::cout << std::endl;
+			}
+			in.clear();
+			continue;
+		}
+
+		if(line_string.find("$CONTACT_REACTIVE_AREA_FACTOR") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(mmp_file));
+			in >> f_contact_reactive_surface_area_fac;
+			std::cout << "-> set a contact reactive surface area factor " << f_contact_reactive_surface_area_fac << "\n";
+			in.clear();
+			continue;
+		}
 
    }
 	return position;
@@ -4617,6 +4817,15 @@ double* CMediumProperties::PermeabilityTensor(long index)
 		}
 		break;
 	}
+
+	//NW
+	k_rel = 1.0;
+	if (permeability_aperture_model>0) {
+		k_rel = this->PermeabilityApertureFunction(index);
+	}
+	for (size_t i=0; i<9; i++)
+		tensor[i] *= k_rel;
+
 	return tensor;
 }
 
@@ -8517,4 +8726,148 @@ void CMediumProperties::setFrictionPhase (FiniteElement::FrictionPhase fric_phas
 FiniteElement::FrictionPhase CMediumProperties::getFrictionPhase () const
 {
 	return _fric_phase;
+}
+
+double CMediumProperties::GeometricPoreSpaceFactor(long e_id, int i_gp)
+{
+	if (isFracture()) {
+		switch (f_porevolume_model) {
+		case 1:
+			return FractureAperture(e_id, i_gp);
+		case 2:
+			return FractureAperture(e_id, i_gp) * (1. - FractureContactAreaRatio(e_id, i_gp));
+		default:
+			std::cout << "***WARN: invalid pore volume model " << f_porevolume_model << "\n";
+			return 1.0;
+		}
+	} else {
+		return 1.0;
+	}
+}
+
+double CMediumProperties::FractureHydraulicAperture(long e_id, int i_gp)
+{
+	if (isFracture()) {
+		double fac = 1.0;
+		switch (f_hydraulic_aperture_model) {
+		case 1:
+			break;
+		case 2:
+		{
+			double Rc = FractureContactAreaRatio(e_id, i_gp);
+			fac = std::pow((1.-Rc)/(1.+Rc), 1./3.);
+		}
+			break;
+		default:
+			break;
+		}
+		return fac * FractureAperture(e_id, i_gp);
+	} else {
+		return 1.0;
+	}
+}
+
+//NW
+double CMediumProperties::FractureAperture(long e_id, int i_gp)
+{
+	//double primary_variable[PCS_NUMBER_MAX];
+	int gueltig;
+	double aperture = 0.0;
+	switch (f_aperture_mode) {
+		case 0:                               // n = f(x)
+			aperture = GetCurveValue(f_aperture_curve,0,aktuelle_zeit,&gueltig);
+			break;
+		case 1:
+			aperture = f_aperture_data[0];
+			break;
+		case 2:
+			{
+				if (i_gp<0 || ele_gp_value[e_id]->b1.empty()) {
+					static int het_index (-1);
+					if (het_index<0) {
+						for (het_index = 0; het_index< (int)m_pcs->m_msh->mat_names_vector.size(); het_index++)
+							if (m_pcs->m_msh->mat_names_vector[het_index].compare("APERTURE")
+								== 0)
+								break;
+					}
+					assert(m_pcs->m_msh!=0);
+					aperture = m_pcs->m_msh->ele_vector[e_id]->mat_vector(het_index);
+				} else {
+					aperture = ele_gp_value[e_id]->b1[i_gp];
+				}
+			}
+			break;
+		default:
+			std::cout << "***Error: given aperture mode" << f_aperture_mode << " is not supported. return 0." << std::endl;
+			break;
+	}
+	return aperture;
+}
+
+double CMediumProperties::PermeabilityApertureFunction(long e_id, int i_gp)
+{
+	const double aperture = FractureHydraulicAperture(e_id, i_gp);
+	double k = .0;
+
+	switch (permeability_aperture_model) {
+		case 0:                               // n = f(x)
+//            aperture = GetCurveValue(f_aperture_curve,0,primary_variable[0],&gueltig);
+			break;
+		case 1:
+			k = aperture*aperture/12.0;
+			break;
+		default:
+			std::cout << "***Error: given aperture mode" << f_aperture_mode << " is not supported. return 0." << std::endl;
+			break;
+	}
+	return k;
+}
+
+double CMediumProperties::FractureContactAreaRatio(long e_id, int i_gp)
+{
+	double rc = .0;
+	switch (f_Rc_mode) {
+		case 1:
+			rc = f_Rc;
+			break;
+		case 2:
+			{
+				if (i_gp<0) {
+					static int het_index = -1;
+					if (het_index<0) {
+						for (het_index = 0; het_index< (int)m_pcs->m_msh->mat_names_vector.size(); het_index++)
+							if (m_pcs->m_msh->mat_names_vector[het_index].compare("CONTACT_RATIO") == 0)
+								break;
+					}
+					assert(m_pcs->m_msh!=0);
+					rc = m_pcs->m_msh->ele_vector[e_id]->mat_vector(het_index);
+				} else {
+					rc = ele_gp_value[e_id]->Rc1[i_gp];
+				}
+			}
+			break;
+		case 3:
+			rc = _f_b_rc_model->Rc(this->FractureAperture(e_id, i_gp));
+			break;
+		default:
+			std::cout << "***Error: given contact ratio mode " << f_Rc_mode << " is not supported. return 0." << std::endl;
+			break;
+	}
+	return rc;
+}
+
+double CMediumProperties::PoreReactiveSurfaceAreaFactor(double T) const
+{
+	if (f_pore_reactive_surface_area_fac_mode ==1) {
+		return f_pore_reactive_surface_area_fac[0];
+	} else if (f_pore_reactive_surface_area_fac_mode==2) {
+		unsigned i = 0;
+		double tt[] = {293.15, 313.15, 353.15, 393.15};
+		for (i=0; i<4; i++) {
+			if (std::abs(tt[i]-T)<1e-8)
+				break;
+		}
+		return f_pore_reactive_surface_area_fac[i];
+	}
+	return 1;
 }
