@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cassert>
 #include <vector>
-
+#include <algorithm>
 
 class ApertureRcYasuhara2006
 {

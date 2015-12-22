@@ -80,7 +80,8 @@ void initializeGpFractureProperties(MeshLib::CFEMesh* m_msh, CFiniteElementStd* 
     for (unsigned im=0; im<mmp_vector.size(); im++)
     {
         CMediumProperties* mmp = mmp_vector[im];
-        if (!mmp->isFracture()) continue;
+        if (!mmp->isFracture()) 
+			continue;
         for (size_t i = 0; i < mesh_ele_vector_size; i++)
         {
             MeshLib::CElem* elem = m_msh->ele_vector[i];

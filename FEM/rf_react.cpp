@@ -313,7 +313,7 @@ REACT::REACT(void)
 	rcml_number_of_ion_exchanges = 0;
 	rcml_number_of_gas_species = 0;
 	rcml_number_of_kinetics = 0;
-	  rcml_number_of_secondary_species=0;
+    rcml_number_of_secondary_species=0;
 	rcml_pH_flag = 1;
 	rcml_pe_flag = 1;
 	rcml_heat_flag = 0;

@@ -31,11 +31,22 @@ void CFiniteElementStd::CalculateMassTransferRate()
 		// get nodal reaction rate for this mineral
 //		CRFProcess* pcsMineral = PCSGetMass(mineral->idx);
 //		const int idx = pcsMineral->GetNodeValueIndex(mineral->pqc_kinetic_product_name + "_dmdt");
-		CRFProcess* pcsSolute = PCSGetMass(cp_name_2_idx[mineral->pqc_kinetic_product_name]);
-		const int idx = pcsSolute->GetNodeValueIndex(mineral->pqc_kinetic_product_name + "_dmdt");
+		int num = mineral->pqc_kinetic_product_number;
 
-		for (int i = 0; i < nnodes; i++)
-			NodalVal_dCdt[i] = pcsSolute->GetNodeValue(nodes[i], idx);
+		std::vector<CRFProcess*> pcsSolute(num);
+		std::vector<int> idx(num);
+
+		for (int i = 0; i < num; i++){
+			pcsSolute[i] = PCSGetMass(cp_name_2_idx[mineral->pqc_kinetic_product_name[i]]);
+			idx[i] = pcsSolute[i]->GetNodeValueIndex(mineral->pqc_kinetic_product_name[i] + "_dmdt");
+		}
+				
+		for (int i = 0; i < nnodes; i++){
+			NodalVal_dCdt[i] = pcsSolute[0]->GetNodeValue(nodes[i], idx[0]) / mineral->pqc_kinetic_product_stoichiometry[0];
+			for (int j = 1; j < num; j++){
+				NodalVal_dCdt[i] -= pcsSolute[j]->GetNodeValue(nodes[i], idx[j]) / mineral->pqc_kinetic_product_stoichiometry[j];
+			}
+		}
 
 		// For each Gauss point
 		for (gp = 0; gp < nGaussPoints; gp++)
@@ -66,13 +77,13 @@ void CFiniteElementStd::CalculateMassTransferRate()
 			//---------------------------------------------------------
 			if (mineral->pqc_kinetic_mode == 1) { // FD
 				double dCdt_fd = gp_dCdt; // [mol/kgW/s]
-				double dmdt_fd = dCdt_fd * rho_f * gp_b * (1.-gp_Rc);  // [mol/m2/s]
+				double dmdt_fd = dCdt_fd * rho_f * gp_b * (1. - gp_Rc);  // [mol/m2/s]
 				double dm_fd = dmdt_fd * dt;
 				element_gp_values->dm_fd[im][gp] = dm_fd;
 				element_gp_values->dmdt_fd[im][gp] = dmdt_fd;
 			} else if (mineral->pqc_kinetic_mode == 2) { //PS
 				double dCdt_ps = gp_dCdt; // [mol/kgW/s]
-				double dmdt_ps = dCdt_ps * rho_f * gp_b; // * MediaProp->IntergranularThickness();
+				double dmdt_ps = dCdt_ps * rho_f * gp_b; // * (1.-gp_Rc) * MediaProp->IntergranularThickness();
 				double dm_ps = dmdt_ps * dt;  // [mol/m2]
 				element_gp_values->dm_ps[im][gp] = dm_ps;
 				element_gp_values->dmdt_ps[im][gp] = dmdt_ps;
@@ -84,8 +95,8 @@ void CFiniteElementStd::CalculateMassTransferRate()
 void CFiniteElementStd::CalculateAperture()
 {
 	ElementValue* const ele_val = ele_gp_value[Index];
-	double avg_dbdt_fd = .0;
-	double avg_db_ps = .0;
+	double avg_total_dbdt_fd = .0;
+	double avg_total_dbdt_ps = .0;
 
 	// For each Gauss point
 	for (gp = 0; gp < nGaussPoints; gp++)
@@ -112,8 +123,10 @@ void CFiniteElementStd::CalculateAperture()
 		//---------------------------------------------------------
 		// Compute aperture changes
 		//---------------------------------------------------------
-		double dbdt_fd = .0;
-		double dbdt_ps = .0;
+		std::vector<double> dbdt_fd(vec_mineral_cp.size());
+		std::vector<double> dbdt_ps(vec_mineral_cp.size());
+		double total_dbdt_fd = .0;
+		double total_dbdt_ps = .0;
 
 		// For each mineral
 		for (unsigned i=0; i<vec_mineral_cp.size(); i++)
@@ -124,24 +137,32 @@ void CFiniteElementStd::CalculateAperture()
 				// aperture changes due to free surface dissolution
 				const double dmdt_fd = ele_val->dmdt_fd[i][gp];
 				const double dVdt_fd = mineral->Vm * dmdt_fd;
-				const double A_fd = (1.-gp_Rc)*MediaProp->PoreReactiveSurfaceAreaFactor(gp_T);
-				dbdt_fd = dVdt_fd / A_fd;
-				avg_dbdt_fd += dbdt_fd;
+				const double A_fd = (1. - gp_Rc) * MediaProp->PoreReactiveSurfaceAreaFactor(gp_T) * mineral->surface_area_ratio_of_mineral[1];
+				dbdt_fd[i] = dVdt_fd / A_fd;
+				// mean value 
+				total_dbdt_fd += dbdt_fd[i] * mineral->surface_area_ratio_of_mineral[1];
 			}
 			else if (mineral->pqc_kinetic_mode==2)
 			{
 				// aperture changes at contact
 				const double dmdt_ps = ele_val->dmdt_ps[i][gp];
 				const double dVdt_ps = - mineral->Vm * dmdt_ps; // negative due to dissolution
-				const double A_ps = gp_Rc * MediaProp->ContactReactiveSurfaceAreaFactor();// * grain.alpha;
-				dbdt_ps = dVdt_ps / A_ps;
-				avg_db_ps += dbdt_ps;
+				const double A_ps = gp_Rc * MediaProp->ContactReactiveSurfaceAreaFactor() * mineral->surface_area_ratio_of_mineral[2];// * grain.alpha;
+				dbdt_ps[i] = dVdt_ps / A_ps;
+				// mean value 
+				total_dbdt_ps += dbdt_ps[i] * mineral->surface_area_ratio_of_mineral[2];
 			}
 
 		}
+
+		//---------------------------------------------------------
+		avg_total_dbdt_fd += total_dbdt_fd;
+		avg_total_dbdt_ps += total_dbdt_ps;
+
 		//---------------------------------------------------------
 		// sum up
-		const double total_dbdt = dbdt_fd + dbdt_ps;
+		//const double total_dbdt = dbdt_fd + dbdt_ps;
+		const double total_dbdt = total_dbdt_fd + total_dbdt_ps;
 
 		//---------------------------------------------------------
 		// first-order estimate of aperture changes
@@ -178,8 +199,8 @@ void CFiniteElementStd::CalculateAperture()
 #endif
 
 	}
-	ele_val->db_fd = avg_dbdt_fd / nGaussPoints * dt;
-	ele_val->db_ps = avg_db_ps / nGaussPoints * dt;
+	ele_val->db_fd = avg_total_dbdt_fd / nGaussPoints * dt;
+	ele_val->db_ps = avg_total_dbdt_ps / nGaussPoints * dt;
 }
 
 void CFiniteElementStd::ConvertGPValuesToEleValues()

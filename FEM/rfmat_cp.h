@@ -62,7 +62,10 @@ public:
 	int OutputMassOfComponentInModel;		// 05/2012 BG
 	bool isMineral;
 	int pqc_kinetic_mode; // 0 no kinetic reaction, 1 free-face dissolution, 2 pressure solution
-	std::string pqc_kinetic_product_name;
+	int pqc_kinetic_product_number; 
+	std::string pqc_kinetic_product_name[10];
+	double pqc_kinetic_product_stoichiometry[10];
+	double surface_area_ratio_of_mineral[3];
 
 	/* Diffusionsmodelle und zugehoerige Beschreibungswerte */
 	int diffusion_model;                  /* Zerfallsmodell in geloester Phase */
