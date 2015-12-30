@@ -1988,10 +1988,10 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 	std::stringstream in;
 	string name, line_string, speciesname, dummy;
 	CRFProcess* m_pcs = NULL;
-int i, ii, idx, n1, n2, n3, n4, n5, n6, count=-1, stepsflag, found=0;
+	int i, ii, idx, n1, n2, n3, n4, n5, n6, count = -1, stepsflag, flag_ps, found = 0;
 	double dval, dval1, sat_index = 0.0;
 	double z, h, dens, press, partial_press, volume, temp = -1.0, mm;
-double unitfactor_l = 1, unitfactor_s = 1;
+    double unitfactor_l = 1, unitfactor_s = 1;
 
 //CB 19.1.2011
   // Get the reaction interface data
@@ -2046,31 +2046,32 @@ double unitfactor_l = 1, unitfactor_s = 1;
 						                dval = m_pcs->GetNodeValue(index,idx);
 						 */
 						speciesname = pqc_names[count];
-						dval = pcs_vector[pqc_process[count]]->GetNodeValue(
-						        index,
-						        pqc_index[count]);
+						dval = pcs_vector[pqc_process[count]]->GetNodeValue(index, pqc_index[count]);
 						/*                cout << "Testing index vectors: " << speciesname << ", " << m_pcs->pcs_number << ", "<< idx <<",  With vectors: " << pqc_names[count] << ", " << pcs_vector[pqc_process[count]]->pcs_number << ", " << pqc_index[count];
 						                cout << " Values: " << dval << ", " << dval1 << "\n";
 						 */
 //CB 19.1.2011
-            // based on porosity, calculate molality mi,w before coputing equilirium chemistry
-            if(m_rei) {
-              if(m_rei->unitconversion) {
-              idx = pcs_vector[pqc_process[count]]->GetProcessComponentNumber();
-                //mi,w = Ci,w * n *55.5 / CH2O
-                //mi,s = Ci,w * (1-n) *55.5 / CH2O
-                if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-                  dval *= unitfactor_l;
-                else if(cp_vec[idx]->transport_phase==1)              // solid phase
-                  dval *= unitfactor_s;
-              }
-            }
-						if(speciesname.compare("pe")) // if this is not pe
-							if(dval < 1.0e-19)
+						// based on porosity, calculate molality mi,w before coputing equilirium chemistry
+						if(m_rei) {
+							if(m_rei->unitconversion){
+								idx = pcs_vector[pqc_process[count]]->GetProcessComponentNumber();
+								//mi,w = Ci,w * n *55.5 / CH2O
+								//mi,s = Ci,w * (1-n) *55.5 / CH2O
+								if (cp_vec[idx]->transport_phase == 0){                   // liquid phase
+									dval *= unitfactor_l;
+								}
+								else if (cp_vec[idx]->transport_phase == 1){              // solid phase
+									dval *= unitfactor_s;
+								}
+							}
+						}
+						if (speciesname.compare("pe")) // if this is not pe
+						{
+							if (dval < 1.0e-19)
 								dval = 0.0;
+						}
 						//                if(speciesname.compare("pH"))
-						*out_file << speciesname << "       " << dval <<
-						"     # comp " << "\n";
+						*out_file << speciesname << "       " << dval <<"     # comp " << "\n";
 						//					if(index <2) cout << speciesname << " " << dval << "\n";
 						//                else
 						//                    *out_file << speciesname << "       " << dval << " charge " << "       # comp " <<"\n";
@@ -2085,18 +2086,36 @@ double unitfactor_l = 1, unitfactor_s = 1;
 						m_pcs = PCSGet("HEAT_TRANSPORT");
 						idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
 						dval = m_pcs->GetNodeValue(index,idx);
-						if (dval < 273.0)
-							dval += 273.15;  //change from °C to Kelvin if necessary
+						if (dval < 273.0){
+								dval += 273.15;  //change from °C to Kelvin if necessary
+							}
 						dval -= 273.15; // Input to PHREEQC is in °C
 						*out_file << "temp " << dval << "  # temp " << "\n";
 						temp = dval; // save for gas phase input
 					}
 				}
-				else // Write units and temperature in the standard case
-				if (line_string.find("pH") == string::npos &&
-				    line_string.find("pe") == string::npos &&
-				    line_string.find("#ende") == string::npos)
-					*out_file << line_string << "\n";
+				else if (line_string.find("# aperture") != string::npos)
+				{
+					dval = 0.0;
+					ElementValue* eval = ele_gp_value[0];
+					if  (index != 0) {
+						ElementValue* eval = ele_gp_value[index - 1];
+					}
+					for (unsigned i = 0; i< eval->b0.size(); i++){
+						dval += eval->b0[i] + eval->b1[i];
+					}
+					dval /= 2 * eval->b0.size();
+					*out_file << "-water " << dval << "  # aperture " << "\n";
+				}
+					// Write units and temperature in the standard case
+				else
+					if (line_string.find("pH") == string::npos &&
+						line_string.find("pe") == string::npos &&
+						line_string.find("# aperture") == string::npos &&
+						line_string.find("#ende") == string::npos)
+					{
+						*out_file << line_string << "\n";
+					}
 			}             // end while
 
 			// special treat pH, and pe
@@ -2476,96 +2495,107 @@ double unitfactor_l = 1, unitfactor_s = 1;
 //-------------------------------------------------------------------------------------------------------------
     // Schleife ueber Keyword KINETICS
     if(line_string.find("KINETICS")!=string::npos){
-      stepsflag = 0;
-      *out_file << "\n" << "KINETICS " << index+1 << "\n";
-      while(line_string.find("#ende")==string::npos){
-        pqc_infile.getline(line,MAX_ZEILE);
-        line_string = line;
-        // Check if this is a new kinetic formulation, i.e. kinetics name = speciesname (phase)
-        if (line_string.find("# comp") !=string::npos){
-          in.str(line_string);
-          in >> speciesname ;
-          in.clear();
-          found = 0;
-          for(int i=0;i<int(pqc_index.size());i++)
-            if(speciesname.compare(pqc_names[i])==0){
-              if(i>count) count=i;
-              found=i;
-              break;
-          }
-          *out_file << line_string << "\n";
-        }
-        // This is just to avoid mix-up with subkeyword "-m"
-        else if(line_string.find("-m0")!=string::npos) { // keyword found
-          *out_file << line_string << "\n";
-        }
-        // here get current node concentration after transport
-        else if(line_string.find("-m")!=string::npos) {  // keyword found
-
-          dval = pcs_vector[pqc_process[found]]->GetNodeValue(index,pqc_index[found]);
-          if(dval < 1.0e-19) dval = 0.0;
+		stepsflag = 0;
+		*out_file << "\n" << "KINETICS " << index+1 << "\n";
+		while(line_string.find("#ende")==string::npos){
+			pqc_infile.getline(line,MAX_ZEILE);
+			line_string = line;
+			// Check if this is a new kinetic formulation, i.e. kinetics name = speciesname (phase)
+			if (line_string.find("# comp") !=string::npos){
+				in.str(line_string);
+				in >> speciesname;
+				in.clear();
+				found = 0;
+				for (int i=0;i<int(pqc_index.size());i++)
+					if(speciesname.compare(pqc_names[i])==0){
+						if(i>count) count=i;
+						found=i;
+						break;
+					}
+				*out_file << line_string << "\n";
+			}
+			// This is just to avoid mix-up with subkeyword "-m"
+			else if(line_string.find("-m0")!=string::npos) { // keyword found
+				*out_file << line_string << "\n";
+			}
+			// here get current node concentration after transport
+			else if(line_string.find("-m")!=string::npos) {  // keyword found
+				dval = pcs_vector[pqc_process[found]]->GetNodeValue(index,pqc_index[found]);
+				if(dval < 1.0e-19) dval = 0.0;
 
 //CB 19.1.2011
           // based on porosity, calculate molality mj before coputing equilirium chemistry
-          if(m_rei){
-            if(m_rei->unitconversion) {
-              idx = pcs_vector[pqc_process[found]]->GetProcessComponentNumber();
-              //mi,w = Ci,w * n *55.5 / CH2O
-              //mi,s = Ci,w * (1-n) *55.5 / CH2O
-              if(cp_vec[idx]->transport_phase==0)                   // liquid phase
-                dval *= unitfactor_l;
-              else if(cp_vec[idx]->transport_phase==1)              // solid phase
-                dval *= unitfactor_s;
-            }
-          }
-          ////m_pcs = PCSGet("MASS_TRANSPORT", speciesname);// CB HS update
-          //m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
-          //idx = m_pcs->GetNodeValueIndex(speciesname)+1; // new time level
-          //dval = m_pcs->GetNodeValue(index,idx);
-          *out_file << "-m " << dval << "\n";
-        }
-        // time discretization for phreeqc
-        else if(line_string.find("-steps")!=string::npos) {
-          if(stepsflag == 0) { // keyword found
-            stepsflag++;
-            in.str(line_string);
-            in >> dummy >> dval >> dummy >> this->rcml_number_of_pqcsteps >> dummy;
-            in.clear();
-            CTimeDiscretization *m_tim = NULL;
-            if(time_vector.size()>0)
-              m_tim = time_vector[0];
-            else
-              cout << "Error in WriteInputPhreeqc: no time discretization data !" << "\n";
-            dval = m_tim->CalcTimeStep();
-            *out_file << "-steps " << dval << " in " << this->rcml_number_of_pqcsteps << " steps" << "\n";
-          }
-        } // end -steps
-        // any other subkeyword
-        else{
-          line_string = line;
-          *out_file << line_string << "\n";
-        }
-      }
-    }
+				if(m_rei){
+					if(m_rei->unitconversion) {
+						idx = pcs_vector[pqc_process[found]]->GetProcessComponentNumber();
+						//mi,w = Ci,w * n *55.5 / CH2O
+						//mi,s = Ci,w * (1-n) *55.5 / CH2O
+						if(cp_vec[idx]->transport_phase==0)                   // liquid phase
+							dval *= unitfactor_l;
+						else if(cp_vec[idx]->transport_phase==1)              // solid phase
+							dval *= unitfactor_s;
+					}
+				}
+				////m_pcs = PCSGet("MASS_TRANSPORT", speciesname);// CB HS update
+				//m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();
+				//idx = m_pcs->GetNodeValueIndex(speciesname)+1; // new time level
+				//dval = m_pcs->GetNodeValue(index,idx);
+				*out_file << "-m " << dval << "\n";
+			}
+			// time discretization for phreeqc
+			else if(line_string.find("-steps")!=string::npos) {
+				if(stepsflag == 0) { // keyword found
+					stepsflag++;
+					in.str(line_string);
+					in >> dummy >> dval >> dummy >> this->rcml_number_of_pqcsteps >> dummy;
+					in.clear();
+					CTimeDiscretization *m_tim = NULL;
+					if(time_vector.size()>0)
+						m_tim = time_vector[0];
+					else
+						cout << "Error in WriteInputPhreeqc: no time discretization data !" << "\n";
+					dval = m_tim->CalcTimeStep();
+					*out_file << "-steps " << dval << " in " << this->rcml_number_of_pqcsteps << " steps" << "\n";
+				}
+			} // end -steps
+			// any other subkeyword
+			else if (line_string.find("-parms") != string::npos){
+				in.str(line_string);
+				in >> dummy >> flag_ps;
+				dval = 0.0;
+				if (flag_ps == 1){
+					ElementValue* eval = ele_gp_value[0];
+					if (index != 0) {
+						ElementValue* eval = ele_gp_value[index - 1];
+					}
+					for (unsigned i = 0; i< eval->Rc0.size(); i++){
+						dval += eval->Rc0[i] + eval->Rc1[i];
+					}
+					dval /= 2 * eval->Rc0.size();
+					*out_file << "-parms " << flag_ps << " " << dval << "\n";
+				}
+				else if (flag_ps == 0){
+					*out_file << "-parms " << flag_ps << "\n";
+				}
+				in.clear();
+			}
+		}
+	}
 //-------------------------------------------------------------------------------------------------------------
     // Schleife ueber Keyword RATES
-    if(line_string.find("RATES")!=string::npos){
-      *out_file << "\n" << "RATES " << index+1 << "\n";
-      while(line_string.find("#ende")==string::npos){
-        pqc_infile.getline(line,MAX_ZEILE);
-        line_string = line;
-        *out_file << line_string << "\n";
-      }
-    }
+	if(line_string.find("RATES")!=string::npos){
+		*out_file << "\n" << "RATES " << index+1 << "\n";
+		while(line_string.find("#ende")==string::npos){
+			pqc_infile.getline(line,MAX_ZEILE);
+			line_string = line;
+			*out_file << line_string << "\n";
+		}
+	}
 //-------------------------------------------------------------------------------------------------------------
-
-
-	}                                     /*end while zeilenweises lesen */
-
+}                                     /*end while zeilenweises lesen */
 	*out_file << "END" << "\n" << "\n";
-
 	pqc_infile.close();
-//    out_file.close();
+	//    out_file.close();
 
 	return 1;
 }
@@ -3026,7 +3056,7 @@ int REACT::ReadOutputPhreeqcNew(void)
 		}                                             // end for(index...
 		CRFProcess* m_pcs = NULL;
 //#define PQC_FIX_pH
-//#define PQC_FIX_PE
+#define PQC_FIX_PE
 #ifdef PQC_FIX_pH
 		speciesname = "pH";
 		m_pcs = cp_vec[cp_name_2_idx[speciesname]]->getProcess();

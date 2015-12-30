@@ -644,15 +644,17 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
 		{
 			in.str(GetLineFromFile1(rfd_file));
 			in >> pqc_kinetic_mode; // 0 no kinetic, 1 free-face dissolution, 2 pressure solution
-			if (pqc_kinetic_mode > 0)
+			if (pqc_kinetic_mode > 0){
 				in >> pqc_kinetic_product_number;
+			}
+			pqc_kinetic_product_name.resize(pqc_kinetic_product_number);
+			pqc_kinetic_product_stoichiometry.resize(pqc_kinetic_product_number);
+			
 			for (int i = 0; i < pqc_kinetic_product_number; i++){
 				in >> pqc_kinetic_product_name[i];
-			}
-			for (int i = 0; i < pqc_kinetic_product_number; i++){
 				in >> pqc_kinetic_product_stoichiometry[i];
 			}    
-			std::cout << "-> PQC_KINETIC_MODE is set to" << pqc_kinetic_mode << std::endl;
+			std::cout << "-> PQC_KINETIC_MODE is set to " << pqc_kinetic_mode << std::endl;
 			in.clear();
 		}
 		if (line_string.find("$SURFACE_AREA_RATIO_OF_MINERAL") != std::string::npos)

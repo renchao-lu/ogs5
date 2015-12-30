@@ -318,7 +318,18 @@ Problem::Problem (char* filename) :
 	//  rc->TestPHREEQC(); // Test if *.pqc file is present
 	rc = rc->GetREACT();
 	if(rc)                                //OK
-	{
+	{	
+		if (isApertureUpdateActive()) {
+			setupFracturePropertyDistribution(fem_msh_vector[0]);
+		}
+		// initialization for pressure solution
+		if (isDissolutionActive()) {
+			CRFProcess* pcs = transport_processes[0];
+			initializeGpFractureProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
+			updateElementProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
+		}
+
+		//  delete rc;
 		if(rc->flag_pqc)
 		{
 			if(cp_vec.size() > 0)
@@ -348,17 +359,7 @@ Problem::Problem (char* filename) :
 #endif                                // REACTION_ELEMENT
 			}
 		}
-		if (isApertureUpdateActive()) {
-			setupFracturePropertyDistribution(fem_msh_vector[0]);
-		}
-		// initialization for pressure solution
-		if (isDissolutionActive()) {
-			CRFProcess* pcs = transport_processes[0];
-			initializeGpFractureProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
-			updateElementProperties(fem_msh_vector[0], pcs->fem, pcs->m_num);
-		}
 
-		//  delete rc;
 	}
 //CB merge CAP 0311
   // Initialize using ChemApp
