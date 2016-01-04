@@ -1989,7 +1989,7 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 	string name, line_string, speciesname, dummy;
 	CRFProcess* m_pcs = NULL;
 	int i, ii, idx, n1, n2, n3, n4, n5, n6, count = -1, stepsflag, flag_ps, found = 0;
-	double dval, dval1, sat_index = 0.0;
+	double dval, dval1, sat_index, avg_b, avg_Rc = 0.0;
 	double z, h, dens, press, partial_press, volume, temp = -1.0, mm;
     double unitfactor_l = 1, unitfactor_s = 1;
 
@@ -2097,14 +2097,19 @@ int REACT::WriteInputPhreeqc(long index, /*ifstream *pqc_iinfile,*/ ofstream* ou
 				else if (line_string.find("# aperture") != string::npos)
 				{
 					dval = 0.0;
+					avg_b = 0.0;
+					avg_Rc = 0.0;
 					ElementValue* eval = ele_gp_value[0];
 					if  (index != 0) {
 						ElementValue* eval = ele_gp_value[index - 1];
 					}
 					for (unsigned i = 0; i< eval->b0.size(); i++){
-						dval += eval->b0[i] + eval->b1[i];
+						avg_b += eval->b0[i] + eval->b1[i];
+						avg_Rc += eval->Rc0[i] + eval->Rc1[i];
 					}
-					dval /= 2 * eval->b0.size();
+					avg_b /= 2 * eval->b0.size();
+					avg_Rc /= 2 * eval->Rc0.size();
+					dval = avg_b * (1 - avg_Rc);
 					*out_file << "-water " << dval << "  # aperture " << "\n";
 				}
 					// Write units and temperature in the standard case
