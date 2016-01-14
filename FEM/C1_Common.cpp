@@ -142,8 +142,18 @@ void calculateApertureChanges(MeshLib::CFEMesh* m_msh, CFiniteElementStd* fem, C
             } else { // decreasing
                 if (ev->Rc1[gp] > 0.0) { // under contact
                     ev->b1[gp] = ev->b0[gp] + ev->db[gp];
-                    if (mmp->getApertureRcModel())
-                        ev->Rc1[gp] = mmp->getApertureRcModel()->Rc(ev->b1[gp]);
+					if (mmp->b_rc_model == 1){
+						if (mmp->getApertureRcModel()){
+							ev->Rc1[gp] = mmp->getApertureRcModel()->Rc(ev->b1[gp]);
+						}
+					} else {
+						if (mmp->b_rc_model == 2){
+							if (mmp->getApertureRcModel_1()){
+								ev->Rc1[gp] = mmp->getApertureRcModel_1()->Rc(ev->Rc1[gp],ev->db_ps);
+							}
+						}
+					}
+
                 } else { // no contact
                     ev->b1[gp] = ev->b0[gp] + ev->db[gp];
                 }

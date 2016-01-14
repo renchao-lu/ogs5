@@ -2,6 +2,10 @@
 #ifndef APERTURE_H_
 #define APERTURE_H_
 
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
+
 #include <cmath>
 #include <cassert>
 #include <vector>
@@ -44,4 +48,25 @@ private:
     double _Rc0;
 };
 
+class ApertureRcNew
+{
+public:
+	ApertureRcNew(double a1, double a2)
+		: _a1(a1), _a2(a2)
+	{
+		assert(a2>.0);
+	}
+
+	double Rc(double old_rc, double db_ps) const
+	{	
+		double new_rc = 0.99;
+		new_rc = pow( std::sqrt(old_rc) + 0.5 * _a1 * db_ps * 1e-6 / std::sqrt(_a2 / M_PI), 2);
+		new_rc = std::min(new_rc, 0.99);
+		return new_rc;
+	}
+
+private:
+	double _a1; // tilt angle: the ratio of radius of cross section to protrubing height;
+	double _a2; // total area of a single fracture surface;
+};
 #endif //APERTURE_H_

@@ -2061,12 +2061,18 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 		if(line_string.find("$FUNCTION_APERTURE_CONTACT_RATIO") != std::string::npos)
 		{
 			in.str(GetLineFromFile1(mmp_file));
-			int b_rc_model = 0;
+//			int b_rc_model = 0;
 			in >> b_rc_model;
 			if (b_rc_model==1) {
 				double a1, a2, a3, Rc0;
 				in >> a1 >> a2 >> a3 >> Rc0;
 				_f_b_rc_model = new ApertureRcYasuhara2006(a1, a2, a3, Rc0);
+			}
+			else if (b_rc_model == 2)
+			{
+				double a1, a2;
+				in >> a1 >> a2;
+				_f_b_rc_model_1 = new ApertureRcNew(a1, a2);
 			}
 			in.clear();
 			continue;

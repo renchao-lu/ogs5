@@ -324,8 +324,10 @@ public:
     int permeability_aperture_model;
     int f_porevolume_model;
     int f_Rc_mode;
+	int b_rc_model;
     double f_Rc;
     ApertureRcYasuhara2006* _f_b_rc_model;
+	ApertureRcNew *_f_b_rc_model_1;
     int f_pore_reactive_surface_area_fac_mode;
     std::vector<double> f_pore_reactive_surface_area_fac;
     double f_contact_reactive_surface_area_fac;
@@ -343,7 +345,9 @@ public:
     int GetFractureApertureMode() const { return f_aperture_mode;}
     void SetFractureContactAreaRatioMode(int i) {f_Rc_mode = i;};
     const ApertureRcYasuhara2006* getApertureRcModel() const {return _f_b_rc_model;};
-    bool ReadC1(std::ifstream* const mmp_file, const std::string &line_string);
+	const ApertureRcNew* getApertureRcModel_1() const { return _f_b_rc_model_1; };
+	int GetApertureRcMode() const {return b_rc_model; };
+	bool ReadC1(std::ifstream* const mmp_file, const std::string &line_string);
     double PoreReactiveSurfaceAreaFactor(double T) const;
     double ContactReactiveSurfaceAreaFactor() const {return f_contact_reactive_surface_area_fac; };
 };
