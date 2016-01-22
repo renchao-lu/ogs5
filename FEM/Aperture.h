@@ -60,7 +60,7 @@ public:
 	double Rc(double old_rc, double db_ps) const
 	{	
 		double new_rc = 0.99;
-		new_rc = pow( std::sqrt(old_rc) + 0.5 * _a1 * db_ps * 1e-6 / std::sqrt(_a2 / M_PI), 2);
+		new_rc = pow( std::sqrt(old_rc) + 0.5 * _a1 * db_ps / std::sqrt(_a2 / M_PI), 2);
 		new_rc = std::min(new_rc, 0.99);
 		return new_rc;
 	}
