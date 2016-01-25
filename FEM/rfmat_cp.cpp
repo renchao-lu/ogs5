@@ -667,6 +667,14 @@ ios::pos_type CompProperties::Read(ifstream* rfd_file)
 				" " << surface_area_ratio_of_mineral[1] << " " << surface_area_ratio_of_mineral[2] << std::endl;
 			in.clear();
 		}
+		if (line_string.find("$CONTACT_REACTIVE_AREA_FACTOR") != std::string::npos)
+		{
+			in.str(GetLineFromFile1(rfd_file));
+			in >> f_contact_reactive_surface_area_fac;
+			std::cout << "-> contact reactive surface area factor of " << compname << " are set to " << f_contact_reactive_surface_area_fac << std::endl;
+			in.clear();
+		}
+
 	}                                     //end while
 	return position;
 }

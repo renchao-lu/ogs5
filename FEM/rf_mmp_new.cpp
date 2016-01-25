@@ -158,7 +158,6 @@ CMediumProperties::CMediumProperties() :
 	f_Rc = .0;
 	f_hydraulic_aperture_model = 1;
 	f_porevolume_model = 1;
-	f_contact_reactive_surface_area_fac = 1;
 
 }
 
@@ -2111,16 +2110,6 @@ std::ios::pos_type CMediumProperties::Read(std::ifstream* mmp_file)
 			in.clear();
 			continue;
 		}
-
-		if(line_string.find("$CONTACT_REACTIVE_AREA_FACTOR") != std::string::npos)
-		{
-			in.str(GetLineFromFile1(mmp_file));
-			in >> f_contact_reactive_surface_area_fac;
-			std::cout << "-> set a contact reactive surface area factor " << f_contact_reactive_surface_area_fac << "\n";
-			in.clear();
-			continue;
-		}
-
    }
 	return position;
 }

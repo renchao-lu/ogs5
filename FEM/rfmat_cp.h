@@ -66,6 +66,7 @@ public:
 	std::vector<string> pqc_kinetic_product_name;
 	std::vector<double> pqc_kinetic_product_stoichiometry;
 	double surface_area_ratio_of_mineral[3];
+	double f_contact_reactive_surface_area_fac;
 
 	/* Diffusionsmodelle und zugehoerige Beschreibungswerte */
 	int diffusion_model;                  /* Zerfallsmodell in geloester Phase */

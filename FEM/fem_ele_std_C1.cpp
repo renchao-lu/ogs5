@@ -147,7 +147,7 @@ void CFiniteElementStd::CalculateAperture()
 				// aperture changes at contact
 				const double dmdt_ps = ele_val->dmdt_ps[i][gp];
 				const double dVdt_ps = - mineral->Vm * dmdt_ps; // negative due to dissolution
-				const double A_ps = gp_Rc * MediaProp->ContactReactiveSurfaceAreaFactor() * mineral->surface_area_ratio_of_mineral[2];// * grain.alpha;
+				const double A_ps = gp_Rc * mineral->f_contact_reactive_surface_area_fac * mineral->surface_area_ratio_of_mineral[2];// * grain.alpha;
 				dbdt_ps[i] = dVdt_ps / A_ps;
 				// mean value 
 				total_dbdt_ps += dbdt_ps[i] * mineral->surface_area_ratio_of_mineral[2];

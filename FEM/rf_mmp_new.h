@@ -330,7 +330,6 @@ public:
 	ApertureRcNew *_f_b_rc_model_1;
     int f_pore_reactive_surface_area_fac_mode;
     std::vector<double> f_pore_reactive_surface_area_fac;
-    double f_contact_reactive_surface_area_fac;
 
 public:
     bool isFracture() const {return is_fracture;}
@@ -349,7 +348,6 @@ public:
 	int GetApertureRcMode() const {return b_rc_model; };
 	bool ReadC1(std::ifstream* const mmp_file, const std::string &line_string);
     double PoreReactiveSurfaceAreaFactor(double T) const;
-    double ContactReactiveSurfaceAreaFactor() const {return f_contact_reactive_surface_area_fac; };
 };
 
 class CMediumPropertiesGroup                      //YD
