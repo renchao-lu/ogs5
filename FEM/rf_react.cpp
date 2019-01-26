@@ -696,116 +696,151 @@ int REACT::WriteInputPQCString(
         /* Schleife ueber Keyword Solution */
         if (line_string.find("SOLUTION") != string::npos)  // keyword found
         {
-            *out_buff << "SOLUTION " << index + 1 << " #New Version "
-                      << "\n";
-            *out_buff << "#GRID " << index + 1 << "\n";
-            while (line_string.find("#ende") == string::npos)
+            if (line_string.find("SOLUTION_MASTER_SPECIES") != string::npos)
             {
-                pqc_infile.getline(line, MAX_ZEILE);
-                line_string = line;
-                if (line_string.find("# comp") != string::npos)
+                if (firstinput /*index < 1*/)
                 {
-                    if (line_string.find("pH") == string::npos &&
-                        line_string.find("pe") == string::npos)
+                    *out_buff << "\n"
+                              << "SOLUTION_MASTER_SPECIES"
+                              << "\n";
+                    while (line_string.find("#ende") == string::npos)
                     {
-                        // Component found; write name and concentration of
-                        // component
-                        count++;
-                        speciesname = pqc_names[count];
-                        dval = pcs_vector[pqc_process[count]]->GetNodeValue(
-                            index, pqc_index[count]);
-                        // CB 19.1.2011
-                        // based on porosity, calculate molality mi,w before
-                        // coputing equilirium chemistry
-                        if (m_rei)
-                        {
-                            if (m_rei->unitconversion)
-                            {
-                                idx = pcs_vector[pqc_process[count]]
-                                          ->GetProcessComponentNumber();
-                                // mi,w = Ci,w * n *55.5 / CH2O
-                                // mi,s = Ci,w * (1-n) *55.5 / CH2O
-                                if (cp_vec[idx]->transport_phase ==
-                                    0)  // liquid phase
-                                    dval *= unitfactor_l;
-                                else if (cp_vec[idx]->transport_phase ==
-                                         1)  // solid phase
-                                    dval *= unitfactor_s;
-                            }
-                        }
-                        if (speciesname.compare("pe"))  // if this is not pe
-                            if (dval < 1.0e-19)
-                                dval = 0.0;
-                        *out_buff << speciesname << "       " << dval
-                                  << "     # comp "
-                                  << "\n";
+                        pqc_infile.getline(line, MAX_ZEILE);
+                        line_string = line;
+                        *out_buff << line_string << "\n";
                     }
                 }
-                else if (line_string.find("# temp") != string::npos)
-                {
-                    // check if heat transport process is calculated in GeoSys
-                    if (this->rcml_heat_flag > 0)
-                    {
-                        m_pcs = PCSGet("HEAT_TRANSPORT");
-                        idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
-                        dval = m_pcs->GetNodeValue(index, idx);
-                        // Input to PHREEQC is in °C
-                        *out_buff
-                            << "temp "
-                            << dval - PhysicalConstant::CelsiusZeroInKelvin
-                            << "  # temp "
-                            << "\n";
-                        temp = dval;  // save for gas phase input
-                    }
-                }
-                else  // Write units and temperature in the standard case
-                    if (line_string.find("pH") == string::npos &&
-                        line_string.find("pe") == string::npos &&
-                        line_string.find("#ende") == string::npos)
-                    *out_buff << line_string << "\n";
-            }  // end while
-
-            // special treat pH, and pe
-            n1 = this->rcml_number_of_master_species;
-            count++;
-            if (count != n1)
-                cout << "Error in index of pqc_vectors !"
-                     << "\n";
-            dval = pcs_vector[pqc_process[count]]->GetNodeValue(
-                index, pqc_index[count]);
-            count++;
-            if (this->gamma_Hplus >
-                0)  // pH and H+ in GeoSys species, calculate pH from H+
-            {
-                dval1 = fabs(pcs_vector[pqc_process[n1 + 1]]->GetNodeValue(
-                    index,
-                    pqc_index[n1 + 1]));  // CB 01/11 probably safer taking abs
-                                          // before calculating log(H+)
-                // CB 19.1.2011
-                // based on porosity, calculate molality mi,w before coputing
-                // equilirium chemistry
-                if (m_rei)
-                    if (m_rei->unitconversion)  // mi,w = Ci,w * n *55.5 / CH2O
-                        dval1 *= unitfactor_l;
-                dval = -log10(dval1 * gamma_Hplus);
             }
-            if (this->rcml_pH_charge > 0)
-                *out_buff << "pH"
-                          << "       " << dval << " charge "
-                          << "       # comp "
-                          << "\n";
+            else if (line_string.find("SOLUTION_SPECIES") != string::npos)
+            {
+                if (firstinput /*index < 1*/)
+                {
+                    *out_buff << "\n"
+                              << "SOLUTION_SPECIES"
+                              << "\n";
+                    while (line_string.find("#ende") == string::npos)
+                    {
+                        pqc_infile.getline(line, MAX_ZEILE);
+                        line_string = line;
+                        *out_buff << line_string << "\n";
+                    }
+                }
+            }
             else
-                *out_buff << "pH"
+            {
+                *out_buff << "SOLUTION " << index + 1 << " #New Version "
+                          << "\n";
+                *out_buff << "#GRID " << index + 1 << "\n";
+                while (line_string.find("#ende") == string::npos)
+                {
+                    pqc_infile.getline(line, MAX_ZEILE);
+                    line_string = line;
+                    if (line_string.find("# comp") != string::npos)
+                    {
+                        if (line_string.find("pH") == string::npos &&
+                            line_string.find("pe") == string::npos)
+                        {
+                            // Component found; write name and concentration of
+                            // component
+                            count++;
+                            speciesname = pqc_names[count];
+                            dval = pcs_vector[pqc_process[count]]->GetNodeValue(
+                                index, pqc_index[count]);
+                            // CB 19.1.2011
+                            // based on porosity, calculate molality mi,w before
+                            // coputing equilirium chemistry
+                            if (m_rei)
+                            {
+                                if (m_rei->unitconversion)
+                                {
+                                    idx = pcs_vector[pqc_process[count]]
+                                              ->GetProcessComponentNumber();
+                                    // mi,w = Ci,w * n *55.5 / CH2O
+                                    // mi,s = Ci,w * (1-n) *55.5 / CH2O
+                                    if (cp_vec[idx]->transport_phase ==
+                                        0)  // liquid phase
+                                        dval *= unitfactor_l;
+                                    else if (cp_vec[idx]->transport_phase ==
+                                             1)  // solid phase
+                                        dval *= unitfactor_s;
+                                }
+                            }
+                            if (speciesname.compare("pe"))  // if this is not pe
+                                if (dval < 1.0e-19)
+                                    dval = 0.0;
+                            *out_buff << speciesname << "       " << dval
+                                      << "     # comp "
+                                      << "\n";
+                        }
+                    }
+                    else if (line_string.find("# temp") != string::npos)
+                    {
+                        // check if heat transport process is calculated in
+                        // GeoSys
+                        if (this->rcml_heat_flag > 0)
+                        {
+                            m_pcs = PCSGet("HEAT_TRANSPORT");
+                            idx = m_pcs->GetNodeValueIndex("TEMPERATURE1");
+                            dval = m_pcs->GetNodeValue(index, idx);
+                            // Input to PHREEQC is in °C
+                            *out_buff
+                                << "temp "
+                                << dval - PhysicalConstant::CelsiusZeroInKelvin
+                                << "  # temp "
+                                << "\n";
+                            temp = dval;  // save for gas phase input
+                        }
+                    }
+                    else  // Write units and temperature in the standard case
+                        if (line_string.find("pH") == string::npos &&
+                            line_string.find("pe") == string::npos &&
+                            line_string.find("#ende") == string::npos)
+                        *out_buff << line_string << "\n";
+                }  // end while
+
+                // special treat pH, and pe
+                n1 = this->rcml_number_of_master_species;
+                count++;
+                if (count != n1)
+                    cout << "Error in index of pqc_vectors !"
+                         << "\n";
+                dval = pcs_vector[pqc_process[count]]->GetNodeValue(
+                    index, pqc_index[count]);
+                count++;
+                if (this->gamma_Hplus >
+                    0)  // pH and H+ in GeoSys species, calculate pH from H+
+                {
+                    dval1 = fabs(pcs_vector[pqc_process[n1 + 1]]->GetNodeValue(
+                        index,
+                        pqc_index[n1 + 1]));  // CB 01/11 probably safer taking
+                                              // abs before calculating log(H+)
+                    // CB 19.1.2011
+                    // based on porosity, calculate molality mi,w before
+                    // coputing equilirium chemistry
+                    if (m_rei)
+                        if (m_rei->unitconversion)  // mi,w = Ci,w * n *55.5 /
+                                                    // CH2O
+                            dval1 *= unitfactor_l;
+                    dval = -log10(dval1 * gamma_Hplus);
+                }
+                if (this->rcml_pH_charge > 0)
+                    *out_buff << "pH"
+                              << "       " << dval << " charge "
+                              << "       # comp "
+                              << "\n";
+                else
+                    *out_buff << "pH"
+                              << "       " << dval << "       # comp "
+                              << "\n";
+                // write pe
+                count++;
+                dval = pcs_vector[pqc_process[n1 + 2]]->GetNodeValue(
+                    index, pqc_index[n1 + 2]);
+                *out_buff << "pe"
                           << "       " << dval << "       # comp "
                           << "\n";
-            // write pe
-            count++;
-            dval = pcs_vector[pqc_process[n1 + 2]]->GetNodeValue(
-                index, pqc_index[n1 + 2]);
-            *out_buff << "pe"
-                      << "       " << dval << "       # comp "
-                      << "\n";
-            *out_buff << line_string << "\n";
+                *out_buff << line_string << "\n";
+            }
         }  // end SOLUTION
         //-------------------------------------------------------------------------------------------------------------
         /* Schleife ueber Keyword EQUILIBRIUM PHASES */
@@ -1234,6 +1269,21 @@ int REACT::WriteInputPQCString(
                 // any other subkeyword
                 else
                 {
+                    line_string = line;
+                    *out_buff << line_string << "\n";
+                }
+            }
+        }
+        if (line_string.find("PHASES") != string::npos)
+        {
+            if (firstinput /*index < 1*/)
+            {
+                *out_buff << "\n"
+                          << "PHASES"
+                          << "\n";
+                while (line_string.find("#ende") == string::npos)
+                {
+                    pqc_infile.getline(line, MAX_ZEILE);
                     line_string = line;
                     *out_buff << line_string << "\n";
                 }
@@ -2346,7 +2396,9 @@ int REACT::ReadReactionModelNew(ifstream* pqc_infile)
 
         /* Schleife ueber Keyword Solution */
         // keyword found
-        if (line_string.find("SOLUTION") != string::npos)
+        if (line_string.find("SOLUTION") != string::npos &&
+            line_string.find("SOLUTION_MASTER_SPECIES") == string::npos &&
+            line_string.find("SOLUTION_SPECIES") == string::npos)
         {
             while (line_string.find("#ende") == string::npos)
             {
